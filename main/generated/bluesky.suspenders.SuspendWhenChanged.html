@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bluesky.suspenders.SuspendWhenChanged &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Simulation and Error Checking" href="../simulation.html" />
+    <link rel="prev" title="bluesky.suspenders.SuspendWhenOutsideBand" href="bluesky.suspenders.SuspendWhenOutsideBand.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../state-machine.html">Interruptions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#pausing-interactively">Pausing Interactively</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../state-machine.html#automated-suspension">Automated Suspension</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../state-machine.html#installing-suspenders">Installing Suspenders</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../state-machine.html#built-in-suspenders">Built-in Suspenders</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendBoolHigh.html">bluesky.suspenders.SuspendBoolHigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendBoolLow.html">bluesky.suspenders.SuspendBoolLow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendFloor.html">bluesky.suspenders.SuspendFloor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendCeil.html">bluesky.suspenders.SuspendCeil</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendWhenOutsideBand.html">bluesky.suspenders.SuspendWhenOutsideBand</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">bluesky.suspenders.SuspendWhenChanged</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#checkpoints">Checkpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#planned-pauses">Planned Pauses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#associated-runengine-interface">Associated RunEngine Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#experimental-record-interruptions">Experimental: Record Interruptions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../state-machine.html">Interruptions</a></li>
+      <li class="breadcrumb-item active">bluesky.suspenders.SuspendWhenChanged</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/bluesky.suspenders.SuspendWhenChanged.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="bluesky-suspenders-suspendwhenchanged">
+<h1>bluesky.suspenders.SuspendWhenChanged<a class="headerlink" href="#bluesky-suspenders-suspendwhenchanged" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="bluesky.suspenders.SuspendWhenChanged">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.suspenders.</span></span><span class="sig-name descname"><span class="pre">SuspendWhenChanged</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_resume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_plan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_plan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tripped_message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/suspenders.html#SuspendWhenChanged"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.suspenders.SuspendWhenChanged" title="Link to this definition">¶</a></dt>
+<dd><p>Suspend when the monitored value deviates from the expected.</p>
+<p>Only resume if allowed AND when monitored equals expected.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>signal</strong><span class="classifier"><cite>ophyd.Signal</cite></span></dt><dd><p>The signal to watch for changes to determine if the
+scan should be suspended</p>
+</dd>
+<dt><strong>expected_value</strong><span class="classifier">str, float, or int</span></dt><dd><p>RunEngine operations will be suspended when signal deviates
+from this value.  If <cite>None</cite> (default), set to value of
+<code class="docutils literal notranslate"><span class="pre">signal</span></code> when object is created.</p>
+</dd>
+<dt><strong>allow_resume</strong><span class="classifier">bool</span></dt><dd><p>Should RunEngine be allowed to resume once <code class="docutils literal notranslate"><span class="pre">signal.value</span> <span class="pre">==</span> <span class="pre">expected</span></code>
+again?  Default value of <code class="docutils literal notranslate"><span class="pre">False</span></code> is expected for intended use case.</p>
+</dd>
+<dt><strong>sleep</strong><span class="classifier">float, optional</span></dt><dd><p>How long to wait in seconds after the resume condition is met
+before marking the event as done.  Defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+</dd>
+<dt><strong>pre_plan</strong><span class="classifier">iterable or callable, optional</span></dt><dd><p>Plan to execute just before suspending. If callable, must
+take no arguments.</p>
+</dd>
+<dt><strong>post_plan</strong><span class="classifier">iterable or callable, optional</span></dt><dd><p>Plan to execute just before resuming. If callable, must
+take no arguments.</p>
+</dd>
+<dt><strong>tripped_message</strong><span class="classifier">str, optional</span></dt><dd><p>Message to include in the trip notification</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This suspender is designed to require bluesky restart if value changes.</p>
+<p>USE CASE:</p>
+<p><a class="reference internal" href="#bluesky.suspenders.SuspendWhenChanged" title="bluesky.suspenders.SuspendWhenChanged"><code class="xref py py-class docutils literal notranslate"><span class="pre">SuspendWhenChanged()</span></code></a> is useful when <code class="docutils literal notranslate"><span class="pre">signal</span></code> is an EPICS enumeration
+(<a class="reference external" href="https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output">“mbbo”</a>)
+used with a multi-instrument facility.
+Choices predefined in the mbbo record are the
+names of instruments allowed to control any shared hardware.</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">signal</span></code>, set by instrument staff outside of bluesky,
+names which instrument is allowed to control the hardware.</p></li>
+<li><p>Other instruments not matching <code class="docutils literal notranslate"><span class="pre">signal</span></code> are expected <strong>not</strong> to
+control the hardware (they could use simulators instead or not operate
+the shared hardware).</p></li>
+</ul>
+<p>Since a decision of hardware <em>vs.</em> simulators is made at the
+time a bluesky session starts and ophyd objects are first created, the
+session needs to be aware immediately if the <code class="docutils literal notranslate"><span class="pre">signal</span></code> is changed.
+The default value of <code class="docutils literal notranslate"><span class="pre">allow_resume=False</span></code> defends this decision.
+If there is a mechanism engineered to toggle ophyd signals between
+hardware and simulators, one might consider <code class="docutils literal notranslate"><span class="pre">allow_resume=True</span></code>.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># pause if this value changes in our session</span>
+<span class="c1"># note: this suspender is designed to require Bluesky restart if value changes</span>
+<span class="n">suspend_instrument_in_use</span> <span class="o">=</span> <span class="n">SuspendWhenChanged</span><span class="p">(</span><span class="n">instrument_in_use</span><span class="p">)</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">install_suspender</span><span class="p">(</span><span class="n">suspend_instrument_in_use</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Example EPICS database for APS 2-BM-A and 2-BM-B:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>record(mbbo, &quot;2bm:instrument_in_use&quot;) {
+    # instrument team sets this
+    # For additional field names, see
+    # https://epics.anl.gov/EpicsDocumentation/AppDevManuals/RecordRef/Recordref-25.html#HEADING25-15
+    field(DESC, &quot;instrument using beam now&quot;)
+    field(ZRST, &quot;none&quot;)
+    field(ONST, &quot;2-BM-A&quot;)
+    field(TWST, &quot;2-BM-B&quot;)
+    # THST
+    # FRST
+    # FVST
+    # ...
+}
+</pre></div>
+</div>
+<p>NOTE: <strong>Always</strong> make the zero choice (<code class="docutils literal notranslate"><span class="pre">ZRST</span></code>) in the mbbo record to be ‘none’.
+This allows the instrument staff to designate that <em>no</em> instrument is allowed
+to control the shared hardware.  Start the names of the allowed instruments
+with <code class="docutils literal notranslate"><span class="pre">ONST</span></code>.</p>
+<p>It is convenient for the multi-instrument facility to make this definition
+in EPICS rather than in a specific bluesky session.  The EPICS value could be
+useful in other contexts of instrument control beyond the realm of bluesky.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="bluesky.suspenders.SuspendWhenChanged.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_resume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_plan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_plan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tripped_message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/suspenders.html#SuspendWhenChanged.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.suspenders.SuspendWhenChanged.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bluesky.suspenders.SuspendWhenChanged.__init__" title="bluesky.suspenders.SuspendWhenChanged.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(signal, *[, expected_value, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_futures</span></code>()</p></td>
+<td><p>Return a list of futures to wait on.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">install</span></code>(RE, *[, event_type])</p></td>
+<td><p>Install callback on signal</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove</span></code>()</p></td>
+<td><p>Disable the suspender</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">tripped</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bluesky.suspenders.SuspendWhenOutsideBand.html" class="btn btn-neutral float-left" title="bluesky.suspenders.SuspendWhenOutsideBand" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../simulation.html" class="btn btn-neutral float-right" title="Simulation and Error Checking" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

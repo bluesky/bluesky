@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asynchronous Acquisition &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Multi-Run Plans" href="multi_run_plans.html" />
+    <link rel="prev" title="Event Descriptors" href="event_descriptors.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Asynchronous Acquisition</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#flying">Flying</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#monitoring">Monitoring</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Asynchronous Acquisition</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/async.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="asynchronous-acquisition">
+<h1>Asynchronous Acquisition<a class="headerlink" href="#asynchronous-acquisition" title="Link to this heading">¶</a></h1>
+<p>This section encompasses “fly scans,” “monitoring,” and in general handling
+data acquisition that is occurring at different rates.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are here because you just want to “move two motors at once” or
+something in that category, you’re in luck: you don’t need anything as
+complex as what we present in this section. Read about multidimensional
+plans in the section on <a class="reference internal" href="plans.html"><span class="doc">Plans</span></a>.</p>
+</div>
+<p>In short, “flying” is for acquisition at high rates and “monitoring” is for
+acquisition at an irregular or slow rate. Monitoring does not guarantee that
+all readings will be captured; i.e. monitoring is lossy. It is susceptible to
+network glitches. But flying, by contract, is not lossy if correctly
+implementated.</p>
+<p><strong>Flying</strong> means: “Let the hardware take control, cache data externally, and
+then transfer all the data to the RunEngine at the end.” This is essential when
+the data acquisition rates are faster than the RunEngine or Python can go.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As a point of reference, the RunEngine processes message at a rate of
+about 35k/s (not including any time added by whatever the message <em>does</em>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">In</span> <span class="p">[</span><span class="mi">3</span><span class="p">]:</span> <span class="o">%</span><span class="n">timeit</span> <span class="n">RE</span><span class="p">(</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">))</span>
+<span class="mi">10</span> <span class="n">loops</span><span class="p">,</span> <span class="n">best</span> <span class="n">of</span> <span class="mi">3</span><span class="p">:</span> <span class="mf">26.8</span> <span class="n">ms</span> <span class="n">per</span> <span class="n">loop</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Monitoring</strong> a means acquiring readings whenever a new reading is available,
+at a device’s natural update rate. For example, we might monitor background
+condition (e.g., beam current) on the side while executing the primary logic of
+a plan. The documents are generated in real time — not all at the end, like
+flying — so if the update rate is too high, monitoring can slow down the
+execution of the plan. As mentioned above, monitoring is also lossy: if network
+traffic is high, some readings may be missed.</p>
+<section id="flying">
+<h2>Flying<a class="headerlink" href="#flying" title="Link to this heading">¶</a></h2>
+<p>In bluesky’s view, there are three steps to “flying” a device during a scan.</p>
+<ol class="arabic simple">
+<li><p><strong>Kickoff</strong>: Begin accumulating data. A ‘kickoff’ command completes once
+acquisition has successfully started.</p></li>
+<li><p><strong>Complete</strong>: This step tells the device, “I am ready whenever you are
+ready.” If the device is just collecting until it is told to stop, it will
+report that it is ready immediately. If the device is executing some
+predetermined trajectory, it will finish before reporting ready.</p></li>
+<li><p><strong>Collect</strong>: Finally, the data accumulated by the device is transferred to
+the RunEngine and processed like any other data.</p></li>
+</ol>
+<p>To “fly” one or more “flyable” devices during a plan, bluesky provides a
+<cite>preprocessor &lt;preprocessors&gt;</cite>. It is available as a wrapper,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">fly_during_wrapper()</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>  <span class="c1"># simulated hardware</span>
+<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">fly_during_wrapper</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">fly_during_wrapper</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="p">[</span><span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>and as a decorator, <code class="xref py py-func docutils literal notranslate"><span class="pre">fly_during_decorator()</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>  <span class="c1"># simulated hardware</span>
+<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">fly_during_wrapper</span>
+
+<span class="c1"># Define a new plan for future use.</span>
+<span class="n">fly_and_count</span> <span class="o">=</span> <span class="n">fly_during_decorator</span><span class="p">([</span><span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span><span class="p">])(</span><span class="n">count</span><span class="p">)</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">fly_and_count</span><span class="p">([</span><span class="n">det</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>Alternatively, if you are using <a class="reference internal" href="plans.html#supplemental-data"><span class="std std-ref">Supplemental Data</span></a>, simply
+append to or extend its list of flyers to kick off during every run:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>
+
+<span class="c1"># Assume sd is an instance of the SupplementalData set up as</span>
+<span class="c1"># descripted in the documentation linked above.</span>
+<span class="n">sd</span><span class="o">.</span><span class="n">flyers</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>They will be included with all plans until removed.</p>
+</section>
+<section id="monitoring">
+<span id="async-monitoring"></span><h2>Monitoring<a class="headerlink" href="#monitoring" title="Link to this heading">¶</a></h2>
+<p>To monitor some device during a plan, bluesky provides a
+<cite>preprocessor &lt;preprocessors&gt;</cite>. It
+is available as a wrapper, <code class="xref py py-func docutils literal notranslate"><span class="pre">monitor_during_wrapper()</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">det1</span>
+<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">monitor_during_wrapper</span>
+
+<span class="c1"># Record any updates from det1 while &#39;counting&#39; det 5 times.</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">monitor_during_wrapper</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="p">[</span><span class="n">det1</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>and as a decorator, <code class="xref py py-func docutils literal notranslate"><span class="pre">monitor_during_decorator()</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">det1</span>
+<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">monitor_during_wrapper</span>
+
+<span class="c1"># Define a new plan for future use.</span>
+<span class="n">monitor_and_count</span> <span class="o">=</span> <span class="n">monitor_during_decorator</span><span class="p">([</span><span class="n">det1</span><span class="p">])(</span><span class="n">count</span><span class="p">)</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">monitor_and_count</span><span class="p">([</span><span class="n">det</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>Alternatively, if you are using <a class="reference internal" href="plans.html#supplemental-data"><span class="std std-ref">Supplemental Data</span></a>, simply
+append to or extend its list of signals to monitor:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det1</span>
+
+<span class="c1"># Assume sd is an instance of the SupplementalData set up as</span>
+<span class="c1"># descripted in the documentation linked above.</span>
+<span class="n">sd</span><span class="o">.</span><span class="n">monitors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">det1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>They will be included with all plans until removed.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="event_descriptors.html" class="btn btn-neutral float-left" title="Event Descriptors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="multi_run_plans.html" class="btn btn-neutral float-right" title="Multi-Run Plans" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

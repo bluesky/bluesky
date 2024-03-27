@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bluesky.suspenders.SuspendCeil &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bluesky.suspenders.SuspendWhenOutsideBand" href="bluesky.suspenders.SuspendWhenOutsideBand.html" />
+    <link rel="prev" title="bluesky.suspenders.SuspendFloor" href="bluesky.suspenders.SuspendFloor.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../state-machine.html">Interruptions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#pausing-interactively">Pausing Interactively</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../state-machine.html#automated-suspension">Automated Suspension</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../state-machine.html#installing-suspenders">Installing Suspenders</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../state-machine.html#built-in-suspenders">Built-in Suspenders</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendBoolHigh.html">bluesky.suspenders.SuspendBoolHigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendBoolLow.html">bluesky.suspenders.SuspendBoolLow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendFloor.html">bluesky.suspenders.SuspendFloor</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">bluesky.suspenders.SuspendCeil</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendWhenOutsideBand.html">bluesky.suspenders.SuspendWhenOutsideBand</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bluesky.suspenders.SuspendWhenChanged.html">bluesky.suspenders.SuspendWhenChanged</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#checkpoints">Checkpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#planned-pauses">Planned Pauses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#associated-runengine-interface">Associated RunEngine Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine.html#experimental-record-interruptions">Experimental: Record Interruptions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../state-machine.html">Interruptions</a></li>
+      <li class="breadcrumb-item active">bluesky.suspenders.SuspendCeil</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/bluesky.suspenders.SuspendCeil.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="bluesky-suspenders-suspendceil">
+<h1>bluesky.suspenders.SuspendCeil<a class="headerlink" href="#bluesky-suspenders-suspendceil" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="bluesky.suspenders.SuspendCeil">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.suspenders.</span></span><span class="sig-name descname"><span class="pre">SuspendCeil</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suspend_thresh</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resume_thresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/suspenders.html#SuspendCeil"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.suspenders.SuspendCeil" title="Link to this definition">¶</a></dt>
+<dd><p>Suspend when a scalar rises above a threshold.</p>
+<p>Optionally, the threshold to resume can be set to be less than the
+threshold to suspend.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>signal</strong><span class="classifier"><cite>ophyd.Signal</cite></span></dt><dd><p>The signal to watch for changes to determine if the
+scan should be suspended</p>
+</dd>
+<dt><strong>suspend_thresh</strong><span class="classifier">float</span></dt><dd><p>Suspend if the signal value falls below this value</p>
+</dd>
+<dt><strong>resume_thresh</strong><span class="classifier">float, optional</span></dt><dd><p>Resume when the signal value rises above this value.  If not
+given set to <cite>suspend_thresh</cite>.  Must be greater than <cite>suspend_thresh</cite>.</p>
+</dd>
+<dt><strong>sleep</strong><span class="classifier">float, optional</span></dt><dd><p>How long to wait in seconds after the resume condition is met
+before marking the event as done.  Defaults to 0</p>
+</dd>
+<dt><strong>pre_plan</strong><span class="classifier">iterable or iterator, optional</span></dt><dd><p>a generator, list, or similar containing <cite>Msg</cite> objects</p>
+</dd>
+<dt><strong>post_plan</strong><span class="classifier">iterable or iterator, optional</span></dt><dd><p>a generator, list, or similar containing <cite>Msg</cite> objects</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="bluesky.suspenders.SuspendCeil.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suspend_thresh</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resume_thresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bluesky.suspenders.SuspendCeil.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bluesky.suspenders.SuspendCeil.__init__" title="bluesky.suspenders.SuspendCeil.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(signal, suspend_thresh, *[, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_futures</span></code>()</p></td>
+<td><p>Return a list of futures to wait on.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">install</span></code>(RE, *[, event_type])</p></td>
+<td><p>Install callback on signal</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove</span></code>()</p></td>
+<td><p>Disable the suspender</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">tripped</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bluesky.suspenders.SuspendFloor.html" class="btn btn-neutral float-left" title="bluesky.suspenders.SuspendFloor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bluesky.suspenders.SuspendWhenOutsideBand.html" class="btn btn-neutral float-right" title="bluesky.suspenders.SuspendWhenOutsideBand" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

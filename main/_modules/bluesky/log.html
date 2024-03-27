@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bluesky.log &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">bluesky.log</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bluesky.log</h1><div class="highlight"><pre>
+<span></span><span class="c1"># The LogFormatter is adapted light from tornado, which is licensed under</span>
+<span class="c1"># Apache 2.0. See other_licenses/ in the repository directory.</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">ModuleType</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">colorama</span>
+
+    <span class="n">colorama</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">colorama</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">curses</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModuleType</span><span class="p">]</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">curses</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">curses</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;config_bluesky_logging&quot;</span><span class="p">,</span> <span class="s2">&quot;get_handler&quot;</span><span class="p">,</span> <span class="s2">&quot;LogFormatter&quot;</span><span class="p">,</span> <span class="s2">&quot;set_handler&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_stderr_supports_color</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;isatty&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">curses</span><span class="p">:</span>
+                <span class="n">curses</span><span class="o">.</span><span class="n">setupterm</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetnum</span><span class="p">(</span><span class="s2">&quot;colors&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="n">colorama</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">is</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">colorama</span><span class="o">.</span><span class="n">initialise</span><span class="p">,</span> <span class="s2">&quot;wrapped_stderr&quot;</span><span class="p">,</span> <span class="nb">object</span><span class="p">()):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="c1"># Very broad exception handling because it&#39;s always better to</span>
+        <span class="c1"># fall back to non-colored logs than to break at startup.</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">class</span> <span class="nc">ComposableLogAdapter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">LoggerAdapter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># The logging.LoggerAdapter siliently ignores `extra` in this usage:</span>
+        <span class="c1"># log_adapter.debug(msg, extra={...})</span>
+        <span class="c1"># and passes through log_adapater.extra instead. This subclass merges</span>
+        <span class="c1"># the extra passed via keyword argument with the extra in the</span>
+        <span class="c1"># attribute, giving precedence to the keyword argument.</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;extra&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">extra</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extra&quot;</span><span class="p">,</span> <span class="p">{})}</span>
+        <span class="k">return</span> <span class="n">msg</span><span class="p">,</span> <span class="n">kwargs</span>
+
+
+<div class="viewcode-block" id="LogFormatter">
+<a class="viewcode-back" href="../../debugging.html#bluesky.log.LogFormatter">[docs]</a>
+<span class="k">class</span> <span class="nc">LogFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log formatter for bluesky records.</span>
+
+<span class="sd">    Adapted from the log formatter used in Tornado.</span>
+<span class="sd">    Key features of this formatter are:</span>
+
+<span class="sd">    * Color support when logging to a terminal that supports it.</span>
+<span class="sd">    * Timestamps on every log line.</span>
+<span class="sd">    * Includes extra record attributes (old_state, new_state, msg_command,</span>
+<span class="sd">      doc_name, doc_uid) when present.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(color)s</span><span class="s2">[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+    <span class="n">DEFAULT_DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%y%m</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
+    <span class="n">DEFAULT_COLORS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>  <span class="c1"># Blue</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># Green</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>  <span class="c1"># Yellow</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Red</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">DEFAULT_FORMAT</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="n">DEFAULT_DATE_FORMAT</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;%&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">DEFAULT_COLORS</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :arg bool color: Enables color support.</span>
+<span class="sd">        :arg str fmt: Log message format.</span>
+<span class="sd">          It will be applied to the attributes dict of log records. The</span>
+<span class="sd">          text between ``%(color)s`` and ``%(end_color)s`` will be colored</span>
+<span class="sd">          depending on the level if color support is on.</span>
+<span class="sd">        :arg dict colors: color mappings from logging level to terminal color</span>
+<span class="sd">          code</span>
+<span class="sd">        :arg str datefmt: Datetime format.</span>
+<span class="sd">          Used for formatting ``(asctime)`` placeholder in ``prefix_fmt``.</span>
+<span class="sd">        .. versionchanged:: 3.2</span>
+<span class="sd">           Added ``fmt`` and ``datefmt`` arguments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">datefmt</span><span class="o">=</span><span class="n">datefmt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">and</span> <span class="n">_stderr_supports_color</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">curses</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># The curses module has some str/bytes confusion in</span>
+                <span class="c1"># python3.  Until version 3.2.3, most methods return</span>
+                <span class="c1"># bytes, but only accept strings.  In addition, we want to</span>
+                <span class="c1"># output these strings with the logging module, which</span>
+                <span class="c1"># works with unicode strings.  The explicit calls to</span>
+                <span class="c1"># unicode() below are harmless in python2 but will do the</span>
+                <span class="c1"># right conversion in python 3.</span>
+                <span class="n">fg_color</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">&quot;setaf&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">&quot;setf&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+
+                <span class="k">for</span> <span class="n">levelno</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">colors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">levelno</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">tparm</span><span class="p">(</span><span class="n">fg_color</span><span class="p">,</span> <span class="n">code</span><span class="p">),</span> <span class="s2">&quot;ascii&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">&quot;sgr0&quot;</span><span class="p">),</span> <span class="s2">&quot;ascii&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If curses is not present (currently we&#39;ll only get here for</span>
+                <span class="c1"># colorama on windows), assume hard-coded ANSI color codes.</span>
+                <span class="k">for</span> <span class="n">levelno</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">colors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">levelno</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[2;3</span><span class="si">%d</span><span class="s2">m&quot;</span> <span class="o">%</span> <span class="n">code</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">message</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">())</span>
+        <span class="n">record</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">record</span><span class="o">.</span><span class="n">asctime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatTime</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">datefmt</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">]</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">end_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">end_color</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">formatted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fmt</span> <span class="o">%</span> <span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span>
+
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="p">:</span>
+            <span class="n">formatted</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">formatted</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">formatted</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    &quot;</span><span class="p">)</span></div>
+
+
+
+<span class="n">plain_log_format</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2">.</span><span class="si">%(msecs)03d</span><span class="s2"> </span><span class="si">%(module)15s</span><span class="s2">:</span><span class="si">%(lineno)5d</span><span class="s2">] </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+<span class="n">color_log_format</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;</span><span class="si">%(color)s</span><span class="s2">[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2">.</span><span class="si">%(msecs)03d</span><span class="s2"> &quot;</span> <span class="s2">&quot;</span><span class="si">%(module)15s</span><span class="s2">:</span><span class="si">%(lineno)5d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky&quot;</span><span class="p">)</span>
+<span class="n">doc_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky.emit_document&quot;</span><span class="p">)</span>
+<span class="n">msg_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky.RE.msg&quot;</span><span class="p">)</span>
+<span class="n">state_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky.RE.state&quot;</span><span class="p">)</span>
+<span class="n">current_handler</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">validate_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a int for level comparison</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">levelno</span> <span class="o">=</span> <span class="n">level</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">levelno</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLevelName</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">levelno</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">levelno</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Your level is illegal, please use one of python logging string&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_set_handler_with_logger</span><span class="p">(</span>
+    <span class="n">logger_name</span><span class="o">=</span><span class="s2">&quot;bluesky&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;WARNING&quot;</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="n">levelno</span> <span class="o">=</span> <span class="n">validate_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">levelno</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">color</span><span class="p">:</span>
+        <span class="nb">format</span> <span class="o">=</span> <span class="n">color_log_format</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">format</span> <span class="o">=</span> <span class="n">plain_log_format</span>
+    <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">LogFormatter</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="n">datefmt</span><span class="p">))</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">)</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">levelno</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">levelno</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="config_bluesky_logging">
+<a class="viewcode-back" href="../../debugging.html#bluesky.log.config_bluesky_logging">[docs]</a>
+<span class="k">def</span> <span class="nf">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;WARNING&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set a new handler on the ``logging.getLogger(&#39;bluesky&#39;)`` logger.</span>
+
+<span class="sd">    If this is called more than once, the handler from the previous invocation</span>
+<span class="sd">    is removed (if still present) and replaced.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file : object with ``write`` method or filename string</span>
+<span class="sd">        Default is ``sys.stdout``.</span>
+<span class="sd">    datefmt : string</span>
+<span class="sd">        Date format. Default is ``&#39;%H:%M:%S&#39;``.</span>
+<span class="sd">    color : boolean</span>
+<span class="sd">        Use ANSI color codes. True by default.</span>
+<span class="sd">    level : str or int</span>
+<span class="sd">        Python logging level, given as string or corresponding integer.</span>
+<span class="sd">        Default is &#39;WARNING&#39;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    handler : logging.Handler</span>
+<span class="sd">        The handler, which has already been added to the &#39;bluesky&#39; logger.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Log to a file.</span>
+
+<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(file=&#39;/tmp/what_is_happening.txt&#39;)</span>
+
+<span class="sd">    Include the date along with the time. (The log messages will always include</span>
+<span class="sd">    microseconds, which are configured separately, not as part of &#39;datefmt&#39;.)</span>
+
+<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(datefmt=&quot;%Y-%m-%d %H:%M:%S&quot;)</span>
+
+<span class="sd">    Turn off ANSI color codes.</span>
+
+<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(color=False)</span>
+
+<span class="sd">    Increase verbosity: show level INFO or higher.</span>
+
+<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(level=&#39;INFO&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">current_handler</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="n">levelno</span> <span class="o">=</span> <span class="n">validate_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">levelno</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">color</span><span class="p">:</span>
+        <span class="nb">format</span> <span class="o">=</span> <span class="n">color_log_format</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">format</span> <span class="o">=</span> <span class="n">plain_log_format</span>
+    <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">LogFormatter</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="n">datefmt</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">current_handler</span> <span class="ow">in</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">current_handler</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+    <span class="n">current_handler</span> <span class="o">=</span> <span class="n">handler</span>
+    <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">levelno</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">levelno</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">handler</span></div>
+
+
+
+<span class="n">set_handler</span> <span class="o">=</span> <span class="n">config_bluesky_logging</span>  <span class="c1"># for back-compat</span>
+
+
+<div class="viewcode-block" id="get_handler">
+<a class="viewcode-back" href="../../debugging.html#bluesky.log.get_handler">[docs]</a>
+<span class="k">def</span> <span class="nf">get_handler</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the handler configured by the most recent call to :func:`config_bluesky_logging`.</span>
+
+<span class="sd">    If :func:`config_bluesky_logging` has not yet been called, this returns ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">current_handler</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

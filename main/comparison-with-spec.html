@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comparison with SPEC &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Hardware Interface Packages" href="hardware-interfaces.html" />
+    <link rel="prev" title="Translating Direct PyEpics Code to Bluesky Code" href="from-pyepics-to-bluesky.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Comparison with SPEC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#a-remark-about-syntax">A Remark About Syntax</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Comparison with SPEC</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/comparison-with-spec.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="comparison-with-spec">
+<h1>Comparison with SPEC<a class="headerlink" href="#comparison-with-spec" title="Link to this heading">¶</a></h1>
+<p><a class="reference external" href="https://www.certif.com/content/spec/">SPEC</a> is a popular software package
+for instrument control and data acquisition. Many users in the synchrotron
+community, from which bluesky originated, know SPEC and ask what differentiates
+and motivates bluesky. Answering this question in an informed and unbiased way
+is difficult, and we welcome any corrections.</p>
+<p>There are many good features of SPEC that have been incorporated into
+bluesky, including:</p>
+<ul class="simple">
+<li><p>Simple commands for common experiments, which can be used as building blocks
+for more complex procedures</p></li>
+<li><p>Easy hardware configuration</p></li>
+<li><p>Interruption handling (Ctrl+C)</p></li>
+<li><p>Integration with EPICS (and potentially other instrument control systems)</p></li>
+<li><p>“Pseudomotors” presenting virtual axes</p></li>
+<li><p>Integration with reciprocal space transformation code</p></li>
+</ul>
+<p>Bluesky has also addressed certain limitations of SPEC. In fairness to SPEC, we
+have the benefit of learning from its decades of use, and we are standing on
+the shoulders of the modern open-source community.</p>
+<ul class="simple">
+<li><p>Bluesky is free and open-source in all aspects. Macros from the SPEC user
+community are open-source, but the core SPEC C source code is closed and not
+free.</p></li>
+<li><p>Bluesky provides more control over the console output and plotting.</p></li>
+<li><p>SPEC was designed before large area detectors existed. Ingesting area
+detector data is possible, but <em>ad hoc</em>. In bluesky, area detectors and other
+higher-dimensional inputs are integrated naturally.</p></li>
+<li><p>SPEC writes to a custom text-based format (a “SPEC file”). Bluesky can
+write—in real time or <em>post facto</em>—to any format.</p></li>
+<li><p>SPEC has a simulation mode. Bluesky allows users to incorporate much richer
+simulation capabilities (about which more below) but, as of version 0.9.0,
+provides less than SPEC out of the box.</p></li>
+</ul>
+<p>Using Python, a general-purpose programming language, gives several immediate
+advantages:</p>
+<ul class="simple">
+<li><p>Python checks syntax automatically.</p></li>
+<li><p>Python provides tools for interactive debugging.</p></li>
+<li><p>There are many more resources for learning Python.</p></li>
+<li><p>The language is more flexible.</p></li>
+<li><p>It’s easy to integrate with the scientific Python ecosystem.</p></li>
+</ul>
+<p>Bluesky tries to go further than SPEC in some regards:</p>
+<ul class="simple">
+<li><p>Complex custom procedures are easier to express.</p></li>
+<li><p>Automated “suspension” (pausing and resuming) is consistent and easier to
+manage.</p></li>
+<li><p>The prevailing model in SPEC is to collect data as a step scan. Other types
+of scans—such as fly scans or asynchronous monitoring—can be
+done, but they are <em>ad hoc</em>. Bluesky supports several modalities of data
+acquisition with equal ease.</p></li>
+<li><p>Bluesky can acquire multiple asynchronous, uncoordinated streams of data and
+represent them in a simple <a class="reference internal" href="documents.html"><span class="doc">event-based data model</span></a>.</p></li>
+<li><p>It is easy to build tools that inspect/simulate a procedure before it is run
+to check for safety, estimate time to completion, or visualize its behavior.</p></li>
+<li><p>Bluesky is a library that works well interactively but can also be used
+programmatically in scripts or other libraries.</p></li>
+<li><p>Users can add arbitrary metadata with rich semantics, including large arrays
+(such as masks) or nested mappings.</p></li>
+<li><p>Bluesky is a holistic solution for data acquisition and management. Users can
+push live streaming data directly into their data processing and analysis
+pipelines and/or export it into a file.</p></li>
+</ul>
+<p>On the other hand, one major advantage of SPEC over bluesky is its maturity.
+SPEC is battle-hardened from decades of use at many facilities, and it has a
+large user community. Bluesky is a young project.</p>
+<section id="a-remark-about-syntax">
+<h2>A Remark About Syntax<a class="headerlink" href="#a-remark-about-syntax" title="Link to this heading">¶</a></h2>
+<p>SPEC users immediately notice that simple bluesky commands are more verbose
+than their counterparts in SPEC. This is a trade-off we have made in choosing a
+more expressive, general-purpose language over a single-purpose command line
+interface. That “easy integration with scientific libraries” comes at the cost
+of some parentheses and commas. Some of the difference is also due to the
+richer abstractions required to capture the complexity of modern hardware.  The
+simplest commands are made less terse, but more interesting commands are made
+much easier to express. Of course, users can save time by using tab-completion
+and by accessing previous commands with the up arrow key.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="from-pyepics-to-bluesky.html" class="btn btn-neutral float-left" title="Translating Direct PyEpics Code to Bluesky Code" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hardware-interfaces.html" class="btn btn-neutral float-right" title="Hardware Interface Packages" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

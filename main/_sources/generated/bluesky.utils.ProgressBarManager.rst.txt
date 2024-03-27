@@ -1,0 +1,29 @@
+﻿bluesky.utils.ProgressBarManager
+================================
+
+.. currentmodule:: bluesky.utils
+
+.. autoclass:: ProgressBarManager
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ProgressBarManager.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ProgressBarManager.pbar_factory
+      ~ProgressBarManager.pbar
+   
+   

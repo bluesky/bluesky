@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Release History" href="api_changes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#making-changes">Making Changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#writing-the-commit-message">Writing the commit message</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-pull-request">The Pull Request</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#releasing">Releasing</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/contributing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Link to this heading">¶</a></h1>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">¶</a></h2>
+<ul>
+<li><p>Make sure you have a GitHub account</p></li>
+<li><p>Submit a ticket for your issue, assuming one does not already exist.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Clearly describe the issue including steps to reproduce when it is a bug.</p></li>
+<li><p>Make sure you fill in the earliest version that you know has the issue.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Fork the repository on GitHub</p></li>
+</ul>
+</section>
+<section id="making-changes">
+<h2>Making Changes<a class="headerlink" href="#making-changes" title="Link to this heading">¶</a></h2>
+<ul>
+<li><p>Create a topic branch from where you want to base your work.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>This is usually the master branch.</p></li>
+<li><p>Only target release branches if you are certain your fix must be on that
+branch.</p></li>
+<li><p>To quickly create a topic branch based on master; <cite>git checkout -b
+fix/master/my_contribution master</cite>. Please avoid working directly on the
+<cite>master</cite> branch.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Make commits of logical units.</p></li>
+<li><p>Check for unnecessary whitespace with <cite>git diff –check</cite> before committing.</p></li>
+<li><p>Make sure your commit messages are in the proper format (see below)</p></li>
+<li><p>Make sure you have added the necessary tests for your changes.</p></li>
+<li><p>Run _all_ the tests to assure nothing else was accidentally broken.</p></li>
+</ul>
+<section id="writing-the-commit-message">
+<h3>Writing the commit message<a class="headerlink" href="#writing-the-commit-message" title="Link to this heading">¶</a></h3>
+<p>Commit messages should be clear and follow a few basic rules. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ENH</span><span class="p">:</span> <span class="n">add</span> <span class="n">functionality</span> <span class="n">X</span> <span class="n">to</span> <span class="n">bluesky</span><span class="o">.&lt;</span><span class="n">submodule</span><span class="o">&gt;.</span>
+
+<span class="n">The</span> <span class="n">first</span> <span class="n">line</span> <span class="n">of</span> <span class="n">the</span> <span class="n">commit</span> <span class="n">message</span> <span class="n">starts</span> <span class="k">with</span> <span class="n">a</span> <span class="n">capitalized</span> <span class="n">acronym</span>
+<span class="p">(</span><span class="n">options</span> <span class="n">listed</span> <span class="n">below</span><span class="p">)</span> <span class="n">indicating</span> <span class="n">what</span> <span class="nb">type</span> <span class="n">of</span> <span class="n">commit</span> <span class="n">this</span> <span class="ow">is</span><span class="o">.</span>  <span class="n">Then</span> <span class="n">a</span> <span class="n">blank</span>
+<span class="n">line</span><span class="p">,</span> <span class="n">then</span> <span class="n">more</span> <span class="n">text</span> <span class="k">if</span> <span class="n">needed</span><span class="o">.</span>  <span class="n">Lines</span> <span class="n">shouldn</span><span class="s1">&#39;t be longer than 72</span>
+<span class="n">characters</span><span class="o">.</span>  <span class="n">If</span> <span class="n">the</span> <span class="n">commit</span> <span class="ow">is</span> <span class="n">related</span> <span class="n">to</span> <span class="n">a</span> <span class="n">ticket</span><span class="p">,</span> <span class="n">indicate</span> <span class="n">that</span> <span class="k">with</span>
+<span class="s2">&quot;See #3456&quot;</span><span class="p">,</span> <span class="s2">&quot;See ticket 3456&quot;</span><span class="p">,</span> <span class="s2">&quot;Closes #3456&quot;</span> <span class="ow">or</span> <span class="n">similar</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>Describing the motivation for a change, the nature of a bug for bug fixes
+or some details on what an enhancement does are also good to include in a
+commit message. Messages should be understandable without looking at the code
+changes.</p>
+<p>Standard acronyms to start the commit message with are:</p>
+<ul class="simple">
+<li><p>API: an (incompatible) API change</p></li>
+<li><p>BLD: change related to building the project</p></li>
+<li><p>BUG: bug fix</p></li>
+<li><p>CI : continuous integration</p></li>
+<li><p>DEP: deprecate something, or remove a deprecated object</p></li>
+<li><p>DEV: development tool or utility</p></li>
+<li><p>DOC: documentation</p></li>
+<li><p>ENH: enhancement</p></li>
+<li><p>MNT: maintenance commit (refactoring, typos, etc.)</p></li>
+<li><p>REV: revert an earlier commit</p></li>
+<li><p>STY: style fix (whitespace, PEP8)</p></li>
+<li><p>TST: addition or modification of tests</p></li>
+<li><p>REL: related to releases</p></li>
+</ul>
+</section>
+<section id="the-pull-request">
+<h3>The Pull Request<a class="headerlink" href="#the-pull-request" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Now push to your fork</p></li>
+<li><p>Submit a <a class="reference external" href="https://help.github.com/articles/using-pull-requests">pull request</a></p></li>
+</ul>
+<p>At this point you’re waiting on us. We like to at least comment on pull requests within three business days (and, typically, one business day).
+We may suggest some changes or improvements or alternatives.</p>
+<p>Hints to make the integration of your changes easy (and happen faster):
+* Keep your pull requests small
+* Don’t forget your unit tests
+* All features need documentation, don’t forget the .rst file
+* Don’t take changes requests to change your code personally</p>
+</section>
+</section>
+<section id="releasing">
+<h2>Releasing<a class="headerlink" href="#releasing" title="Link to this heading">¶</a></h2>
+<p>To release Bluesky:</p>
+<ul>
+<li><p>Make a pull request adding release notes to the API changes document:
+<code class="file docutils literal notranslate"><span class="pre">docs/source/api_changes.rst</span></code>.
+It might be helpful to <a class="reference external" href="https://docs.github.com/en/github/administering-a-repository/releasing-projects-on-github/comparing-releases">review the changes since last release</a>.</p></li>
+<li><p>Once the changelog is merged, mint a new release.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>tag: <code class="code docutils literal notranslate"><span class="pre">v&lt;VERSION&gt;</span></code></p></li>
+<li><p>title: <code class="code docutils literal notranslate"><span class="pre">bluesky</span> <span class="pre">v&lt;VERSION&gt;</span></code></p></li>
+<li><p>description: copy content from api_changes</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Bluesky will be released to PyPI via our <a class="reference external" href="https://github.com/bluesky/bluesky/blob/master/.github/workflows/python-publish.yml">github action</a>.</p></li>
+<li><p>The conda-forge bot will make a PR to update the <a class="reference external" href="https://github.com/conda-forge/bluesky-feedstock">bluesky-feedstock</a>.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api_changes.html" class="btn btn-neutral float-left" title="Release History" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

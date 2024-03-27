@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.close\_run
+======================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.close_run

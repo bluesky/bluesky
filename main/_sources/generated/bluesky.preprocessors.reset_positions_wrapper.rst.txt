@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.reset\_positions\_wrapper
+===============================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: reset_positions_wrapper

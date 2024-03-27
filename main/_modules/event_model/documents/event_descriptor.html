@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>event_model.documents.event_descriptor &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">event_model.documents.event_descriptor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for event_model.documents.event_descriptor</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NotRequired</span><span class="p">,</span> <span class="n">TypedDict</span>
+
+<span class="kn">from</span> <span class="nn">.generate.type_wrapper</span> <span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">add_extra_schema</span>
+
+<span class="n">Dtype</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;boolean&quot;</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="DataKey">
+<a class="viewcode-back" href="../../../hardware.html#bluesky.protocols.DataKey">[docs]</a>
+<span class="k">class</span> <span class="nc">DataKey</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Describes the objects in the data property of Event documents&quot;&quot;&quot;</span>
+
+    <span class="n">dims</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The names for dimensions of the data. Null or empty list &quot;</span>
+                <span class="s2">&quot;if scalar data&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Dtype</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The type of the data in the event.&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">external</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="nb">str</span><span class="p">,</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Where the data is stored if it is stored external &quot;</span>
+                <span class="s2">&quot;to the events&quot;</span><span class="p">,</span>
+                <span class="n">regex</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;^[A-Z]+:?&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">object_name</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="nb">str</span><span class="p">,</span>
+            <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The name of the object this key was pulled from.&quot;</span><span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">precision</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="nb">int</span><span class="p">,</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of digits after decimal place if &quot;</span>
+                <span class="s2">&quot;a floating point number&quot;</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The shape of the data.  Empty list indicates scalar data.&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The source (ex piece of hardware) of the data.&quot;</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">units</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Engineering units of the value&quot;</span><span class="p">)]</span>
+    <span class="p">]</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">PerObjectHint</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The &#39;interesting&#39; data keys for this device.&quot;&quot;&quot;</span>
+
+    <span class="n">fields</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+            <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The &#39;interesting&#39; data keys for this device.&quot;</span><span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">Configuration</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The actual measurement data&quot;</span><span class="p">)]</span>
+    <span class="p">]</span>
+    <span class="n">data_keys</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;This describes the data stored alongside it in this &quot;</span>
+                <span class="s2">&quot;configuration object.&quot;</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">timestamps</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+            <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The timestamps of the individual measurement data&quot;</span><span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+
+
+<span class="n">EVENT_DESCRIPTOR_EXTRA_SCHEMA</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;patternProperties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;^([^./]+)$&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/DataType&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;definitions&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;DataType&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;DataType&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;patternProperties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;^([^./]+)$&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/DataType&quot;</span><span class="p">}},</span>
+            <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;DataKey&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">]},</span>
+                <span class="s2">&quot;precision&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">]},</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="nd">@add_extra_schema</span><span class="p">(</span><span class="n">EVENT_DESCRIPTOR_EXTRA_SCHEMA</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">EventDescriptor</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Document to describe the data captured in the associated event</span>
+<span class="sd">    documents&quot;&quot;&quot;</span>
+
+    <span class="n">configuration</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Configuration</span><span class="p">],</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Readings of configurational fields necessary for &quot;</span>
+                <span class="s2">&quot;interpreting data in the Events.&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">data_keys</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;This describes the data in the Event Documents.&quot;</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="s2">&quot;data_keys&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">hints</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">PerObjectHint</span><span class="p">]</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="nb">str</span><span class="p">,</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A human-friendly name for this data stream, such as &quot;</span>
+                <span class="s2">&quot;&#39;primary&#39; or &#39;baseline&#39;.&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">object_keys</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Maps a Device/Signal name to the names of the entries &quot;</span>
+                <span class="s2">&quot;it produces in data_keys.&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">run_start</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Globally unique ID of this run&#39;s &#39;start&#39; document.&quot;</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">float</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Creation time of the document as unix epoch time.&quot;</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">uid</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Globally unique ID for this event descriptor.&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;uid&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Debugging and Logging &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="RunEngine API Documentation" href="run_engine_api.html" />
+    <link rel="prev" title="Multi-Run Plans" href="multi_run_plans.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Debugging and Logging</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#useful-snippets">Useful Snippets</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#log-warnings">Log warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#maximum-verbosity">Maximum verbosity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#log-to-a-file">Log to a file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#bluesky-s-logging-related-api">Bluesky’s Logging-Related API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#logger-names">Logger Names</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#formatter">Formatter</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bluesky.log.LogFormatter"><code class="docutils literal notranslate"><span class="pre">LogFormatter</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#global-handler">Global Handler</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bluesky.log.config_bluesky_logging"><code class="docutils literal notranslate"><span class="pre">config_bluesky_logging()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bluesky.log.get_handler"><code class="docutils literal notranslate"><span class="pre">get_handler()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-example">Advanced Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Debugging and Logging</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/debugging.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="debugging-and-logging">
+<h1>Debugging and Logging<a class="headerlink" href="#debugging-and-logging" title="Link to this heading">¶</a></h1>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.6.0: </span>Bluesky’s use of Python’s logging framework has been completely reworked to
+follow Python’s documented best practices for libraries.</p>
+</div>
+<p>Bluesky uses Python’s logging framework, which enables sophisticated log
+management. For common simple cases, including viewing logs in the terminal or
+writing them to a file, the next section illustrates streamlined,
+copy/paste-able examples. Users who are familiar with that framework or who
+need to route logs to multiple destinations may wish to skip ahead to
+<a class="reference internal" href="#logger-api"><span class="std std-ref">Bluesky’s Logging-Related API</span></a>.</p>
+<section id="useful-snippets">
+<h2>Useful Snippets<a class="headerlink" href="#useful-snippets" title="Link to this heading">¶</a></h2>
+<section id="log-warnings">
+<h3>Log warnings<a class="headerlink" href="#log-warnings" title="Link to this heading">¶</a></h3>
+<p>This is the recommended standard setup.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.log</span> <span class="kn">import</span> <span class="n">config_bluesky_logging</span>
+<span class="n">config_bluesky_logging</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>It will display <code class="docutils literal notranslate"><span class="pre">'bluesky'</span></code> log records of <code class="docutils literal notranslate"><span class="pre">WARNING</span></code> level or higher in the
+terminal (standard out) with a format tailored to bluesky.</p>
+</section>
+<section id="maximum-verbosity">
+<h3>Maximum verbosity<a class="headerlink" href="#maximum-verbosity" title="Link to this heading">¶</a></h3>
+<p>If the RunEngine is “hanging,” running slowly, or repeatedly encountering an
+error, it is useful to know exactly where in the plan the problem is occurring.
+To follow the RunEngine’s progress through the plan, crank up the verbosity of
+the logging.</p>
+<p>This will display each message from the plan just before the RunEngine
+processes it, giving a clear indication of when plan execution is stuck.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.log</span> <span class="kn">import</span> <span class="n">config_bluesky_logging</span>
+<span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="log-to-a-file">
+<h3>Log to a file<a class="headerlink" href="#log-to-a-file" title="Link to this heading">¶</a></h3>
+<p>This will direct all log messages to a file instead of the terminal (standard
+out).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.log</span> <span class="kn">import</span> <span class="n">config_bluesky_logging</span>
+<span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;/tmp/bluesky.log&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>We strongly recommend setting levels on <em>handlers</em> not on <em>loggers</em>.
+In previous versions of bluesky, we recommended adjusting the level on the
+<em>logger</em>, as in <code class="docutils literal notranslate"><span class="pre">RE.log.setLevel('DEBUG')</span></code>. We now recommended
+that you <em>avoid</em> setting levels on loggers because it would affect all
+handlers downstream, potentially inhibiting some other part of the program
+from collecting the records it wants to collect.</p>
+</div>
+</section>
+</section>
+<section id="bluesky-s-logging-related-api">
+<span id="logger-api"></span><h2>Bluesky’s Logging-Related API<a class="headerlink" href="#bluesky-s-logging-related-api" title="Link to this heading">¶</a></h2>
+<section id="logger-names">
+<h3>Logger Names<a class="headerlink" href="#logger-names" title="Link to this heading">¶</a></h3>
+<p>Here are the primary loggers used by bluesky.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'bluesky'</span></code> — the logger to which all bluesky log records propagate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'bluesky.emit_document'</span></code> — A log record is emitted whenever a Document
+is emitted. The log record does not contain the full content of the
+Document.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'bluesky.RE'</span></code> — Records from a RunEngine. INFO-level notes state
+changes. DEBUG-level notes when each message from a plan is about to be
+processed and when a status object has completed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'bluesky.RE.msg</span></code> — A log record is emitted when each
+<a class="reference internal" href="generated/bluesky.utils.Msg.html#bluesky.utils.Msg" title="bluesky.utils.Msg"><code class="xref py py-class docutils literal notranslate"><span class="pre">Msg</span></code></a> is about to be processed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'bluesky.RE.state</span></code> — A log record is emitted when the RunEngine’s state
+changes.</p></li>
+</ul>
+<p>There are also some module-level loggers for specific features.</p>
+</section>
+<section id="formatter">
+<h3>Formatter<a class="headerlink" href="#formatter" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="bluesky.log.LogFormatter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.log.</span></span><span class="sig-name descname"><span class="pre">LogFormatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'%(color)s[%(levelname)1.1s</span> <span class="pre">%(asctime)s</span> <span class="pre">%(module)s:%(lineno)d]%(end_color)s</span> <span class="pre">%(message)s'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datefmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'%y%m%d</span> <span class="pre">%H:%M:%S'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'%'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{10:</span> <span class="pre">4,</span> <span class="pre">20:</span> <span class="pre">2,</span> <span class="pre">30:</span> <span class="pre">3,</span> <span class="pre">40:</span> <span class="pre">1}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/log.html#LogFormatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.log.LogFormatter" title="Link to this definition">¶</a></dt>
+<dd><p>Log formatter for bluesky records.</p>
+<p>Adapted from the log formatter used in Tornado.
+Key features of this formatter are:</p>
+<ul class="simple">
+<li><p>Color support when logging to a terminal that supports it.</p></li>
+<li><p>Timestamps on every log line.</p></li>
+<li><p>Includes extra record attributes (old_state, new_state, msg_command,
+doc_name, doc_uid) when present.</p></li>
+</ul>
+</dd></dl>
+
+</section>
+<section id="global-handler">
+<h3>Global Handler<a class="headerlink" href="#global-handler" title="Link to this heading">¶</a></h3>
+<p>Following Python’s recommendation, bluesky does not install any handlers at
+import time, but it provides a function to set up a basic useful configuration
+in one line, similar to Python’s <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.basicConfig" title="(in Python v3.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">logging.basicConfig()</span></code></a> but with some
+additional options—and scoped to the <code class="docutils literal notranslate"><span class="pre">'bluesky'</span></code> logger with bluesky’s
+<a class="reference internal" href="#bluesky.log.LogFormatter" title="bluesky.log.LogFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">bluesky.log.LogFormatter</span></code></a>. It streamlines common use cases without
+interfering with more sophisticated use cases.</p>
+<p>We recommend that facilities using bluesky leave this function for users and
+configure any standardized, facility-managed logging handlers separately, as
+described in the next section.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="bluesky.log.config_bluesky_logging">
+<span class="sig-prename descclassname"><span class="pre">bluesky.log.</span></span><span class="sig-name descname"><span class="pre">config_bluesky_logging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file=&lt;colorama.ansitowin32.StreamWrapper</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datefmt='%H:%M:%S'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level='WARNING'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/log.html#config_bluesky_logging"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.log.config_bluesky_logging" title="Link to this definition">¶</a></dt>
+<dd><p>Set a new handler on the <code class="docutils literal notranslate"><span class="pre">logging.getLogger('bluesky')</span></code> logger.</p>
+<p>If this is called more than once, the handler from the previous invocation
+is removed (if still present) and replaced.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>file</strong><span class="classifier">object with <code class="docutils literal notranslate"><span class="pre">write</span></code> method or filename string</span></dt><dd><p>Default is <code class="docutils literal notranslate"><span class="pre">sys.stdout</span></code>.</p>
+</dd>
+<dt><strong>datefmt</strong><span class="classifier">string</span></dt><dd><p>Date format. Default is <code class="docutils literal notranslate"><span class="pre">'%H:%M:%S'</span></code>.</p>
+</dd>
+<dt><strong>color</strong><span class="classifier">boolean</span></dt><dd><p>Use ANSI color codes. True by default.</p>
+</dd>
+<dt><strong>level</strong><span class="classifier">str or int</span></dt><dd><p>Python logging level, given as string or corresponding integer.
+Default is ‘WARNING’.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>handler</strong><span class="classifier">logging.Handler</span></dt><dd><p>The handler, which has already been added to the ‘bluesky’ logger.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Log to a file.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;/tmp/what_is_happening.txt&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Include the date along with the time. (The log messages will always include
+microseconds, which are configured separately, not as part of ‘datefmt’.)</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Turn off ANSI color codes.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Increase verbosity: show level INFO or higher.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;INFO&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bluesky.log.get_handler">
+<span class="sig-prename descclassname"><span class="pre">bluesky.log.</span></span><span class="sig-name descname"><span class="pre">get_handler</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/log.html#get_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.log.get_handler" title="Link to this definition">¶</a></dt>
+<dd><p>Return the handler configured by the most recent call to <a class="reference internal" href="#bluesky.log.config_bluesky_logging" title="bluesky.log.config_bluesky_logging"><code class="xref py py-func docutils literal notranslate"><span class="pre">config_bluesky_logging()</span></code></a>.</p>
+<p>If <a class="reference internal" href="#bluesky.log.config_bluesky_logging" title="bluesky.log.config_bluesky_logging"><code class="xref py py-func docutils literal notranslate"><span class="pre">config_bluesky_logging()</span></code></a> has not yet been called, this returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="advanced-example">
+<h2>Advanced Example<a class="headerlink" href="#advanced-example" title="Link to this heading">¶</a></h2>
+<p>The flow of log event information in loggers and handlers is illustrated in the
+following diagram:</p>
+<img alt="https://docs.python.org/3/_images/logging_flow.png" src="https://docs.python.org/3/_images/logging_flow.png" />
+<p>For further reference, see the Python 3 logging howto:
+<a class="reference external" href="https://docs.python.org/3/howto/logging.html#logging-flow">https://docs.python.org/3/howto/logging.html#logging-flow</a></p>
+<p>As an illustrative example, we will set up two handlers using the Python
+logging framework directly, ignoring bluesky’s convenience function.</p>
+<p>Suppose we set up a handler aimed at a file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="n">file_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">&#39;bluesky.log&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And another aimed at <a class="reference external" href="https://www.elastic.co/products/logstash">Logstash</a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logstash</span>  <span class="c1"># requires python-logstash package</span>
+<span class="n">logstash_handler</span> <span class="o">=</span> <span class="n">logstash</span><span class="o">.</span><span class="n">TCPLogstashHandler</span><span class="p">(</span><span class="o">&lt;</span><span class="n">host</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">port</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can attach the handlers to the bluesky logger, to which all log records
+created by bluesky propagate:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;bluesky&#39;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logstash_handler</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">file_filter</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can set the verbosity of each handler. Suppose want maximum verbosity in the
+file but only medium verbosity in logstash.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logstash_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">&#39;INFO&#39;</span><span class="p">)</span>
+<span class="n">file_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, ensure that “effective level” of <code class="docutils literal notranslate"><span class="pre">logger</span></code> is at least as verbose as
+the most verbose handler—in this case, <code class="docutils literal notranslate"><span class="pre">'DEBUG'</span></code>. By default, at import,
+its level is not set</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="n">logging</span><span class="o">.</span><span class="n">getLevelName</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
+
+<span class="gp">In [2]: </span><span class="s1">&#39;NOTSET&#39;</span>
+</pre></div>
+</div>
+<p>and so it inherits the level of Python’s default
+“handler of last resort,” <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.lastResort" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logging.lastResort</span></code></a>, which is <code class="docutils literal notranslate"><span class="pre">'WARNING'</span></code>.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="n">logging</span><span class="o">.</span><span class="n">getLevelName</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">())</span>
+
+<span class="gp">In [4]: </span><span class="s1">&#39;WARNING&#39;</span>
+</pre></div>
+</div>
+<p>In this case we should set it to <code class="docutils literal notranslate"><span class="pre">'DEBUG'</span></code>, to match the most verbose level
+of the handler we have added.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This makes DEBUG-level records <em>available</em> to all handlers. Our logstash
+handler, set to <code class="docutils literal notranslate"><span class="pre">'INFO'</span></code>, will filter out DEBUG-level records.</p>
+<p>To globally disable the generation of any log records at or below a certain
+verbosity, which may be helpful for optimizing performance, Python provides
+<a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.disable" title="(in Python v3.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">logging.disable()</span></code></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="multi_run_plans.html" class="btn btn-neutral float-left" title="Multi-Run Plans" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="run_engine_api.html" class="btn btn-neutral float-right" title="RunEngine API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

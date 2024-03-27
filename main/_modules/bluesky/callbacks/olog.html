@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bluesky.callbacks.olog &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">bluesky.callbacks.olog</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bluesky.callbacks.olog</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pformat</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">CallbackBase</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">TEMPLATES</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">TEMPLATES</span><span class="p">[</span><span class="s2">&quot;long&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">{{- start.plan_name }} [&#39;{{ start.uid[:6] }}&#39;] (scan num: {{ start.scan_id }})</span>
+
+<span class="s2">Scan Plan</span>
+<span class="s2">---------</span>
+<span class="s2">{{ start.plan_name }}</span>
+<span class="s2">{</span><span class="si">% i</span><span class="s2">f &#39;plan_args&#39; in start %}</span>
+<span class="s2">    {</span><span class="si">%- f</span><span class="s2">or k, v in start.plan_args | dictsort %}</span>
+<span class="s2">        {{ k }}: {{ v }}</span>
+<span class="s2">    {</span><span class="si">%-  e</span><span class="s2">ndfor %}</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">ndif %}</span>
+
+<span class="s2">{</span><span class="si">% i</span><span class="s2">f &#39;signature&#39; in start -%}</span>
+<span class="s2">Call:</span>
+<span class="s2">    {{ start.signature }}</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">Metadata</span>
+<span class="s2">--------</span>
+<span class="s2">{</span><span class="si">% f</span><span class="s2">or k, v in start.items() -%}</span>
+<span class="s2">{</span><span class="si">%- i</span><span class="s2">f k not in [&#39;plan_name&#39;, &#39;plan_args&#39;] -%}{{ k }} : {{ v }}</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">ndif -%}</span>
+<span class="s2">{</span><span class="si">%- e</span><span class="s2">ndfor -%}&quot;&quot;&quot;</span>
+
+<span class="n">TEMPLATES</span><span class="p">[</span><span class="s2">&quot;desc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">{{- start.plan_name }} [&#39;{{ start.uid[:6] }}&#39;] (scan num: {{ start.scan_id }})&quot;&quot;&quot;</span>
+
+<span class="n">TEMPLATES</span><span class="p">[</span><span class="s2">&quot;call&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;RE({{ start.plan_name }}(</span>
+<span class="s2">{</span><span class="si">%- f</span><span class="s2">or k, v in start.plan_args.items() %}{</span><span class="si">%- i</span><span class="s2">f not loop.first %}   {</span><span class="si">% e</span><span class="s2">ndif %}{{ k }}={{ v }}</span>
+<span class="s2">{</span><span class="si">%- i</span><span class="s2">f not loop.last %},</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">ndif %}{</span><span class="si">% e</span><span class="s2">ndfor %}))</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="logbook_cb_factory">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.olog.logbook_cb_factory">[docs]</a>
+<span class="k">def</span> <span class="nf">logbook_cb_factory</span><span class="p">(</span>
+    <span class="n">logbook_func</span><span class="p">,</span> <span class="n">desc_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">long_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">desc_dispatch</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">long_dispatch</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a logbook run_start callback</span>
+
+<span class="sd">    The returned function is suitable for registering as</span>
+<span class="sd">    a &#39;start&#39; callback on the the BlueSky run engine.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    logbook_func : callable</span>
+<span class="sd">        The required signature should match the API ``SimpleOlogClient.log``.</span>
+<span class="sd">        It is:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            logbook_func(text=None, logbooks=None, tags=None,</span>
+<span class="sd">                         properties=None, attachments=None, verify=True,</span>
+<span class="sd">                         ensure=False)</span>
+
+<span class="sd">    desc_template : str, optional</span>
+<span class="sd">        A jinja2 template to be used for the description line in olog.  This is</span>
+<span class="sd">        the default used if the plan_name does not map to a more specific one.</span>
+
+<span class="sd">    long_template : str, optional</span>
+<span class="sd">        A jinja2 template to be used for the attachment in olog.  This is</span>
+<span class="sd">        the default used if the plan_name does not map to a more specific one.</span>
+
+<span class="sd">    desc_dispatch, long_dispatch : mapping, optional</span>
+<span class="sd">        Mappings between &#39;plan_name&#39; to jinja2 templates to use for the</span>
+<span class="sd">        description and attachments respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">jinja2</span>
+
+    <span class="n">env</span> <span class="o">=</span> <span class="n">jinja2</span><span class="o">.</span><span class="n">Environment</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">long_template</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">long_template</span> <span class="o">=</span> <span class="n">TEMPLATES</span><span class="p">[</span><span class="s2">&quot;long&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">desc_template</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">desc_template</span> <span class="o">=</span> <span class="n">TEMPLATES</span><span class="p">[</span><span class="s2">&quot;desc&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">desc_dispatch</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">desc_dispatch</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">long_dispatch</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">long_dispatch</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># It seems that the olog only has one text field, which it calls</span>
+    <span class="c1"># `text` on the python side and &#39;description&#39; on the olog side.</span>
+    <span class="c1"># There are some CSS applications that try to shove the entire</span>
+    <span class="c1"># thing into a single line.  We work around this by doing two</span>
+    <span class="c1"># strings, a long one which will get put in a as an attachment</span>
+    <span class="c1"># and a short one to go in as the &#39;text&#39; which will be used as the</span>
+    <span class="c1"># description</span>
+    <span class="n">long_msg</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">long_template</span><span class="p">)</span>
+    <span class="n">desc_msg</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">desc_template</span><span class="p">)</span>
+
+    <span class="n">desc_dispatch</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">desc_msg</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">desc_dispatch</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+    <span class="n">long_dispatch</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">long_msg</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">long_dispatch</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+
+    <span class="k">def</span> <span class="nf">lbcb</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="c1"># This only applies to &#39;start&#39; Documents.</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;start&quot;</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">plan_name</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;plan_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="n">long_dispatch</span><span class="p">[</span><span class="n">plan_name</span><span class="p">]</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="n">desc_dispatch</span><span class="p">[</span><span class="n">plan_name</span><span class="p">]</span>
+        <span class="n">atch</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">doc</span><span class="p">))</span>
+        <span class="c1"># monkey-patch a &#39;name&#39; attribute onto StringIO</span>
+        <span class="n">atch</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;long_description.txt&quot;</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="n">desc</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+        <span class="n">logbook_func</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">attachments</span><span class="o">=</span><span class="p">[</span><span class="n">atch</span><span class="p">],</span> <span class="n">ensure</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">lbcb</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">call_str</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">call_template</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a start document generate an evalable call scring</span>
+
+<span class="sd">    The default template assumes that `plan_args` and `plan_name`</span>
+<span class="sd">    are at the top level of the document.</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    start : dict</span>
+<span class="sd">        A document which follows the runstart schema</span>
+
+<span class="sd">    call_template : str, optional</span>
+<span class="sd">        A jinja2 template rendered with `cr.render(start=start)`</span>
+
+<span class="sd">        If not provided defaults to `CALL_TEMPLATE`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">jinja2</span>
+
+    <span class="n">env</span> <span class="o">=</span> <span class="n">jinja2</span><span class="o">.</span><span class="n">Environment</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">call_template</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">call_template</span> <span class="o">=</span> <span class="n">TEMPLATES</span><span class="p">[</span><span class="s2">&quot;call&quot;</span><span class="p">]</span>
+    <span class="n">call_renderer</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">call_template</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">call_renderer</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">OlogCallback</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Example callback to customize the logbook.</span>
+
+<span class="sd">    This callback publishes the most recent IPython command (which of course</span>
+<span class="sd">    is not guaranteed to be the one that initiated the run in question) and</span>
+<span class="sd">    the full RunStart Document.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    # add this callback to the run engine</span>
+<span class="sd">    &gt;&gt;&gt; gs.RE.subscribe(OlogCallback(), &#39;start&#39;)</span>
+<span class="sd">    # turn off the default logger</span>
+<span class="sd">    &gt;&gt;&gt; gs.RE.logbook = None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logbook</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logbook</span> <span class="o">=</span> <span class="n">logbook</span>
+        <span class="kn">from</span> <span class="nn">pyOlog</span> <span class="kn">import</span> <span class="n">SimpleOlogClient</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SimpleOlogClient</span><span class="p">()</span>
+        <span class="c1"># Check at init time we are in an IPython session.</span>
+        <span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">get_ipython</span>  <span class="c1"># noqa: F401</span>
+
+    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">get_ipython</span>
+
+        <span class="n">commands</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">history_manager</span><span class="o">.</span><span class="n">get_range</span><span class="p">())</span>
+        <span class="n">document_content</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="se">\n\n</span><span class="s2">&quot;</span> <span class="s2">&quot;RunStart Document</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="s2">&quot;-----------------</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>  <span class="c1"># noqa: UP031</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;scan_id&quot;</span><span class="p">],</span>
+            <span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+            <span class="n">pformat</span><span class="p">(</span><span class="n">doc</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">olog_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">document_content</span><span class="p">,</span> <span class="n">logbooks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logbook</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;client.log returned </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">olog_status</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

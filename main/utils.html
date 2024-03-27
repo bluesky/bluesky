@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utility classes and functions &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="bluesky.utils.Msg" href="generated/bluesky.utils.Msg.html" />
+    <link rel="prev" title="bluesky.bundlers.RunBundler.record_interruption" href="generated/bluesky.bundlers.RunBundler.record_interruption.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Utility classes and functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#msg">Msg</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.Msg.html">bluesky.utils.Msg</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#persistent-metadata">Persistent metadata</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.PersistentDict.html">bluesky.utils.PersistentDict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.PersistentDict.directory.html">bluesky.utils.PersistentDict.directory</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#internal-exceptions">Internal exceptions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.RunEngineControlException.html">bluesky.utils.RunEngineControlException</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.RequestAbort.html">bluesky.utils.RequestAbort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.RequestStop.html">bluesky.utils.RequestStop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.RunEngineInterrupted.html">bluesky.utils.RunEngineInterrupted</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.NoReplayAllowed.html">bluesky.utils.NoReplayAllowed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.IllegalMessageSequence.html">bluesky.utils.IllegalMessageSequence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.FailedPause.html">bluesky.utils.FailedPause</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.FailedStatus.html">bluesky.utils.FailedStatus</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.InvalidCommand.html">bluesky.utils.InvalidCommand</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.PlanHalt.html">bluesky.utils.PlanHalt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.RampFail.html">bluesky.utils.RampFail</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#progress-bars">Progress bars</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.ProgressBar.html">bluesky.utils.ProgressBar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.ProgressBar.update.html">bluesky.utils.ProgressBar.update</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.ProgressBar.draw.html">bluesky.utils.ProgressBar.draw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.ProgressBar.clear.html">bluesky.utils.ProgressBar.clear</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.ProgressBarManager.html">bluesky.utils.ProgressBarManager</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#during-tasks">During tasks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.DuringTask.html">bluesky.utils.DuringTask</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.DuringTask.block.html">bluesky.utils.DuringTask.block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.utils.DefaultDuringTask.html">bluesky.utils.DefaultDuringTask</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Utility classes and functions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/utils.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-bluesky.utils">
+<span id="utility-classes-and-functions"></span><h1>Utility classes and functions<a class="headerlink" href="#module-bluesky.utils" title="Link to this heading">¶</a></h1>
+<section id="msg">
+<h2>Msg<a class="headerlink" href="#msg" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.Msg.html#bluesky.utils.Msg" title="bluesky.utils.Msg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Msg</span></code></a></p></td>
+<td><p>Namedtuple sub-class to encapsulate a message from the plan to the RE.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="persistent-metadata">
+<h2>Persistent metadata<a class="headerlink" href="#persistent-metadata" title="Link to this heading">¶</a></h2>
+<p>To maintain a peristent set of meta-data between Python sessions
+we include a dictionary duck-type based on <cite>zict.Func</cite>.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.PersistentDict.html#bluesky.utils.PersistentDict" title="bluesky.utils.PersistentDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PersistentDict</span></code></a></p></td>
+<td><p>A MutableMapping which syncs it contents to disk.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.PersistentDict.directory.html#bluesky.utils.PersistentDict.directory" title="bluesky.utils.PersistentDict.directory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PersistentDict.directory</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="internal-exceptions">
+<h2>Internal exceptions<a class="headerlink" href="#internal-exceptions" title="Link to this heading">¶</a></h2>
+<p>We define a number of <cite>Exception</cite> sub-classes for internal signaling.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.RunEngineControlException.html#bluesky.utils.RunEngineControlException" title="bluesky.utils.RunEngineControlException"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngineControlException</span></code></a></p></td>
+<td><p>Exception for signaling within the RunEngine.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.RequestAbort.html#bluesky.utils.RequestAbort" title="bluesky.utils.RequestAbort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RequestAbort</span></code></a></p></td>
+<td><p>Request that the current run be aborted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.RequestStop.html#bluesky.utils.RequestStop" title="bluesky.utils.RequestStop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RequestStop</span></code></a></p></td>
+<td><p>Request that the current run be stopped and marked successful.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.RunEngineInterrupted.html#bluesky.utils.RunEngineInterrupted" title="bluesky.utils.RunEngineInterrupted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngineInterrupted</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.NoReplayAllowed.html#bluesky.utils.NoReplayAllowed" title="bluesky.utils.NoReplayAllowed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NoReplayAllowed</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.IllegalMessageSequence.html#bluesky.utils.IllegalMessageSequence" title="bluesky.utils.IllegalMessageSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IllegalMessageSequence</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.FailedPause.html#bluesky.utils.FailedPause" title="bluesky.utils.FailedPause"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FailedPause</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.FailedStatus.html#bluesky.utils.FailedStatus" title="bluesky.utils.FailedStatus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FailedStatus</span></code></a></p></td>
+<td><p>Exception to be raised if a SatusBase object reports done but failed</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.InvalidCommand.html#bluesky.utils.InvalidCommand" title="bluesky.utils.InvalidCommand"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InvalidCommand</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.PlanHalt.html#bluesky.utils.PlanHalt" title="bluesky.utils.PlanHalt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlanHalt</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.RampFail.html#bluesky.utils.RampFail" title="bluesky.utils.RampFail"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RampFail</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="progress-bars">
+<h2>Progress bars<a class="headerlink" href="#progress-bars" title="Link to this heading">¶</a></h2>
+<p>These are used by the RunEngine to display progress bars and
+are the clients of the <code class="xref py py-obj docutils literal notranslate"><span class="pre">watch</span></code> API</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.ProgressBar.html#bluesky.utils.ProgressBar" title="bluesky.utils.ProgressBar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProgressBar</span></code></a></p></td>
+<td><p>Alias for backwards compatibility</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.ProgressBar.update.html#bluesky.utils.ProgressBar.update" title="bluesky.utils.ProgressBar.update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProgressBar.update</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.ProgressBar.draw.html#bluesky.utils.ProgressBar.draw" title="bluesky.utils.ProgressBar.draw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProgressBar.draw</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.ProgressBar.clear.html#bluesky.utils.ProgressBar.clear" title="bluesky.utils.ProgressBar.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProgressBar.clear</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.ProgressBarManager.html#bluesky.utils.ProgressBarManager" title="bluesky.utils.ProgressBarManager"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProgressBarManager</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="during-tasks">
+<h2>During tasks<a class="headerlink" href="#during-tasks" title="Link to this heading">¶</a></h2>
+<p>These objects encapsulate what the  RunEngine should do on its thread while
+waiting for the plan to complete in the background thread</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.DuringTask.html#bluesky.utils.DuringTask" title="bluesky.utils.DuringTask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DuringTask</span></code></a></p></td>
+<td><p>This class waits on the event (which fully blocks the thread).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.utils.DuringTask.block.html#bluesky.utils.DuringTask.block" title="bluesky.utils.DuringTask.block"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DuringTask.block</span></code></a></p></td>
+<td><p>Wait plan to finish.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.utils.DefaultDuringTask.html#bluesky.utils.DefaultDuringTask" title="bluesky.utils.DefaultDuringTask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DefaultDuringTask</span></code></a></p></td>
+<td><p>This class run the Qt main loop while waiting for the plan to finish.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="generated/bluesky.bundlers.RunBundler.record_interruption.html" class="btn btn-neutral float-left" title="bluesky.bundlers.RunBundler.record_interruption" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="generated/bluesky.utils.Msg.html" class="btn btn-neutral float-right" title="bluesky.utils.Msg" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

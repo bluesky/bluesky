@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Appendix &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How Bluesky Interfaces with Hardware" href="hardware.html" />
+    <link rel="prev" title="Hardware Interface Packages" href="hardware-interfaces.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#a-primer-on-yield-and-yield-from">A Primer on <code class="docutils literal notranslate"><span class="pre">yield</span></code> and <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code></a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Appendix</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/appendix.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="appendix">
+<h1>Appendix<a class="headerlink" href="#appendix" title="Link to this heading">¶</a></h1>
+<p>This section covers Python language features that may be new to some readers.
+They are used by bluesky but not <em>unique</em> Wherever possible, we to bluesky.</p>
+<section id="a-primer-on-yield-and-yield-from">
+<span id="yield-from-primer"></span><h2>A Primer on <code class="docutils literal notranslate"><span class="pre">yield</span></code> and <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code><a class="headerlink" href="#a-primer-on-yield-and-yield-from" title="Link to this heading">¶</a></h2>
+<p>This is a very brief primer on the Python syntax <code class="docutils literal notranslate"><span class="pre">yield</span></code> and <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>,
+a feature of the core language that we will use extensively.</p>
+<p>A Python <em>function</em> returns once:</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+<span class="gp">   ...: </span>    <span class="k">return</span> <span class="mi">1</span>
+<span class="gp">   ...: </span>
+
+<span class="gp">In [2]: </span><span class="n">f</span><span class="p">()</span>
+<span class="gh">Out[2]: </span><span class="go">1</span>
+</pre></div>
+</div>
+<p>A Python <em>generator</em> is like a function with multiple exit points. Calling a
+generator produces an <em>iterator</em> that yields one value at a time. After
+each <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement, its execution is suspended.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+<span class="gp">   ...: </span>    <span class="k">yield</span> <span class="mi">1</span>
+<span class="gp">   ...: </span>    <span class="k">yield</span> <span class="mi">2</span>
+<span class="gp">   ...: </span>
+</pre></div>
+</div>
+<p>We can exhaust the generator (i.e., get all its values) by calling <code class="docutils literal notranslate"><span class="pre">list()</span></code>.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="nb">list</span><span class="p">(</span><span class="n">f</span><span class="p">())</span>
+<span class="gh">Out[4]: </span><span class="go">[1, 2]</span>
+</pre></div>
+</div>
+<p>We can get one value at a time by calling <code class="docutils literal notranslate"><span class="pre">next()</span></code></p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="n">it</span> <span class="o">=</span> <span class="n">f</span><span class="p">()</span>
+
+<span class="gp">In [6]: </span><span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+<span class="gh">Out[6]: </span><span class="go">1</span>
+
+<span class="gp">In [7]: </span><span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+<span class="gh">Out[7]: </span><span class="go">2</span>
+</pre></div>
+</div>
+<p>or by looping through the values.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [8]: </span><span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">f</span><span class="p">():</span>
+<span class="gp">   ...: </span>    <span class="nb">print</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="gp">   ...: </span>
+<span class="go">1</span>
+<span class="go">2</span>
+</pre></div>
+</div>
+<p>To examine what is happening when, we can add prints.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [9]: </span><span class="k">def</span> <span class="nf">verbose_f</span><span class="p">():</span>
+<span class="gp">   ...: </span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;before 1&quot;</span><span class="p">)</span>
+<span class="gp">   ...: </span>    <span class="k">yield</span> <span class="mi">1</span>
+<span class="gp">   ...: </span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;before 2&quot;</span><span class="p">)</span>
+<span class="gp">   ...: </span>    <span class="k">yield</span> <span class="mi">2</span>
+<span class="gp">   ...: </span>
+</pre></div>
+</div>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [10]: </span><span class="n">it</span> <span class="o">=</span> <span class="n">verbose_f</span><span class="p">()</span>
+
+<span class="gp">In [11]: </span><span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+<span class="go">before 1</span>
+<span class="gh">Out[11]: </span><span class="go">1</span>
+
+<span class="gp">In [12]: </span><span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+<span class="go">before 2</span>
+<span class="gh">Out[12]: </span><span class="go">2</span>
+</pre></div>
+</div>
+<p>Notice that execution is suspended after the first yield statement. The
+second <code class="docutils literal notranslate"><span class="pre">print</span></code> is not run until we resume execution by requesting a second
+value. This is a useful feature of generators: they can express “lazy”
+execution.</p>
+<p>Generators can delegate to other generators using <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>. This is
+syntax we commonly use to combine plans.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [13]: </span><span class="k">def</span> <span class="nf">double_f</span><span class="p">():</span>
+<span class="gp">   ....: </span>    <span class="k">yield from</span> <span class="n">f</span><span class="p">()</span>
+<span class="gp">   ....: </span>    <span class="k">yield from</span> <span class="n">f</span><span class="p">()</span>
+<span class="gp">   ....: </span>
+</pre></div>
+</div>
+<p>The above is equivalent to:</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [14]: </span><span class="k">def</span> <span class="nf">double_f</span><span class="p">():</span>
+<span class="gp">   ....: </span>    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">f</span><span class="p">():</span>
+<span class="gp">   ....: </span>        <span class="k">yield</span> <span class="n">val</span>
+<span class="gp">   ....: </span>    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">f</span><span class="p">():</span>
+<span class="gp">   ....: </span>        <span class="k">yield</span> <span class="n">val</span>
+<span class="gp">   ....: </span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> syntax is just more succinct.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [15]: </span><span class="nb">list</span><span class="p">(</span><span class="n">double_f</span><span class="p">())</span>
+<span class="gh">Out[15]: </span><span class="go">[1, 2, 1, 2]</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hardware-interfaces.html" class="btn btn-neutral float-left" title="Hardware Interface Packages" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hardware.html" class="btn btn-neutral float-right" title="How Bluesky Interfaces with Hardware" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

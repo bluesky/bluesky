@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message Protocol &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The RunEngine run loop" href="run_engine.html" />
+    <link rel="prev" title="How Bluesky Interfaces with Hardware" href="hardware.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Message Protocol</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commands">Commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create">create</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#save">save</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read">read</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#null">null</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#set">set</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stage-and-unstage">stage and unstage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#trigger">trigger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sleep">sleep</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wait">wait</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wait-for">wait_for</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#input">input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checkpoint">checkpoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clear-checkpoint">clear_checkpoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rewindable">rewindable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pause">pause</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kickoff">kickoff</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#collect">collect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#complete">complete</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configure">configure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#subscribe">subscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unsubscribe">unsubscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open-run">open_run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#close-run">close_run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#drop">drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#monitor">monitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unmonitor">unmonitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stop">stop</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#registering-custom-commands">Registering Custom Commands</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Message Protocol</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/msg.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="message-protocol">
+<span id="msg"></span><h1>Message Protocol<a class="headerlink" href="#message-protocol" title="Link to this heading">¶</a></h1>
+<p><em>Note: This is a technical document not optimized for user readability.</em></p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>A <em>plan</em> is a sequence of atomic operations describing a data acquisition
+procedure. Each operation is represented by a <code class="docutils literal notranslate"><span class="pre">bluesky.Msg</span></code> (“message”)
+object. A plan may be implemented as a simple list of messages:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">Msg</span>
+
+<span class="c1"># (Behold, the most boring data acquisition ever conducted!)</span>
+<span class="n">plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>or as a generator the yields messages one at time:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plan</span><span class="p">():</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above examples are equivalent. For more sophisticated uses, the second one
+is more powerful, as it can incorporate loops, conditionals, adaptive logic —
+generally any Python code.</p>
+<p>But, crucially, the plan code itself must not communicate with hardware.
+(You should never put <code class="docutils literal notranslate"><span class="pre">epics.caput(...)</span></code> in a plan!) Rather, each operation
+is represented by a <code class="docutils literal notranslate"><span class="pre">Msg</span></code> object that <em>describes</em> what should be done. This
+makes it safe to introspect the plan for error-checking, simulation, and
+visualization purposes — without touching real hardware. For example, we
+could print each message in the plan like so:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)]</span>
+
+<span class="c1"># a very, very simple &#39;plan simulator&#39;</span>
+<span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A <code class="docutils literal notranslate"><span class="pre">Msg</span></code> has five members, accessible as attributes:</p>
+<ul class="simple">
+<li><p>command</p></li>
+<li><p>obj</p></li>
+<li><p>args</p></li>
+<li><p>kwargs</p></li>
+<li><p>run</p></li>
+</ul>
+<p>where <code class="docutils literal notranslate"><span class="pre">command</span></code> must be one of a controlled list of commands, <code class="docutils literal notranslate"><span class="pre">obj</span></code> is the
+object (i.e. Device) to apply the command to, if applicable, <code class="docutils literal notranslate"><span class="pre">args</span></code> and
+<code class="docutils literal notranslate"><span class="pre">kwargs</span></code> are arguments to the command and <code class="docutils literal notranslate"><span class="pre">run</span></code> is a user-defined run key.
+The run key is used by Run Engine to associate each message with one of the open runs,
+manage the state of each open run, and route run data to a separate set of callbacks
+(see documentation on Multi-Run Plans).</p>
+<p>To execute the plan, the <a class="reference internal" href="run_engine.html"><span class="doc">RunEngine</span></a> consumes it, one message at a time.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">very_simple_run_engine</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
+        <span class="c1"># Process the msg.</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> has a registry which is used to dispatch the <code class="docutils literal notranslate"><span class="pre">Msg</span></code> objects
+based on the value of the <code class="docutils literal notranslate"><span class="pre">Msg.command</span></code>. For example, if the RunEngine
+receives the message <code class="docutils literal notranslate"><span class="pre">Msg('set',</span> <span class="pre">motor,</span> <span class="pre">5)</span></code>, the RunEngine will:</p>
+<ol class="arabic simple">
+<li><p>Identify that the command for this message is <code class="docutils literal notranslate"><span class="pre">'set'</span></code>.</p></li>
+<li><p>Look up <code class="docutils literal notranslate"><span class="pre">'set'</span></code> in its command registry and find that it is mapped to
+<code class="docutils literal notranslate"><span class="pre">RunEngine._set</span></code>.</p></li>
+<li><p>Pass <code class="docutils literal notranslate"><span class="pre">Msg('set',</span> <span class="pre">motor,</span> <span class="pre">5)</span></code> to its <code class="docutils literal notranslate"><span class="pre">_set</span></code> method.</p></li>
+<li><p>Inside <code class="docutils literal notranslate"><span class="pre">_set</span></code>, call <code class="docutils literal notranslate"><span class="pre">motor.set(5)</span></code>. (This is where the actual
+communication with hardware occurs.)</p></li>
+<li><p>Update some internal caches that will be useful later. For example, it will
+keep track of that fact that <code class="docutils literal notranslate"><span class="pre">motor</span></code> may be in motion so that it can stop
+it safely if an error occurs. This illustrates another important reason that
+plans must always yield messages to interact with hardware and absolutely
+never communicate with hardware directly. Calling <code class="docutils literal notranslate"><span class="pre">epics.caput</span></code> inside a
+plan prevents the RunEngine from knowing about it and thus circumvents
+its facilities for putting devices in a safe state in the event of an
+unexpected exit or error.</p></li>
+</ol>
+<p>A standard set of commands are registered by default.  By convention, a <code class="docutils literal notranslate"><span class="pre">Msg</span></code>
+with the command <code class="docutils literal notranslate"><span class="pre">'name'</span></code> is mapped to a coroutine method on the RunEngine
+named <code class="docutils literal notranslate"><span class="pre">_name</span></code>, as in <code class="docutils literal notranslate"><span class="pre">'set'</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">RunEngine._set</span></code> in the example above.
+Users can register their own coroutines to add custom commands, though this is
+very rarely necessary.</p>
+<p>Some commands do not involve communication with hardware. For example,
+<code class="docutils literal notranslate"><span class="pre">Msg('sleep',</span> <span class="pre">None,</span> <span class="pre">5)</span></code> causes the RunEngine to sleep for 5 seconds. <code class="docutils literal notranslate"><span class="pre">None</span></code>
+is a placeholder for the “object” (Device) which is not applicable for a
+<code class="docutils literal notranslate"><span class="pre">'sleep'</span></code> command. Just as plans should never communicate with hardware
+directly, they should also never employ long blocking calls like
+<code class="docutils literal notranslate"><span class="pre">time.sleep()</span></code>. Instead, the <code class="docutils literal notranslate"><span class="pre">'sleep'</span></code> command, mapped to
+<code class="docutils literal notranslate"><span class="pre">RunEngine._sleep</span></code>, integrates with the RunEngine’s event loop to sleep in a
+non-blocking way that allows for the RunEngine to stay responsive in the
+meantime — watching for user interruptions and possibility collecting data
+asynchronously in the background.</p>
+<p>Other commands are used to control metadata and I/O. For example,
+<code class="docutils literal notranslate"><span class="pre">Msg('open_run')</span></code> and <code class="docutils literal notranslate"><span class="pre">Msg('close_run')</span></code> delineate the scope of one run.
+Any keyword arguments passed to the <code class="docutils literal notranslate"><span class="pre">'open_run'</span></code> message are interpreted as
+metadata, encoded into the RunStart document.</p>
+<p>The following is a comprehensive overview of the built-in commands.</p>
+</section>
+<section id="commands">
+<span id="id1"></span><h2>Commands<a class="headerlink" href="#commands" title="Link to this heading">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This section of the documentation is incomplete.</p>
+</div>
+<p>These are the ‘built in’ commands, some of which are deeply tied to the
+state of the <cite>RunEngine</cite> instance.</p>
+<section id="create">
+<h3>create<a class="headerlink" href="#create" title="Link to this heading">¶</a></h3>
+<p>This command tells the run engine that it should start to collect the results
+of <code class="docutils literal notranslate"><span class="pre">read</span></code> to create an event.  If this is called twice without a <code class="docutils literal notranslate"><span class="pre">save</span></code> or
+<code class="docutils literal notranslate"><span class="pre">drop</span></code> between them it is an exception (as you can not have more than one
+open event going at a time).</p>
+<p>This relies very heavily on the internal state of the run engine and should not
+be overridden by the user.</p>
+<p>This call returns <cite>None</cite> back to the co-routine.</p>
+<p>This ignores all parts of the <cite>Msg</cite> except the command.</p>
+</section>
+<section id="save">
+<h3>save<a class="headerlink" href="#save" title="Link to this heading">¶</a></h3>
+<p>This is the pair to <code class="docutils literal notranslate"><span class="pre">create</span></code> which bundles and causes <code class="docutils literal notranslate"><span class="pre">Event</span></code> documents to
+be emitted.  This must be called after a <code class="docutils literal notranslate"><span class="pre">create</span></code> or a the scan will die and
+raise <cite>IllegalMessageSequence</cite>.</p>
+<p>This relies very heavily on the internal state of the run engine and should not
+be messed with.</p>
+<p>This call returns <cite>None</cite> back to the co-routine.</p>
+<p>This ignores all parts of the <cite>Msg</cite> except the command.</p>
+</section>
+<section id="read">
+<h3>read<a class="headerlink" href="#read" title="Link to this heading">¶</a></h3>
+<p>This causes <cite>read</cite> to be called on the <code class="docutils literal notranslate"><span class="pre">obj</span></code> in the message</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Anything that is read between a <code class="docutils literal notranslate"><span class="pre">create</span></code> and <code class="docutils literal notranslate"><span class="pre">save</span></code> will be bundled into
+a single event.</p>
+<p>This relies very heavily on the internal state of the run engine and should not
+be messed with.</p>
+<p>Returns the dictionary returned by <cite>read</cite> to the co-routine.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">args</span></code> and <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> parts of the message are passed to the <cite>read</cite>
+method.</p>
+</section>
+<section id="null">
+<h3>null<a class="headerlink" href="#null" title="Link to this heading">¶</a></h3>
+<p>This is a null message and is ignored by the run engine.  This exists to make
+the algebra work.</p>
+<p>Returns <cite>None</cite> to the co-routine.</p>
+<p>Ignores all values in the <cite>Msg</cite> except the command.</p>
+</section>
+<section id="set">
+<h3>set<a class="headerlink" href="#set" title="Link to this heading">¶</a></h3>
+<p>Tells a <code class="docutils literal notranslate"><span class="pre">Mover</span></code> object to move.  Currently this mimics the epics-like logic
+of immediate motion.</p>
+</section>
+<section id="stage-and-unstage">
+<h3>stage and unstage<a class="headerlink" href="#stage-and-unstage" title="Link to this heading">¶</a></h3>
+<p>Instruct the RunEngine to stage/unstage the object. This calls
+<code class="docutils literal notranslate"><span class="pre">obj.stage()</span></code>/<code class="docutils literal notranslate"><span class="pre">obj.unstage</span></code>.</p>
+<p>Expected message objects are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unstage&#39;</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which results in these calls:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">staged_devices</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="n">stage</span><span class="p">()</span>
+<span class="n">unstaged_devices</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="n">unstage</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">staged_devices</span></code>/<code class="docutils literal notranslate"><span class="pre">unstaged_devices</span></code> are a list of the
+<code class="docutils literal notranslate"><span class="pre">ophyd.Device</span></code> (s) that were (un)staged, not status objects.</p>
+<p>One may wonder why the return is a list of Devices as opposed to Status
+objects, such as in <code class="docutils literal notranslate"><span class="pre">set</span></code> and similar <code class="docutils literal notranslate"><span class="pre">Msg</span></code> s.
+This was debated for awhile. Operations performed during staging are supposed
+to involve twiddling configuration, and should happen fast. Staging should not
+involve lengthy set calls.</p>
+<p>Why a list of the objects staged? Staging a Device causes that Device’s
+component Devices (if any) to also be staged. All of these children are added
+to a list, along with [self], and returned by Device.stage(), so that the plan
+can keep track of what has been staged, like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">devices_staged</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Why would the plan want to know that? It needs to avoid accidentally trying to
+stage something twice, such as a staging a parent and then trying to also stage
+its child. It’s important to avoid that because staging something redundantly
+raises an error.</p>
+</section>
+<section id="trigger">
+<h3>trigger<a class="headerlink" href="#trigger" title="Link to this heading">¶</a></h3>
+<p>This will call the <code class="docutils literal notranslate"><span class="pre">obj.trigger</span></code> method and cache the returned status object
+and caches the returned status object.</p>
+</section>
+<section id="sleep">
+<h3>sleep<a class="headerlink" href="#sleep" title="Link to this heading">¶</a></h3>
+<p>Sleep the event loop.</p>
+</section>
+<section id="wait">
+<h3>wait<a class="headerlink" href="#wait" title="Link to this heading">¶</a></h3>
+<p>Block progress until every object that was triggered or set the keyword
+argument <cite>group=&lt;GROUP&gt;</cite> is done.</p>
+<p>Expected message object is:</p>
+<p>Msg(‘wait’, group=&lt;GROUP&gt;)</p>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;GROUP&gt;</span></code> is any hashable key.</p>
+</section>
+<section id="wait-for">
+<h3>wait_for<a class="headerlink" href="#wait-for" title="Link to this heading">¶</a></h3>
+<p>Instruct the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> to wait for this <code class="docutils literal notranslate"><span class="pre">asyncio.Future</span></code> object to be
+done. This allows for external arbitrary control of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>.
+Ex</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">asyncio.futures</span> <span class="kn">import</span> <span class="n">Future</span>
+<span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">()</span>
+<span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give false</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;wait_for&#39;</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
+<span class="c1"># this sets the future to done</span>
+<span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give True</span>
+</pre></div>
+</div>
+</section>
+<section id="input">
+<h3>input<a class="headerlink" href="#input" title="Link to this heading">¶</a></h3>
+<p>Process an input. Allows for user input during a run.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s1">&#39;&gt;&#39;</span><span class="p">)</span>  <span class="c1"># customize prompt</span>
+</pre></div>
+</div>
+</section>
+<section id="checkpoint">
+<h3>checkpoint<a class="headerlink" href="#checkpoint" title="Link to this heading">¶</a></h3>
+<p>Instruct the RunEngine to create a checkpoint so that we can rewind to this
+point if necessary.</p>
+</section>
+<section id="clear-checkpoint">
+<h3>clear_checkpoint<a class="headerlink" href="#clear-checkpoint" title="Link to this heading">¶</a></h3>
+<p>Clear a set checkpoint.</p>
+</section>
+<section id="rewindable">
+<h3>rewindable<a class="headerlink" href="#rewindable" title="Link to this heading">¶</a></h3>
+</section>
+<section id="pause">
+<h3>pause<a class="headerlink" href="#pause" title="Link to this heading">¶</a></h3>
+<p>Request the run engine to pause</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;pause&#39;</span><span class="p">,</span> <span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="kickoff">
+<h3>kickoff<a class="headerlink" href="#kickoff" title="Link to this heading">¶</a></h3>
+<p>Start a flyscan object.</p>
+</section>
+<section id="collect">
+<h3>collect<a class="headerlink" href="#collect" title="Link to this heading">¶</a></h3>
+<p>Collect data cached by a flyer and emit descriptor and event documents.
+This calls the <code class="docutils literal notranslate"><span class="pre">obj.collect()</span></code> method.</p>
+</section>
+<section id="complete">
+<h3>complete<a class="headerlink" href="#complete" title="Link to this heading">¶</a></h3>
+<p>Tell a flyer, ‘stop collecting, whenever you are ready’.</p>
+<p>This calls the method <code class="docutils literal notranslate"><span class="pre">obj.complete()</span></code> of the given object. The flyer returns
+a status object. Some flyers respond to this command by stopping collection and
+returning a finished status object immediately. Other flyers finish their given
+course and finish whenever they finish, irrespective of when this command is
+issued.</p>
+</section>
+<section id="configure">
+<h3>configure<a class="headerlink" href="#configure" title="Link to this heading">¶</a></h3>
+<p>Configure an object.</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;configure&#39;</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which results in this call:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">object</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="subscribe">
+<h3>subscribe<a class="headerlink" href="#subscribe" title="Link to this heading">¶</a></h3>
+<p>Add a subscription after the run has started.</p>
+<p>This, like subscriptions passed to __call__, will be removed at the
+end by the RunEngine.</p>
+<p>Expected message object is:</p>
+<blockquote>
+<div><p>Msg(‘subscribe’, None, callback_function, document_name)</p>
+</div></blockquote>
+<p>where <cite>document_name</cite> is one of:</p>
+<blockquote>
+<div><p>{‘start’, ‘descriptor’, ‘event’, ‘stop’, ‘all’}</p>
+</div></blockquote>
+<p>and <cite>callback_function</cite> is expected to have a signature of:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">f(name,</span> <span class="pre">document)</span></code></p>
+<p>where name is one of the <code class="docutils literal notranslate"><span class="pre">document_name</span></code> options and <code class="docutils literal notranslate"><span class="pre">document</span></code>
+is one of the document dictionaries in the event model.</p>
+</div></blockquote>
+<p>See the docstring of bluesky.run_engine.Dispatcher.subscribe() for more
+information.</p>
+</section>
+<section id="unsubscribe">
+<h3>unsubscribe<a class="headerlink" href="#unsubscribe" title="Link to this heading">¶</a></h3>
+<p>Remove a subscription during a call – useful for a multi-run call
+where subscriptions are wanted for some runs but not others.</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TOKEN</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">TOKEN</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">TOKEN</span></code> is the return value from <code class="docutils literal notranslate"><span class="pre">RunEngine._subscribe()</span></code></p>
+</section>
+<section id="open-run">
+<h3>open_run<a class="headerlink" href="#open-run" title="Link to this heading">¶</a></h3>
+<p>Instruct the RunEngine to start a new “run”</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> are any additional metadata that should go into the RunStart
+document</p>
+</section>
+<section id="close-run">
+<h3>close_run<a class="headerlink" href="#close-run" title="Link to this heading">¶</a></h3>
+<p>Instruct the RunEngine to write the RunStop document</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exit_status</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>if <em>exit_stats</em> and <em>reason</em> are not provided, use the values
+stashed on the RE.</p>
+</section>
+<section id="drop">
+<h3>drop<a class="headerlink" href="#drop" title="Link to this heading">¶</a></h3>
+<p>Drop a bundle of readings without emitting a completed Event document.</p>
+<p>This is a command that abandons previous <code class="docutils literal notranslate"><span class="pre">create</span></code> and <code class="docutils literal notranslate"><span class="pre">read</span></code> commands
+without emitting an event. This can be used to drop known bad events
+(e.g. no beam) and keep the event document stream clean. It is safe to start
+another <code class="docutils literal notranslate"><span class="pre">create</span></code>, <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">save</span></code> sequence after a <code class="docutils literal notranslate"><span class="pre">drop</span></code>.</p>
+<p>This must be called after a <code class="docutils literal notranslate"><span class="pre">create</span></code> or a the scan will die and raise
+<cite>IllegalMessageSequence</cite>.</p>
+<p>This call returns <cite>None</cite> back to the co-routine.</p>
+<p>This ignores all parts of the <cite>Msg</cite> except the command.</p>
+</section>
+<section id="monitor">
+<h3>monitor<a class="headerlink" href="#monitor" title="Link to this heading">¶</a></h3>
+<p>Monitor a signal. Emit event documents asynchronously.</p>
+<p>A descriptor document is emitted immediately. Then, a closure is
+defined that emits Event documents associated with that descriptor
+from a separate thread. This process is not related to the main
+bundling process (create/read/save).</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;monitor&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;monitor&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;event-stream-name&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where kwargs are passed through to <code class="docutils literal notranslate"><span class="pre">obj.subscribe()</span></code></p>
+</section>
+<section id="unmonitor">
+<h3>unmonitor<a class="headerlink" href="#unmonitor" title="Link to this heading">¶</a></h3>
+<p>Stop monitoring; i.e., remove the callback emitting event documents.</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unmonitor&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="stop">
+<h3>stop<a class="headerlink" href="#stop" title="Link to this heading">¶</a></h3>
+<p>Stop a device.</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;stop&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This amounts to calling <code class="docutils literal notranslate"><span class="pre">obj.stop()</span></code>.</p>
+</section>
+</section>
+<section id="registering-custom-commands">
+<h2>Registering Custom Commands<a class="headerlink" href="#registering-custom-commands" title="Link to this heading">¶</a></h2>
+<p>The RunEngine can be taught any new commands. They can be registered using the
+following methods.</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">RunEngine.</span></span><span class="sig-name descname"><span class="pre">register_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/run_engine.html#RunEngine.register_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Register a new Message command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd></dd>
+<dt><strong>func</strong><span class="classifier">callable</span></dt><dd><p>This can be a function or a method. The signature is <cite>f(msg)</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unregister_command.html#bluesky.run_engine.RunEngine.unregister_command" title="bluesky.run_engine.RunEngine.unregister_command"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.unregister_command()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.print_command_registry.html#bluesky.run_engine.RunEngine.print_command_registry" title="bluesky.run_engine.RunEngine.print_command_registry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.print_command_registry()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.commands.html#bluesky.run_engine.RunEngine.commands" title="bluesky.run_engine.RunEngine.commands"><code class="xref py py-attr docutils literal notranslate"><span class="pre">RunEngine.commands</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">RunEngine.</span></span><span class="sig-name descname"><span class="pre">unregister_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/run_engine.html#RunEngine.unregister_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Unregister a Message command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.register_command.html#bluesky.run_engine.RunEngine.register_command" title="bluesky.run_engine.RunEngine.register_command"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.register_command()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.print_command_registry.html#bluesky.run_engine.RunEngine.print_command_registry" title="bluesky.run_engine.RunEngine.print_command_registry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.print_command_registry()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.commands.html#bluesky.run_engine.RunEngine.commands" title="bluesky.run_engine.RunEngine.commands"><code class="xref py py-attr docutils literal notranslate"><span class="pre">RunEngine.commands</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">RunEngine.</span></span><span class="sig-name descname"><span class="pre">commands</span></span></dt>
+<dd><p>The list of commands available to Msg.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.register_command.html#bluesky.run_engine.RunEngine.register_command" title="bluesky.run_engine.RunEngine.register_command"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.register_command()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unregister_command.html#bluesky.run_engine.RunEngine.unregister_command" title="bluesky.run_engine.RunEngine.unregister_command"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.unregister_command()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.print_command_registry.html#bluesky.run_engine.RunEngine.print_command_registry" title="bluesky.run_engine.RunEngine.print_command_registry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.print_command_registry()</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">RunEngine</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># to list commands</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">commands</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">RunEngine.</span></span><span class="sig-name descname"><span class="pre">print_command_registry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/run_engine.html#RunEngine.print_command_registry"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>This conveniently prints the command registry of available
+commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>Verbose</strong><span class="classifier">bool, optional</span></dt><dd></dd>
+<dt><strong>verbose print. Default is False</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.register_command.html#bluesky.run_engine.RunEngine.register_command" title="bluesky.run_engine.RunEngine.register_command"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.register_command()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unregister_command.html#bluesky.run_engine.RunEngine.unregister_command" title="bluesky.run_engine.RunEngine.unregister_command"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.unregister_command()</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.commands.html#bluesky.run_engine.RunEngine.commands" title="bluesky.run_engine.RunEngine.commands"><code class="xref py py-attr docutils literal notranslate"><span class="pre">RunEngine.commands</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">RunEngine</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Print a very verbose list of currently registered commands</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">print_command_registry</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hardware.html" class="btn btn-neutral float-left" title="How Bluesky Interfaces with Hardware" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="run_engine.html" class="btn btn-neutral float-right" title="The RunEngine run loop" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

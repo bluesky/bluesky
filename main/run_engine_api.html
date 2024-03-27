@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunEngine API Documentation &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="bluesky.run_engine.RunEngine" href="generated/bluesky.run_engine.RunEngine.html" />
+    <link rel="prev" title="Debugging and Logging" href="debugging.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RunEngine API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-runengine">The <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.html">bluesky.run_engine.RunEngine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.__call__.html">bluesky.run_engine.RunEngine.__call__</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.subscribe.html">bluesky.run_engine.RunEngine.subscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unsubscribe.html">bluesky.run_engine.RunEngine.unsubscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.resume.html">bluesky.run_engine.RunEngine.resume</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.abort.html">bluesky.run_engine.RunEngine.abort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.stop.html">bluesky.run_engine.RunEngine.stop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.halt.html">bluesky.run_engine.RunEngine.halt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.install_suspender.html">bluesky.run_engine.RunEngine.install_suspender</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.remove_suspender.html">bluesky.run_engine.RunEngine.remove_suspender</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.clear_suspenders.html">bluesky.run_engine.RunEngine.clear_suspenders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.request_pause.html">bluesky.run_engine.RunEngine.request_pause</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.request_suspend.html">bluesky.run_engine.RunEngine.request_suspend</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.register_command.html">bluesky.run_engine.RunEngine.register_command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unregister_command.html">bluesky.run_engine.RunEngine.unregister_command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.print_command_registry.html">bluesky.run_engine.RunEngine.print_command_registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.commands.html">bluesky.run_engine.RunEngine.commands</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#the-runengineresult">The <code class="docutils literal notranslate"><span class="pre">RunEngineResult</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.RunEngineResult.html">bluesky.run_engine.RunEngineResult</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#the-dispatcher">The <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.html">bluesky.run_engine.Dispatcher</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.subscribe.html">bluesky.run_engine.Dispatcher.subscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.unsubscribe.html">bluesky.run_engine.Dispatcher.unsubscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.unsubscribe_all.html">bluesky.run_engine.Dispatcher.unsubscribe_all</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.process.html">bluesky.run_engine.Dispatcher.process</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#the-runbundler">The <code class="docutils literal notranslate"><span class="pre">RunBundler</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.html">bluesky.bundlers.RunBundler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.open_run.html">bluesky.bundlers.RunBundler.open_run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.close_run.html">bluesky.bundlers.RunBundler.close_run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.create.html">bluesky.bundlers.RunBundler.create</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.read.html">bluesky.bundlers.RunBundler.read</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.drop.html">bluesky.bundlers.RunBundler.drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.save.html">bluesky.bundlers.RunBundler.save</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.kickoff.html">bluesky.bundlers.RunBundler.kickoff</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.collect.html">bluesky.bundlers.RunBundler.collect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.backstop_collect.html">bluesky.bundlers.RunBundler.backstop_collect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.configure.html">bluesky.bundlers.RunBundler.configure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.monitor.html">bluesky.bundlers.RunBundler.monitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.suspend_monitors.html">bluesky.bundlers.RunBundler.suspend_monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.restore_monitors.html">bluesky.bundlers.RunBundler.restore_monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.clear_monitors.html">bluesky.bundlers.RunBundler.clear_monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.unmonitor.html">bluesky.bundlers.RunBundler.unmonitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.clear_checkpoint.html">bluesky.bundlers.RunBundler.clear_checkpoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.reset_checkpoint_state.html">bluesky.bundlers.RunBundler.reset_checkpoint_state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.reset_checkpoint_state_coro.html">bluesky.bundlers.RunBundler.reset_checkpoint_state_coro</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.rewind.html">bluesky.bundlers.RunBundler.rewind</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.record_interruption.html">bluesky.bundlers.RunBundler.record_interruption</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">RunEngine API Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/run_engine_api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="runengine-api-documentation">
+<h1>RunEngine API Documentation<a class="headerlink" href="#runengine-api-documentation" title="Link to this heading">¶</a></h1>
+<section id="the-runengine">
+<h2>The <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code><a class="headerlink" href="#the-runengine" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.html#bluesky.run_engine.RunEngine" title="bluesky.run_engine.RunEngine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine</span></code></a></p></td>
+<td><p>The Run Engine execute messages and emits Documents.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The main user entry point tho the RunEngine is <code class="docutils literal notranslate"><span class="pre">RE(my_plan(...))</span></code></p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.__call__.html#bluesky.run_engine.RunEngine.__call__" title="bluesky.run_engine.RunEngine.__call__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.__call__</span></code></a></p></td>
+<td><p>Execute a plan.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The RunEngine maintains a callback registry of functions that receive any
+<a class="reference internal" href="documents.html"><span class="doc">Documents</span></a> generated by plan execution. These methods add and remove
+functions from that registry.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.subscribe.html#bluesky.run_engine.RunEngine.subscribe" title="bluesky.run_engine.RunEngine.subscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.subscribe</span></code></a></p></td>
+<td><p>Register a callback function to consume documents.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unsubscribe.html#bluesky.run_engine.RunEngine.unsubscribe" title="bluesky.run_engine.RunEngine.unsubscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.unsubscribe</span></code></a></p></td>
+<td><p>Unregister a callback function its integer ID.</p></td>
+</tr>
+</tbody>
+</table>
+<p>When the RunEngine is in a paused state, it can be resumed or stopped in
+<a class="reference internal" href="state-machine.html#interactive-pause-summary"><span class="std std-ref">various ways</span></a> using these methods:</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.resume.html#bluesky.run_engine.RunEngine.resume" title="bluesky.run_engine.RunEngine.resume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.resume</span></code></a></p></td>
+<td><p>Resume a paused plan from the last checkpoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.abort.html#bluesky.run_engine.RunEngine.abort" title="bluesky.run_engine.RunEngine.abort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.abort</span></code></a></p></td>
+<td><p>Stop a running or paused plan and mark it as aborted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.stop.html#bluesky.run_engine.RunEngine.stop" title="bluesky.run_engine.RunEngine.stop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.stop</span></code></a></p></td>
+<td><p>Stop a running or paused plan, but mark it as successful (not aborted).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.halt.html#bluesky.run_engine.RunEngine.halt" title="bluesky.run_engine.RunEngine.halt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.halt</span></code></a></p></td>
+<td><p>Stop the running plan and do not allow the plan a chance to clean up.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The RunEngine can suspend and resume plan execution in response to external
+changes. See <a class="reference internal" href="state-machine.html#suspenders"><span class="std std-ref">Automated Suspension</span></a>.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.install_suspender.html#bluesky.run_engine.RunEngine.install_suspender" title="bluesky.run_engine.RunEngine.install_suspender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.install_suspender</span></code></a></p></td>
+<td><p>Install a 'suspender', which can suspend and resume execution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.remove_suspender.html#bluesky.run_engine.RunEngine.remove_suspender" title="bluesky.run_engine.RunEngine.remove_suspender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.remove_suspender</span></code></a></p></td>
+<td><p>Uninstall a suspender.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.clear_suspenders.html#bluesky.run_engine.RunEngine.clear_suspenders" title="bluesky.run_engine.RunEngine.clear_suspenders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.clear_suspenders</span></code></a></p></td>
+<td><p>Uninstall all suspenders.</p></td>
+</tr>
+</tbody>
+</table>
+<p>These methods are used internally to pause or suspend the RunEngine.
+Typically the user accomplishes this with Ctrl+C or by installing
+suspenders, respectively. For special applicaitons, they can be called
+directly.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.request_pause.html#bluesky.run_engine.RunEngine.request_pause" title="bluesky.run_engine.RunEngine.request_pause"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.request_pause</span></code></a></p></td>
+<td><p>Command the Run Engine to pause.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.request_suspend.html#bluesky.run_engine.RunEngine.request_suspend" title="bluesky.run_engine.RunEngine.request_suspend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.request_suspend</span></code></a></p></td>
+<td><p>Request that the run suspend itself until the future is finished.</p></td>
+</tr>
+</tbody>
+</table>
+<p>These methods may be used to register custom commands to supplement or
+replace the built-in commands recognized by the RunEngine.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.register_command.html#bluesky.run_engine.RunEngine.register_command" title="bluesky.run_engine.RunEngine.register_command"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.register_command</span></code></a></p></td>
+<td><p>Register a new Message command.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unregister_command.html#bluesky.run_engine.RunEngine.unregister_command" title="bluesky.run_engine.RunEngine.unregister_command"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.unregister_command</span></code></a></p></td>
+<td><p>Unregister a Message command.</p></td>
+</tr>
+</tbody>
+</table>
+<p>These methods may be used to list the commands available, or print
+a summary as to what they do.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.print_command_registry.html#bluesky.run_engine.RunEngine.print_command_registry" title="bluesky.run_engine.RunEngine.print_command_registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.print_command_registry</span></code></a></p></td>
+<td><p>This conveniently prints the command registry of available commands.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.commands.html#bluesky.run_engine.RunEngine.commands" title="bluesky.run_engine.RunEngine.commands"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.commands</span></code></a></p></td>
+<td><p>The list of commands available to Msg.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="the-runengineresult">
+<h2>The <code class="docutils literal notranslate"><span class="pre">RunEngineResult</span></code><a class="headerlink" href="#the-runengineresult" title="Link to this heading">¶</a></h2>
+<p>A <a class="reference internal" href="generated/bluesky.run_engine.RunEngineResult.html#bluesky.run_engine.RunEngineResult" title="bluesky.run_engine.RunEngineResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">RunEngineResult</span></code></a> will be returned
+if the RunEngine was created with <code class="docutils literal notranslate"><span class="pre">call_returns_result=True</span></code>. The default
+is currently <code class="docutils literal notranslate"><span class="pre">False</span></code>, so this behavior is opt-in for now, but will change
+to opt-out in the future.</p>
+<p>The <a class="reference internal" href="generated/bluesky.run_engine.RunEngineResult.html#bluesky.run_engine.RunEngineResult" title="bluesky.run_engine.RunEngineResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">RunEngineResult</span></code></a> class encapsulates useful information about
+the plan that was run, including the ultimate plan return value, run uids,
+exit status, and exceptions.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngineResult.html#bluesky.run_engine.RunEngineResult" title="bluesky.run_engine.RunEngineResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngineResult</span></code></a></p></td>
+<td><p>Information about the plan that was run</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="the-dispatcher">
+<h2>The <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code><a class="headerlink" href="#the-dispatcher" title="Link to this heading">¶</a></h2>
+<p>A RunEngine encapsulates a <a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.html#bluesky.run_engine.Dispatcher" title="bluesky.run_engine.Dispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dispatcher</span></code></a> for emitting any
+<a class="reference internal" href="documents.html"><span class="doc">Documents</span></a> generated by plan execution. The methods
+<a class="reference internal" href="generated/bluesky.run_engine.RunEngine.subscribe.html#bluesky.run_engine.RunEngine.subscribe" title="bluesky.run_engine.RunEngine.subscribe"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.subscribe()</span></code></a> and <a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unsubscribe.html#bluesky.run_engine.RunEngine.unsubscribe" title="bluesky.run_engine.RunEngine.unsubscribe"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.unsubscribe()</span></code></a>, documented
+above, are aliases to the corresponding methods on the RunEngine’s Dispatcher.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.html#bluesky.run_engine.Dispatcher" title="bluesky.run_engine.Dispatcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dispatcher</span></code></a></p></td>
+<td><p>Dispatch documents to user-defined consumers on the main thread.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.subscribe.html#bluesky.run_engine.Dispatcher.subscribe" title="bluesky.run_engine.Dispatcher.subscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dispatcher.subscribe</span></code></a></p></td>
+<td><p>Register a callback function to consume documents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.unsubscribe.html#bluesky.run_engine.Dispatcher.unsubscribe" title="bluesky.run_engine.Dispatcher.unsubscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dispatcher.unsubscribe</span></code></a></p></td>
+<td><p>Unregister a callback function using its integer ID.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.unsubscribe_all.html#bluesky.run_engine.Dispatcher.unsubscribe_all" title="bluesky.run_engine.Dispatcher.unsubscribe_all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dispatcher.unsubscribe_all</span></code></a></p></td>
+<td><p>Unregister all callbacks from the dispatcher.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.process.html#bluesky.run_engine.Dispatcher.process" title="bluesky.run_engine.Dispatcher.process"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dispatcher.process</span></code></a></p></td>
+<td><p>Dispatch document <code class="docutils literal notranslate"><span class="pre">doc</span></code> of type <code class="docutils literal notranslate"><span class="pre">name</span></code> to the callback registry.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="the-runbundler">
+<h2>The <code class="docutils literal notranslate"><span class="pre">RunBundler</span></code><a class="headerlink" href="#the-runbundler" title="Link to this heading">¶</a></h2>
+<p>The RunEngine also creates <cite>RunBundler</cite>s instances to encapsulate the
+logic and book keeping for generating events (and allow multiple runs
+to be open at once).  In general you should not be directly working with
+a <cite>RunBundler</cite>.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.html#bluesky.bundlers.RunBundler" title="bluesky.bundlers.RunBundler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p>The co-routines for opening and closing a run.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.open_run.html#bluesky.bundlers.RunBundler.open_run" title="bluesky.bundlers.RunBundler.open_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.open_run</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.close_run.html#bluesky.bundlers.RunBundler.close_run" title="bluesky.bundlers.RunBundler.close_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.close_run</span></code></a></p></td>
+<td><p>Instruct the RunEngine to write the RunStop document</p></td>
+</tr>
+</tbody>
+</table>
+<p>The co-routines for opening / filling / closing / dropping an Event</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.create.html#bluesky.bundlers.RunBundler.create" title="bluesky.bundlers.RunBundler.create"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.create</span></code></a></p></td>
+<td><p>Start bundling future obj.read() calls for an Event document.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.read.html#bluesky.bundlers.RunBundler.read" title="bluesky.bundlers.RunBundler.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.read</span></code></a></p></td>
+<td><p>Add a reading to the open event bundle.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.drop.html#bluesky.bundlers.RunBundler.drop" title="bluesky.bundlers.RunBundler.drop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.drop</span></code></a></p></td>
+<td><p>Drop the event that is currently being bundled</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.save.html#bluesky.bundlers.RunBundler.save" title="bluesky.bundlers.RunBundler.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.save</span></code></a></p></td>
+<td><p>Save the event that is currently being bundled</p></td>
+</tr>
+</tbody>
+</table>
+<p>The co-routines for managing flyers</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.kickoff.html#bluesky.bundlers.RunBundler.kickoff" title="bluesky.bundlers.RunBundler.kickoff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.kickoff</span></code></a></p></td>
+<td><p>Start a flyscan object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.collect.html#bluesky.bundlers.RunBundler.collect" title="bluesky.bundlers.RunBundler.collect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.collect</span></code></a></p></td>
+<td><p>Collect data cached by a flyer and emit documents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.backstop_collect.html#bluesky.bundlers.RunBundler.backstop_collect" title="bluesky.bundlers.RunBundler.backstop_collect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.backstop_collect</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p>Note: There is a <code class="docutils literal notranslate"><span class="pre">complete</span></code> plan stub and run engine call, which should be used after
+kickoff whose logic does not reside in the RunBundler.</p>
+<p>The co-routines for changing a device configuration</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.configure.html#bluesky.bundlers.RunBundler.configure" title="bluesky.bundlers.RunBundler.configure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.configure</span></code></a></p></td>
+<td><p>Configure an object</p></td>
+</tr>
+</tbody>
+</table>
+<p>The co-routines for managing monitors</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.monitor.html#bluesky.bundlers.RunBundler.monitor" title="bluesky.bundlers.RunBundler.monitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.monitor</span></code></a></p></td>
+<td><p>Monitor a signal.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.suspend_monitors.html#bluesky.bundlers.RunBundler.suspend_monitors" title="bluesky.bundlers.RunBundler.suspend_monitors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.suspend_monitors</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.restore_monitors.html#bluesky.bundlers.RunBundler.restore_monitors" title="bluesky.bundlers.RunBundler.restore_monitors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.restore_monitors</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.clear_monitors.html#bluesky.bundlers.RunBundler.clear_monitors" title="bluesky.bundlers.RunBundler.clear_monitors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.clear_monitors</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.unmonitor.html#bluesky.bundlers.RunBundler.unmonitor" title="bluesky.bundlers.RunBundler.unmonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.unmonitor</span></code></a></p></td>
+<td><p>Stop monitoring; i.e., remove the callback emitting event documents.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The co-routines for checkpoint management</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.clear_checkpoint.html#bluesky.bundlers.RunBundler.clear_checkpoint" title="bluesky.bundlers.RunBundler.clear_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.clear_checkpoint</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.reset_checkpoint_state.html#bluesky.bundlers.RunBundler.reset_checkpoint_state" title="bluesky.bundlers.RunBundler.reset_checkpoint_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.reset_checkpoint_state</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.reset_checkpoint_state_coro.html#bluesky.bundlers.RunBundler.reset_checkpoint_state_coro" title="bluesky.bundlers.RunBundler.reset_checkpoint_state_coro"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.reset_checkpoint_state_coro</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.rewind.html#bluesky.bundlers.RunBundler.rewind" title="bluesky.bundlers.RunBundler.rewind"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.rewind</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p>The co-routines to record interruptions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.record_interruption.html#bluesky.bundlers.RunBundler.record_interruption" title="bluesky.bundlers.RunBundler.record_interruption"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.record_interruption</span></code></a></p></td>
+<td><p>Emit an event in the 'interruptions' event stream.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="debugging.html" class="btn btn-neutral float-left" title="Debugging and Logging" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="generated/bluesky.run_engine.RunEngine.html" class="btn btn-neutral float-right" title="bluesky.run_engine.RunEngine" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

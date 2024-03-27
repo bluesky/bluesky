@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bluesky.callbacks.stream &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">bluesky.callbacks.stream</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bluesky.callbacks.stream</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">time</span> <span class="k">as</span> <span class="nn">ttime</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">ChainMap</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">event_model</span> <span class="kn">import</span> <span class="n">DocumentNames</span><span class="p">,</span> <span class="n">schema_validators</span>
+
+<span class="kn">from</span> <span class="nn">..run_engine</span> <span class="kn">import</span> <span class="n">Dispatcher</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">new_uid</span>
+<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">CallbackBase</span>
+
+
+<div class="viewcode-block" id="LiveDispatcher">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher">[docs]</a>
+<span class="k">class</span> <span class="nc">LiveDispatcher</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A secondary event stream of processed data</span>
+
+<span class="sd">    The LiveDipatcher base implementation does not change any of the data</span>
+<span class="sd">    emitted, this task is left to sub-classes, but instead handles</span>
+<span class="sd">    reimplementing a secondary event stream that fits the same schema demanded</span>
+<span class="sd">    by the RunEngine itself. In order to reduce the work done by these</span>
+<span class="sd">    processed data pipelines, the LiveDispatcher handles the nitty-gritty</span>
+<span class="sd">    details of formatting the event documents. This includes creating new uids,</span>
+<span class="sd">    numbering events and creating descriptors.</span>
+
+<span class="sd">    The LiveDispatcher can be subscribed to using the same syntax as the</span>
+<span class="sd">    RunEngine, effectively creating a small chain of callbacks</span>
+
+<span class="sd">    .. code::</span>
+
+<span class="sd">        # Create our dispatcher</span>
+<span class="sd">        ld = LiveDispatcher()</span>
+<span class="sd">        # Subscribe it to receive events from the RunEgine</span>
+<span class="sd">        RE.subscribe(ld)</span>
+<span class="sd">        # Subscribe any callbacks we desire to second stream</span>
+<span class="sd">        ld.subscribe(LivePlot(&#39;det&#39;, x=&#39;motor&#39;))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Public dispatcher for callbacks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span> <span class="o">=</span> <span class="n">Dispatcher</span><span class="p">()</span>
+        <span class="c1"># Local caches for internal use</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Maintain our own sequence count for this stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># Store raw descriptors for use later  # noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Generated start doc uid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># Dictionary of sent descriptors  # noqa: C408</span>
+
+<div class="viewcode-block" id="LiveDispatcher.start">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.start">[docs]</a>
+    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">_md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Receive a raw start document, re-emit it for the modified stream&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span> <span class="o">=</span> <span class="n">new_uid</span><span class="p">()</span>
+        <span class="n">_md</span> <span class="o">=</span> <span class="n">_md</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="c1"># Create a new start document with a new uid, start time, and the uid</span>
+        <span class="c1"># of the original start document. Preserve the rest of the metadata</span>
+        <span class="c1"># that we retrieved from the start document</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span><span class="p">,</span> <span class="s2">&quot;original_run_uid&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">],</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">()},</span> <span class="n">_md</span><span class="p">,</span> <span class="n">doc</span>
+        <span class="p">)</span>
+        <span class="c1"># Dispatch the start document for anyone subscribed to our Dispatcher</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">md</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.descriptor">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.descriptor">[docs]</a>
+    <span class="k">def</span> <span class="nf">descriptor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store a descriptor&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">doc</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">descriptor</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.event">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.event">[docs]</a>
+    <span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Receive an event document from the raw stream.</span>
+
+<span class="sd">        This should be reimplemented by a subclass.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        doc : event</span>
+
+<span class="sd">        kwargs:</span>
+<span class="sd">            All keyword arguments are passed to :meth:`.process_event`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_event</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">event</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.process_event">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.process_event">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">id_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process a modified event document then emit it for the modified stream</span>
+
+<span class="sd">        This will pass an Event document to the dispatcher. If we have received</span>
+<span class="sd">        a new event descriptor from the original stream, or we have received a</span>
+<span class="sd">        new set of `id_args` or `descriptor_id` , a new descriptor document is</span>
+<span class="sd">        first issued and passed through to the dispatcher.  When issuing a new</span>
+<span class="sd">        event, the new descriptor is given a new source field.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        doc : event</span>
+
+<span class="sd">        stream_name : str, optional</span>
+<span class="sd">            String identifier for a particular stream</span>
+
+<span class="sd">        id_args : tuple, optional</span>
+<span class="sd">            Additional tuple of hashable objects to identify the stream</span>
+
+<span class="sd">        config: dict, optional</span>
+<span class="sd">            Additional configuration information to be included in the event</span>
+<span class="sd">            descriptor</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Any callback subscribed to the `Dispatcher` will receive these event</span>
+<span class="sd">        streams.  If nothing is subscribed, these documents will not go</span>
+<span class="sd">        anywhere.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">id_args</span> <span class="o">=</span> <span class="n">id_args</span> <span class="ow">or</span> <span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">],)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="c1"># Determine the descriptor id</span>
+        <span class="n">desc_id</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="nb">tuple</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">id_args</span><span class="p">))</span>
+        <span class="c1"># If we haven&#39;t described this configuration</span>
+        <span class="c1"># Send a new document to our subscribers</span>
+        <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span> <span class="ow">or</span> <span class="n">desc_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]:</span>
+            <span class="c1"># Create a new description document for the output of the stream</span>
+            <span class="n">data_keys</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+            <span class="c1"># Parse the event document creating a new description. If the key</span>
+            <span class="c1"># existed in the original source description, just assume that it</span>
+            <span class="c1"># is the same type, units and shape. Otherwise do some</span>
+            <span class="c1"># investigation</span>
+            <span class="n">raw_desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">],</span> <span class="p">{})</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># Described priorly</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">raw_desc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]:</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="n">raw_desc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+                <span class="c1"># String key</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="c1"># Iterable</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">val</span><span class="p">)}</span>
+                <span class="c1"># Number</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="c1"># Modify the source</span>
+                <span class="n">key_desc</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Stream&quot;</span>
+                <span class="c1"># Store in our new descriptor</span>
+                <span class="n">data_keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">key_desc</span>
+            <span class="c1"># Create our complete description document</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="n">new_uid</span><span class="p">(),</span>
+                    <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                    <span class="s2">&quot;run_start&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span><span class="p">,</span>
+                    <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="n">data_keys</span><span class="p">,</span>
+                    <span class="s2">&quot;configuration&quot;</span><span class="p">:</span> <span class="n">config</span><span class="p">,</span>
+                    <span class="s2">&quot;object_keys&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">data_keys</span><span class="o">.</span><span class="n">keys</span><span class="p">())},</span>
+                <span class="p">},</span>
+                <span class="n">raw_desc</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Store information about our descriptors</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">][</span><span class="n">desc_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">desc</span>
+            <span class="c1"># Emit the document to all subscribers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">descriptor</span><span class="p">,</span> <span class="n">desc</span><span class="p">)</span>
+
+        <span class="c1"># Clean the Event document produced by graph network. The data is left</span>
+        <span class="c1"># untouched, but the relevant uids, timestamps, seq_num are modified so</span>
+        <span class="c1"># that this event is not confused with the raw data stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">desc_uid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">][</span><span class="n">desc_id</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">evt</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="n">new_uid</span><span class="p">(),</span>
+                <span class="s2">&quot;descriptor&quot;</span><span class="p">:</span> <span class="n">desc_uid</span><span class="p">,</span>
+                <span class="s2">&quot;timestamps&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">current_time</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>  <span class="c1"># noqa: C402</span>
+                <span class="s2">&quot;seq_num&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span><span class="p">,</span>
+                <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">current_time</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">doc</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Emit the event document</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">evt</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.stop">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.stop">[docs]</a>
+    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">_md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Receive a raw stop document, re-emit it for the modified stream&quot;&quot;&quot;</span>
+        <span class="c1"># Create a new stop document with a new_uid, pointing to the correct</span>
+        <span class="c1"># start document uid, and tally the number of events we have emitted.</span>
+        <span class="c1"># The rest of the stop information is passed on to the next callback</span>
+        <span class="n">_md</span> <span class="o">=</span> <span class="n">_md</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="n">num_events</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">stream</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream</span><span class="p">]))</span> <span class="k">for</span> <span class="n">stream</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># noqa: C402</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+            <span class="nb">dict</span><span class="p">(</span><span class="n">run_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">uid</span><span class="o">=</span><span class="n">new_uid</span><span class="p">(),</span> <span class="n">num_events</span><span class="o">=</span><span class="n">num_events</span><span class="p">),</span>  <span class="c1"># noqa: C408</span>
+            <span class="n">doc</span><span class="p">,</span>  <span class="c1"># noqa: C408</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">md</span><span class="p">))</span>
+        <span class="c1"># Clear the local caches for the run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.emit">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.emit">[docs]</a>
+    <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the document schema and send to the dispatcher&quot;&quot;&quot;</span>
+        <span class="n">schema_validators</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.subscribe">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.subscribe">[docs]</a>
+    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convenience function for dispatcher subscription&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.unsubscribe">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.unsubscribe">[docs]</a>
+    <span class="k">def</span> <span class="nf">unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convenience function for dispatcher un-subscription&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">unsubscribe</span><span class="p">(</span><span class="n">token</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

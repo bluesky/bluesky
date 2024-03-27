@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documents &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Recording Metadata" href="metadata.html" />
+    <link rel="prev" title="bluesky.preprocessors.make_decorator" href="generated/bluesky.preprocessors.make_decorator.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bluesky
+          </a>
+              <div class="version">
+                1.13.0a4.dev8+g387ec70f
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Documents</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview-of-a-run">Overview of a “Run”</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documents-in-detail">Documents in Detail</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#run-start">Run Start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#event">Event</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-stop">Run Stop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#event-descriptor">Event Descriptor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Documents</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/documents.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="documents">
+<h1>Documents<a class="headerlink" href="#documents" title="Link to this heading">¶</a></h1>
+<p>A primary design goal of bluesky is to enable better research by recording
+rich metadata alongside measured data for use in later analysis. Documents are
+how we do this.</p>
+<p>A <em>document</em> is our term for a Python dictionary with a schema — that is,
+organized in a
+<a class="reference external" href="https://github.com/NSLS-II/event-model">formally specified</a> way — created
+by the RunEngine during plan execution.  All of the metadata and data generated
+by executing the plan is organized into documents.</p>
+<p>A <a class="reference internal" href="callbacks.html"><span class="doc">later section</span></a> describes how outside functions can
+“subscribe” to a stream of these documents, visualizing, processing, or saving
+them. This section provides an outline of documents themselves, aiming to give
+a sense of the structure and familiarity with useful components.</p>
+<section id="overview-of-a-run">
+<span id="run-overview"></span><h2>Overview of a “Run”<a class="headerlink" href="#overview-of-a-run" title="Link to this heading">¶</a></h2>
+<p>Each document belongs to a <em>run</em> — loosely speaking, a dataset. Executing any
+of the <a class="reference internal" href="plans.html#preassembled-plans"><span class="std std-ref">built-in pre-assembled plans</span></a>, like
+<a class="reference internal" href="generated/bluesky.plans.scan.html#bluesky.plans.scan" title="bluesky.plans.scan"><code class="xref py py-func docutils literal notranslate"><span class="pre">scan()</span></code></a> and <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a>, creates one run.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Fundamentally, the scope of a run is intentionally vague and flexible. One
+plan might generate many runs or one long run. It just depends on how you
+want to organize your data, both at collection time and analysis time.</p>
+<p>The tutorial’s <a class="reference internal" href="tutorial.html#tutorial-capture-data"><span class="std std-ref">Capture Data</span></a> section explores this.</p>
+</div>
+<p>The documents in each run are:</p>
+<ul>
+<li><p>A <strong>Run Start document</strong>, containing all of the metadata known at the start of
+the run. Highlights:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>time — the start time</p></li>
+<li><p>plan_name — e.g., <code class="docutils literal notranslate"><span class="pre">'scan'</span></code> or <code class="docutils literal notranslate"><span class="pre">'count'</span></code></p></li>
+<li><p>uid — unique ID that identifies this run</p></li>
+<li><p>scan_id — human-friendly integer scan ID (not necessarily unique)</p></li>
+<li><p>any other <a class="reference internal" href="metadata.html"><span class="doc">metadata captured at execution time</span></a> from the
+plan or the user</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Event documents</strong>, containing the actual measurements. These are your data.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>time — a timestamp for this group of readings</p></li>
+<li><p>seq_num — sequence number, counting up from 1</p></li>
+<li><p>data — a dictionary of readings like
+<code class="docutils literal notranslate"><span class="pre">{'temperature':</span> <span class="pre">5.0,</span> <span class="pre">'position':</span> <span class="pre">3.0}</span></code></p></li>
+<li><p>timestamps — a dictionary of individual timestamps for each reading,
+from the hardware</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Event Descriptor documents</strong> provide a schema for the data in the Event
+documents. They list all of the keys in the Event’s data and give useful
+information about them, such as units and precision. They also contain
+information about the configuration of the hardware.</p></li>
+<li><p>A <strong>Run Stop document</strong>, containing metadata known only at the end of the
+run. Highlights:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>time — the time when the run was completed</p></li>
+<li><p>exit_status — “success”, “abort”, or “fail”</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p>Every document has a <code class="docutils literal notranslate"><span class="pre">time</span></code> (its creation time) and a separate <code class="docutils literal notranslate"><span class="pre">uid</span></code> to
+identify it. The Event documents also have a <code class="docutils literal notranslate"><span class="pre">descriptor</span></code> field linking them
+to the Event Descriptor with their metadata. And the Event Descriptor and
+Run Stop documents have a <code class="docutils literal notranslate"><span class="pre">run_start</span></code> field linking them to their Run
+Start. Thus, all the documents in a run are linked back to the Run Start.</p>
+</section>
+<section id="documents-in-detail">
+<h2>Documents in Detail<a class="headerlink" href="#documents-in-detail" title="Link to this heading">¶</a></h2>
+<section id="run-start">
+<h3>Run Start<a class="headerlink" href="#run-start" title="Link to this heading">¶</a></h3>
+<p>Again, a ‘start’ document marks the beginning of the run. It comprises
+everything we know before we start taking data, including all metadata provided
+by the user and the plan. (More on this in the <a class="reference internal" href="metadata.html"><span class="doc">next section</span></a>.)</p>
+<p>All built-in plans provide some useful metadata like the names of the
+detector(s) and motor(s) used. (User-defined plans may also do this; see
+<a class="reference internal" href="tutorial.html#tutorial-plan-metadata"><span class="std std-ref">this section</span></a> of the tutorial.)</p>
+<p>The command:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span>
+<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>  <span class="c1"># simulated detector, motor</span>
+
+<span class="c1"># Scan &#39;motor&#39; from -3 to 3 in 10 steps, taking readings from &#39;det&#39;.</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">purpose</span><span class="o">=</span><span class="s1">&#39;calibration&#39;</span><span class="p">,</span>
+   <span class="n">sample</span><span class="o">=</span><span class="s1">&#39;kryptonite&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>generates a ‘start’ document like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;start&#39; document</span>
+<span class="p">{</span><span class="s1">&#39;purpose&#39;</span><span class="p">:</span> <span class="s1">&#39;calibration&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;sample&#39;</span><span class="p">:</span> <span class="s1">&#39;kryptonite&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;det&#39;</span><span class="p">],</span>
+ <span class="s1">&#39;motors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;motor&#39;</span><span class="p">],</span>
+ <span class="s1">&#39;plan_name&#39;</span><span class="p">:</span> <span class="s1">&#39;scan&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;plan_type&#39;</span><span class="p">:</span> <span class="s1">&#39;generator&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;plan_args&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="s1">&#39;[det]&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;motor&#39;</span><span class="p">:</span> <span class="s1">&#39;Mover(...)&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;num&#39;</span><span class="p">:</span> <span class="s1">&#39;16&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="s1">&#39;-3&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;stop&#39;</span><span class="p">:</span> <span class="s1">&#39;3&#39;</span><span class="p">},</span>
+ <span class="s1">&#39;scan_id&#39;</span><span class="p">:</span> <span class="mi">282</span><span class="p">,</span>
+ <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521005.6099606</span><span class="p">,</span>
+ <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Time is given in UNIX time (seconds since 1970). Software for looking at
+the data would, of course, translate that into a more human-readable form.</p>
+</div>
+</section>
+<section id="event">
+<h3>Event<a class="headerlink" href="#event" title="Link to this heading">¶</a></h3>
+<p>An ‘event’ records one or more measurements with an associated time.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;event&#39; document</span>
+<span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
+      <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
+      <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span> <span class="mf">3.05</span><span class="p">},</span>
+ <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="mf">1442521007.9258342</span><span class="p">,</span>
+     <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">,</span>
+     <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">},</span>
+ <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521007.3438923</span><span class="p">,</span>
+ <span class="s1">&#39;seq_num&#39;</span><span class="p">:</span> <span class="mi">1</span>
+ <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;descriptor&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;reference to a descriptor document&gt;&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>From a data analysis perspective, these readings were simultaneous, but in
+actuality the occurred at separate times.  The separate times of the individual
+readings are not thrown away (they are recorded in ‘timestamps’) but the
+overall event ‘time’ is often more useful.</p>
+</section>
+<section id="run-stop">
+<h3>Run Stop<a class="headerlink" href="#run-stop" title="Link to this heading">¶</a></h3>
+<p>A ‘stop’ document marks the end of the run. It contains metadata that is not
+known until the run completes.</p>
+<p>The most commonly useful fields here are ‘time’ and ‘exit_status’.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;stop&#39; document</span>
+<span class="p">{</span><span class="s1">&#39;exit_status&#39;</span><span class="p">:</span> <span class="s1">&#39;success&#39;</span><span class="p">,</span>  <span class="c1"># or &#39;fail&#39; or &#39;abort&#39;</span>
+ <span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="c1"># The RunEngine can provide reason for failure here.</span>
+ <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521012.1021606</span><span class="p">,</span>
+ <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;reference to the start document&gt;&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;num_events&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;primary&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="event-descriptor">
+<h3>Event Descriptor<a class="headerlink" href="#event-descriptor" title="Link to this heading">¶</a></h3>
+<p>As stated above, a ‘descriptor’ document provides a schema for the data in the
+Event documents. It provides useful information about each key in the data and
+about the configuration of the hardware. The layout of a descriptor is detailed
+and takes some time to cover, so we defer it to a
+<a class="reference internal" href="event_descriptors.html"><span class="doc">later section</span></a>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="generated/bluesky.preprocessors.make_decorator.html" class="btn btn-neutral float-left" title="bluesky.preprocessors.make_decorator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="metadata.html" class="btn btn-neutral float-right" title="Recording Metadata" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

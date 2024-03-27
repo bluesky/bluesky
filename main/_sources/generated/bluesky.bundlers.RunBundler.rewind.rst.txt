@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.rewind
+==================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.rewind
