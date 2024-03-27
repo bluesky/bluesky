@@ -3,6 +3,7 @@ from collections.abc import Iterable
 import numpy as np
 import pandas as pd
 from event_model import DocumentRouter, RunRouter
+from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.structures.array import ArrayStructure, BuiltinDtype
 from tiled.structures.core import Spec, StructureFamily
@@ -14,6 +15,13 @@ MIMETYPE_LOOKUP = {
     "ADHDF5_SWMR_STREAM": "application/x-hdf5",
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
 }
+
+FIXED_DESCRIPTOR_FIELDS = [
+    "name",
+    "data_keys",
+    "object_keys",
+    "run_start",
+]
 
 
 class TiledWriter:
@@ -45,29 +53,48 @@ class _RunWriter(DocumentRouter):
 
     def __init__(self, client):
         self.client = client
-        self.node = None
+        self.start_stop_node = None
         self._descriptor_nodes = {}  # references to descriptor containers by uid's
         self._SR_nodes = {}
         self._SR_cache = {}
 
     def start(self, doc):
-        self.node = self.client.create_container(
+        self.start_stop_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": doc},
             specs=[Spec("BlueskyRun", version="1.0")],
         )
 
     def stop(self, doc):
-        metadata = dict(self.node.metadata) | {"stop": doc}
-        self.node.update_metadata(metadata=metadata)
+        metadata = dict(self.start_stop_node.metadata) | {"stop": doc}
+        self.start_stop_node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc):
-        descriptor_node = self.node.create_container(key=doc["name"], metadata=doc)
-        self._descriptor_nodes[doc["uid"]] = descriptor_node
-        descriptor_node.create_container(key="external")
-        descriptor_node.create_container(key="internal")
+        desc_name = doc["name"]
+        metadata = dict(doc)
 
-    def event(self, doc):
+        # Extract the variable fileds of the descriptor that can change during the run
+        uid = metadata.pop("uid")
+        conf_dict = {uid: metadata.pop("configuration", {})}
+        time_dict = {uid: metadata.pop("time", None)}
+        var_fields = {"configuration": conf_dict, "time": time_dict}
+
+        # Get or create a descriptor container
+        if desc_name in self.start_stop_node.keys():
+            desc_node = self.start_stop_nodes[desc_name]
+        else:
+            desc_node = self.start_stop_node.create_container(
+                key=desc_name, metadata=metadata
+            )
+            desc_node.create_container(key="external")
+            desc_node.create_container(key="internal")
+
+        # Update the metadata with the variable fields
+        metadata = deep_update(dict(desc_node.metadata), var_fields)
+        desc_node.update_metadata(metadata)
+        self._descriptor_nodes[uid] = desc_node  # Keep a reference to the descriptor
+
+    def event(self, doc: dict):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
         parent_node = descriptor_node["internal"]
         df = pd.DataFrame(
