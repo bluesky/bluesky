@@ -1,0 +1,172 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bluesky"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+description = "Experiment specification & orchestration."
+dependencies = [
+    "cycler",
+    "event-model>=1.19.8",
+    "historydict",
+    "msgpack",
+    "msgpack-numpy",
+    "numpy",
+    "super_state_machine",
+    "toolz",
+    "tqdm>=4.44",
+    "typing-extensions>=4.0.0;python_version<'3.11'",
+    "dataclasses;python_version<'3.7'",
+    "zict<3.0.0",
+]
+dynamic = ["version"]
+license.file = "LICENSE"
+readme = "README.md"
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+dev = [
+    "attrs",
+    "cloudpickle",
+    "copier",
+    "coverage",
+    "databroker",
+    "doct",
+    "doctr",
+    "flake8",
+    "ipython",
+    "ipywidgets",
+    "jinja2",
+    "lmfit",
+    "matplotlib >=3.5.0",
+    "mongoquery",
+    "mypy",
+    "myst-parser",
+    "networkx",
+    "nose",
+    "numpydoc",
+    "ophyd",
+    "pandas",
+    "pims",
+    "pipdeptree",
+    "pre-commit",
+    "pydata-sphinx-theme>=0.12",
+    "pyepics",
+    "pyqt5",
+    "pytest",
+    "pytest-cov",
+    "pytest-faulthandler",
+    "pyyaml",
+    "pyzmq",
+    "requests",
+    "ruff",
+    "scikit-image",
+    "scipy",
+    "sphinx-autobuild",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "sphinx_rtd_theme",
+    "streamz",
+    # These suitcases are test deps of databroker which we need to access
+    # databroker fixtures.
+    "suitcase-jsonl",
+    "suitcase-mongo",
+    "suitcase-msgpack",
+    "tifffile",
+    "tox-direct",
+    "types-mock",
+]
+ipython = ["ipython"]
+zmq = ["pyzmq"]
+common = ["ophyd", "databroker"]
+tools = ["doct", "lmfit", "tifffile", "historydict"]
+streamz = ["streamz"]
+plotting = ["matplotlib"]
+cmd = ["colorama"]
+olog = ["jinja2"]
+all = ["bluesky[dev,ipython,zmq,common,tools,streamz,plotting,cmd,olog]"]
+
+[project.scripts]
+bluesky-0MQ-proxy = "bluesky.commandline.zmq_proxy:main"
+
+[project.urls]
+GitHub = "https://github.com/bluesky/bluesky"
+
+[[project.authors]] # Further authors may be added by duplicating this section
+name = "danielballan"
+
+
+[tool.setuptools_scm]
+write_to = "src/bluesky/_version.py"
+
+[tool.mypy]
+ignore_missing_imports = true # Ignore missing stubs in imported modules
+
+[tool.pytest.ini_options]
+# Run pytest with all our checkers, and don't spam us with massive tracebacks on error
+addopts = """
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    """
+# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
+filterwarnings = ["error", "ignore::PendingDeprecationWarning", "ignore::UserWarning", "ignore::DeprecationWarning"]
+# Doctest python code in docs, python code in src docstrings, test functions in tests
+testpaths = "src/bluesky/tests"
+
+[tool.coverage.run]
+data_file = "/tmp/bluesky.coverage"
+
+[tool.coverage.report]
+exclude_lines = ["if __name__ == '__main__':"]
+
+[tool.coverage.paths]
+# Tests are run from installed location, map back to the src directory
+source = ["src", "**/site-packages/"]
+
+# tox must currently be configured via an embedded ini string
+# See: https://github.com/tox-dev/tox/issues/999
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+skipsdist=True
+
+[testenv:{pre-commit,type-checking,tests,docs}]
+# Don't create a virtualenv for the command, requires tox-direct plugin
+direct = True
+passenv = *
+allowlist_externals =
+    pytest
+    pre-commit
+    mypy
+    sphinx-build
+    sphinx-autobuild
+commands =
+    pre-commit: pre-commit run --all-files {posargs}
+    type-checking: mypy src {posargs}
+    tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
+    docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
+"""
+
+[tool.ruff]
+src = ["src", "tests"]
+line-length = 115
+lint.select = [
+    "B",  # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4", # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",  # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+]
+exclude = [
+    "docs/source/conf.py",
+    "docs/source/examples"
+]

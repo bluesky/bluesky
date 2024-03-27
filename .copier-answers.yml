@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier
+_commit: 2.0.1
+_src_path: gh:DiamondLightSource/python-copier-template
+author_email: None
+author_name: danielballan
+component_owner: group:default/sscc
+description: Experiment specification & orchestration.
+distribution_name: bluesky
+docker: false
+docs_type: sphinx
+git_platform: github.com
+github_org: bluesky
+package_name: bluesky
+pypi: true
+repo_name: bluesky
+type_checker: mypy

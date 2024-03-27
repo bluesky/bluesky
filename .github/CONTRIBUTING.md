@@ -8,6 +8,13 @@
   * Make sure you fill in the earliest version that you know has the issue.
 * Fork the repository on GitHub
 
+## Developer Information
+
+It is recommended that developers use a [vscode devcontainer](https://code.visualstudio.com/docs/devcontainers/containers). This repository contains configuration to set up a containerized development environment that suits its own needs.
+
+This project uses the [Diamond Light Source Copier Template](https://github.com/DiamondLightSource/python-copier-template) for Python projects.
+
+For more information on common tasks like setting up a developer environment, running the tests, and setting a pre-commit hook, see the template's [How-to guides](https://diamondlightsource.github.io/python-copier-template/2.0.1/how-to.html).
 
 ## Making Changes
 
@@ -72,3 +79,18 @@ Hints to make the integration of your changes easy (and happen faster):
 - Don't forget your unit tests
 - All algorithms need documentation, don't forget the .rst file
 - Don't take changes requests to change your code personally
+
+## Releasing
+
+To release Bluesky:
+
+* Make a pull request adding release notes to the API changes document:
+  :file:`docs/source/api_changes.rst`.
+  It might be helpful to [review the changes since last release](https://docs.github.com/en/github/administering-a-repository/releasing-projects-on-github/comparing-releases).
+* Once the changelog is merged, mint a new release.
+
+   * tag: :code:`v<VERSION>`
+   * title: :code:`bluesky v<VERSION>`
+   * description: copy content from api_changes
+* Bluesky will be released to PyPI via our [github action](https://github.com/bluesky/bluesky/blob/main/.github/workflows/_pypi.yml).
+* The conda-forge bot will make a PR to update the [bluesky-feedstock](https://github.com/conda-forge/bluesky-feedstock).
