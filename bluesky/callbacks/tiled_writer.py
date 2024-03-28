@@ -15,6 +15,7 @@ MIMETYPE_LOOKUP = {
     "hdf5": "application/x-hdf5",
     "ADHDF5_SWMR_STREAM": "application/x-hdf5",
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
+    "AD_TIFF": "image/tiff",
 }
 
 
@@ -69,26 +70,27 @@ class _RunWriter(DocumentRouter):
         desc_name = doc["name"]
         metadata = dict(doc)
 
-        # Extract the variable fileds of the descriptor that can change during the run
+        # Encapsulate variable fields of the metadata into sub-dictionaries
         uid = metadata.pop("uid")
         conf_dict = {uid: metadata.pop("configuration", {})}
         time_dict = {uid: metadata.pop("time")}
         var_fields = {"configuration": conf_dict, "time": time_dict}
 
-        # Get or create a descriptor container
-        if desc_name in self.root_node.keys():
-            desc_node = self.root_nodes[desc_name]
-        else:
+        if desc_name not in self.root_node.keys():
+            # Create a new descriptor node; write only the fixed part of the metadata
             desc_node = self.root_node.create_container(
                 key=desc_name, metadata=metadata
             )
             desc_node.create_container(key="external")
             desc_node.create_container(key="internal")
+        else:
+            # Get existing descriptor node (with fixed and variable metadata saved before)
+            desc_node = self.root_nodes[desc_name]
 
-        # Update the metadata with the variable fields
+        # Update (add new values to) variable fields of the metadata
         metadata = deep_update(dict(desc_node.metadata), var_fields)
         desc_node.update_metadata(metadata)
-        self._descriptor_nodes[uid] = desc_node  # Keep a reference to the descriptor
+        self._descriptor_nodes[uid] = desc_node
 
     def event(self, doc: dict):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
