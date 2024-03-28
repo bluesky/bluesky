@@ -16,13 +16,6 @@ MIMETYPE_LOOKUP = {
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
 }
 
-FIXED_DESCRIPTOR_FIELDS = [
-    "name",
-    "data_keys",
-    "object_keys",
-    "run_start",
-]
-
 
 class TiledWriter:
     "Write metadata and data from Bluesky documents into Tiled."
@@ -55,8 +48,8 @@ class _RunWriter(DocumentRouter):
         self.client = client
         self.start_stop_node = None
         self._descriptor_nodes = {}  # references to descriptor containers by uid's
-        self._SR_nodes = {}
-        self._SR_cache = {}
+        self._sr_nodes = {}
+        self._sr_cache = {}
 
     def start(self, doc):
         self.start_stop_node = self.client.create_container(
@@ -66,6 +59,8 @@ class _RunWriter(DocumentRouter):
         )
 
     def stop(self, doc):
+        doc = dict(doc)
+        doc.pop("start", None)
         metadata = dict(self.start_stop_node.metadata) | {"stop": doc}
         self.start_stop_node.update_metadata(metadata=metadata)
 
@@ -119,7 +114,7 @@ class _RunWriter(DocumentRouter):
 
     def stream_resource(self, doc):
         # Only cache the StreamResource; add the node when at least one StreamDatum is added
-        self._SR_cache[doc["uid"]] = doc
+        self._sr_cache[doc["uid"]] = doc
 
     def stream_datum(self, doc):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
@@ -130,26 +125,26 @@ class _RunWriter(DocumentRouter):
         )  # Number of rows added by new StreamDatum
 
         # Get the Stream Resource node if it already exists or register if from a cached SR document
-        SR_uid = doc["stream_resource"]
-        if SR_uid in self._SR_nodes.keys():
-            SR_node = self._SR_nodes[SR_uid]
-        elif SR_uid in self._SR_cache.keys():
+        sr_uid = doc["stream_resource"]
+        if sr_uid in self._sr_nodes.keys():
+            sr_node = self._sr_nodes[sr_uid]
+        elif sr_uid in self._sr_cache.keys():
             # Register a new (empty) Stream Resource
-            SR_doc = self._SR_cache.pop(SR_uid)
+            sr_doc = self._sr_cache.pop(sr_uid)
 
             # POST /api/v1/register/{path}
             file_path = (
                 "/"
-                + SR_doc["root"].strip("/")
+                + sr_doc["root"].strip("/")
                 + "/"
-                + SR_doc["resource_path"].strip("/")
+                + sr_doc["resource_path"].strip("/")
             )
-            data_path = SR_doc["resource_kwargs"]["path"].strip("/")
+            data_path = sr_doc["resource_kwargs"]["path"].strip("/")
             data_uri = "file://localhost" + file_path
+            data_key = sr_doc["data_key"]
             assets = [
                 Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")
             ]
-            data_key = SR_doc["data_key"]
             data_desc = dict(descriptor_node.metadata)["data_keys"][data_key]
             if data_desc["dtype"] == "array":
                 data_shape = data_desc["shape"]
@@ -159,12 +154,13 @@ class _RunWriter(DocumentRouter):
                 data_desc.get("dtype_str", "<f8")
             )  # Find machine dtype; assume '<f8' by default
 
-            SR_node = parent_node.new(
+            sr_node = parent_node.new(
+                key=data_key,
                 structure_family=StructureFamily.array,
                 data_sources=[
                     DataSource(
                         assets=assets,
-                        mimetype=MIMETYPE_LOOKUP[SR_doc["spec"]],
+                        mimetype=MIMETYPE_LOOKUP[sr_doc["spec"]],
                         structure_family=StructureFamily.array,
                         structure=ArrayStructure(
                             data_type=BuiltinDtype.from_numpy_dtype(data_type),
@@ -175,26 +171,26 @@ class _RunWriter(DocumentRouter):
                         management=Management.external,
                     )
                 ],
-                metadata=SR_doc,
+                metadata=sr_doc,
                 specs=[],
             )
-            self._SR_nodes[SR_uid] = SR_node
+            self._sr_nodes[sr_uid] = sr_node
         else:
             raise RuntimeError(
-                f"Stream Resource {SR_uid} is referenced before being declared."
+                f"Stream Resource {sr_uid} is referenced before being declared."
             )
 
         # Append StreamDatum to an existing StreamResource (by overwriting it with changed shape)
-        url = SR_node.uri.replace("/metadata/", "/data_source/")
-        SR_node.refresh()
-        ds_dict = SR_node.data_sources()[0]
+        url = sr_node.uri.replace("/metadata/", "/data_source/")
+        sr_node.refresh()
+        ds_dict = sr_node.data_sources()[0]
         ds_dict["structure"]["shape"][0] += num_new_rows
 
         # Set up the chunk size based on the Stream Resource parameter `chunk_size`:
         #    None -- single chunk for all existing and new elements
         #    int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
         #    list[int] -- new elements are chunked according to the provided specs
-        chunk_size = SR_node.metadata["resource_kwargs"].get("chunk_size", None)
+        chunk_size = sr_node.metadata["resource_kwargs"].get("chunk_size", None)
         chunk_spec = ds_dict["structure"]["chunks"][0]
         if isinstance(chunk_size, Iterable):
             chunk_spec.extend(chunk_size)
@@ -205,6 +201,6 @@ class _RunWriter(DocumentRouter):
             chunk_spec.extend([chunk_size] * int(num_all_rows / chunk_size))
             if num_all_rows % chunk_size:
                 chunk_spec.append(num_all_rows % chunk_size)
-        SR_node.context.http_client.put(
+        sr_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )
