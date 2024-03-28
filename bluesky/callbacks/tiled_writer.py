@@ -70,7 +70,7 @@ class _RunWriter(DocumentRouter):
         desc_name = doc["name"]
         metadata = dict(doc)
 
-        # Encapsulate variable fields of the metadata into sub-dictionaries
+        # Remove variable fields of the metadata and encapsulate them into sub-dictionaries
         uid = metadata.pop("uid")
         conf_dict = {uid: metadata.pop("configuration", {})}
         time_dict = {uid: metadata.pop("time")}
