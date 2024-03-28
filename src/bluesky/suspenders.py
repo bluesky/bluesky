@@ -44,7 +44,7 @@ class SuspenderBase(metaclass=ABCMeta):
         self._post_plan = post_plan
 
     def __repr__(self):
-        return "{}({!r}, sleep={}, pre_plan={}, post_plan={}," "tripped_message={})".format(  # noqa: UP032
+        return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
             type(self).__name__,
             self._sig,
             self._sleep,
@@ -485,7 +485,7 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
         if not self.tripped:
             return ""
 
-        just = "Signal {} = {!r} is outside of the range ({}, {})" "".format(  # noqa: UP032
+        just = "Signal {} = {!r} is outside of the range ({}, {})".format(  # noqa: UP032
             self._sig.name, self._sig.get(), self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)
@@ -542,7 +542,7 @@ class SuspendOutBand(_SuspendBandBase):
         if not self.tripped:
             return ""
 
-        just = "Signal {} = {!r} is inside of the range ({}, {})" "".format(  # noqa: UP032
+        just = "Signal {} = {!r} is inside of the range ({}, {})".format(  # noqa: UP032
             self._sig.name, self._sig.get(), self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)

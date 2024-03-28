@@ -248,7 +248,7 @@ class SigintHandler(SignalHandler):
                 # It's been 10 seconds since the last SIGINT. Reset.
                 self.count = 1
                 if self.last_sigint_time is not None:
-                    self.log.debug("It has been 10 seconds since the " "last SIGINT. Resetting SIGINT " "handler.")
+                    self.log.debug("It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.")
                 # weeee push these to threads to not block the main thread
                 threading.Thread(target=self.RE.request_pause, args=(True,)).start()
                 print(
@@ -262,7 +262,7 @@ class SigintHandler(SignalHandler):
             elif self.count == 2:
                 print("trying a second time")
                 # - Ctrl-C twice within 10 seconds -> hard pause
-                self.log.debug("RunEngine detected two SIGINTs. " "A hard pause will be requested.")
+                self.log.debug("RunEngine detected two SIGINTs. A hard pause will be requested.")
 
                 threading.Thread(target=self.RE.request_pause, args=(False,)).start()
             self.last_sigint_time = time.time()
@@ -569,7 +569,7 @@ def normalize_subs_input(subs):
         for func in funcs:
             if not callable(func):
                 raise ValueError(
-                    "subs values must be functions or lists " "of functions. The offending entry is\n " f"{func}"
+                    "subs values must be functions or lists of functions. The offending entry is\n " f"{func}"
                 )
     return normalized
 
@@ -888,7 +888,7 @@ def get_history():
         except OSError as exc:
             print(exc)
             print("Failed to create metadata history file at %s" % path)
-            print("Storing HistoryDict in memory; it will not persist " "when session is ended.")
+            print("Storing HistoryDict in memory; it will not persist when session is ended.")
             return historydict.HistoryDict(":memory:")
 
 
@@ -917,7 +917,7 @@ def install_kicker(loop=None, update_rate=0.03):
     elif backend in ("Qt4Agg", "Qt5Agg"):
         install_qt_kicker(loop=loop, update_rate=update_rate)
     else:
-        raise NotImplementedError(f"The matplotlib backend {backend} is not yet " "supported.")
+        raise NotImplementedError(f"The matplotlib backend {backend} is not yet supported.")
 
 
 def install_qt_kicker(loop=None, update_rate=0.03):
@@ -1549,7 +1549,7 @@ def merge_cycler(cyc):
             )
 
         if type_map["real"] and type_map["pseudo"]:
-            raise ValueError("Passed in a mix of real and pseudo axis.  " "Can not cope, failing")
+            raise ValueError("Passed in a mix of real and pseudo axis. Can not cope, failing")
         pseudo_axes = type_map["pseudo"]
         if len(pseudo_axes) > 1:
             p_cyc = reduce(operator.add, (cycler(my_name(c), input_data[c]) for c in type_map["pseudo"]))

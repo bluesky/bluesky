@@ -192,7 +192,7 @@ def get_obj_fields(fields):
                 field_list = sorted(field.describe().keys())
             except AttributeError:
                 raise ValueError(  # noqa: B904
-                    "Fields must be strings or objects with a " "'describe' method that return a dict."
+                    "Fields must be strings or objects with a 'describe' method that return a dict."
                 )
             string_fields.extend(field_list)
     return string_fields
@@ -281,7 +281,7 @@ class LiveTable(CallbackBase):
         "string": "s",
     }
     _fm_sty = namedtuple("fm_sty", ["width", "prec", "dtype"])  # type: ignore
-    water_mark = "{st[plan_type]} {st[plan_name]} ['{st[uid]:.8s}'] " "(scan num: {st[scan_id]})"
+    water_mark = "{st[plan_type]} {st[plan_name]} ['{st[uid]:.8s}'] (scan num: {st[scan_id]})"
     ev_time_key = "SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES"
 
     def __init__(

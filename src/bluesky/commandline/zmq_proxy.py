@@ -47,7 +47,7 @@ def main():
         "--verbose",
         "-v",
         action="count",
-        help=("Show 'start' and 'stop' documents. " "(Use -vvv to show all documents.)"),
+        help=("Show 'start' and 'stop' documents. (Use -vvv to show all documents.)"),
     )
     parser.add_argument("--logfile", type=str, help="Redirect logging output to a file on disk.")
     args = parser.parse_args()

@@ -289,7 +289,7 @@ class LiveTiffExporter(BrokerCallbackBase):
     def _save_image(self, image, filename):
         if not self.overwrite:
             if os.path.isfile(filename):
-                raise OSError(f"There is already a file at {filename}. Delete " "it and try again.")
+                raise OSError(f"There is already a file at {filename}. Delete it and try again.")
         if not self.dryrun:
             self._tifffile.imsave(filename, np.asarray(image))
         self.filenames.append(filename)

@@ -73,7 +73,7 @@ def subs_context(plan_stack, subs):
          name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
          doc is a dictionary.
     """
-    warnings.warn("subs_context is deprecated. " "Use subs_wrapper or subs_decorator.")  # noqa: B028
+    warnings.warn("subs_context is deprecated. Use subs_wrapper or subs_decorator.")  # noqa: B028
     subs = normalize_subs_input(subs)
     tokens = set()
 
@@ -160,7 +160,7 @@ def stage_context(plan_stack, devices):
     --------
     :func:`bluesky.plans.lazily_stage`
     """
-    warnings.warn("stage_context is deprecated. " "Use stage_wrapper or stage_decorator.")  # noqa: B028
+    warnings.warn("stage_context is deprecated. Use stage_wrapper or stage_decorator.")  # noqa: B028
     # Resolve unique devices, avoiding redundant staging.
     devices = separate_devices(root_ancestor(device) for device in devices)
 
@@ -197,7 +197,7 @@ def baseline_context(plan_stack, devices, name="baseline"):
     name : string, optional
         name for event stream; by default, 'baseline'
     """
-    warnings.warn("baseline_context is deprecated. Use baseline_wrapper or " "baseline_decorator.")  # noqa: B028
+    warnings.warn("baseline_context is deprecated. Use baseline_wrapper or baseline_decorator.", stacklevel=1)
     plan_stack.append(trigger_and_read(devices, name=name))
     yield
     plan_stack.append(trigger_and_read(devices, name=name))
@@ -235,7 +235,7 @@ def monitor_context(plan_stack, signals):
 
     >>> with monitor_context(plan_stack, [sig1, sig2]): ...
     """
-    warnings.warn("monitor_context is deprecated. Use monitor_wrapper or " "monitor_decorator.")  # noqa: B028
+    warnings.warn("monitor_context is deprecated. Use monitor_wrapper or monitor_decorator.", stacklevel=1)
     if hasattr(signals, "items"):
         # interpret input as dict of signals mapped to event stream names
         pass

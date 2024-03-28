@@ -202,7 +202,7 @@ class Proxy:
             self._context.term()
 
     def __repr__(self):
-        return "{}(in_port={in_port}, out_port={out_port})" "".format(type(self).__name__, **vars(self))
+        return "{}(in_port={in_port}, out_port={out_port})".format(type(self).__name__, **vars(self))
 
 
 class RemoteDispatcher(Dispatcher):

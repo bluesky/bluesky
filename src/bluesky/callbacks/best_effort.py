@@ -126,7 +126,10 @@ class BestEffortCallback(QtAwareCallback):
         if len(set(d[1] for d in dimensions)) != 1:  # noqa: C401
             self._cleanup_motor_heuristic = True
             dimensions = GUESS  # Fall back on our GUESS.
-            warn("We are ignoring the dimensions hinted because we cannot " "combine streams.")  # noqa: B028
+            warn(
+                "We are ignoring the dimensions hinted because we cannot combine streams.",
+                stacklevel=1,
+            )
 
         # for each dimension, choose one field only
         # the plan can supply a list of fields. It's assumed the first
@@ -244,7 +247,10 @@ class BestEffortCallback(QtAwareCallback):
                 for y_key, ax in zip(columns, axes):
                     dtype = doc["data_keys"][y_key]["dtype"]
                     if dtype not in ("number", "integer"):
-                        warn(f"Omitting {y_key} from plot because dtype is {dtype}" "")  # noqa: B028
+                        warn(
+                            f"Omitting {y_key} from plot because dtype is {dtype}",
+                            stacklevel=1,
+                        )
                         continue
                     # Create an instance of LivePlot and an instance of PeakStats.
                     live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax, peak_results=self.peaks)
@@ -273,7 +279,10 @@ class BestEffortCallback(QtAwareCallback):
                         extents = self._start_doc["extents"]
                         shape = self._start_doc["shape"]
                     except KeyError:
-                        warn("Need both 'shape' and 'extents' in plan metadata to " "create LiveGrid.")  # noqa: B028
+                        warn(
+                            "Need both 'shape' and 'extents' in plan metadata to create LiveGrid.",
+                            stacklevel=1,
+                        )
                     else:
                         data_range = np.array([float(np.diff(e)) for e in extents])
                         y_step, x_step = data_range / [max(1, s - 1) for s in shape]
@@ -331,7 +340,7 @@ class BestEffortCallback(QtAwareCallback):
                         self._live_scatters[doc["uid"]][I_key] = live_scatter
 
             else:
-                raise NotImplementedError("we do not support 3D+ in BEC yet " "(and it should have bailed above)")
+                raise NotImplementedError("we do not support 3D+ in BEC yet (and it should have bailed above)")
 
     def descriptor(self, doc):
         self._descriptors[doc["uid"]] = doc
@@ -480,7 +489,7 @@ class BestEffortCallback(QtAwareCallback):
             dependent (y) axis
         """
         if num_lines < 0:
-            emsg = f"Argument 'num_lines' (given as {num_lines})" " must be >= 0."
+            emsg = f"Argument 'num_lines' (given as {num_lines}) must be >= 0."
             raise ValueError(emsg)
         for liveplot in self._live_plots.values():
             lp = liveplot.get(y_signal.name)

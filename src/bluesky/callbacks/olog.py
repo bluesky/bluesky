@@ -167,7 +167,7 @@ class OlogCallback(CallbackBase):
         from IPython import get_ipython
 
         commands = list(get_ipython().history_manager.get_range())
-        document_content = "%s: %s\n\n" "RunStart Document\n" "-----------------\n" "%s" % (  # noqa: UP031
+        document_content = "%s: %s\n\nRunStart Document\n-----------------\n%s" % (  # noqa: UP031
             doc["scan_id"],
             commands[-1][2],
             pformat(doc),
