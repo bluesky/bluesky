@@ -71,7 +71,7 @@ class _RunWriter(DocumentRouter):
         # Extract the variable fileds of the descriptor that can change during the run
         uid = metadata.pop("uid")
         conf_dict = {uid: metadata.pop("configuration", {})}
-        time_dict = {uid: metadata.pop("time", None)}
+        time_dict = {uid: metadata.pop("time")}
         var_fields = {"configuration": conf_dict, "time": time_dict}
 
         # Get or create a descriptor container
