@@ -114,10 +114,8 @@ def collect_asset_docs_stream_datum(
         data_desc = self.describe()[
             data_key
         ]  # Descriptor dictionary for the current data key
-        if data_desc["dtype"] == "array":
-            data_shape = data_desc["shape"]
-        elif data_desc["dtype"] == "number":
-            data_shape = ()
+        data_shape = tuple(data_desc["shape"])
+        data_shape = data_shape if data_shape != (1,) else ()
         hdf5_path = f"/{data_key}/VALUE"
         if self.counter == 0:
             stream_resource = StreamResource(

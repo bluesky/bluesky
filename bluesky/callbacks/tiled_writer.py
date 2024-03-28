@@ -3,6 +3,7 @@ from collections.abc import Iterable
 import numpy as np
 import pandas as pd
 from event_model import DocumentRouter, RunRouter
+from event_model.documents import StreamDatum, StreamResource
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.structures.array import ArrayStructure, BuiltinDtype
@@ -46,13 +47,13 @@ class _RunWriter(DocumentRouter):
 
     def __init__(self, client):
         self.client = client
-        self.start_stop_node = None
+        self.root_node = None
         self._descriptor_nodes = {}  # references to descriptor containers by uid's
         self._sr_nodes = {}
         self._sr_cache = {}
 
     def start(self, doc):
-        self.start_stop_node = self.client.create_container(
+        self.root_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": doc},
             specs=[Spec("BlueskyRun", version="1.0")],
@@ -61,8 +62,8 @@ class _RunWriter(DocumentRouter):
     def stop(self, doc):
         doc = dict(doc)
         doc.pop("start", None)
-        metadata = dict(self.start_stop_node.metadata) | {"stop": doc}
-        self.start_stop_node.update_metadata(metadata=metadata)
+        metadata = dict(self.root_node.metadata) | {"stop": doc}
+        self.root_node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc):
         desc_name = doc["name"]
@@ -75,10 +76,10 @@ class _RunWriter(DocumentRouter):
         var_fields = {"configuration": conf_dict, "time": time_dict}
 
         # Get or create a descriptor container
-        if desc_name in self.start_stop_node.keys():
-            desc_node = self.start_stop_nodes[desc_name]
+        if desc_name in self.root_node.keys():
+            desc_node = self.root_nodes[desc_name]
         else:
-            desc_node = self.start_stop_node.create_container(
+            desc_node = self.root_node.create_container(
                 key=desc_name, metadata=metadata
             )
             desc_node.create_container(key="external")
@@ -112,11 +113,11 @@ class _RunWriter(DocumentRouter):
             )
             parent_node["events"].write_partition(df, 0)
 
-    def stream_resource(self, doc):
+    def stream_resource(self, doc: StreamResource):
         # Only cache the StreamResource; add the node when at least one StreamDatum is added
         self._sr_cache[doc["uid"]] = doc
 
-    def stream_datum(self, doc):
+    def stream_datum(self, doc: StreamDatum):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
         parent_node = descriptor_node["external"]
 
@@ -134,22 +135,17 @@ class _RunWriter(DocumentRouter):
 
             # POST /api/v1/register/{path}
             file_path = (
-                "/"
-                + sr_doc["root"].strip("/")
-                + "/"
-                + sr_doc["resource_path"].strip("/")
+                sr_doc["root"].strip("/") + "/" + sr_doc["resource_path"].strip("/")
             )
             data_path = sr_doc["resource_kwargs"]["path"].strip("/")
-            data_uri = "file://localhost" + file_path
+            data_uri = "file://localhost/" + file_path
             data_key = sr_doc["data_key"]
             assets = [
                 Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")
             ]
             data_desc = dict(descriptor_node.metadata)["data_keys"][data_key]
-            if data_desc["dtype"] == "array":
-                data_shape = data_desc["shape"]
-            elif data_desc["dtype"] == "number":
-                data_shape = ()
+            data_shape = tuple(data_desc["shape"])
+            data_shape = data_shape if data_shape != (1,) else ()
             data_type = np.dtype(
                 data_desc.get("dtype_str", "<f8")
             )  # Find machine dtype; assume '<f8' by default
