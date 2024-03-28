@@ -274,7 +274,7 @@ def inner_list_product(args):
     cyc : cycler
     """
     if len(args) % 2 != 0:
-        raise ValueError("Wrong number of positional arguments for " "'inner_list_product'")
+        raise ValueError("Wrong number of positional arguments for 'inner_list_product'")
 
     cyclers = []
     for (
@@ -361,7 +361,7 @@ def inner_product(num, args):
     cyc : cycler
     """
     if len(args) % 3 != 0:
-        raise ValueError("Wrong number of positional arguments for " "'inner_product'")
+        raise ValueError("Wrong number of positional arguments for 'inner_product'")
 
     cyclers = []
     for (

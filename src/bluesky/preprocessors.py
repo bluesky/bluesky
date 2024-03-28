@@ -1328,8 +1328,9 @@ class SupplementalData:
         self.flyers = list(flyers)
 
     def __repr__(self):
-        return ("{cls}(baseline={baseline}, monitors={monitors}, " "flyers={flyers})" "").format(
-            cls=type(self).__name__, **vars(self)
+        return ("{cls}(baseline={baseline}, monitors={monitors}, flyers={flyers})").format(
+            cls=type(self).__name__,
+            **vars(self),
         )
 
     # I'm not sure why anyone would want to pickle this but it's good manners

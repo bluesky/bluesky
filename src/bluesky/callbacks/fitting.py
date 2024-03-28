@@ -58,7 +58,7 @@ class LiveFit(CallbackBase):
     def independent_vars(self, val):
         if set(val) != set(self.model.independent_vars):
             raise ValueError(
-                "keys {} must match the independent variables in " "the model " "{}".format(  # noqa: UP032
+                "keys {} must match the independent variables in the model {}".format(  # noqa: UP032
                     set(val), set(self.model.independent_vars)
                 )
             )
@@ -113,7 +113,10 @@ class LiveFit(CallbackBase):
     def update_fit(self):
         N = len(self.model.param_names)
         if len(self.ydata) < N:
-            warnings.warn(f"LiveFitPlot cannot update fit until there are at least {N} " "data points")  # noqa: B028
+            warnings.warn(
+                f"LiveFitPlot cannot update fit until there are at least {N} data points",
+                stacklevel=1,
+            )
         else:
             kwargs = {}
             kwargs.update(self.independent_vars_data)
