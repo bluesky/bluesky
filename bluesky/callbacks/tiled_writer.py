@@ -96,8 +96,8 @@ class _RunWriter(DocumentRouter):
             {c: [v] for c, v in doc["data"].items()}
             | {f"ts_{c}": [v] for c, v in doc["timestamps"].items()}
         )
-        if "data" in parent_node.keys():
-            parent_node["data"].append_partition(df, 0)
+        if "events" in parent_node.keys():
+            parent_node["events"].append_partition(df, 0)
         else:
             parent_node.new(
                 structure_family=StructureFamily.table,
@@ -108,9 +108,9 @@ class _RunWriter(DocumentRouter):
                         mimetype="text/csv",
                     ),  # or PARQUET_MIMETYPE
                 ],
-                key="data",
+                key="events",
             )
-            parent_node["data"].write_partition(df, 0)
+            parent_node["events"].write_partition(df, 0)
 
     def stream_resource(self, doc):
         # Only cache the StreamResource; add the node when at least one StreamDatum is added
