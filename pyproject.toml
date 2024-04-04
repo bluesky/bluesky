@@ -83,6 +83,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
+    "tiled[all]",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]
