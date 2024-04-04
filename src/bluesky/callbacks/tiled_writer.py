@@ -63,7 +63,7 @@ class _RunWriter(DocumentRouter):
     def stop(self, doc):
         doc = dict(doc)
         doc.pop("start", None)
-        metadata = dict(self.root_node.metadata) | {"stop": doc}
+        metadata = {"stop": doc, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc):
@@ -93,9 +93,9 @@ class _RunWriter(DocumentRouter):
     def event(self, doc: dict):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
         parent_node = descriptor_node["internal"]
-        df = pd.DataFrame(
-            {c: [v] for c, v in doc["data"].items()} | {f"ts_{c}": [v] for c, v in doc["timestamps"].items()}
-        )
+        df_dict = {c: [v] for c, v in doc["data"].items()}
+        df_dict.update({f"ts_{c}": [v] for c, v in doc["timestamps"].items()})
+        df = pd.DataFrame(df_dict)
         if "events" in parent_node.keys():
             parent_node["events"].append_partition(df, 0)
         else:
@@ -106,7 +106,7 @@ class _RunWriter(DocumentRouter):
                         structure_family=StructureFamily.table,
                         structure=TableStructure.from_pandas(df),
                         mimetype="text/csv",
-                    ),  # or PARQUET_MIMETYPE
+                    ),
                 ],
                 key="events",
             )
@@ -127,27 +127,38 @@ class _RunWriter(DocumentRouter):
         if sr_uid in self._sr_nodes.keys():
             sr_node = self._sr_nodes[sr_uid]
         elif sr_uid in self._sr_cache.keys():
-            # Register a new (empty) Stream Resource
+            # Register a new (empty) Stream Resource node
             sr_doc = self._sr_cache.pop(sr_uid)
 
             # POST /api/v1/register/{path}
-            file_path = sr_doc["root"].strip("/") + "/" + sr_doc["resource_path"].strip("/")
-            data_path = sr_doc["resource_kwargs"]["path"].strip("/")
-            data_uri = "file://localhost/" + file_path
             data_key = sr_doc["data_key"]
-            assets = [Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")]
             data_desc = dict(descriptor_node.metadata)["data_keys"][data_key]
             data_shape = tuple(data_desc["shape"])
             data_shape = data_shape if data_shape != (1,) else ()
             data_type = np.dtype(data_desc.get("dtype_str", "<f8"))  # Find machine dtype; assume '<f8' by default
+
+            # Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+            if ("mimetype" not in sr_doc.keys()) and ("spec" not in sr_doc.keys()):
+                raise RuntimeError("StreamResource document is missing a mimetype or spec")
+            else:
+                mimetype = sr_doc.get("mimetype", MIMETYPE_LOOKUP[sr_doc["spec"]])
+            if "parameters" in sr_doc.keys():
+                data_path = sr_doc["parameters"]["path"].strip("/")
+            else:
+                data_path = sr_doc["resource_kwargs"]["path"].strip("/")
+            if "uri" in sr_doc.keys():
+                data_uri = sr_doc["uri"]
+            else:
+                file_path = sr_doc["root"].strip("/") + "/" + sr_doc["resource_path"].strip("/")
+                data_uri = "file://localhost/" + file_path
 
             sr_node = parent_node.new(
                 key=data_key,
                 structure_family=StructureFamily.array,
                 data_sources=[
                     DataSource(
-                        assets=assets,
-                        mimetype=MIMETYPE_LOOKUP[sr_doc["spec"]],
+                        assets=[Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")],
+                        mimetype=mimetype,
                         structure_family=StructureFamily.array,
                         structure=ArrayStructure(
                             data_type=BuiltinDtype.from_numpy_dtype(data_type),
@@ -175,7 +186,7 @@ class _RunWriter(DocumentRouter):
         #    None -- single chunk for all existing and new elements
         #    int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
         #    list[int] -- new elements are chunked according to the provided specs
-        chunk_size = sr_node.metadata["resource_kwargs"].get("chunk_size", None)
+        chunk_size = sr_node.metadata["parameters"].get("chunk_size", None)
         chunk_spec = ds_dict["structure"]["chunks"][0]
         if isinstance(chunk_size, Iterable):
             chunk_spec.extend(chunk_size)

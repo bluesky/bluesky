@@ -83,11 +83,13 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             hdf5_path = f"/{data_key}/VALUE"
             if self.counter == 0:
                 stream_resource = StreamResource(
-                    resource_kwargs={"path": hdf5_path, "chunked": False},
+                    parameters={"path": hdf5_path, "chunk_size": False},
                     data_key=data_key,
                     root=self.root,
                     resource_path="/dataset.h5",
+                    uri="file://localhost" + self.root + "/dataset.h5",
                     spec="ADHDF5_SWMR_STREAM",
+                    mimetype="application/x-hdf5",
                     uid=uid,
                 )
                 # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
