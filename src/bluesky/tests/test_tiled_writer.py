@@ -58,33 +58,6 @@ class Named(HasName):
         self.counter = 0
 
 
-def test_stream_datum_readable_counts(RE, client, tmpdir):
-    tw = TiledWriter(client)
-    det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
-    RE(bp.count([det], 3), tw)
-    arrs = client.values().last()["primary"]["external"].values()
-    assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (3, 10, 15)
-    assert arrs[0].read() is not None
-    assert arrs[1][:] is not None
-
-
-def test_stream_datum_collectable(RE, client, tmpdir):
-    det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
-    tw = TiledWriter(client)
-    RE(collect_plan(det, name="primary"), tw)
-    arrs = client.values().last()["primary"]["external"].values()
-    assert arrs[0].read() is not None
-    assert arrs[1][:] is not None
-
-
-def collect_plan(*objs, name="primary"):
-    yield from bps.open_run()
-    yield from bps.declare_stream(*objs, collect=True, name=name)
-    yield from bps.collect(*objs, return_payload=False, name=name)
-    yield from bps.close_run()
-
-
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources for 2 data keys and can be read or collected"""
 
@@ -154,3 +127,30 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     def read(self) -> Dict[str, Reading]:
         """Produce an empty event"""
         return {}
+
+
+def test_stream_datum_readable_counts(RE, client, tmpdir):
+    tw = TiledWriter(client)
+    det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
+    RE(bp.count([det], 3), tw)
+    arrs = client.values().last()["primary"]["external"].values()
+    assert arrs[0].shape == (3,)
+    assert arrs[1].shape == (3, 10, 15)
+    assert arrs[0].read() is not None
+    assert arrs[1][:] is not None
+
+
+def test_stream_datum_collectable(RE, client, tmpdir):
+    det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
+    tw = TiledWriter(client)
+    RE(collect_plan(det, name="primary"), tw)
+    arrs = client.values().last()["primary"]["external"].values()
+    assert arrs[0].read() is not None
+    assert arrs[1][:] is not None
+
+
+def collect_plan(*objs, name="primary"):
+    yield from bps.open_run()
+    yield from bps.declare_stream(*objs, collect=True, name=name)
+    yield from bps.collect(*objs, return_payload=False, name=name)
+    yield from bps.close_run()
