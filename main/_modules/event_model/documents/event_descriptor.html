@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>event_model.documents.event_descriptor &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>event_model.documents.event_descriptor &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../../_static/doctools.js?v=888ff710"></script>
         <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -116,7 +116,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for event_model.documents.event_descriptor</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NotRequired</span><span class="p">,</span> <span class="n">TypedDict</span>
 
@@ -149,7 +149,7 @@
             <span class="n">Field</span><span class="p">(</span>
                 <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Where the data is stored if it is stored external &quot;</span>
                 <span class="s2">&quot;to the events&quot;</span><span class="p">,</span>
-                <span class="n">regex</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;^[A-Z]+:?&quot;</span><span class="p">,</span>
+                <span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;^[A-Z]+:?&quot;</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">]</span>
     <span class="p">]</span>
@@ -161,7 +161,7 @@
     <span class="p">]</span>
     <span class="n">precision</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
         <span class="n">Annotated</span><span class="p">[</span>
-            <span class="nb">int</span><span class="p">,</span>
+            <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
             <span class="n">Field</span><span class="p">(</span>
                 <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of digits after decimal place if &quot;</span>
                 <span class="s2">&quot;a floating point number&quot;</span>
@@ -176,7 +176,7 @@
         <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The source (ex piece of hardware) of the data.&quot;</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="n">units</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
-        <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Engineering units of the value&quot;</span><span class="p">)]</span>
+        <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Engineering units of the value&quot;</span><span class="p">)]</span>
     <span class="p">]</span></div>
 
 
@@ -214,18 +214,12 @@
 
 
 <span class="n">EVENT_DESCRIPTOR_EXTRA_SCHEMA</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;patternProperties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;^([^./]+)$&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/DataType&quot;</span><span class="p">}},</span>
-    <span class="s2">&quot;definitions&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;patternProperties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;^([^./]+)$&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/$defs/DataType&quot;</span><span class="p">}},</span>
+    <span class="s2">&quot;$defs&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">&quot;DataType&quot;</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;DataType&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;patternProperties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;^([^./]+)$&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/DataType&quot;</span><span class="p">}},</span>
+            <span class="s2">&quot;patternProperties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;^([^./]+)$&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/$defs/DataType&quot;</span><span class="p">}},</span>
             <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="p">},</span>
-        <span class="s2">&quot;DataKey&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">]},</span>
-                <span class="s2">&quot;precision&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">]},</span>
-            <span class="p">}</span>
         <span class="p">},</span>
     <span class="p">},</span>
     <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.utils &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>bluesky.utils &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../_static/doctools.js?v=888ff710"></script>
         <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -405,7 +405,7 @@
                 <span class="c1"># It&#39;s been 10 seconds since the last SIGINT. Reset.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">1</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_sigint_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;It has been 10 seconds since the &quot;</span> <span class="s2">&quot;last SIGINT. Resetting SIGINT &quot;</span> <span class="s2">&quot;handler.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.&quot;</span><span class="p">)</span>
                 <span class="c1"># weeee push these to threads to not block the main thread</span>
                 <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">request_pause</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="kc">True</span><span class="p">,))</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
                 <span class="nb">print</span><span class="p">(</span>
@@ -419,7 +419,7 @@
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;trying a second time&quot;</span><span class="p">)</span>
                 <span class="c1"># - Ctrl-C twice within 10 seconds -&gt; hard pause</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RunEngine detected two SIGINTs. &quot;</span> <span class="s2">&quot;A hard pause will be requested.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RunEngine detected two SIGINTs. A hard pause will be requested.&quot;</span><span class="p">)</span>
 
                 <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">request_pause</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="kc">False</span><span class="p">,))</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">last_sigint_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
@@ -726,7 +726,7 @@
         <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;subs values must be functions or lists &quot;</span> <span class="s2">&quot;of functions. The offending entry is</span><span class="se">\n</span><span class="s2"> &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;subs values must be functions or lists of functions. The offending entry is</span><span class="se">\n</span><span class="s2"> &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
     <span class="k">return</span> <span class="n">normalized</span>
 
@@ -1051,7 +1051,7 @@
         <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to create metadata history file at </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Storing HistoryDict in memory; it will not persist &quot;</span> <span class="s2">&quot;when session is ended.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Storing HistoryDict in memory; it will not persist when session is ended.&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">historydict</span><span class="o">.</span><span class="n">HistoryDict</span><span class="p">(</span><span class="s2">&quot;:memory:&quot;</span><span class="p">)</span>
 
 
@@ -1082,7 +1082,7 @@
     <span class="k">elif</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;Qt4Agg&quot;</span><span class="p">,</span> <span class="s2">&quot;Qt5Agg&quot;</span><span class="p">):</span>
         <span class="n">install_qt_kicker</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">,</span> <span class="n">update_rate</span><span class="o">=</span><span class="n">update_rate</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The matplotlib backend </span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2"> is not yet &quot;</span> <span class="s2">&quot;supported.&quot;</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The matplotlib backend </span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2"> is not yet supported.&quot;</span><span class="p">)</span></div>
 
 
 
@@ -1733,7 +1733,7 @@
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">type_map</span><span class="p">[</span><span class="s2">&quot;real&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">type_map</span><span class="p">[</span><span class="s2">&quot;pseudo&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Passed in a mix of real and pseudo axis.  &quot;</span> <span class="s2">&quot;Can not cope, failing&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Passed in a mix of real and pseudo axis. Can not cope, failing&quot;</span><span class="p">)</span>
         <span class="n">pseudo_axes</span> <span class="o">=</span> <span class="n">type_map</span><span class="p">[</span><span class="s2">&quot;pseudo&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pseudo_axes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">p_cyc</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">,</span> <span class="p">(</span><span class="n">cycler</span><span class="p">(</span><span class="n">my_name</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="n">input_data</span><span class="p">[</span><span class="n">c</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">type_map</span><span class="p">[</span><span class="s2">&quot;pseudo&quot;</span><span class="p">]))</span>

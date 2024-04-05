@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.callbacks.mpl_plotting &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>bluesky.callbacks.mpl_plotting &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../../_static/doctools.js?v=888ff710"></script>
         <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -150,7 +150,7 @@
         <span class="c1"># Already initialized.</span>
         <span class="k">return</span>
     <span class="k">if</span> <span class="n">threading</span><span class="o">.</span><span class="n">current_thread</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">threading</span><span class="o">.</span><span class="n">main_thread</span><span class="p">():</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;initialize_qt_teleporter() may only be called from the main &quot;</span> <span class="s2">&quot;thread.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;initialize_qt_teleporter() may only be called from the main thread.&quot;</span><span class="p">)</span>
     <span class="n">_get_teleporter</span><span class="p">()</span>
 
 
@@ -259,9 +259,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">__setup_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;Values were given for both `fig` and `ax`. &quot;</span> <span class="s2">&quot;Only one can be used; prefer ax.&quot;</span>
-                    <span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Values were given for both `fig` and `ax`. Only one can be used; prefer ax.&quot;</span><span class="p">)</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>  <span class="c1"># noqa: B028</span>
                     <span class="s2">&quot;The `fig` keyword arugment of LivePlot is &quot;</span>
                     <span class="s2">&quot;deprecated and will be removed in the future. &quot;</span>
@@ -363,7 +361,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;LivePlot did not get any data that corresponds to the &quot;</span> <span class="sa">f</span><span class="s2">&quot;y axis. </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_data</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_data</span><span class="p">):</span>
             <span class="nb">print</span><span class="p">(</span>
-                <span class="s2">&quot;LivePlot has a different number of elements for x (</span><span class="si">{}</span><span class="s2">) and&quot;</span> <span class="s2">&quot;y (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
+                <span class="s2">&quot;LivePlot has a different number of elements for x (</span><span class="si">{}</span><span class="s2">) and y (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
                     <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_data</span><span class="p">)</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -749,7 +747,7 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">livefit</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_points</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">legend_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">livefit</span><span class="o">.</span><span class="n">independent_vars</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;LiveFitPlot supports models with one &quot;</span> <span class="s2">&quot;independent variable only.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;LiveFitPlot supports models with one independent variable only.&quot;</span><span class="p">)</span>
         <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__x_key</span><span class="p">,)</span> <span class="o">=</span> <span class="n">livefit</span><span class="o">.</span><span class="n">independent_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>  <span class="c1"># this never changes</span>
         <span class="p">(</span><span class="n">x</span><span class="p">,)</span> <span class="o">=</span> <span class="n">livefit</span><span class="o">.</span><span class="n">independent_vars</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>  <span class="c1"># this may change</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">livefit</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">legend_keys</span><span class="o">=</span><span class="n">legend_keys</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>

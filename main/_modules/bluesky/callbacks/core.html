@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.callbacks.core &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>bluesky.callbacks.core &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../../_static/doctools.js?v=888ff710"></script>
         <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -316,7 +316,7 @@
                 <span class="n">field_list</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>  <span class="c1"># noqa: B904</span>
-                    <span class="s2">&quot;Fields must be strings or objects with a &quot;</span> <span class="s2">&quot;&#39;describe&#39; method that return a dict.&quot;</span>
+                    <span class="s2">&quot;Fields must be strings or objects with a &#39;describe&#39; method that return a dict.&quot;</span>
                 <span class="p">)</span>
             <span class="n">string_fields</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">field_list</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">string_fields</span>
@@ -407,7 +407,7 @@
         <span class="s2">&quot;string&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">_fm_sty</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;fm_sty&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="s2">&quot;prec&quot;</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
-    <span class="n">water_mark</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{st[plan_type]}</span><span class="s2"> </span><span class="si">{st[plan_name]}</span><span class="s2"> [&#39;</span><span class="si">{st[uid]:.8s}</span><span class="s2">&#39;] &quot;</span> <span class="s2">&quot;(scan num: </span><span class="si">{st[scan_id]}</span><span class="s2">)&quot;</span>
+    <span class="n">water_mark</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{st[plan_type]}</span><span class="s2"> </span><span class="si">{st[plan_name]}</span><span class="s2"> [&#39;</span><span class="si">{st[uid]:.8s}</span><span class="s2">&#39;] (scan num: </span><span class="si">{st[scan_id]}</span><span class="s2">)&quot;</span>
     <span class="n">ev_time_key</span> <span class="o">=</span> <span class="s2">&quot;SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>

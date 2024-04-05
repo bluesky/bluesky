@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.plans &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>bluesky.plans &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../_static/doctools.js?v=888ff710"></script>
         <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -238,7 +238,7 @@
 <span class="sd">    :func:`bluesky.plans.rel_list_grid_scan`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The list of arguments must contain a list of &quot;</span> <span class="s2">&quot;points for each defined motor&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The list of arguments must contain a list of points for each defined motor&quot;</span><span class="p">)</span>
 
     <span class="n">md</span> <span class="o">=</span> <span class="n">md</span> <span class="ow">or</span> <span class="p">{}</span>  <span class="c1"># reset md if it is None.</span>
 
@@ -755,7 +755,7 @@
 <span class="sd">    :func:`bluesky.plans.rel_adaptive_scan`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">min_step</span> <span class="o">&lt;</span> <span class="n">max_step</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_step and max_step must meet condition of &quot;</span> <span class="s2">&quot;max_step &gt; min_step &gt; 0&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_step and max_step must meet condition of max_step &gt; min_step &gt; 0&quot;</span><span class="p">)</span>
 
     <span class="n">_md</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;detectors&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">det</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">],</span>

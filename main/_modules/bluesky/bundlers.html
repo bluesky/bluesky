@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.bundlers &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>bluesky.bundlers &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../_static/doctools.js?v=888ff710"></script>
         <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -334,7 +334,7 @@
         <span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">descriptor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">)</span>
         <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-            <span class="s2">&quot;[descriptor] document emitted with name </span><span class="si">%r</span><span class="s2"> containing &quot;</span> <span class="s2">&quot;data keys </span><span class="si">%r</span><span class="s2"> (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;[descriptor] document emitted with name </span><span class="si">%r</span><span class="s2"> containing data keys </span><span class="si">%r</span><span class="s2"> (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
             <span class="n">desc_key</span><span class="p">,</span>
             <span class="n">data_keys</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span>
@@ -537,11 +537,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;monitor&#39; Msg does not accept positional &quot;</span> <span class="s2">&quot;arguments.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;monitor&#39; Msg does not accept positional arguments.&quot;</span><span class="p">)</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">short_uid</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A &#39;monitor&#39; message was sent for </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">&quot;</span> <span class="s2">&quot;which is already monitored&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A &#39;monitor&#39; message was sent for </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2"> which is already monitored&quot;</span><span class="p">)</span>
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
@@ -551,9 +551,9 @@
         <span class="k">def</span> <span class="nf">emit_event</span><span class="p">(</span><span class="n">readings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">readings</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># We were passed something we can use, but check no args or kwargs</span>
-                <span class="k">assert</span> <span class="ow">not</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">,</span> <span class="p">(</span>
-                    <span class="s2">&quot;If subscribe callback called with readings, &quot;</span> <span class="s2">&quot;args and kwargs are not supported.&quot;</span>
-                <span class="p">)</span>
+                <span class="k">assert</span> <span class="p">(</span>
+                    <span class="ow">not</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">kwargs</span>
+                <span class="p">),</span> <span class="s2">&quot;If subscribe callback called with readings, args and kwargs are not supported.&quot;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Ignore the inputs. Use this call as a signal to call read on the</span>
                 <span class="c1"># object, a crude way to be sure we get all the info we need.</span>
@@ -624,7 +624,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot &#39;unmonitor&#39; </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">; it is not &quot;</span> <span class="s2">&quot;being monitored.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot &#39;unmonitor&#39; </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">; it is not being monitored.&quot;</span><span class="p">)</span>
         <span class="n">cb</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
         <span class="n">obj</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>

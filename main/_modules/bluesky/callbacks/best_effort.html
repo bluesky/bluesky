@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.callbacks.best_effort &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>bluesky.callbacks.best_effort &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../../_static/doctools.js?v=888ff710"></script>
         <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -273,7 +273,10 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># noqa: C401</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_motor_heuristic</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">dimensions</span> <span class="o">=</span> <span class="n">GUESS</span>  <span class="c1"># Fall back on our GUESS.</span>
-            <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;We are ignoring the dimensions hinted because we cannot &quot;</span> <span class="s2">&quot;combine streams.&quot;</span><span class="p">)</span>  <span class="c1"># noqa: B028</span>
+            <span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;We are ignoring the dimensions hinted because we cannot combine streams.&quot;</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># for each dimension, choose one field only</span>
         <span class="c1"># the plan can supply a list of fields. It&#39;s assumed the first</span>
@@ -391,7 +394,10 @@
                 <span class="k">for</span> <span class="n">y_key</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">axes</span><span class="p">):</span>
                     <span class="n">dtype</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">][</span><span class="n">y_key</span><span class="p">][</span><span class="s2">&quot;dtype&quot;</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">dtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">):</span>
-                        <span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Omitting </span><span class="si">{</span><span class="n">y_key</span><span class="si">}</span><span class="s2"> from plot because dtype is </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># noqa: B028</span>
+                        <span class="n">warn</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Omitting </span><span class="si">{</span><span class="n">y_key</span><span class="si">}</span><span class="s2"> from plot because dtype is </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="p">)</span>
                         <span class="k">continue</span>
                     <span class="c1"># Create an instance of LivePlot and an instance of PeakStats.</span>
                     <span class="n">live_plot</span> <span class="o">=</span> <span class="n">LivePlotPlusPeaks</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y_key</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x_key</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">peak_results</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">)</span>
@@ -420,7 +426,10 @@
                         <span class="n">extents</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="p">[</span><span class="s2">&quot;extents&quot;</span><span class="p">]</span>
                         <span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="p">[</span><span class="s2">&quot;shape&quot;</span><span class="p">]</span>
                     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-                        <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Need both &#39;shape&#39; and &#39;extents&#39; in plan metadata to &quot;</span> <span class="s2">&quot;create LiveGrid.&quot;</span><span class="p">)</span>  <span class="c1"># noqa: B028</span>
+                        <span class="n">warn</span><span class="p">(</span>
+                            <span class="s2">&quot;Need both &#39;shape&#39; and &#39;extents&#39; in plan metadata to create LiveGrid.&quot;</span><span class="p">,</span>
+                            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">data_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">extents</span><span class="p">])</span>
                         <span class="n">y_step</span><span class="p">,</span> <span class="n">x_step</span> <span class="o">=</span> <span class="n">data_range</span> <span class="o">/</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">s</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">]</span>
@@ -478,7 +487,7 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">_live_scatters</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]][</span><span class="n">I_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">live_scatter</span>
 
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;we do not support 3D+ in BEC yet &quot;</span> <span class="s2">&quot;(and it should have bailed above)&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;we do not support 3D+ in BEC yet (and it should have bailed above)&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">descriptor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">doc</span>
@@ -627,7 +636,7 @@
 <span class="sd">            dependent (y) axis</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">num_lines</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">emsg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Argument &#39;num_lines&#39; (given as </span><span class="si">{</span><span class="n">num_lines</span><span class="si">}</span><span class="s2">)&quot;</span> <span class="s2">&quot; must be &gt;= 0.&quot;</span>
+            <span class="n">emsg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Argument &#39;num_lines&#39; (given as </span><span class="si">{</span><span class="n">num_lines</span><span class="si">}</span><span class="s2">) must be &gt;= 0.&quot;</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">emsg</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">liveplot</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_live_plots</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">lp</span> <span class="o">=</span> <span class="n">liveplot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">y_signal</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.suspenders &mdash; bluesky 1.13.0a4.dev8+g387ec70f documentation</title>
+  <title>bluesky.suspenders &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/documentation_options.js?v=dc14d8d6"></script>
+        <script src="../../_static/documentation_options.js?v=e6b53b8d"></script>
         <script src="../../_static/doctools.js?v=888ff710"></script>
         <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev8+g387ec70f
+                1.13.0a4.dev10+gf03451a7
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -162,7 +162,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_post_plan</span> <span class="o">=</span> <span class="n">post_plan</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(</span><span class="si">{!r}</span><span class="s2">, sleep=</span><span class="si">{}</span><span class="s2">, pre_plan=</span><span class="si">{}</span><span class="s2">, post_plan=</span><span class="si">{}</span><span class="s2">,&quot;</span> <span class="s2">&quot;tripped_message=</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(</span><span class="si">{!r}</span><span class="s2">, sleep=</span><span class="si">{}</span><span class="s2">, pre_plan=</span><span class="si">{}</span><span class="s2">, post_plan=</span><span class="si">{}</span><span class="s2">, tripped_message=</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
             <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">,</span>
@@ -617,7 +617,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
             <span class="k">return</span> <span class="s2">&quot;&quot;</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="s2">&quot;Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is outside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
+        <span class="n">just</span> <span class="o">=</span> <span class="s2">&quot;Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is outside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
@@ -675,7 +675,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
             <span class="k">return</span> <span class="s2">&quot;&quot;</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="s2">&quot;Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is inside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
+        <span class="n">just</span> <span class="o">=</span> <span class="s2">&quot;Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is inside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span>
