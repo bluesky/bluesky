@@ -1,13 +1,11 @@
 import itertools
-from typing import Dict
-import uuid
-from cycler import cycler
 import operator
 import time
 import uuid
 import warnings
 from collections.abc import Iterable
 from functools import reduce
+from typing import Dict
 
 from cycler import cycler
 
@@ -17,7 +15,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Flyable, Locatable, Triggerable, Status, check_supports
+from .protocols import Flyable, Locatable, Status, Triggerable, check_supports
 from .utils import (
     Msg,
     all_safe_rewind,
@@ -653,11 +651,11 @@ def kickoff(obj, *args, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    objs = [obj]+[check_supports(arg, Flyable) for arg in args]
+    objs = [obj] + [check_supports(arg, Flyable) for arg in args]
 
     statuses: Dict[Flyable, Status] = {}
     for obj in objs:
-        ret = yield Msg('kickoff', obj, group=group, **kwargs)
+        ret = yield Msg("kickoff", obj, group=group, **kwargs)
         statuses[obj] = ret
     if wait:
         yield from _wait(group=group)
@@ -699,11 +697,11 @@ def complete(obj, *args, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    objs = [obj]+[check_supports(arg, Flyable) for arg in args]
+    objs = [obj] + [check_supports(arg, Flyable) for arg in args]
 
     statuses: Dict[Flyable, Status] = {}
     for obj in objs:
-        ret = yield Msg('complete', obj, group=group, **kwargs)
+        ret = yield Msg("complete", obj, group=group, **kwargs)
         statuses[obj] = ret
     if wait:
         yield from _wait(group=group)
