@@ -36,23 +36,31 @@ class MetaclassForClassProperties(MetaHasTraits, type):
     @property
     def positioners(self):
         if self._positioners:
-            warnings.warn("BlueskyMagics.positioners is deprecated. " "Please use the newer labels feature.")  # noqa: B028
+            warnings.warn(
+                "BlueskyMagics.positioners is deprecated. " "Please use the newer labels feature.", stacklevel=1
+            )
         return self._positioners
 
     @positioners.setter
     def positioners(self, val):
-        warnings.warn("BlueskyMagics.positioners is deprecated. " "Please use the newer labels feature.")  # noqa: B028
+        warnings.warn(
+            "BlueskyMagics.positioners is deprecated. " "Please use the newer labels feature.", stacklevel=1
+        )
         self._positioners = val
 
     @property
     def detectors(self):
         if self._detectors:
-            warnings.warn("BlueskyMagics.detectors is deprecated. " "Please use the newer labels feature.")  # noqa: B028
+            warnings.warn(
+                "BlueskyMagics.detectors is deprecated. " "Please use the newer labels feature.", stacklevel=1
+            )
         return self._detectors
 
     @detectors.setter
     def detectors(self, val):
-        warnings.warn("BlueskyMagics.detectors is deprecated. " "Please use the newer labels feature.")  # noqa: B028
+        warnings.warn(
+            "BlueskyMagics.detectors is deprecated. " "Please use the newer labels feature.", stacklevel=1
+        )
         self._detectors = val
 
     _positioners: List[Movable] = []
@@ -94,7 +102,7 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
     @line_magic
     def mov(self, line):
         if len(line.split()) % 2 != 0:
-            raise TypeError("Wrong parameters. Expected: " "%mov motor position (or several pairs like that)")
+            raise TypeError("Wrong parameters. Expected: %mov motor position (or several pairs like that)")
         args = []
         for motor, pos in partition(2, line.split()):
             args.append(eval(motor, self.shell.user_ns))
@@ -112,7 +120,7 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
     @line_magic
     def movr(self, line):
         if len(line.split()) % 2 != 0:
-            raise TypeError("Wrong parameters. Expected: " "%mov motor position (or several pairs like that)")
+            raise TypeError("Wrong parameters. Expected: %mov motor position (or several pairs like that)")
         args = []
         for motor, pos in partition(2, line.split()):
             args.append(eval(motor, self.shell.user_ns))
@@ -158,7 +166,7 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
             for label in labels:
                 dets.extend(obj for _, obj in devices_dict.get(label, []))
         plan = bp.count(dets)
-        print("[This data will not be saved. " "Use the RunEngine to collect data.]")
+        print("[This data will not be saved. Use the RunEngine to collect data.]")
         try:
             self.RE(plan, _ct_callback)
         except RunEngineInterrupted:

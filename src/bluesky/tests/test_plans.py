@@ -325,7 +325,7 @@ def test_rd_fails(hw):
     obj.noise.kind = "hinted"
     hints = obj.hints.get("fields", [])
     msg = re.escape(
-        f"Your object {obj} ({obj.name}.{obj.dotted_name}) " + f"has {len(hints)} items hinted ({hints}).  We "
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) has {len(hints)} items hinted ({hints}).  We "
     )
     with pytest.raises(ValueError, match=msg):
         list(bps.rd(obj))

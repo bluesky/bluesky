@@ -64,7 +64,7 @@ class AverageStream(LiveDispatcher):
             desc_id = cache[0]["descriptor"]
             # Check that all of our events came from the same configuration
             if not all([desc_id == evt["descriptor"] for evt in cache]):  # noqa: C419
-                raise Exception("The events in this bundle are from " "different configurations!")
+                raise Exception("The events in this bundle are from different configurations!")
             # Use the last descriptor to avoid strings and objects
             data_keys = self.raw_descriptors[desc_id]["data_keys"]
             for key, info in data_keys.items():

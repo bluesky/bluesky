@@ -1176,7 +1176,7 @@ def caching_repeater(n, plan):
     --------
     :func:`bluesky.plan_stubs.repeater`
     """
-    warnings.warn("The caching_repeater will be removed in a future version " "of bluesky.", stacklevel=2)
+    warnings.warn("The caching_repeater will be removed in a future version of bluesky.", stacklevel=2)
     if n is None:
         gen = itertools.count(0)
     else:
@@ -1344,7 +1344,7 @@ def repeat(plan, num=1, delay=None):
             pass
         else:
             if num - 1 > num_delays:
-                raise ValueError("num=%r but delays only provides %r " "entries" % (num, num_delays))  # noqa: UP031
+                raise ValueError("num=%r but delays only provides %r entries" % (num, num_delays))  # noqa: UP031
         delay = iter(delay)
 
     def repeated_plan():
@@ -1354,14 +1354,14 @@ def repeat(plan, num=1, delay=None):
             yield from ensure_generator(plan())
             try:
                 d = next(delay)
-            except StopIteration:
+            except StopIteration as stop:
                 if i + 1 == num:
                     break
                 elif num is None:
                     break
                 else:
                     # num specifies a number of iterations less than delay
-                    raise ValueError("num=%r but delays only provides %r " "entries" % (num, i))  # noqa: B904, UP031
+                    raise ValueError("num=%r but delays only provides %r entries" % (num, i)) from stop  # noqa: UP031
             if d is not None:
                 d = d - (time.time() - now)
                 if d > 0:  # Sleep if and only if time is left to do it.
