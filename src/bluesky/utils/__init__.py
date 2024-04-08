@@ -235,7 +235,6 @@ class SigintHandler(SignalHandler):
         super().__init__(signal.SIGINT, log=RE.log)
         self.RE = RE
         self.last_sigint_time = None  # time most recent SIGINT was processed
-        self.num_sigints_processed = 0  # count SIGINTs processed
 
     def __enter__(self):
         return super().__enter__()
@@ -251,6 +250,7 @@ class SigintHandler(SignalHandler):
                 self.count = 1
                 if self.last_sigint_time is not None:
                     self.log.debug("It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.")
+
                 # weeee push these to threads to not block the main thread
                 def maybe_defer_pause():
                     try:
