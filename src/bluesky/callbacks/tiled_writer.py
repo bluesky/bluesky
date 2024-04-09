@@ -17,7 +17,7 @@ MIMETYPE_LOOKUP = {
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
     "AD_TIFF": "image/tiff",
 }
-DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str"}
+DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
 
 class TiledWriter:
