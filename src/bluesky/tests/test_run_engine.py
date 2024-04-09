@@ -1,7 +1,6 @@
 import asyncio
 import os
 import signal
-import sys
 import threading
 import time as ttime
 import types
@@ -713,10 +712,6 @@ def test_exit_raise(RE, unpause_func, excp):
     assert flag
 
 
-@pytest.mark.skipif(
-    os.environ.get("TRAVIS", None) == "true" and sys.platform == "darwin",
-    reason=("The file-descriptor wake up based signal handling does not work on travis on OSX"),
-)
 def test_sigint_three_hits(RE, hw):
     import time
 
@@ -750,7 +745,6 @@ def test_sigint_three_hits(RE, hw):
     assert 0.3 < done_cleanup_time - end_time < 0.6
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="requires python3.5")
 def test_sigint_many_hits_pln(RE):
     pid = os.getpid()
 
@@ -825,7 +819,6 @@ def test_sigint_many_hits_panic(RE):
         RE.request_pause()
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="requires python3.5")
 def test_sigint_many_hits_cb(RE):
     pid = os.getpid()
 
