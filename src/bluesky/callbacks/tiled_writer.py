@@ -17,6 +17,7 @@ MIMETYPE_LOOKUP = {
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
     "AD_TIFF": "image/tiff",
 }
+DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str"}
 
 
 class TiledWriter:
@@ -70,7 +71,7 @@ class _RunWriter(DocumentRouter):
         desc_name = doc["name"]
         metadata = dict(doc)
 
-        # Remove variable fields of the metadata and encapsulate them into sub-dictionaries
+        # Remove variable fields of the metadata and encapsulate them into sub-dictionaries with uids as the keys
         uid = metadata.pop("uid")
         conf_dict = {uid: metadata.pop("configuration", {})}
         time_dict = {uid: metadata.pop("time")}
@@ -135,7 +136,11 @@ class _RunWriter(DocumentRouter):
             data_desc = dict(descriptor_node.metadata)["data_keys"][data_key]
             data_shape = tuple(data_desc["shape"])
             data_shape = data_shape if data_shape != (1,) else ()
-            data_type = np.dtype(data_desc.get("dtype_str", "<f8"))  # Find machine dtype; assume '<f8' by default
+
+            # Find machine dtype
+            data_type = data_desc["dtype"]
+            data_type = DTYPE_LOOKUP[data_type] if data_type in DTYPE_LOOKUP.keys() else data_type
+            data_type = np.dtype(data_desc.get("dtype_str", data_type))
 
             # Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
             if ("mimetype" not in sr_doc.keys()) and ("spec" not in sr_doc.keys()):
@@ -177,7 +182,6 @@ class _RunWriter(DocumentRouter):
             raise RuntimeError(f"Stream Resource {sr_uid} is referenced before being declared.")
 
         # Append StreamDatum to an existing StreamResource (by overwriting it with changed shape)
-        url = sr_node.uri.replace("/metadata/", "/data_source/")
         sr_node.refresh()
         ds_dict = sr_node.data_sources()[0]
         ds_dict["structure"]["shape"][0] += num_new_rows
@@ -197,4 +201,5 @@ class _RunWriter(DocumentRouter):
             chunk_spec.extend([chunk_size] * int(num_all_rows / chunk_size))
             if num_all_rows % chunk_size:
                 chunk_spec.append(num_all_rows % chunk_size)
+        url = sr_node.uri.replace("/metadata/", "/data_source/")
         sr_node.context.http_client.put(url, json={"data_source": ds_dict}, params={"data_source": 1})
