@@ -128,7 +128,6 @@ class _RunWriter(DocumentRouter):
         if sr_uid in self._sr_nodes.keys():
             sr_node = self._sr_nodes[sr_uid]
         elif sr_uid in self._sr_cache.keys():
-            # Register a new (empty) Stream Resource node
             sr_doc = self._sr_cache.pop(sr_uid)
 
             # POST /api/v1/register/{path}
@@ -137,7 +136,7 @@ class _RunWriter(DocumentRouter):
             data_shape = tuple(data_desc["shape"])
             data_shape = data_shape if data_shape != (1,) else ()
 
-            # Find machine dtype
+            # Find machine dtype; dtype_str takes precedence if specified
             data_type = data_desc["dtype"]
             data_type = DTYPE_LOOKUP[data_type] if data_type in DTYPE_LOOKUP.keys() else data_type
             data_type = np.dtype(data_desc.get("dtype_str", data_type))
@@ -147,10 +146,9 @@ class _RunWriter(DocumentRouter):
                 raise RuntimeError("StreamResource document is missing a mimetype or spec")
             else:
                 mimetype = sr_doc.get("mimetype", MIMETYPE_LOOKUP[sr_doc["spec"]])
-            if "parameters" in sr_doc.keys():
-                data_path = sr_doc["parameters"]["path"].strip("/")
-            else:
-                data_path = sr_doc["resource_kwargs"]["path"].strip("/")
+            if "parameters" not in sr_doc.keys():
+                sr_doc["parameters"] = sr_doc.pop("resource_kwargs", {})
+            data_path = sr_doc["parameters"]["path"].strip("/")
             if "uri" in sr_doc.keys():
                 data_uri = sr_doc["uri"]
             else:
