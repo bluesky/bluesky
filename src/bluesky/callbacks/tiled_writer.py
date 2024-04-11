@@ -8,10 +8,12 @@ from event_model import DocumentRouter, RunRouter
 from event_model.documents import StreamDatum, StreamResource
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
+from tiled.client.utils import MSGPACK_MIME_TYPE, handle_error
 from tiled.structures.array import ArrayStructure, BuiltinDtype
 from tiled.structures.core import Spec, StructureFamily
 from tiled.structures.data_source import Asset, DataSource, Management
 from tiled.structures.table import TableStructure
+from tiled.utils import safe_json_dump
 
 MIMETYPE_LOOKUP = {
     "hdf5": "application/x-hdf5",
@@ -69,6 +71,7 @@ class Thing:
 
 class StreamHandlerBase(HandlerBase):
     mimetype: str = ""
+    _num_rows: int = 0
 
     def __init__(self):
         pass
@@ -83,19 +86,17 @@ class StreamHandlerBase(HandlerBase):
 
 
 class HDF5StreamHandler(StreamHandlerBase):
-    specs = set() | StreamHandlerBase.specs
     mimetype = "application/x-hdf5"
 
     def __init__(
         self, data_uri, path, data_shape, data_type, chunk_size: Optional[int] = None, swmr=True, **kwargs
     ):
-        self.data_uri = data_uri
+        self.assets = [Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")]
         self.path = path.strip("/").split("/")
         self.data_shape = data_shape  # Intrinsic data shape (single frame as written in HDF5 file)
         self.data_type = np.dtype(data_type)
         self.chunk_size = chunk_size
         self.parameters = {"path": self.path}
-        self._num_rows = 0  # Shape along the 0-th dimension, i.e. number of frames
 
     @property
     def shape(self):
@@ -132,8 +133,8 @@ class HDF5StreamHandler(StreamHandlerBase):
         """
 
         return DataSource(
-            assets=[Asset(data_uri=self.data_uri, is_directory=False, parameter="data_uri")],
             mimetype=self.mimetype,
+            assets=self.assets,
             structure_family=StructureFamily.array,
             structure=ArrayStructure(
                 data_type=BuiltinDtype.from_numpy_dtype(self.data_type),
@@ -157,26 +158,39 @@ class HDF5StreamHandler(StreamHandlerBase):
 class TIFFStreamHandler(StreamHandlerBase):
     mimetype = "image/tiff"
 
-    def __init__(self, data_uri, path, data_shape, data_type, chunk_size: Optional[int] = None, **kwargs):
+    def __init__(self, data_uri, data_shape, data_type, **kwargs):
         self.data_uri = data_uri
-        self.data_shape = data_shape  # Intrinsic data shape (single frame as written in HDF5 file)
+        self.assets = []
+        self.data_shape = data_shape
         self.data_type = np.dtype(data_type)
-        self.chunk_size = chunk_size
         self.parameters = {}
-        self._num_rows = 0  # Shape along the 0-th dimension, i.e. number of frames
-        self.data_uri = data_uri
 
-    def consume_stream_datum(self, doc): ...
+    @property
+    def shape(self):
+        """Shape including the 0-th dimension -- number of rows"""
+        # TODO Add reshape, skips.
+        return [self._num_rows, *self.data_shape]
+
+    def consume_stream_datum(self, doc):
+        indx = int(doc["uid"].split("/")[1])
+        new_asset = Asset(
+            data_uri=self.data_uri.strip("/") + "/" + f"{indx:03d}.tiff",
+            is_directory=False,
+            parameter="data_uri",
+            num=len(self.assets) + 1,
+        )
+        self.assets.append(new_asset)
+        self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]  # Number of rows added by StreamDatum
 
     def get_data_source(self):
         return DataSource(
-            assets=[Asset(data_uri=self.data_uri, is_directory=False, parameter="data_uri")],
             mimetype=self.mimetype,
+            assets=self.assets,
             structure_family=StructureFamily.array,
             structure=ArrayStructure(
                 data_type=BuiltinDtype.from_numpy_dtype(self.data_type),
-                shape=[],
-                chunks=[],
+                shape=self.shape,
+                chunks=[[1] * self.shape[0]] + [[d] for d in self.data_shape],
             ),
             parameters=self.parameters,
             management=Management.external,
@@ -350,11 +364,16 @@ class _RunWriter(DocumentRouter):
         handler.consume_stream_datum(doc)
 
         # Update StreamResource node in Tiled; note one-based indexing of data sources.
-        # TODO: there must be a better way
         sr_node.refresh()
+        sr_0 = sr_node.data_sources()[0]
         data_source = handler.get_data_source()
-        ds_dict = sr_node.data_sources()[0]
-        ds_dict["structure"]["shape"] = data_source.structure.shape
-        ds_dict["structure"]["chunks"] = data_source.structure.chunks
-        url = sr_node.uri.replace("/metadata/", "/data_source/")
-        sr_node.context.http_client.put(url, json={"data_source": ds_dict}, params={"data_source": 1})
+        data_source.id = sr_0["id"]
+        endpoint = sr_node.uri.replace("/metadata/", "/data_source/", 1)
+        handle_error(
+            sr_node.context.http_client.put(
+                endpoint,
+                content=safe_json_dump({"data_source": data_source}),
+                headers={"Accept": MSGPACK_MIME_TYPE},
+                params={"data_source": 1},
+            )
+        ).json()
