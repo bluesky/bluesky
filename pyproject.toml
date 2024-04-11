@@ -34,6 +34,7 @@ requires-python = ">=3.8"
 
 [project.optional-dependencies]
 dev = [
+    "area-detector-handlers",
     "attrs",
     "cloudpickle",
     "copier",
