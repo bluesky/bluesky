@@ -96,6 +96,7 @@ all = ["bluesky[dev,ipython,zmq,common,tools,streamz,plotting,cmd,olog]"]
 
 [project.scripts]
 bluesky-0MQ-proxy = "bluesky.commandline.zmq_proxy:main"
+bluesky = "bluesky.__main__:main"
 
 [project.urls]
 GitHub = "https://github.com/bluesky/bluesky"
