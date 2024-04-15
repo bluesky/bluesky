@@ -32,7 +32,7 @@ def initialize_qt_teleporter():
         # Already initialized.
         return
     if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError("initialize_qt_teleporter() may only be called from the main " "thread.")
+        raise RuntimeError("initialize_qt_teleporter() may only be called from the main thread.")
     _get_teleporter()
 
 
@@ -139,9 +139,7 @@ class LivePlot(QtAwareCallback):
                 self.__setup_event.set()
             if fig is not None:
                 if ax is not None:
-                    raise ValueError(
-                        "Values were given for both `fig` and `ax`. " "Only one can be used; prefer ax."
-                    )
+                    raise ValueError("Values were given for both `fig` and `ax`. Only one can be used; prefer ax.")
                 warnings.warn(  # noqa: B028
                     "The `fig` keyword arugment of LivePlot is "
                     "deprecated and will be removed in the future. "
@@ -243,7 +241,7 @@ class LivePlot(QtAwareCallback):
             print("LivePlot did not get any data that corresponds to the " f"y axis. {self.y}")
         if len(self.y_data) != len(self.x_data):
             print(
-                "LivePlot has a different number of elements for x ({}) and" "y ({})".format(  # noqa: UP032
+                "LivePlot has a different number of elements for x ({}) and y ({})".format(  # noqa: UP032
                     len(self.x_data), len(self.y_data)
                 )
             )
@@ -620,7 +618,7 @@ class LiveFitPlot(LivePlot):
 
     def __init__(self, livefit, *, num_points=100, legend_keys=None, xlim=None, ylim=None, ax=None, **kwargs):
         if len(livefit.independent_vars) != 1:
-            raise NotImplementedError("LiveFitPlot supports models with one " "independent variable only.")
+            raise NotImplementedError("LiveFitPlot supports models with one independent variable only.")
         (self.__x_key,) = livefit.independent_vars.keys()  # this never changes
         (x,) = livefit.independent_vars.values()  # this may change
         super().__init__(livefit.y, x, legend_keys=legend_keys, xlim=xlim, ylim=xlim, ax=ax, **kwargs)

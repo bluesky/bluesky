@@ -205,7 +205,7 @@ class RunBundler:
         )
         await self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
         doc_logger.debug(
-            "[descriptor] document emitted with name %r containing " "data keys %r (run_uid=%r)",
+            "[descriptor] document emitted with name %r containing data keys %r (run_uid=%r)",
             desc_key,
             data_keys.keys(),
             self._run_start_uid,
@@ -400,11 +400,11 @@ class RunBundler:
         """
         obj = check_supports(msg.obj, Subscribable)
         if msg.args:
-            raise ValueError("The 'monitor' Msg does not accept positional " "arguments.")
+            raise ValueError("The 'monitor' Msg does not accept positional arguments.")
         kwargs = dict(msg.kwargs)
         name = kwargs.pop("name", short_uid("monitor"))
         if obj in self._monitor_params:
-            raise IllegalMessageSequence(f"A 'monitor' message was sent for {obj}" "which is already monitored")
+            raise IllegalMessageSequence(f"A 'monitor' message was sent for {obj} which is already monitored")
 
         await self._ensure_cached(obj)
 
@@ -414,9 +414,9 @@ class RunBundler:
         def emit_event(readings: Optional[Dict[str, Reading]] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
-                assert not args and not kwargs, (
-                    "If subscribe callback called with readings, " "args and kwargs are not supported."
-                )
+                assert (
+                    not args and not kwargs
+                ), "If subscribe callback called with readings, args and kwargs are not supported."
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
@@ -478,7 +478,7 @@ class RunBundler:
         """
         obj = check_supports(msg.obj, Subscribable)
         if obj not in self._monitor_params:
-            raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not " "being monitored.")
+            raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not being monitored.")
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]

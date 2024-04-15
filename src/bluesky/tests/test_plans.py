@@ -2,10 +2,10 @@ import collections
 import inspect
 import random
 import re
-from distutils.version import LooseVersion
 
 import numpy as np
 import numpy.testing as npt
+import packaging
 import pandas as pd
 import pytest
 
@@ -287,7 +287,7 @@ def test_bad_per_step_signature(hw, per_step):
 
 def require_ophyd_1_4_0():
     ophyd = pytest.importorskip("ophyd")
-    if LooseVersion(ophyd.__version__) < LooseVersion("1.4.0"):
+    if packaging.version.Version(ophyd.__version__) < packaging.version.Version("1.4.0"):
         pytest.skip("Needs ophyd 1.4.0 for realistic ophyd.sim Devices.")
 
 
@@ -325,7 +325,7 @@ def test_rd_fails(hw):
     obj.noise.kind = "hinted"
     hints = obj.hints.get("fields", [])
     msg = re.escape(
-        f"Your object {obj} ({obj.name}.{obj.dotted_name}) " + f"has {len(hints)} items hinted ({hints}).  We "
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) has {len(hints)} items hinted ({hints}).  We "
     )
     with pytest.raises(ValueError, match=msg):
         list(bps.rd(obj))

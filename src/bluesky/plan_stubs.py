@@ -5,6 +5,7 @@ import uuid
 import warnings
 from collections.abc import Iterable
 from functools import reduce
+from typing import List
 
 from cycler import cycler
 
@@ -14,7 +15,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Locatable, Status, Triggerable
+from .protocols import Flyable, Locatable, Status, Triggerable, check_supports
 from .utils import (
     Msg,
     all_safe_rewind,
@@ -624,12 +625,11 @@ def prepare(obj, *args, group=None, wait=False, **kwargs):
 
 def kickoff(obj, *, group=None, wait=False, **kwargs):
     """
-    Kickoff a fly-scanning device.
+    Kickoff one fly-scanning device.
 
     Parameters
     ----------
-    obj : fly-able
-        Device with 'kickoff', and 'complete' methods.
+    obj : fly-able Device with 'kickoff', and 'complete' methods.
     group : string (or any hashable object), optional
         identifier used by 'wait'.
     wait : boolean, optional
@@ -655,11 +655,51 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
+def kickoff_all(*args, group=None, wait=True, **kwargs):
+    """
+    Kickoff one or more fly-scanning devices.
+
+    Parameters
+    ----------
+    *args : Any fly-able
+        Device with 'kickoff', and 'complete' methods.
+    group : string (or any hashable object), optional
+        identifier used by 'wait'.
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        True by default.
+    kwargs
+        passed through to 'kickoff' for each device
+
+    Yields
+    ------
+    msg : Msg
+        Msg('kickoff', obj)
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.complete`
+    :func:`bluesky.plan_stubs.collect`
+    :func:`bluesky.plan_stubs.wait`
+    """
+    objs = [check_supports(arg, Flyable) for arg in args]
+    group = group or str(uuid.uuid4())
+    statuses: List[Status] = []
+
+    for obj in objs:
+        ret = yield Msg("kickoff", obj, group=group, **kwargs)
+        statuses.append(ret)
+    if wait:
+        yield from _wait(group=group)
+
+    return tuple(statuses)
+
+
 def complete(obj, *, group=None, wait=False, **kwargs):
     """
-    Tell a flyer, 'stop collecting, whenever you are ready'.
+    Tell a flyable, 'stop collecting, whenever you are ready'.
 
-    The flyer returns a status object. Some flyers respond to this
+    A flyable returns a status object. Some flyers respond to this
     command by stopping collection and returning a finished status
     object immediately. Other flyers finish their given course and
     finish whenever they finish, irrespective of when this command is
@@ -692,6 +732,52 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     if wait:
         yield from _wait(group=group)
     return ret
+
+
+def complete_all(*args, group=None, wait=False, **kwargs):
+    """
+    Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
+
+    A flyable returns a status object. Some flyers respond to this
+    command by stopping collection and returning a finished status
+    object immediately. Other flyers finish their given course and
+    finish whenever they finish, irrespective of when this command is
+    issued.
+
+    Parameters
+    ----------
+    *args : Any fly-able
+        Device with 'kickoff' and 'complete' methods.
+    group : string (or any hashable object), optional
+        identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    kwargs
+        passed through to 'complete' for each device
+
+    Yields
+    ------
+    msg : Msg
+        a 'complete' Msg and maybe a 'wait' message
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.kickoff`
+    :func:`bluesky.plan_stubs.collect`
+    :func:`bluesky.plan_stubs.wait`
+    """
+    objs = [check_supports(arg, Flyable) for arg in args]
+    group = group or str(uuid.uuid4())
+    statuses: List[Status] = []
+
+    for obj in objs:
+        ret = yield Msg("complete", obj, group=group, **kwargs)
+        statuses.append(ret)
+    if wait:
+        yield from _wait(group=group)
+
+    return tuple(statuses)
 
 
 def collect(obj, *args, stream=False, return_payload=True, name=None):
@@ -1176,7 +1262,7 @@ def caching_repeater(n, plan):
     --------
     :func:`bluesky.plan_stubs.repeater`
     """
-    warnings.warn("The caching_repeater will be removed in a future version " "of bluesky.", stacklevel=2)
+    warnings.warn("The caching_repeater will be removed in a future version of bluesky.", stacklevel=2)
     if n is None:
         gen = itertools.count(0)
     else:
@@ -1344,7 +1430,7 @@ def repeat(plan, num=1, delay=None):
             pass
         else:
             if num - 1 > num_delays:
-                raise ValueError("num=%r but delays only provides %r " "entries" % (num, num_delays))  # noqa: UP031
+                raise ValueError("num=%r but delays only provides %r entries" % (num, num_delays))  # noqa: UP031
         delay = iter(delay)
 
     def repeated_plan():
@@ -1354,14 +1440,14 @@ def repeat(plan, num=1, delay=None):
             yield from ensure_generator(plan())
             try:
                 d = next(delay)
-            except StopIteration:
+            except StopIteration as stop:
                 if i + 1 == num:
                     break
                 elif num is None:
                     break
                 else:
                     # num specifies a number of iterations less than delay
-                    raise ValueError("num=%r but delays only provides %r " "entries" % (num, i))  # noqa: B904, UP031
+                    raise ValueError("num=%r but delays only provides %r entries" % (num, i)) from stop  # noqa: UP031
             if d is not None:
                 d = d - (time.time() - now)
                 if d > 0:  # Sleep if and only if time is left to do it.

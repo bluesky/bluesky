@@ -115,7 +115,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.rel_list_grid_scan`
     """
     if len(args) % 2 != 0:
-        raise ValueError("The list of arguments must contain a list of " "points for each defined motor")
+        raise ValueError("The list of arguments must contain a list of points for each defined motor")
 
     md = md or {}  # reset md if it is None.
 
@@ -614,7 +614,7 @@ def adaptive_scan(
     :func:`bluesky.plans.rel_adaptive_scan`
     """
     if not 0 < min_step < max_step:
-        raise ValueError("min_step and max_step must meet condition of " "max_step > min_step > 0")
+        raise ValueError("min_step and max_step must meet condition of max_step > min_step > 0")
 
     _md = {
         "detectors": [det.name for det in detectors],

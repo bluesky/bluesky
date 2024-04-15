@@ -808,6 +808,8 @@ class RunEngine:
             If True, pause at the next checkpoint.
             False by default.
         """
+        if self.state == "panicked":
+            raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
         future = asyncio.run_coroutine_threadsafe(self._request_pause_coro(defer), loop=self.loop)
         # TODO add a timeout here?
         return future.result()
@@ -879,9 +881,7 @@ class RunEngine:
             if :attr:`RunEngine._call_returns_result` is ``True``
         """
         if self.state == "panicked":
-            raise RuntimeError(
-                "The RunEngine is panicked and " "cannot be recovered. " "You must restart bluesky."
-            )
+            raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
         # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
         # all keyword arguments for user metdata.
         arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
@@ -925,7 +925,7 @@ class RunEngine:
                 print(f"    {i + 1}. {justification}")
 
             print()
-            print("Suspending... To get to the prompt, " "hit Ctrl-C twice to pause.")
+            print("Suspending... To get to the prompt, hit Ctrl-C twice to pause.")
 
         self._clear_call_cache()
         self._clear_run_cache()  # paranoia, in case of previous bad exit
@@ -984,14 +984,12 @@ class RunEngine:
             if :attr:`RunEngine._call_returns_result` is ``True``
         """
         if self.state == "panicked":
-            raise RuntimeError(
-                "The RunEngine is panicked and " "cannot be recovered. " "You must restart bluesky."
-            )
+            raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
 
         # The state machine does not capture the whole picture.
         if not self._state.is_paused:
             raise TransitionError(
-                f"The RunEngine is the {self._state} state. " "You can only resume for the paused state." ""
+                f"The RunEngine is the {self._state} state. You can only resume for the paused state."
             )
 
         self._interrupted = False
@@ -1206,7 +1204,7 @@ class RunEngine:
         async def _request_suspend(pre_plan, post_plan, justification):
             if not self.resumable:
                 print("No checkpoint; cannot suspend.")
-                print("Aborting: running cleanup and marking " "exit_status as 'abort'...")
+                print("Aborting: running cleanup and marking exit_status as 'abort'...")
                 self._interrupted = True
                 with self._state_lock:
                     self._exception = FailedPause()
@@ -1311,7 +1309,7 @@ class RunEngine:
     async def _abort_coro(self, reason):
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("Aborting: running cleanup and marking " "exit_status as 'abort'...")
+        print("Aborting: running cleanup and marking exit_status as 'abort'...")
         self._interrupted = True
         self._reason = reason
 
@@ -1354,7 +1352,7 @@ class RunEngine:
     async def _stop_coro(self):
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("Stopping: running cleanup and marking exit_status " "as 'success'...")
+        print("Stopping: running cleanup and marking exit_status as 'success'...")
 
         self._interrupted = True
         was_paused = self._state == "paused"
@@ -1394,9 +1392,7 @@ class RunEngine:
     def __interrupter_helper(self, coro):
         if self.state == "panicked":
             coro.close()
-            raise RuntimeError(
-                "The RunEngine is panicked and " "cannot be recovered. " "You must restart bluesky."
-            )
+            raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
 
         coro_event = threading.Event()
         task = None
@@ -1420,7 +1416,7 @@ class RunEngine:
     async def _halt_coro(self):
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("Halting: skipping cleanup and marking exit_status as " "'abort'...")
+        print("Halting: skipping cleanup and marking exit_status as 'abort'...")
         self._interrupted = True
         was_paused = self._state == "paused"
         self._state = "halting"
@@ -1774,7 +1770,7 @@ class RunEngine:
                 try:
                     p.close()
                 except RuntimeError:
-                    print(f"The plan {p!r} tried to yield a value on close.  " "Please fix your plan.")
+                    print(f"The plan {p!r} tried to yield a value on close.  Please fix your plan.")
 
             self._state = "idle"
 
@@ -1818,9 +1814,7 @@ class RunEngine:
         # TODO extract this from the Msg
         run_key = msg.run
         if run_key in self._run_bundlers:
-            raise IllegalMessageSequence(
-                "A 'close_run' message was not " "received before the 'open_run' " "message"
-            )
+            raise IllegalMessageSequence("A 'close_run' message was not received before the 'open_run' message")
 
         # Run scan_id calculation method
         self.md["scan_id"] = self.scan_id_source(self.md)
@@ -1874,7 +1868,7 @@ class RunEngine:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
             raise IllegalMessageSequence(
-                "A 'close_run' message was not " "received before the 'open_run' " "message"
+                "A 'close_run' message was not received before the 'open_run' message"
             ) from ke
         ret = await current_run.close_run(msg)
         del self._run_bundlers[run_key]
@@ -2004,7 +1998,7 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'monitor' message was sent but no " "run is open.") from ke
+            raise IllegalMessageSequence("A 'monitor' message was sent but no run is open.") from ke
         await current_run.monitor(msg)
         await self._reset_checkpoint_state_coro()
 
@@ -2020,7 +2014,7 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'unmonitor' message was sent but no " "run is open.") from ke
+            raise IllegalMessageSequence("A 'unmonitor' message was sent but no run is open.") from ke
         await current_run.unmonitor(msg)
         await self._reset_checkpoint_state_coro()
 
@@ -2037,7 +2031,7 @@ class RunEngine:
         except KeyError as ke:
             # sanity check -- this should be caught by 'create' which makes
             # this code path impossible
-            raise IllegalMessageSequence("A 'save' message was sent but no " "run is open.") from ke
+            raise IllegalMessageSequence("A 'save' message was sent but no run is open.") from ke
 
         await current_run.save(msg)
 
@@ -2052,7 +2046,7 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'drop' message was sent but no " "run is open.") from ke
+            raise IllegalMessageSequence("A 'drop' message was sent but no run is open.") from ke
         await current_run.drop(msg)
 
     async def _prepare(self, msg):
@@ -2075,7 +2069,7 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback(status=None):
-            self.log.debug("The object %r reports set is done " "with status %r", obj, ret.success)
+            self.log.debug("The object %r reports set is done with status %r", obj, ret.success)
             self._loop.call_soon_threadsafe(self._status_object_completed, ret, p_event, pardon_failures)
 
         try:
@@ -2112,7 +2106,7 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'kickoff' message was sent but no " "run is open.") from ke
+            raise IllegalMessageSequence("A 'kickoff' message was sent but no run is open.") from ke
 
         _, obj, args, kwargs, _ = msg
         obj = check_supports(obj, Flyable)
@@ -2127,7 +2121,7 @@ class RunEngine:
 
         def done_callback(status=None):
             self.log.debug(
-                "The object %r reports 'kickoff' is done " "with status %r",
+                "The object %r reports 'kickoff' is done with status %r",
                 obj,
                 ret.success,
             )
@@ -2170,7 +2164,7 @@ class RunEngine:
 
         def done_callback(status=None):
             self.log.debug(
-                "The object %r reports 'complete' is done " "with status %r",
+                "The object %r reports 'complete' is done with status %r",
                 obj,
                 ret.success,
             )
@@ -2198,7 +2192,7 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'collect' message was sent but no " "run is open.") from ke
+            raise IllegalMessageSequence("A 'collect' message was sent but no run is open.") from ke
 
         return await current_run.collect(msg)
 
@@ -2236,7 +2230,7 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback(status=None):
-            self.log.debug("The object %r reports set is done " "with status %r", obj, ret.success)
+            self.log.debug("The object %r reports set is done with status %r", obj, ret.success)
             self._loop.call_soon_threadsafe(self._status_object_completed, ret, p_event, pardon_failures)
 
         try:
@@ -2380,7 +2374,7 @@ class RunEngine:
         """
         for current_run in self._run_bundlers.values():
             if current_run.bundling:
-                raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' " "and before 'save'. Aborting!")
+                raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' and before 'save'. Aborting!")
 
         await self._reset_checkpoint_state_coro()
 
@@ -2450,7 +2444,7 @@ class RunEngine:
             current_run = None
         else:
             if current_run.bundling:
-                raise IllegalMessageSequence("Cannot configure after 'create' but before 'save'" "Aborting!")
+                raise IllegalMessageSequence("Cannot configure after 'create' but before 'save' Aborting!")
         _, obj, args, kwargs, _ = msg
 
         old, new = obj.configure(*args, **kwargs)
@@ -2463,9 +2457,7 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback(status=None):
-            self.log.debug(
-                "The object %r reports %r is " "done with status %r.", obj, action, status_object.success
-            )
+            self.log.debug("The object %r reports %r is done with status %r.", obj, action, status_object.success)
             self._loop.call_soon_threadsafe(self._status_object_completed, status_object, p_event, pardon_failures)
 
         try:
