@@ -41,7 +41,7 @@ class AverageStream(LiveDispatcher):
         super().start(doc)
 
     def _average_events(self, events):
-        average_evt = dict()
+        average_evt = {}
         desc_id = events[0]["descriptor"]
         if not all(desc_id == event["descriptor"] for event in events):
             raise Exception("Events are from different configurations!")
