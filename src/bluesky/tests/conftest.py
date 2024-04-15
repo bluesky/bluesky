@@ -2,13 +2,10 @@ import asyncio
 import os
 from distutils.version import LooseVersion
 
-import matplotlib
 import numpy as np
 import pytest
 
 from bluesky.run_engine import RunEngine, TransitionError
-
-matplotlib.use("Agg")  # Use non-GUI backend for all tests
 
 
 @pytest.fixture(scope="function", params=[False, True])
