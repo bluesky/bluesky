@@ -22,7 +22,6 @@ from bluesky.callbacks.mpl_plotting import (
     LiveRaster,
     LiveScatter,
 )
-from bluesky.object_plans import AbsScanPlan
 from bluesky.plan_stubs import pause
 from bluesky.plans import count, grid_scan, inner_product_scan, scan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
@@ -74,38 +73,6 @@ def test_raising_ignored_or_not(RE, hw):
     RE.ignore_callback_exceptions = False
     with pytest.raises(Exception):  # noqa: B017
         RE(stepscan(hw.det, hw.motor), cb)
-
-
-def test_subs_input(hw):
-    def cb1(name, doc):
-        pass
-
-    def cb2(name, doc):
-        pass
-
-    def cb3(name, doc):
-        pass
-
-    def cb_fact4(scan):
-        def cb4(name, doc):
-            pass
-
-        return cb4
-
-    def cb_fact5(scan):
-        def cb5(name, doc):
-            pass
-
-        return cb5
-
-    # Test input normalization on OO plans
-    obj_ascan = AbsScanPlan([hw.det], hw.motor, 1, 5, 4)
-    obj_ascan.subs = cb1
-    assert obj_ascan.subs == {"all": [cb1], "start": [], "stop": [], "descriptor": [], "event": []}
-    obj_ascan.subs.update({"start": [cb2]})
-    assert obj_ascan.subs == {"all": [cb1], "start": [cb2], "stop": [], "descriptor": [], "event": []}
-    obj_ascan.subs = [cb2, cb3]
-    assert obj_ascan.subs == {"all": [cb2, cb3], "start": [], "stop": [], "descriptor": [], "event": []}
 
 
 def test_subscribe_msg(RE, hw):
