@@ -17,6 +17,7 @@ from itertools import count
 from warnings import warn
 
 from event_model import DocumentNames
+from opentelemetry import trace
 from super_state_machine.errors import TransitionError
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.machines import StateMachine
@@ -56,6 +57,9 @@ from .utils import (
     single_gen,
     warn_if_msg_args_or_kwargs,
 )
+
+tracer = trace.get_tracer(__name__)
+_SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
 current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
 try:
@@ -2137,6 +2141,7 @@ class RunEngine:
 
         return ret
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} complete")
     async def _complete(self, msg):
         """
         Tell a flyer, 'stop collecting, whenever you are ready'.
@@ -2179,6 +2184,7 @@ class RunEngine:
         self._status_objs[group].add(ret)
         return ret
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} collect")
     async def _collect(self, msg):
         """
         Collect data cached by a flyer and emit documents
@@ -2208,6 +2214,7 @@ class RunEngine:
         """
         return type(self)
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
     async def _set(self, msg):
         """
         Set a device and cache the returned status object.
@@ -2221,6 +2228,7 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
+        trace.get_current_span().set_attribute("message", str(msg))
         obj = check_supports(msg.obj, Movable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
@@ -2261,6 +2269,7 @@ class RunEngine:
 
         return ret
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
     async def _wait(self, msg):
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done.
@@ -2275,6 +2284,10 @@ class RunEngine:
             (group,) = msg.args
         else:
             group = msg.kwargs["group"]
+        if group:
+            trace.get_current_span().set_attribute("group", group)
+        else:
+            trace.get_current_span().set_attribute("no_group_given", "True")
         futs = list(self._groups.pop(group, []))
         if futs:
             status_objs = self._status_objs.pop(group)
