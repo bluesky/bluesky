@@ -693,7 +693,6 @@ API to control the behavior.
             # may be called by 'resume' or 'abort'
             self.state = 'running'
             self._last_sigint_time = None
-            self._num_sigints_processed = 0
 
             if self._task.done():
                 return
