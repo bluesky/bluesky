@@ -10,8 +10,8 @@ from bluesky.callbacks.stream import LiveDispatcher
 from bluesky.examples import stepscan
 from bluesky.tests.utils import DocCollector
 
-reactivex = pytest.imortorskip('reactivex')
-pytest.importorskip('reactivex.operators')
+reactivex = pytest.importorskip("reactivex")
+pytest.importorskip("reactivex.operators")
 
 
 class AverageStream(LiveDispatcher):
