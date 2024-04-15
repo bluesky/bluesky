@@ -7,7 +7,9 @@
     },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
-        "DISPLAY": "${localEnv:DISPLAY}"
+        "DISPLAY": "${localEnv:DISPLAY}",
+        // set up the MatPlotLib backend
+        "MPLBACKEND": "agg"
     },
     "customizations": {
         "vscode": {

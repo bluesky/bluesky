@@ -6,6 +6,7 @@ FROM python:${PYTHON_VERSION} as developer
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update && apt-get install -y --no-install-recommends \
     graphviz \
+    libgl1-mesa-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up a virtual environment and put it in PATH
