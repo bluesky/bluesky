@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.plan_stubs &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
+  <title>bluesky.plan_stubs &mdash; bluesky 1.13.0a4.dev11+g7d016d30 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/documentation_options.js?v=e6b53b8d"></script>
+        <script src="../../_static/documentation_options.js?v=fab37371"></script>
         <script src="../../_static/doctools.js?v=888ff710"></script>
         <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev10+gf03451a7
+                1.13.0a4.dev11+g7d016d30
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -123,6 +123,7 @@
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 
 <span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
 
@@ -132,7 +133,7 @@
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">toolz</span> <span class="kn">import</span> <span class="n">partition</span>
 
-<span class="kn">from</span> <span class="nn">.protocols</span> <span class="kn">import</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">Status</span><span class="p">,</span> <span class="n">Triggerable</span>
+<span class="kn">from</span> <span class="nn">.protocols</span> <span class="kn">import</span> <span class="n">Flyable</span><span class="p">,</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">Status</span><span class="p">,</span> <span class="n">Triggerable</span><span class="p">,</span> <span class="n">check_supports</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">Msg</span><span class="p">,</span>
     <span class="n">all_safe_rewind</span><span class="p">,</span>
@@ -807,12 +808,11 @@
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.kickoff.html#bluesky.plan_stubs.kickoff">[docs]</a>
 <span class="k">def</span> <span class="nf">kickoff</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Kickoff a fly-scanning device.</span>
+<span class="sd">    Kickoff one fly-scanning device.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    obj : fly-able</span>
-<span class="sd">        Device with &#39;kickoff&#39;, and &#39;complete&#39; methods.</span>
+<span class="sd">    obj : fly-able Device with &#39;kickoff&#39;, and &#39;complete&#39; methods.</span>
 <span class="sd">    group : string (or any hashable object), optional</span>
 <span class="sd">        identifier used by &#39;wait&#39;.</span>
 <span class="sd">    wait : boolean, optional</span>
@@ -839,13 +839,53 @@
 
 
 
+<span class="k">def</span> <span class="nf">kickoff_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Kickoff one or more fly-scanning devices.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    *args : Any fly-able</span>
+<span class="sd">        Device with &#39;kickoff&#39;, and &#39;complete&#39; methods.</span>
+<span class="sd">    group : string (or any hashable object), optional</span>
+<span class="sd">        identifier used by &#39;wait&#39;.</span>
+<span class="sd">    wait : boolean, optional</span>
+<span class="sd">        If True, wait for completion before processing any more messages.</span>
+<span class="sd">        True by default.</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        passed through to &#39;kickoff&#39; for each device</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        Msg(&#39;kickoff&#39;, obj)</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plan_stubs.complete`</span>
+<span class="sd">    :func:`bluesky.plan_stubs.collect`</span>
+<span class="sd">    :func:`bluesky.plan_stubs.wait`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_supports</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Flyable</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">group</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+    <span class="n">statuses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Status</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;kickoff&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">statuses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">wait</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">_wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">statuses</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="complete">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.complete.html#bluesky.plan_stubs.complete">[docs]</a>
 <span class="k">def</span> <span class="nf">complete</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Tell a flyer, &#39;stop collecting, whenever you are ready&#39;.</span>
+<span class="sd">    Tell a flyable, &#39;stop collecting, whenever you are ready&#39;.</span>
 
-<span class="sd">    The flyer returns a status object. Some flyers respond to this</span>
+<span class="sd">    A flyable returns a status object. Some flyers respond to this</span>
 <span class="sd">    command by stopping collection and returning a finished status</span>
 <span class="sd">    object immediately. Other flyers finish their given course and</span>
 <span class="sd">    finish whenever they finish, irrespective of when this command is</span>
@@ -879,6 +919,52 @@
         <span class="k">yield from</span> <span class="n">_wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ret</span></div>
 
+
+
+<span class="k">def</span> <span class="nf">complete_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tell one or more flyable objects, &#39;stop collecting, whenever you are ready&#39;.</span>
+
+<span class="sd">    A flyable returns a status object. Some flyers respond to this</span>
+<span class="sd">    command by stopping collection and returning a finished status</span>
+<span class="sd">    object immediately. Other flyers finish their given course and</span>
+<span class="sd">    finish whenever they finish, irrespective of when this command is</span>
+<span class="sd">    issued.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    *args : Any fly-able</span>
+<span class="sd">        Device with &#39;kickoff&#39; and &#39;complete&#39; methods.</span>
+<span class="sd">    group : string (or any hashable object), optional</span>
+<span class="sd">        identifier used by &#39;wait&#39;</span>
+<span class="sd">    wait : boolean, optional</span>
+<span class="sd">        If True, wait for completion before processing any more messages.</span>
+<span class="sd">        False by default.</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        passed through to &#39;complete&#39; for each device</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        a &#39;complete&#39; Msg and maybe a &#39;wait&#39; message</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plan_stubs.kickoff`</span>
+<span class="sd">    :func:`bluesky.plan_stubs.collect`</span>
+<span class="sd">    :func:`bluesky.plan_stubs.wait`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_supports</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Flyable</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">group</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+    <span class="n">statuses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Status</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">statuses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">wait</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">_wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">statuses</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="collect">

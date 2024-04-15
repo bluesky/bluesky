@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IPython ‘Magics’ [Experimental] &mdash; bluesky 1.13.0a4.dev10+gf03451a7 documentation</title>
+  <title>IPython ‘Magics’ [Experimental] &mdash; bluesky 1.13.0a4.dev11+g7d016d30 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
@@ -14,7 +14,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=e6b53b8d"></script>
+        <script src="_static/documentation_options.js?v=fab37371"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -36,7 +36,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev10+gf03451a7
+                1.13.0a4.dev11+g7d016d30
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -224,8 +224,8 @@ results to the screen without saving them or doing any fancy processing. Use
 the <code class="docutils literal notranslate"><span class="pre">%ct</span></code> magic:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="o">%</span><span class="k">ct</span> area_detectors
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.18365413 0.92622456]</span>
-<span class="go"> [0.64242276 0.48534542]]</span>
+<span class="go">adet1                          [[0.54931416 0.65998582]</span>
+<span class="go"> [0.60847303 0.24024131]]</span>
 </pre></div>
 </div>
 <p>Where the names after count are a list of whitespace separated labels. In this
@@ -233,12 +233,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <p>Running <code class="docutils literal notranslate"><span class="pre">%ct</span></code> without arguments looks for the <code class="docutils literal notranslate"><span class="pre">detectors</span></code> label by default:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [17]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.71561392 0.73864552]</span>
-<span class="go"> [0.22965233 0.9754827 ]]</span>
+<span class="go">adet1                          [[0.36796524 0.88689709]</span>
+<span class="go"> [0.1270436  0.9388886 ]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.8095732]</span>
+<span class="go">pointdet1                      [0.25676719]</span>
 </pre></div>
 </div>
 <p>In this case, we count both on the area detector and the point detector.</p>
@@ -249,12 +249,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <code class="docutils literal notranslate"><span class="pre">%</span></code> as long as the meaning is unambiguous:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [18]: </span><span class="n">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.74040086 0.86337203]</span>
-<span class="go"> [0.80828718 0.50426648]]</span>
+<span class="go">adet1                          [[0.37927127 0.62168015]</span>
+<span class="go"> [0.18217449 0.51465019]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.13773806]</span>
+<span class="go">pointdet1                      [0.20125085]</span>
 
 <span class="gp">In [19]: </span><span class="n">ct</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Now ct is a variable so automagic will not work...</span>
 
@@ -264,12 +264,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <span class="go"># ... but the magic still works.</span>
 <span class="gp">In [21]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[1.02492069e-01 5.25146592e-01]</span>
-<span class="go"> [7.07823869e-04 8.70580825e-01]]</span>
+<span class="go">adet1                          [[0.45135064 0.90544618]</span>
+<span class="go"> [0.62505286 0.65666383]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.61284905]</span>
+<span class="go">pointdet1                      [0.15681105]</span>
 </pre></div>
 </div>
 <p>For what it’s worth, we recommend disabling ‘automagic’. The <code class="docutils literal notranslate"><span class="pre">%</span></code> is useful
@@ -360,9 +360,9 @@ without any parameters. This behaviour is deprecated. Do not use this:</p>
 
 <span class="gp">In [25]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.12553217 0.4927835 ]</span>
-<span class="go"> [0.25514679 0.04325431]]</span>
-<span class="go">pointdet1                      [0.63039066]</span>
+<span class="go">adet1                          [[0.70355871 0.53174728]</span>
+<span class="go"> [0.04340803 0.51717002]]</span>
+<span class="go">pointdet1                      [0.67051809]</span>
 </pre></div>
 </div>
 <p>This is no longer supported.</p>
