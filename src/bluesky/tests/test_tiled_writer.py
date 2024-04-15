@@ -60,7 +60,7 @@ class Named(HasName):
 
 
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
-    """Produces no events, but only StreamResources for 3 data keys and can be read or collected"""
+    """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
     def describe(self) -> Dict[str, DataKey]:
         """Describe datasets which will be backed by StreamResources"""
@@ -90,7 +90,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
-                uri="file://localhost" + self.root + "/dataset.h5",
+                uri="file://localhost" + file_path,
                 spec="ADHDF5_SWMR_STREAM",
                 mimetype="application/x-hdf5",
                 uid=uid,
@@ -111,7 +111,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             descriptor="",
             uid=f"{uid}/{self.counter}",
             indices={"start": indx_min, "stop": indx_max},
-            seq_nums={"start": indx_min + 1, "stop": indx_max + 1},
+            seq_nums={"start": 0, "stop": 0},
         )
 
         # Write (append to) the hdf5 dataset
@@ -123,7 +123,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         return stream_resource, stream_datum
 
     def _get_tiff_stream(self, data_key: str, index: int) -> (StreamResource, StreamDatum):
-        file_path = self.root  # + "/tiff_sequence"
+        file_path = self.root
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
             data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
@@ -134,7 +134,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                     parameters={"path": "", "chunk_size": 1},
                     data_key=data_key,
                     root=self.root,
-                    uri="file://localhost" + file_path,
+                    uri="file://localhost" + self.root,
                     spec="AD_TIFF",
                     mimetype="multipart/related;type=image/tiff",
                     uid=uid,
@@ -146,7 +146,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 descriptor="",
                 uid=f"{uid}/{self.counter}",
                 indices={"start": indx_min, "stop": indx_max},
-                seq_nums={"start": indx_min + 1, "stop": indx_max + 1},
+                seq_nums={"start": 0, "stop": 0},
             )
 
             # Write a tiff file
@@ -156,7 +156,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         return stream_resource, stream_datum
 
     def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:
-        """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
+        """Produce a StreamResource and StreamDatum for all data keys for 0:index"""
         index = index or 1
         for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
             stream_resource, stream_datum = self._get_hdf5_stream(data_key, index)
