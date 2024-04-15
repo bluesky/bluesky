@@ -10,14 +10,8 @@ from bluesky.callbacks.stream import LiveDispatcher
 from bluesky.examples import stepscan
 from bluesky.tests.utils import DocCollector
 
-try:
-    import reactivex
-    import reactivex.operators
-
-    has_reactivex = True
-except ImportError:
-    has_reactivex = False
-requires_reactivex = pytest.mark.skipif(not has_reactivex, reason="ReactiveX not installed")
+reactivex = pytest.imortorskip('reactivex')
+pytest.importorskip('reactivex.operators')
 
 
 class AverageStream(LiveDispatcher):
@@ -70,7 +64,6 @@ class AverageStream(LiveDispatcher):
         super().stop(doc)
 
 
-@requires_reactivex
 def test_average_stream(RE, hw):
     # Create callback chain
     avg = AverageStream(10)
