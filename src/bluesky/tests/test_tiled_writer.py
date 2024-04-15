@@ -3,6 +3,7 @@ from typing import Dict, Iterator, Optional
 import h5py
 import numpy as np
 import pytest
+import tifffile as tf
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
@@ -59,50 +60,85 @@ class Named(HasName):
 
 
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
-    """Produces no events, but only StreamResources for 2 data keys and can be read or collected"""
+    """Produces no events, but only StreamResources for 3 data keys and can be read or collected"""
 
     def describe(self) -> Dict[str, DataKey]:
-        """Describe 2 datasets which will be backed by StreamResources"""
+        """Describe datasets which will be backed by StreamResources"""
         return {
             f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
             f"{self.name}-sd2": DataKey(source="file", dtype="array", shape=[10, 15], external="STREAM:"),
+            f"{self.name}-sd3": DataKey(
+                source="file", dtype="array", dtype_str="uint8", shape=[5, 7, 4], external="STREAM:"
+            ),
         }
 
     def describe_collect(self) -> Dict[str, DataKey]:
         return self.describe()
 
-    def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:
-        """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
-        index = index or 1
+    def _get_hdf5_stream(self, data_key: str, index: int) -> (StreamResource, StreamDatum):
         file_path = self.root + "/dataset.h5"
-        for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
+        uid = f"{data_key}-uid"
+        data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
+        data_shape = tuple(data_desc["shape"])
+        data_shape = data_shape if data_shape != (1,) else ()
+        hdf5_path = f"/{data_key}/VALUE"
+
+        stream_resource = None
+        if self.counter == 0:
+            stream_resource = StreamResource(
+                parameters={"path": hdf5_path, "chunk_size": False},
+                data_key=data_key,
+                root=self.root,
+                resource_path="/dataset.h5",
+                uri="file://localhost" + self.root + "/dataset.h5",
+                spec="ADHDF5_SWMR_STREAM",
+                mimetype="application/x-hdf5",
+                uid=uid,
+            )
+            # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
+            with h5py.File(file_path, "a") as f:
+                dset = f.require_dataset(
+                    hdf5_path,
+                    (0, *data_shape),
+                    maxshape=(None, *data_shape),
+                    dtype=np.dtype("double"),
+                    chunks=(10, *data_shape),
+                )
+
+        indx_min, indx_max = self.counter, self.counter + index
+        stream_datum = StreamDatum(
+            stream_resource=uid,
+            descriptor="",
+            uid=f"{uid}/{self.counter}",
+            indices={"start": indx_min, "stop": indx_max},
+            seq_nums={"start": indx_min + 1, "stop": indx_max + 1},
+        )
+
+        # Write (append to) the hdf5 dataset
+        with h5py.File(file_path, "a") as f:
+            dset = f[hdf5_path]
+            dset.resize([indx_max, *data_shape])
+            dset[indx_min:indx_max, ...] = np.random.randn(indx_max - indx_min, *data_shape)
+
+        return stream_resource, stream_datum
+
+    def _get_tiff_stream(self, data_key: str, index: int) -> (StreamResource, StreamDatum):
+        file_path = self.root  # + "/tiff_sequence"
+        for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
             data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
             data_shape = tuple(data_desc["shape"])
-            data_shape = data_shape if data_shape != (1,) else ()
-            hdf5_path = f"/{data_key}/VALUE"
+            stream_resource = None
             if self.counter == 0:
                 stream_resource = StreamResource(
-                    parameters={"path": hdf5_path, "chunk_size": False},
+                    parameters={"path": "", "chunk_size": 1},
                     data_key=data_key,
                     root=self.root,
-                    resource_path="/dataset.h5",
-                    uri="file://localhost" + self.root + "/dataset.h5",
-                    spec="ADHDF5_SWMR_STREAM",
-                    mimetype="application/x-hdf5",
+                    uri="file://localhost" + file_path,
+                    spec="AD_TIFF",
+                    mimetype="multipart/related;type=image/tiff",
                     uid=uid,
                 )
-                # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
-                with h5py.File(file_path, "a") as f:
-                    dset = f.require_dataset(
-                        hdf5_path,
-                        (0, *data_shape),
-                        maxshape=(None, *data_shape),
-                        dtype=np.dtype("double"),
-                        chunks=(10, *data_shape),
-                    )
-
-                yield "stream_resource", stream_resource
 
             indx_min, indx_max = self.counter, self.counter + index
             stream_datum = StreamDatum(
@@ -110,15 +146,27 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 descriptor="",
                 uid=f"{uid}/{self.counter}",
                 indices={"start": indx_min, "stop": indx_max},
-                seq_nums={"start": 0, "stop": 0},
+                seq_nums={"start": indx_min + 1, "stop": indx_max + 1},
             )
 
-            # Write (append to) the hdf5 dataset
-            with h5py.File(file_path, "a") as f:
-                dset = f[hdf5_path]
-                dset.resize([indx_max, *data_shape])
-                dset[indx_min:indx_max, ...] = np.random.randn(indx_max - indx_min, *data_shape)
+            # Write a tiff file
+            data = np.random.randint(0, 255, data_shape, dtype="uint8")
+            tf.imwrite(file_path + f"/{self.counter:05}.tif", data)
 
+        return stream_resource, stream_datum
+
+    def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:
+        """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
+        index = index or 1
+        for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
+            stream_resource, stream_datum = self._get_hdf5_stream(data_key, index)
+            if stream_resource is not None:
+                yield "stream_resource", stream_resource
+            yield "stream_datum", stream_datum
+        for data_key in [f"{self.name}-sd3"]:
+            stream_resource, stream_datum = self._get_tiff_stream(data_key, index)
+            if stream_resource is not None:
+                yield "stream_resource", stream_resource
             yield "stream_datum", stream_datum
         self.counter += index
 

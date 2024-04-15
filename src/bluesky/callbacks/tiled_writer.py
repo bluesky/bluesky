@@ -19,7 +19,7 @@ MIMETYPE_LOOKUP = {
     "hdf5": "application/x-hdf5",
     "ADHDF5_SWMR_STREAM": "application/x-hdf5",
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
-    "AD_TIFF": "image/tiff",
+    "AD_TIFF": "multipart/related;type=image/tiff",
 }
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
@@ -96,7 +96,7 @@ class HDF5StreamHandler(StreamHandlerBase):
         self.data_shape = data_shape  # Intrinsic data shape (single frame as written in HDF5 file)
         self.data_type = np.dtype(data_type)
         self.chunk_size = chunk_size
-        self.parameters = {"path": self.path}
+        self.adapter_parameters = {"path": self.path}
 
     @property
     def shape(self):
@@ -141,7 +141,7 @@ class HDF5StreamHandler(StreamHandlerBase):
                 shape=self.shape,
                 chunks=self.chunks,
             ),
-            parameters=self.parameters,
+            parameters=self.adapter_parameters,
             management=Management.external,
         )
 
@@ -156,14 +156,14 @@ class HDF5StreamHandler(StreamHandlerBase):
 
 
 class TIFFStreamHandler(StreamHandlerBase):
-    mimetype = "image/tiff"
+    mimetype = "multipart/related;type=image/tiff"
 
     def __init__(self, data_uri, data_shape, data_type, **kwargs):
         self.data_uri = data_uri
         self.assets = []
         self.data_shape = data_shape
         self.data_type = np.dtype(data_type)
-        self.parameters = {}
+        self.adapter_parameters = {"data_uris": []}
 
     @property
     def shape(self):
@@ -173,13 +173,15 @@ class TIFFStreamHandler(StreamHandlerBase):
 
     def consume_stream_datum(self, doc):
         indx = int(doc["uid"].split("/")[1])
+        new_data_uri = self.data_uri.strip("/") + "/" + f"{indx:05d}.tif"
         new_asset = Asset(
-            data_uri=self.data_uri.strip("/") + "/" + f"{indx:03d}.tiff",
+            data_uri=new_data_uri,
             is_directory=False,
-            parameter="data_uri",
+            parameter="data_uris",
             num=len(self.assets) + 1,
         )
         self.assets.append(new_asset)
+        self.adapter_parameters["data_uris"].append(new_data_uri)
         self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]  # Number of rows added by StreamDatum
 
     def get_data_source(self):
@@ -192,14 +194,14 @@ class TIFFStreamHandler(StreamHandlerBase):
                 shape=self.shape,
                 chunks=[[1] * self.shape[0]] + [[d] for d in self.data_shape],
             ),
-            parameters=self.parameters,
+            parameters=self.adapter_parameters,
             management=Management.external,
         )
 
 
 STREAM_HANDLER_REGISTRY = {
     "application/x-hdf5": HDF5StreamHandler,
-    "image/tiff": TIFFStreamHandler,
+    "multipart/related;type=image/tiff": TIFFStreamHandler,
 }
 
 
