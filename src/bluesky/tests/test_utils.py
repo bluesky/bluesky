@@ -47,7 +47,9 @@ def test_cycler_merge_pseudo(hw, traj):
     assert mcyc.by_key()[sig] == list(range(tlen))
 
 
-@pytest.mark.parametrize("children", (["pseudo1", "real1"], ["pseudo1", "pseudo2", "real1"]))
+@pytest.mark.parametrize(
+    "children", (["pseudo1", "real1"], ["pseudo1", "pseudo2", "real1"])
+)
 def test_cycler_merge_pseudo_real_clash(hw, children):
     p3x3 = hw.pseudo3x3
     cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5)) for k in children))
@@ -115,10 +117,17 @@ def test_cycler_merge_mixed(hw, children):
 
 
 def test_is_movable(hw):
-    obj_list = [(10, False), (1.05, False), ("some_string", False), (hw.det, False), (hw.motor, True)]
+    obj_list = [
+        (10, False),
+        (1.05, False),
+        ("some_string", False),
+        (hw.det, False),
+        (hw.motor, True),
+    ]
     for obj, result in obj_list:
         assert is_movable(obj) == result, (
-            f"The object {obj} is incorrectly recognized " f"as {'' if result else 'not '}movable"
+            f"The object {obj} is incorrectly recognized "
+            f"as {'' if result else 'not '}movable"
         )
 
 
@@ -193,8 +202,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     # Lists to store data on the created objects
     obj_to_delete = []  # List of objects that will be explicitly deleted in the test
     obj_cid = []  # Object CID (returned by 'CallbackRegistyr.connect()' method
-    obj_name = []  # Object Name (assigned to the object in order to identify it in the output
-    obj_signal = []  # Name of the signal to which the object with respective index is subscribed.
+    obj_name = (
+        []
+    )  # Object Name (assigned to the object in order to identify it in the output
+    obj_signal = (
+        []
+    )  # Name of the signal to which the object with respective index is subscribed.
 
     # Create objects of the selected type
     for sig_name, n_objects in signals.items():
@@ -329,8 +342,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
     assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
     for sig_name, n_objects in signals.items():
-        assert len(cb._func_cid_map[sig_name]) == n_objects, f"Incorrect number of callbacks for '{sig_name}'"
-        assert len(cb.callbacks[sig_name]) == n_objects, f"Incorrect number of callbacks for '{sig_name}'"
+        assert (
+            len(cb._func_cid_map[sig_name]) == n_objects
+        ), f"Incorrect number of callbacks for '{sig_name}'"
+        assert (
+            len(cb.callbacks[sig_name]) == n_objects
+        ), f"Incorrect number of callbacks for '{sig_name}'"
 
     def _process_each_signal(n_start_check=0):
         """Process each signal, check callback output starting from index `n_start_check`"""
@@ -340,7 +357,9 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             i_sig = [_ for _ in range(len(obj_signal)) if (obj_signal[_] == sig_name)]
 
             list_out = []
-            rand_value = np.random.rand()  # Some value that is expected to be part of the function output
+            rand_value = (
+                np.random.rand()
+            )  # Some value that is expected to be part of the function output
             cb.process(sig_name, list_out, kwarg_value=rand_value)
 
             assert len(list_out) == len(
@@ -371,7 +390,9 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 "callable_object_static_method",
             ]:
                 # Deleting objects should change nothing
-                assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
+                assert len(cb._func_cid_map) == len(
+                    signals
+                ), "Incorrect number of signals"
                 assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():
                     assert (
@@ -386,11 +407,17 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             elif callable_type == "bound_method":
                 # Callbacks should be removed as they get deleted
                 sigs_remaining = list(set(obj_signal[n + 1 :]))
-                assert len(cb._func_cid_map) == len(sigs_remaining), "Incorrect number of signals"
-                assert len(cb.callbacks) == len(sigs_remaining), "Incorrect number of signals"
+                assert len(cb._func_cid_map) == len(
+                    sigs_remaining
+                ), "Incorrect number of signals"
+                assert len(cb.callbacks) == len(
+                    sigs_remaining
+                ), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():  # noqa: B007
                     if sig_name in sigs_remaining:
-                        assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(
+                        assert len(cb._func_cid_map[sig_name]) == obj_signal[
+                            n + 1 :
+                        ].count(
                             sig_name
                         ), f"Incorrect number of callbacks for '{sig_name}'"
                         assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(
@@ -405,8 +432,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     if delete_objects and callable_type == "bound_method":
         # Dictionary entries for signals are deleted when the objects are deleted
         #   and callbacks are unsubscribed
-        assert len(cb._func_cid_map) == 0, "Not all callbacks were automatically unsubscribed"
-        assert len(cb.callbacks) == 0, "Not all callbacks were automatically unsubscribed"
+        assert (
+            len(cb._func_cid_map) == 0
+        ), "Not all callbacks were automatically unsubscribed"
+        assert (
+            len(cb.callbacks) == 0
+        ), "Not all callbacks were automatically unsubscribed"
     else:
         # Now disconnect the callbacks one by one and verify dictionary content
         for n in range(len(obj_to_delete)):
@@ -482,7 +513,7 @@ def test_msg_args_kwargs_emits_warning_first_time(recwarn):
     assert len(recwarn) == 0
     warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {"arg": "value"})
     assert len(recwarn) == 1
-    w = recwarn.pop(PendingDeprecationWarning)
+    w = recwarn.pop(UserWarning)
     assert (
         str(w.message)
         == """\
