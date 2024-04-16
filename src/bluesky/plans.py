@@ -256,7 +256,6 @@ def rel_list_scan(
     :func:`bluesky.plans.list_grid_scan`
     :func:`bluesky.plans.rel_list_grid_scan`
     """
-    _check_detectors_type_input(detectors)
     # TODO read initial positions (redundantly) so they can be put in md here
     _md = {"plan_name": "rel_list_scan"}
     _md.update(md or {})
@@ -394,6 +393,7 @@ def rel_list_grid_scan(
     :func:`bluesky.plans.list_scan`
     :func:`bluesky.plans.rel_list_scan`
     """
+    _check_detectors_type_input(detectors)
     _md = {"plan_name": "rel_list_grid_scan"}
     _md.update(md or {})
 
@@ -442,6 +442,7 @@ def _scan_1d(
     --------
     :func:`bluesky.plans.rel_scan`
     """
+    _check_detectors_type_input(detectors)
     _md = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name],
@@ -565,6 +566,7 @@ def log_scan(
     --------
     :func:`bluesky.plans.rel_log_scan`
     """
+    _check_detectors_type_input(detectors)
     _md = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name],
@@ -703,6 +705,7 @@ def adaptive_scan(
     --------
     :func:`bluesky.plans.rel_adaptive_scan`
     """
+    _check_detectors_type_input(detectors)
     if not 0 < min_step < max_step:
         raise ValueError("min_step and max_step must meet condition of max_step > min_step > 0")
 
@@ -894,7 +897,7 @@ def tune_centroid(
 
     Parameters
     ----------
-    detectors : Signal
+    detectors : list or tuple
         list of 'readable' objects
     signal : string
         detector field whose output is to maximize
@@ -927,6 +930,7 @@ def tune_centroid(
     ...                center=-1.3, Imax=1e5, sigma=0.05)
     >>> RE(tune_centroid([det], "det", motor, -1.5, -0.5, 0.01, 10))
     """
+    _check_detectors_type_input(detectors)
     if min_step <= 0:
         raise ValueError("min_step must be positive")
     if step_factor <= 1.0:
@@ -1041,6 +1045,7 @@ def scan_nd(
     >>> cy = cycler(motor1, [1, 2, 3]) * cycler(motor2, [4, 5, 6])
     >>> scan_nd([sensor], cy)
     """
+    _check_detectors_type_input(detectors)
     _md = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name for motor in cycler.keys],
@@ -1207,6 +1212,7 @@ def scan(
     :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
+    _check_detectors_type_input(detectors)
     # For back-compat reasons, we accept 'num' as the last positional argument:
     # scan(detectors, motor, -1, 1, 3)
     # or by keyword:
@@ -1566,6 +1572,7 @@ def rel_scan(
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
+    _check_detectors_type_input(detectors)
     _md = {"plan_name": "rel_scan"}
     md = md or {}
     _md.update(md)
@@ -1580,7 +1587,7 @@ def rel_scan(
 
 
 def tweak(
-    detector: Sequence[Readable],
+    detector: Readable,
     target_field: str,
     motor: Movable,
     step: float,
