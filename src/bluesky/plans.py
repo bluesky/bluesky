@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Sequence
+from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 
@@ -19,21 +19,29 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .utils import Msg, get_hinted_fields
+from .protocols import Readable
+from .utils import CustomPlanMetadata, Msg, MsgGenerator, get_hinted_fields
 
 
-def _check_detectors_input(detectors):
+def _check_detectors_type_input(detectors):
     if not isinstance(detectors, Sequence):
         raise TypeError("The input argument must be either as a list or a tuple of reabale objects.")
 
 
-def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
+def count(
+    detectors: Sequence[Readable],
+    num: Optional[int] = 1,
+    delay: Optional[Union[Sequence[float], float]] = None,
+    *,
+    per_shot: Callable = None,
+    md: CustomPlanMetadata = None,
+) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     num : integer, optional
         number of readings to take; default is 1
@@ -56,7 +64,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """
-    _check_detectors_input(detectors)
+    _check_detectors_type_input(detectors)
     if num is None:
         num_intervals = None
     else:
@@ -93,7 +101,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     *args :
         For one dimension, ``motor, [point1, point2, ....]``.
@@ -121,6 +129,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.list_grid_scan`
     :func:`bluesky.plans.rel_list_grid_scan`
     """
+    _check_detectors_type_input(detectors)
     if len(args) % 2 != 0:
         raise ValueError("The list of arguments must contain a list of points for each defined motor")
 
@@ -222,6 +231,7 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.list_grid_scan`
     :func:`bluesky.plans.rel_list_grid_scan`
     """
+    _check_detectors_type_input(detectors)
     # TODO read initial positions (redundantly) so they can be put in md here
     _md = {"plan_name": "rel_list_scan"}
     _md.update(md or {})
@@ -1213,7 +1223,7 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     #   supplied, but if `snake_axes` is not `None` (the default value), it overrides
     #   any values of `snakeX` in `args`.
 
-    _check_detectors_input(detectors)
+    _check_detectors_type_input(detectors)
     args_pattern = plan_patterns.classify_outer_product_args_pattern(args)
     if (snake_axes is not None) and (args_pattern == plan_patterns.OuterProductArgsPattern.PATTERN_2):
         raise ValueError(

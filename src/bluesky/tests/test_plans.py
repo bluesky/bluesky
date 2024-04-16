@@ -697,3 +697,12 @@ def test_predeclare_env(hw, monkeypatch, predeclare):
             assert "declare_stream" in cmds
         else:
             assert "declare_stream" not in cmds
+
+
+def test_count_failure(RE, hw):
+    detector_generator = (det for det in [hw.det1, hw.det2])
+    with pytest.raises(TypeError):
+        RE(bp.count(detector_generator))
+
+    with pytest.raises(TypeError):
+        RE(bp.count(hw.det))
