@@ -82,6 +82,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
+    "bluesky[integrations]",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]
