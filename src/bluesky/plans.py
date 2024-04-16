@@ -6,6 +6,7 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
+from typing import Sequence
 
 import numpy as np
 
@@ -19,6 +20,11 @@ from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
 from .utils import Msg, get_hinted_fields
+
+
+def _check_detectors_input(detectors):
+    if not isinstance(detectors, Sequence):
+        raise TypeError("The input argument must be either as a list or a tuple of reabale objects.")
 
 
 def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
@@ -50,6 +56,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """
+    _check_detectors_input(detectors)
     if num is None:
         num_intervals = None
     else:
@@ -1206,6 +1213,7 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     #   supplied, but if `snake_axes` is not `None` (the default value), it overrides
     #   any values of `snakeX` in `args`.
 
+    _check_detectors_input(detectors)
     args_pattern = plan_patterns.classify_outer_product_args_pattern(args)
     if (snake_axes is not None) and (args_pattern == plan_patterns.OuterProductArgsPattern.PATTERN_2):
         raise ValueError(

@@ -591,6 +591,14 @@ def test_grid_scans_failing(RE, hw, plan):
             args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9)
             RE(plan([hw.det], *args, snake_axes=snake_axes))
 
+    # Argument detectors is a generator
+    generator = (detector for detector in [hw.det1, hw.det2])
+    with pytest.raises(
+        TypeError, match="The input argument must be either as a list or a tuple of reabale objects."
+    ):
+        args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, True, hw.motor2, 7, 8, 9, False)
+        RE(plan(generator, *args))
+
 
 def test_describe_failure(RE):
     ophyd = pytest.importorskip("ophyd")
