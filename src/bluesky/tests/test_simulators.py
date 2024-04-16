@@ -1,8 +1,14 @@
+from collections.abc import Generator
+from unittest.mock import MagicMock
+
 import pytest
 
+from bluesky import Msg
 from bluesky.plans import grid_scan, scan
-from bluesky.simulators import check_limits, plot_raster_path, print_summary, print_summary_wrapper, summarize_plan
-
+from bluesky.protocols import Triggerable
+from bluesky.simulators import check_limits, plot_raster_path, print_summary, print_summary_wrapper, summarize_plan, \
+    RunEngineSimulator
+import bluesky.plan_stubs as bps
 
 def test_print_summary(hw):
     det = hw.det
@@ -67,3 +73,50 @@ def test_plot_raster_path(hw):
     motor2 = hw.motor2
     plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
     plot_raster_path(plan, "motor1", "motor2", probe_size=0.3)
+
+
+def test_simulator_simulates_simple_plan():
+    def simple_plan() -> Generator[Msg, object, object]:
+        yield from bps.null()
+
+    sim = RunEngineSimulator()
+    messages = sim.simulate_plan(simple_plan())
+    assert len(messages) == 1
+    assert messages[0] == Msg('null')
+
+def test_simulator_add_handler(hw):
+    callback = MagicMock()
+    def do_sleep():
+        yield from bps.sleep("60")
+
+    sim = RunEngineSimulator()
+    sim.add_handler(lambda msg: callback(msg), "sleep")
+    msgs = sim.simulate_plan(do_sleep())
+    callback.assert_called_once()
+    msg = callback.mock_calls[0].args[0]
+    assert msg.command == "sleep"
+
+def test_simulator_add_read_handler(hw):
+    def trigger_and_return_position():
+        yield from bps.trigger(hw.ab_det)
+        pos = yield from bps.rd(hw.ab_det.a)
+        return pos
+
+    sim = RunEngineSimulator()
+    sim.add_read_handler("det_a", 5, "det_a")
+    msgs = sim.simulate_plan(trigger_and_return_position())
+    assert sim.return_value == 5
+
+def test_simulator_add_wait_handler(hw):
+    def trigger_and_return_position():
+        pos = yield from bps.rd(hw.ab_det.a)
+        assert pos == 0
+        yield from bps.trigger(hw.ab_det, wait=True)
+        pos = yield from bps.rd(hw.ab_det.a)
+        return pos
+
+    sim = RunEngineSimulator()
+    sim.add_read_handler("det_a", 0, "det_a")
+    sim.add_wait_handler(lambda _: sim.add_read_handler("det_a", 5, "det_a"))
+    msgs = sim.simulate_plan(trigger_and_return_position())
+    assert sim.return_value == 5
