@@ -31,6 +31,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from typing import Iterable as TypingIterable
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -95,6 +96,19 @@ MsgGenerator = Generator[Msg, Any, Optional[P]]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
 CustomPlanMetadata = Dict[str, Any]
+
+
+#: Return type of a plan, usually None. Always optional for dry-runs.
+P = TypeVar("P")
+
+#: Object usually returned from plan functions that is fed to the RunEngine
+MsgGenerator = Generator[Msg, Any, Optional[P]]
+
+#: Metadata passed from a plan to the RunEngine for embedding in a start document
+CustomPlanMetadata = Dict[str, Any]
+
+#: Scalar or iterable of values, one to be applied to each point in a scan
+ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 
 
 class RunEngineControlException(Exception):

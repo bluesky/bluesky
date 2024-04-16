@@ -6,9 +6,10 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Callable, Optional, Sequence, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from cycler import Cycler
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -19,8 +20,22 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .protocols import Readable
-from .utils import CustomPlanMetadata, Msg, MsgGenerator, get_hinted_fields
+from .protocols import Flyable, Movable, Readable
+from .utils import CustomPlanMetadata, Msg, MsgGenerator, ScalarOrIterableFloat, get_hinted_fields
+
+#: Plan function that can be used for each shot in a detector acquisition involving no actuation
+PerShot = Callable[[Iterable[Readable], Optional[bps.TakeReading]], MsgGenerator]
+
+#: Plan function that can be used for each step in a scan
+PerStep = Callable[
+    [
+        Iterable[Readable],
+        Mapping[Movable, Any],
+        Mapping[Movable, Any],
+        Optional[bps.TakeReading],
+    ],
+    MsgGenerator,
+]
 
 
 def _check_detectors_type_input(detectors):
@@ -31,10 +46,10 @@ def _check_detectors_type_input(detectors):
 def count(
     detectors: Sequence[Readable],
     num: Optional[int] = 1,
-    delay: Optional[Union[Sequence[float], float]] = None,
+    delay: Optional[ScalarOrIterableFloat] = None,
     *,
-    per_shot: Callable = None,
-    md: CustomPlanMetadata = None,
+    per_shot: Optional[PerShot] = None,
+    md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
@@ -87,7 +102,7 @@ def count(
 
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
-    def inner_count():
+    def inner_count() -> MsgGenerator[str]:
         if predeclare:
             yield from bps.declare_stream(*detectors, name="primary")
         return (yield from bps.repeat(partial(per_shot, detectors), num=num, delay=delay))
@@ -95,7 +110,12 @@ def count(
     return (yield from inner_count())
 
 
-def list_scan(detectors, *args, per_step=None, md=None):
+def list_scan(
+    detectors: Sequence[Readable],
+    *args: Tuple[Union[Movable, Any], List[Any]],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one or more variables in steps simultaneously (inner product).
 
@@ -193,7 +213,12 @@ def list_scan(detectors, *args, per_step=None, md=None):
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_list_scan(detectors, *args, per_step=None, md=None):
+def rel_list_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in steps relative to current position.
 
@@ -246,7 +271,13 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
     return (yield from inner_relative_list_scan())
 
 
-def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+def list_grid_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    snake_axes: bool = False,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -315,7 +346,13 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+def rel_list_grid_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    snake_axes: bool = False,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory. Each point is
     relative to the current position.
@@ -370,7 +407,16 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=Non
     return (yield from inner_relative_list_grid_scan())
 
 
-def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def _scan_1d(
+    detectors: Sequence[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps.
 
@@ -437,7 +483,16 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def _rel_scan_1d(
+    detectors: Sequence[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps relative to current positon.
 
@@ -475,7 +530,16 @@ def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_relative_scan())
 
 
-def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def log_scan(
+    detectors: Sequence[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step=None,
+    md=None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
 
@@ -546,7 +610,16 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_log_scan())
 
 
-def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def rel_log_scan(
+    detectors: Sequence[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps relative to current position.
 
@@ -585,19 +658,19 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
 
 def adaptive_scan(
-    detectors,
-    target_field,
-    motor,
-    start,
-    stop,
-    min_step,
-    max_step,
-    target_delta,
-    backstep,
-    threshold=0.8,
+    detectors: Sequence[Readable],
+    target_field: str,
+    motor: Movable,
+    start: float,
+    stop: float,
+    min_step: float,
+    max_step: float,
+    target_delta: float,
+    backstep: bool,
+    threshold: Optional[float] = 0.8,
     *,
-    md=None,
-):
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable with adaptively tuned step size.
 
@@ -713,19 +786,19 @@ def adaptive_scan(
 
 
 def rel_adaptive_scan(
-    detectors,
-    target_field,
-    motor,
-    start,
-    stop,
-    min_step,
-    max_step,
-    target_delta,
-    backstep,
-    threshold=0.8,
+    detectors: Sequence[Readable],
+    target_field: str,
+    motor: Movable,
+    start: float,
+    stop: float,
+    min_step: float,
+    max_step: float,
+    target_delta: float,
+    backstep: bool,
+    threshold: Optional[float] = 0.8,
     *,
-    md=None,
-):
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Relative scan over one variable with adaptively tuned step size.
 
@@ -784,8 +857,18 @@ def rel_adaptive_scan(
 
 
 def tune_centroid(
-    detectors, signal, motor, start, stop, min_step, num=10, step_factor=3.0, snake=False, *, md=None
-):
+    detectors: Sequence[Readable],
+    signal: str,
+    motor: Movable,
+    start: float,
+    stop: float,
+    min_step: float,
+    num: int = 10,
+    step_factor: float = 3.0,
+    snake: bool = False,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
 
@@ -879,7 +962,7 @@ def tune_centroid(
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
-    def _tune_core(start, stop, num, signal):
+    def _tune_core(start: float, stop: float, num: int, signal: str):
         next_pos = start
         step = (stop - start) / (num - 1)
         peak_position = None
@@ -925,7 +1008,13 @@ def tune_centroid(
     return (yield from _tune_core(start, stop, num, signal))
 
 
-def scan_nd(detectors, cycler, *, per_step=None, md=None):
+def scan_nd(
+    detectors: Sequence[Readable],
+    cycler: Cycler,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over an arbitrary N-dimensional trajectory.
 
@@ -957,7 +1046,11 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         "motors": [motor.name for motor in cycler.keys],
         "num_points": len(cycler),
         "num_intervals": len(cycler) - 1,
-        "plan_args": {"detectors": list(map(repr, detectors)), "cycler": repr(cycler), "per_step": repr(per_step)},
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "cycler": repr(cycler),
+            "per_step": repr(per_step),
+        },
         "plan_name": "scan_nd",
         "hints": {},
     }
@@ -1059,7 +1152,13 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     return (yield from inner_scan_nd())
 
 
-def inner_product_scan(detectors, num, *args, per_step=None, md=None):
+def inner_product_scan(
+    detectors: Sequence[Readable],
+    num: int,
+    *args: Union[Movable, Any],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
@@ -1067,7 +1166,13 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     yield from scan(detectors, *args, num, per_step=None, md=md)
 
 
-def scan(detectors, *args, num=None, per_step=None, md=None):
+def scan(
+    detectors,
+    *args: Union[Movable, Any],
+    num: Optional[int] = None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory.
 
@@ -1170,7 +1275,13 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+def grid_scan(
+    detectors,
+    *args,
+    snake_axes=None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -1341,7 +1452,13 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+def rel_grid_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    snake_axes: bool = None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh relative to current position.
 
@@ -1394,7 +1511,13 @@ def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     return (yield from inner_rel_grid_scan())
 
 
-def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
+def relative_inner_product_scan(
+    detectors: Sequence[Readable],
+    num: int,
+    *args: Union[Movable, Any],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
@@ -1402,7 +1525,13 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
 
 
-def rel_scan(detectors, *args, num=None, per_step=None, md=None):
+def rel_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    num=None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory relative to current position.
 
@@ -1450,7 +1579,14 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     return (yield from inner_rel_scan())
 
 
-def tweak(detector, target_field, motor, step, *, md=None):
+def tweak(
+    detector: Sequence[Readable],
+    target_field: str,
+    motor: Movable,
+    step: float,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Move and motor and read a detector with an interactive prompt.
 
@@ -1530,21 +1666,21 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
 
 def spiral_fermat(
-    detectors,
-    x_motor,
-    y_motor,
-    x_start,
-    y_start,
-    x_range,
-    y_range,
-    dr,
-    factor,
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_start: float,
+    y_start: float,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    factor: float,
     *,
-    dr_y=None,
-    tilt=0.0,
-    per_step=None,
-    md=None,
-):
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -1636,8 +1772,19 @@ def spiral_fermat(
 
 
 def rel_spiral_fermat(
-    detectors, x_motor, y_motor, x_range, y_range, dr, factor, *, dr_y=None, tilt=0.0, per_step=None, md=None
-):
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    factor: float,
+    *,
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Relative fermat spiral scan
 
     Parameters
@@ -1702,21 +1849,21 @@ def rel_spiral_fermat(
 
 
 def spiral(
-    detectors,
-    x_motor,
-    y_motor,
-    x_start,
-    y_start,
-    x_range,
-    y_range,
-    dr,
-    nth,
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_start: float,
+    y_start: float,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    nth: float,
     *,
-    dr_y=None,
-    tilt=0.0,
-    per_step=None,
-    md=None,
-):
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -1806,8 +1953,19 @@ def spiral(
 
 
 def rel_spiral(
-    detectors, x_motor, y_motor, x_range, y_range, dr, nth, *, dr_y=None, tilt=0.0, per_step=None, md=None
-):
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    nth: float,
+    *,
+    dr_y: float = None,
+    tilt: float = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Relative spiral scan
 
     Parameters
@@ -1869,8 +2027,19 @@ def rel_spiral(
 
 
 def spiral_square(
-    detectors, x_motor, y_motor, x_center, y_center, x_range, y_range, x_num, y_num, *, per_step=None, md=None
-):
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_center: float,
+    y_center: float,
+    x_range: float,
+    y_range: float,
+    x_num: float,
+    y_num: float,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Absolute square spiral scan, centered around (x_center, y_center)
 
     Parameters
@@ -1955,7 +2124,18 @@ def spiral_square(
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range, x_num, y_num, *, per_step=None, md=None):
+def rel_spiral_square(
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    x_num: float,
+    y_num: float,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Relative square spiral scan, centered around current (x, y) position.
 
     Parameters
@@ -1997,14 +2177,32 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range, x_num, y_nu
     def inner_relative_spiral():
         return (
             yield from spiral_square(
-                detectors, x_motor, y_motor, 0, 0, x_range, y_range, x_num, y_num, per_step=per_step, md=_md
+                detectors,
+                x_motor,
+                y_motor,
+                0,
+                0,
+                x_range,
+                y_range,
+                x_num,
+                y_num,
+                per_step=per_step,
+                md=_md,
             )
         )
 
     return (yield from inner_relative_spiral())
 
 
-def ramp_plan(go_plan, monitor_sig, inner_plan_func, take_pre_data=True, timeout=None, period=None, md=None):
+def ramp_plan(
+    go_plan: MsgGenerator,
+    monitor_sig: Readable,
+    inner_plan_func: Callable[[], MsgGenerator],
+    take_pre_data: bool = True,
+    timeout: Optional[float] = None,
+    period: Optional[float] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Take data while ramping one or more positioners.
 
     The pseudo code for this plan is ::
@@ -2027,19 +2225,22 @@ def ramp_plan(go_plan, monitor_sig, inner_plan_func, take_pre_data=True, timeout
 
         This plan must return a `ophyd.StatusBase` object.
 
+    monitor_sig : readable
+        signal to be monitored
+
     inner_plan_func : generator function
         generator which takes no input
 
         This will be called for every data point.  This should create
         one or more events.
 
+    take_pre_data: Bool, optional
+        If True, add a pre data at beginning
+
     timeout : float, optional
         If not None, the maximum time the ramp can run.
 
         In seconds
-
-    take_pre_data: Bool, optional
-        If True, add a pre data at beginning
 
     period : float, optional
         If not None, take data no faster than this.  If None, take
@@ -2084,7 +2285,11 @@ def ramp_plan(go_plan, monitor_sig, inner_plan_func, take_pre_data=True, timeout
     return (yield from polling_plan())
 
 
-def fly(flyers, *, md=None):
+def fly(
+    flyers: List[Flyable],
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
 
@@ -2116,7 +2321,17 @@ def fly(flyers, *, md=None):
     return uid
 
 
-def x2x_scan(detectors, motor1, motor2, start, stop, num, *, per_step=None, md=None):
+def x2x_scan(
+    detectors: Sequence[Readable],
+    motor1: Movable,
+    motor2: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio
 
@@ -2133,6 +2348,9 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *, per_step=None, md=N
     start, stop : float
         The relative limits of the first motor.  The second motor
         will move between ``start / 2`` and ``stop / 2``
+
+    num : int
+        number of steps in the scan
 
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step).
