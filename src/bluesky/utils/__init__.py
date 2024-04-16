@@ -76,9 +76,9 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     __slots__ = ()
 
     def __new__(cls, command, obj=None, *args, run=None, **kwargs):
-        return super(Msg, cls).__new__(
+        return super(Msg, cls).__new__(  # noqa: UP008
             cls, command, obj, args, kwargs, run
-        )  # noqa: UP008
+        )
 
     def __repr__(self):
         return (
@@ -256,17 +256,12 @@ class SigintHandler(SignalHandler):
         # TODO, there is a possible race condition between the two
         # pauses here
         if self.RE.state.is_running and (not self.RE._interrupted):
-            if (
-                self.last_sigint_time is None
-                or time.time() - self.last_sigint_time > 10
-            ):
+            if self.last_sigint_time is None or time.time() - self.last_sigint_time > 10:
                 # reset the counter to 1
                 # It's been 10 seconds since the last SIGINT. Reset.
                 self.count = 1
                 if self.last_sigint_time is not None:
-                    self.log.debug(
-                        "It has been 10 seconds since the last SIGINT. Resetting SIGINT handler."
-                    )
+                    self.log.debug("It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.")
 
                 # weeee push these to threads to not block the main thread
                 def maybe_defer_pause():
@@ -287,9 +282,7 @@ class SigintHandler(SignalHandler):
             elif self.count == 2:
                 print("trying a second time")
                 # - Ctrl-C twice within 10 seconds -> hard pause
-                self.log.debug(
-                    "RunEngine detected two SIGINTs. A hard pause will be requested."
-                )
+                self.log.debug("RunEngine detected two SIGINTs. A hard pause will be requested.")
 
                 # weeee push these to threads to not block the main thread
                 def maybe_prompt_pause():
@@ -542,12 +535,8 @@ class _BoundMethodProxy:
 class StructMeta(type):
     def __new__(cls, name, bases, clsdict):
         clsobj = super().__new__(cls, name, bases, clsdict)
-        args_params = [
-            Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in clsobj._fields
-        ]
-        kwargs_params = [
-            Parameter(name, Parameter.KEYWORD_ONLY, default=None) for name in ["md"]
-        ]
+        args_params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in clsobj._fields]
+        kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None) for name in ["md"]]
         sig = Signature(args_params + kwargs_params)
         clsobj.__signature__ = sig
         return clsobj
@@ -607,8 +596,7 @@ def normalize_subs_input(subs):
         for func in funcs:
             if not callable(func):
                 raise ValueError(
-                    "subs values must be functions or lists of functions. The offending entry is\n "
-                    f"{func}"
+                    "subs values must be functions or lists of functions. The offending entry is\n " f"{func}"
                 )
     return normalized
 
@@ -830,9 +818,7 @@ class PersistentDict(collections.abc.MutableMapping):
 
         import weakref
 
-        self._finalizer = weakref.finalize(
-            self, finalize, self._file, self._cache, PersistentDict._dump
-        )
+        self._finalizer = weakref.finalize(self, finalize, self._file, self._cache, PersistentDict._dump)
 
     @property
     def directory(self):
@@ -934,9 +920,7 @@ def get_history():
         except OSError as exc:
             print(exc)
             print("Failed to create metadata history file at %s" % path)
-            print(
-                "Storing HistoryDict in memory; it will not persist when session is ended."
-            )
+            print("Storing HistoryDict in memory; it will not persist when session is ended.")
             return historydict.HistoryDict(":memory:")
 
 
@@ -965,9 +949,7 @@ def install_kicker(loop=None, update_rate=0.03):
     elif backend in ("Qt4Agg", "Qt5Agg"):
         install_qt_kicker(loop=loop, update_rate=update_rate)
     else:
-        raise NotImplementedError(
-            f"The matplotlib backend {backend} is not yet supported."
-        )
+        raise NotImplementedError(f"The matplotlib backend {backend} is not yet supported.")
 
 
 def install_qt_kicker(loop=None, update_rate=0.03):
@@ -1086,8 +1068,7 @@ def apply_sub_factories(factories, plan):
     """
     factories = normalize_subs_input(factories)
     out = {
-        k: list(itertools.filterfalse(lambda x: x is None, (sf(plan) for sf in v)))
-        for k, v in factories.items()
+        k: list(itertools.filterfalse(lambda x: x is None, (sf(plan) for sf in v))) for k, v in factories.items()
     }
     return out
 
@@ -1445,9 +1426,7 @@ class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
     pbar: Optional[ProgressBarBase]
 
-    def __init__(
-        self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar
-    ):
+    def __init__(self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
         Manages creation and tearing down of progress bars.
 
@@ -1587,9 +1566,7 @@ def merge_cycler(cyc):
     def my_name(obj):
         """Get the attribute name of this device on its parent Device"""
         parent = obj.parent
-        return next(
-            iter([nm for nm in parent.component_names if getattr(parent, nm) is obj])
-        )
+        return next(iter([nm for nm in parent.component_names if getattr(parent, nm) is obj]))
 
     io, co, gb = merge_axis(cyc.keys)
 
@@ -1609,9 +1586,7 @@ def merge_cycler(cyc):
             )
 
         if type_map["real"] and type_map["pseudo"]:
-            raise ValueError(
-                "Passed in a mix of real and pseudo axis. Can not cope, failing"
-            )
+            raise ValueError("Passed in a mix of real and pseudo axis. Can not cope, failing")
         pseudo_axes = type_map["pseudo"]
         if len(pseudo_axes) > 1:
             p_cyc = reduce(
@@ -1726,9 +1701,9 @@ class DefaultDuringTask(DuringTask):
                     This is copied from Matplotlib.
                     """
                     # foo.bar.Enum.Entry (PyQt6) <=> foo.bar.Entry (non-PyQt6).
-                    return operator.attrgetter(
-                        name if QT_API == "PyQt6" else name.rpartition(".")[0]
-                    )(sys.modules[QtCore.__package__])
+                    return operator.attrgetter(name if QT_API == "PyQt6" else name.rpartition(".")[0])(
+                        sys.modules[QtCore.__package__]
+                    )
 
                 app = QtWidgets.QApplication.instance()
                 if app is None:
@@ -1769,9 +1744,7 @@ class DefaultDuringTask(DuringTask):
                     for fd in (rfd, wfd):
                         flags = fcntl.fcntl(fd, fcntl.F_GETFL)
                         fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-                    wakeupsn = QtCore.QSocketNotifier(
-                        rfd, _enum("QtCore.QSocketNotifier.Type").Read
-                    )
+                    wakeupsn = QtCore.QSocketNotifier(rfd, _enum("QtCore.QSocketNotifier.Type").Read)
                     origwakeupfd = signal.set_wakeup_fd(wfd)
 
                     def cleanup():
@@ -1833,11 +1806,7 @@ class DefaultDuringTask(DuringTask):
 
                 try:
                     sys.excepthook = my_exception_hook
-                    (
-                        event_loop.exec()
-                        if hasattr(event_loop, "exec")
-                        else event_loop.exec_()
-                    )
+                    (event_loop.exec() if hasattr(event_loop, "exec") else event_loop.exec_())
                     # make sure any pending signals are processed
                     event_loop.processEvents()
                     if vals[1] is not None:
@@ -1930,9 +1899,7 @@ async def maybe_collect_asset_docs(
     # return true for a WritesStreamAsset as they both contain collect_asset_docs
     if isinstance(obj, WritesStreamAssets):
         warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
-        async for stream_doc in iterate_maybe_async(
-            obj.collect_asset_docs(index, *args, **kwargs)
-        ):
+        async for stream_doc in iterate_maybe_async(obj.collect_asset_docs(index, *args, **kwargs)):
             yield stream_doc
     elif isinstance(obj, WritesExternalAssets):
         warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
