@@ -62,7 +62,7 @@ from .utils import (
 )
 
 #: Any plan function that takes a reading given a list of Readables
-TakeReading = Callable[[List[Readable]], MsgGenerator[Mapping[str, Reading]]]
+TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
 
 
 def declare_stream(
