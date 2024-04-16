@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from cycler import Cycler
@@ -24,12 +24,12 @@ from .protocols import Flyable, Movable, Readable
 from .utils import CustomPlanMetadata, Msg, MsgGenerator, ScalarOrIterableFloat, get_hinted_fields
 
 #: Plan function that can be used for each shot in a detector acquisition involving no actuation
-PerShot = Callable[[Iterable[Readable], Optional[bps.TakeReading]], MsgGenerator]
+PerShot = Callable[[Sequence[Readable], Optional[bps.TakeReading]], MsgGenerator]
 
 #: Plan function that can be used for each step in a scan
 PerStep = Callable[
     [
-        Iterable[Readable],
+        Sequence[Readable],
         Mapping[Movable, Any],
         Mapping[Movable, Any],
         Optional[bps.TakeReading],
