@@ -409,7 +409,7 @@ def test_new_style_with_steam_name_requires_pre_declare(RE):
 def test_new_style_with_no_stream_name_and_no_pre_declare_does_not_try_and_make_a_stream(RE):
     with pytest.raises(
         AssertionError,
-        match=re.escape("Single nested data keys should be pre-decalred"),
+        match=re.escape("Single nested data keys should be pre-declared"),
     ):
         RE(collect_plan(StreamDatumReadableCollectable(name="det"), pre_declare=False))
 
@@ -497,7 +497,7 @@ def test_pv_collectable(RE, cls):
 def test_new_collect_needs_predeclare(RE):
     with pytest.raises(
         AssertionError,
-        match="Single nested data keys should be pre-decalred",
+        match="Single nested data keys should be pre-declared",
     ):
         RE(collect_plan(PvCollectable(name="det"), pre_declare=False))
 

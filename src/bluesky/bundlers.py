@@ -64,7 +64,7 @@ class RunBundler:
         self._read_cache: Deque[Dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output  # noqa: C408
-        self._describe_collect_cache: ObjDict[Dict[str, DataKey]] = dict()  # noqa: C408  # cache of all obj.describe() output
+        self._describe_collect_cache: Dict[str, ObjDict[DataKey]] = dict()  # noqa: C408  # cache of stream: object: obj.describe()
 
         self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()  # noqa: C408
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values  # noqa: C408
@@ -222,12 +222,12 @@ class RunBundler:
             list(objs_dks),
         )
 
-    async def _ensure_cached(self, obj, collect=False):
+    async def _ensure_cached(self, obj, collect=False, stream_name: Optional[str] = None):
         coros = []
         if not collect and obj not in self._describe_cache:
             coros.append(self._cache_describe(obj))
-        elif collect and obj not in self._describe_collect_cache:
-            coros.append(self._cache_describe_collect(obj))
+        elif collect and obj not in self._local_descriptors:
+            coros.append(self._cache_describe_collect(obj, stream_name=stream_name))
         if obj not in self._config_desc_cache:
             coros.append(self._cache_describe_config(obj))
             coros.append(self._cache_read_config(obj))
@@ -244,19 +244,10 @@ class RunBundler:
         objs = frozenset(objs)
         objs_dks = {}  # {collect_object: stream_data_keys}
 
-        await asyncio.gather(*[self._ensure_cached(obj, collect=collect) for obj in objs])
+        await asyncio.gather(*[self._ensure_cached(obj, collect=collect, stream_name=stream_name) for obj in objs])
         for obj in objs:
             if collect:
-                data_keys = self._describe_collect_cache[obj]
-                streams_and_data_keys: List[Tuple[str, Dict[str, Any]]] = (
-                    self._maybe_format_datakeys_with_stream_name(data_keys, message_stream_name=stream_name)
-                )
-
-                # ensure that there is only one stream and it is the stream we have provided.
-                assert len(streams_and_data_keys) == 1 and streams_and_data_keys[0][0] == stream_name, (
-                    "`declare_stream` contained `collect=True` but  `describe_collect` did "
-                    f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
-                )
+                data_keys = self._describe_collect_cache[stream_name][obj]
             else:
                 data_keys = self._describe_cache[obj]
 
@@ -406,7 +397,7 @@ class RunBundler:
         if obj in self._monitor_params:
             raise IllegalMessageSequence(f"A 'monitor' message was sent for {obj} which is already monitored")
 
-        await self._ensure_cached(obj)
+        await self._ensure_cached(obj, stream_name=name)
 
         stream_bundle = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
         compose_event = stream_bundle[1]
@@ -532,7 +523,7 @@ class RunBundler:
         # we do not have the descriptor cached, make it
         if descriptor_doc is None or d_objs is None:
             for obj in objs_read:
-                await self._ensure_cached(obj, collect=isinstance(obj, Collectable))
+                await self._ensure_cached(obj, collect=isinstance(obj, Collectable), stream_name=desc_key)
                 objs_dks[obj] = self._describe_cache[obj]
 
             descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_dks)
@@ -641,54 +632,26 @@ class RunBundler:
         """
         self._uncollected.add(msg.obj)
 
-    # Could we have a look at changing this now? we use one of each use can in
-    # seperate places so it could be two seperate methods for each dictionary type.
-    def _maybe_format_datakeys_with_stream_name(
-        self,
-        describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],
-        message_stream_name: Optional[str] = None,
-    ) -> List[Tuple[str, Dict[str, DataKey]]]:
-        """
-        Check if the dictionary returned by describe collect is a dict
-            `{str: DataKey}` or a `{str: {str: DataKey}}`.
-        If a `message_stream_name` is passed then return a singleton list of the form of
-            `{message_stream_name: describe_collect_dict}.items()`.
-        If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
-        """
+    async def _cache_describe_collect(self, obj: Collectable, stream_name: Optional[str] = None):
+        def is_data_key(obj: Any) -> bool:
+            return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
-        def has_str_source(d: dict):
-            return isinstance(d, dict) and isinstance(d.get("source", None), str)
-
-        if describe_collect_dict:
-            first_value = list(describe_collect_dict.values())[0]
-            if has_str_source(first_value):
-                # We have Dict[str, DataKey], so return just this
-                # If stream name not given then default to "primary"
-                return [(message_stream_name or "primary", describe_collect_dict)]
-            elif all(has_str_source(v) for v in first_value.values()):
-                # We have Dict[str, Dict[str, DataKey]] so return its items
-                if message_stream_name and list(describe_collect_dict) != [message_stream_name]:
-                    # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
-                    # this is only acceptable if the only key in the parent dict is message_stream_name
-
-                    raise RuntimeError(
-                        f"Expected a single stream {message_stream_name!r}, got {describe_collect_dict}"
-                    )
-                return list(describe_collect_dict.items())
-            else:
-                raise RuntimeError(
-                    f"Invalid describe_collect return: {describe_collect_dict} when collect "
-                    f"was called on {message_stream_name}"
-                )
-        else:
-            # Empty dict, could be either but we don't care
-            return []
-
-    async def _cache_describe_collect(self, obj: Collectable):
         "Read the object's describe and cache it."
         obj = check_supports(obj, Collectable)
         c = await maybe_await(obj.describe_collect())
-        self._describe_collect_cache[obj] = c
+
+        # Required all(not to handle TrivialFlyer test case of str: {}
+        if all(not is_data_key(value) for value in c.values()):
+            for stream in c:
+                if stream not in self._describe_collect_cache:
+                    self._describe_collect_cache[stream] = {}
+                self._describe_collect_cache[stream][obj] = c[stream]
+        else:
+            # Single nested
+            assert stream_name is not None, "Single nested data keys should be pre-declared"
+            if stream_name not in self._describe_collect_cache:
+                self._describe_collect_cache[stream_name] = {}
+            self._describe_collect_cache[stream_name][obj] = c
 
     async def _describe_collect(self, collect_object: Flyable):
         """Read an object's describe_collect and cache it.
@@ -715,27 +678,16 @@ class RunBundler:
         """
         await self._ensure_cached(collect_object, collect=True)
 
-        describe_collect = self._describe_collect_cache[collect_object]
-        describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(describe_collect))
-
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
-        # Check that singly nested stuff should have been pre-declared
-        def is_data_key(obj: Any) -> bool:
-            return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
-
-        assert all(
-            not is_data_key(value) for value in describe_collect.values()
-        ), "Single nested data keys should be pre-decalred"
-
-        # Make sure you can't use identidal data keys in multiple streams
+        # Make sure you can't use identical data keys in multiple streams
         duplicates: Dict[str, DataKey] = defaultdict(dict)
-        for stream, data_keys in describe_collect.items():
-            for key, stuff in data_keys.items():
-                for other_stream, other_data_keys in describe_collect.items():
-                    for other_key, other_stuff in other_data_keys.items():
-                        if stream != other_stream and key == other_key and stuff == other_stuff:
-                            duplicates[stream][key] = stuff
+        for stream, device_map in self._describe_collect_cache.items():
+            for other_stream, other_device_map in self._describe_collect_cache.items():
+                if other_stream != stream:
+                    for device, datakeys in device_map.items():
+                        if device in other_device_map and datakeys == other_device_map[device]:
+                            duplicates[stream][device] = datakeys
         if len(duplicates) > 0:
             raise RuntimeError(
                 f"Can't use identical data keys in multiple streams: {duplicates}",
@@ -743,18 +695,17 @@ class RunBundler:
                 f"streams: {duplicates.keys()}",
             )
 
-        for stream_name, stream_data_keys in describe_collect_items:
-            if stream_name not in self._descriptor_objs or (
-                collect_object not in self._descriptor_objs[stream_name]
-            ):
-                await self._prepare_stream(stream_name, {collect_object: stream_data_keys})
-            else:
-                objs_read = self._descriptor_objs[stream_name]
-                if stream_data_keys != objs_read[collect_object]:
-                    raise RuntimeError(
-                        "Mismatched objects read, " f"expected {stream_data_keys!s}, " f"got {objs_read!s}"
-                    )
-            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
+        for stream_name, devices in self._describe_collect_cache.items():
+            if collect_object in devices:
+                if stream_name not in self._descriptor_objs or (
+                    collect_object not in self._descriptor_objs[stream_name]
+                ):
+                    await self._prepare_stream(stream_name, devices)
+                else:
+                    objs_read = self._descriptor_objs[stream_name]
+                    if devices[collect_object] != objs_read[collect_object]:
+                        raise RuntimeError(f"Mismatched objects read, expected {devices!s}, got {objs_read!s}")
+                local_descriptors[frozenset(devices[collect_object].keys())] = self._descriptors[stream_name]
 
         self._local_descriptors[collect_object] = local_descriptors
 
