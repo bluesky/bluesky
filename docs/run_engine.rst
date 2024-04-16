@@ -358,7 +358,7 @@ API to control the behavior.
     from bluesky.utils import (AsyncInput, FailedPause, InvalidCommand, Msg,
                                ensure_generator)
     from bluesky.run_engine import RunEngineStateMachine, PropertyMachine
-    from super_state_machine.errors import TransitionError
+    from bluesky.super_state_machine.errors import TransitionError
 
 
     class RunEngine_v5:

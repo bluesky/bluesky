@@ -36,7 +36,6 @@ import msgpack_numpy
 import numpy as np
 import zict
 from cycler import cycler
-from super_state_machine.errors import TransitionError
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
@@ -55,6 +54,7 @@ from bluesky.protocols import (
     WritesStreamAssets,
     check_supports,
 )
+from bluesky.super_state_machine.errors import TransitionError
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython

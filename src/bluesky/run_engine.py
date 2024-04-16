@@ -17,9 +17,10 @@ from itertools import count
 from warnings import warn
 
 from event_model import DocumentNames
-from super_state_machine.errors import TransitionError
-from super_state_machine.extras import PropertyMachine
-from super_state_machine.machines import StateMachine
+
+from bluesky.super_state_machine.errors import TransitionError
+from bluesky.super_state_machine.extras import PropertyMachine
+from bluesky.super_state_machine.machines import StateMachine
 
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
