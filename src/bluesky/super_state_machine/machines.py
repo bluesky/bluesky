@@ -22,8 +22,8 @@ class AttributeDict(dict):
         return self[key]
 
 
-class StateMachine(type):
-    """State Machine."""
+class StateMachineMetaclass(type):
+    """Metaclass for state machine, to build all its logic."""
 
     def __new__(cls, name, bases, attrs):
         """Create state machine and add all logic and methods to it."""
@@ -149,8 +149,6 @@ class StateMachine(type):
             checker = utils.generate_checker(state)
             cls.context.new_methods[checker_name] = checker
 
-        cls.context.new_methods["actual_state"] = utils.actual_state
-        cls.context.new_methods["as_enum"] = utils.as_enum
         cls.context.new_methods["force_set"] = utils.force_set
 
     @classmethod
@@ -247,6 +245,21 @@ class StateMachine(type):
         cls.context.new_meta["transitions"] = cls.context.new_transitions
         cls.context.new_meta["config_getter"] = cls.context["get_config"]
         cls.context.new_class._meta = cls.context["new_meta"]
+
+
+class StateMachine(metaclass=StateMachineMetaclass):
+    """State machine."""
+
+    @property
+    def actual_state(self):
+        """Actual state as `None` or `enum` instance."""
+        attr = self._meta["state_attribute_name"]
+        return getattr(self, attr)
+
+    @property
+    def as_enum(self):
+        """Return actual state as enum."""
+        return self.actual_state
 
 
 def get_config(original_meta, attribute, default=NotSet):

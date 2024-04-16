@@ -93,19 +93,6 @@ def generate_setter(value):
 state_property = property(state_getter, state_setter)
 
 
-@property  # noqa
-def actual_state(self):
-    """Actual state as `None` or `enum` instance."""
-    attr = self._meta["state_attribute_name"]
-    return getattr(self, attr)
-
-
-@property  # noqa
-def as_enum(self):
-    """Return actual state as enum."""
-    return self.actual_state
-
-
 class EnumValueTranslator:
     """Helps to find enum element by its value."""
 
