@@ -66,7 +66,7 @@ TakeReading = Callable[[List[Readable]], MsgGenerator[Mapping[str, Reading]]]
 
 
 def declare_stream(
-    *objs: Readable, name: str, collect=False
+    *objs: Readable, name: str, collect: bool =False
 ) -> MsgGenerator[Tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
