@@ -3,8 +3,6 @@
 from enum import Enum
 from functools import partial
 
-import six
-
 from . import utils
 
 NotSet = object()
@@ -24,8 +22,8 @@ class AttributeDict(dict):
         return self[key]
 
 
-class StateMachineMetaclass(type):
-    """Metaclass for state machine, to build all its logic."""
+class StateMachine(type):
+    """State Machine."""
 
     def __new__(cls, name, bases, attrs):
         """Create state machine and add all logic and methods to it."""
@@ -87,7 +85,7 @@ class StateMachineMetaclass(type):
     def _check_if_states_are_strings(cls):
         """Check if all states are strings."""
         for item in list(cls.context.states_enum):
-            if not isinstance(item.value, six.string_types):
+            if not isinstance(item.value, str):
                 raise ValueError(f"Item {item.name} is not string. Only strings are allowed.")
 
     @classmethod
@@ -249,10 +247,6 @@ class StateMachineMetaclass(type):
         cls.context.new_meta["transitions"] = cls.context.new_transitions
         cls.context.new_meta["config_getter"] = cls.context["get_config"]
         cls.context.new_class._meta = cls.context["new_meta"]
-
-
-class StateMachine(six.with_metaclass(StateMachineMetaclass)):
-    """State machine."""
 
 
 def get_config(original_meta, attribute, default=NotSet):
