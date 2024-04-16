@@ -51,7 +51,6 @@ dev = [
     "mypy",
     "myst-parser",
     "networkx",
-    "nose",
     "numpydoc",
     "ophyd",
     "pandas",
