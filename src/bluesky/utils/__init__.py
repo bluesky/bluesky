@@ -36,6 +36,7 @@ import msgpack_numpy
 import numpy as np
 import zict
 from cycler import cycler
+from super_state_machine.errors import TransitionError
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
@@ -246,7 +247,6 @@ class SigintHandler(SignalHandler):
         super().__init__(signal.SIGINT, log=RE.log)
         self.RE = RE
         self.last_sigint_time = None  # time most recent SIGINT was processed
-        self.num_sigints_processed = 0  # count SIGINTs processed
 
     def __enter__(self):
         return super().__enter__()
@@ -267,8 +267,15 @@ class SigintHandler(SignalHandler):
                     self.log.debug(
                         "It has been 10 seconds since the last SIGINT. Resetting SIGINT handler."
                     )
+
                 # weeee push these to threads to not block the main thread
-                threading.Thread(target=self.RE.request_pause, args=(True,)).start()
+                def maybe_defer_pause():
+                    try:
+                        self.RE.request_pause(True)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_defer_pause).start()
                 print(
                     "A 'deferred pause' has been requested. The "
                     "RunEngine will pause at the next checkpoint. "
@@ -284,7 +291,14 @@ class SigintHandler(SignalHandler):
                     "RunEngine detected two SIGINTs. A hard pause will be requested."
                 )
 
-                threading.Thread(target=self.RE.request_pause, args=(False,)).start()
+                # weeee push these to threads to not block the main thread
+                def maybe_prompt_pause():
+                    try:
+                        self.RE.request_pause(False)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_prompt_pause).start()
             self.last_sigint_time = time.time()
 
 
@@ -654,8 +668,8 @@ def snake_cyclers(cyclers, snake_booleans):
         lengths.append(len(c))
     total_length = np.prod(lengths)
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
-        num_tiles = np.prod(lengths[:i])
-        num_repeats = np.prod(lengths[i + 1 :])
+        num_tiles = np.product(lengths[:i])
+        num_repeats = np.product(lengths[i + 1 :])
         for k, v in c._transpose().items():
             if snake:
                 v = v + v[::-1]
@@ -1737,7 +1751,13 @@ class DefaultDuringTask(DuringTask):
                 # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
                 # adapted from code at
                 # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
-                if os.name == "posix" and hasattr(signal, "set_wakeup_fd"):
+                if (
+                    os.name == "posix"
+                    and hasattr(signal, "set_wakeup_fd")
+                    and
+                    # TODO also check if main interpreter
+                    threading.current_thread() is threading.main_thread()
+                ):
                     # Wake up Python interpreter via pipe so that SIGINT
                     # can be handled immediately.
                     # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
