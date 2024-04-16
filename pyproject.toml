@@ -87,6 +87,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
+    "bluesky[integrations]",
     "tiled[all]",
     "vendoring",
 ]
