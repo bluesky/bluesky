@@ -21,7 +21,6 @@ dependencies = [
     "msgpack",
     "msgpack-numpy",
     "numpy",
-    "super_state_machine",
     "toolz",
     "tqdm>=4.44",
     "typing-extensions>=4.0.0;python_version<'3.11'",
