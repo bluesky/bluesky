@@ -13,6 +13,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     Union,
 )
@@ -36,6 +37,7 @@ from .protocols import (
     Locatable,
     Movable,
     PartialEvent,
+    Preparable,
     Readable,
     Reading,
     Stageable,
@@ -71,7 +73,7 @@ def declare_stream(
 
     Parameters
     ----------
-    args :
+    objs :
         objects whose readings will be present in the stream
     name : string, optional
         name given to event stream, used for convenient identification
@@ -690,7 +692,7 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
     return (yield Msg("input", prompt=prompt))
 
 
-def prepare(obj, *args, group=None, wait=False, **kwargs):
+def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
     """
     Prepare a device.
 
@@ -767,7 +769,7 @@ def kickoff(
     return ret
 
 
-def kickoff_all(*args, group=None, wait=True, **kwargs):
+def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kwargs):
     """
     Kickoff one or more fly-scanning devices.
 
@@ -858,7 +860,7 @@ def complete(
     return ret
 
 
-def complete_all(*args, group=None, wait=False, **kwargs):
+def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
@@ -1468,14 +1470,14 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator:
         yield from (m for m in lst_plan)
 
 
-def one_shot(detectors: Iterable[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator:
+def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator:
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
 
     Parameters
     ----------
-    detectors : Iterable[OphydObj]
+    detectors : Sequence[OphydObj]
         devices to read
 
     take_reading : plan, optional
@@ -1498,7 +1500,7 @@ def one_shot(detectors: Iterable[Readable], take_reading: Optional[TakeReading] 
 
 
 def one_1d_step(
-    detectors: Iterable[Readable],
+    detectors: Sequence[Readable],
     motor: Movable,
     step: Any,
     take_reading: Optional[TakeReading] = None,
@@ -1510,7 +1512,7 @@ def one_1d_step(
 
     Parameters
     ----------
-    detectors : iterable
+    detectors : list or tuple
         devices to read
     motor : Settable
         The motor to move
@@ -1576,7 +1578,7 @@ def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any])
 
 
 def one_nd_step(
-    detectors: Iterable[Readable],
+    detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
     pos_cache: Mapping[Movable, Any],
     take_reading: Optional[TakeReading] = None,
@@ -1588,7 +1590,7 @@ def one_nd_step(
 
     Parameters
     ----------
-    detectors : iterable
+    detectors : list or tuple
         devices to read
     step : dict
         mapping motors to positions in this step

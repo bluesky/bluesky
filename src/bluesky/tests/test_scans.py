@@ -25,6 +25,12 @@ def test_scan_num(RE, hw):
         RE(bp.scan([hw.det], hw.motor1, -1, 1, num=float("nan")))
 
 
+def test_scan_detector_type_failure(RE, hw):
+    gen = (det for det in [hw.det1, hw.det2])
+    with pytest.raises(TypeError):
+        RE(bp.scan(gen, hw.motor1, -1, 1, num=1))
+
+
 def traj_checker(RE, scan, expected_traj):
     actual_traj = []
     callback = collector("motor", actual_traj)

@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from cycler import Cycler
@@ -282,7 +282,7 @@ def list_grid_scan(
 
     Parameters
     ----------
-    detectors: list
+    detectors: list or tuple
         list of 'readable' objects
     args: list
         patterned like (``motor1, position_list1,``
@@ -358,7 +358,7 @@ def rel_list_grid_scan(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
 
     args
@@ -422,7 +422,7 @@ def _scan_1d(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -499,7 +499,7 @@ def _rel_scan_1d(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -546,7 +546,7 @@ def log_scan(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -627,7 +627,7 @@ def rel_log_scan(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -678,7 +678,7 @@ def adaptive_scan(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     target_field : string
         data field whose output is the focus of the adaptive tuning
@@ -807,7 +807,7 @@ def rel_adaptive_scan(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     target_field : string
         data field whose output is the focus of the adaptive tuning
@@ -1024,7 +1024,7 @@ def scan_nd(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
     cycler : Cycler
         cycler.Cycler object mapping movable interfaces to positions
     per_step : callable, optional
@@ -1183,7 +1183,7 @@ def scan(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     *args :
         For one dimension, ``motor, start, stop``.
@@ -1282,9 +1282,9 @@ def scan(
 
 
 def grid_scan(
-    detectors,
+    detectors: Sequence[Readable],
     *args,
-    snake_axes=None,
+    snake_axes: Optional[Union[Iterable, bool]] = None,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -1293,7 +1293,7 @@ def grid_scan(
 
     Parameters
     ----------
-    detectors: list
+    detectors: list or tuple
         list of 'readable' objects
     ``*args``
         patterned like (``motor1, start1, stop1, num1,``
@@ -1461,7 +1461,7 @@ def grid_scan(
 def rel_grid_scan(
     detectors: Sequence[Readable],
     *args: Union[Movable, Any],
-    snake_axes: bool = None,
+    snake_axes: Optional[Union[Iterable, bool]] = None,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -2346,7 +2346,7 @@ def x2x_scan(
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
 
     motor1, motor2 : Positioner
