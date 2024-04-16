@@ -10,6 +10,7 @@ import signal
 import sys
 import threading
 import time
+import traceback
 import types
 import uuid
 import warnings
@@ -1868,3 +1869,43 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
         # Mypy does not understand how to narrow type to non-awaitable in this
         # instance, see https://github.com/python/mypy/issues/15520
         return ret  # type: ignore
+
+
+class EnsureIteratedPlan:
+    def __init__(self, f, *args, **kwargs) -> None:
+        self._iter = f(*args, **kwargs)
+        self._stack = traceback.format_stack()
+        # Find the index in the stack trace where the function `f` is called
+        func_index = next((i for i, s in enumerate(self._stack) if f.__name__ in s), None)
+        if func_index is not None:
+            self._stack = self._stack[func_index:func_index+1]
+        self._stack += [f"RuntimeWarning: plan `{f.__name__}` was never iterated"
+                        ", did you mean to use `yield from`?"]
+
+    def __iter__(self):
+        self._stack = None
+        yield from self._iter
+
+    def __del__(self):
+        if self._stack:
+            warning_message = "".join(self._stack)
+            warnings.warn(warning_message, RuntimeWarning)
+
+
+def ensure_plan_iterated(plan):
+    """Decorator that warns user if a `yield from` is not called
+
+    Parameters
+    ----------
+    plan : Generator
+        Generator coroutine usually a Bluesky plan
+
+    Returns
+    -------
+    EnsureIteratedPlan
+        Wrapped plans
+    """
+    @wraps(plan)
+    def wrapper(*args, **kwargs) -> EnsureIteratedPlan:
+        return EnsureIteratedPlan(plan, *args, **kwargs)
+    return wrapper
