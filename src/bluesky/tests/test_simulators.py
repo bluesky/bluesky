@@ -1,14 +1,23 @@
+import uuid
 from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
 
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
 from bluesky import Msg
 from bluesky.plans import grid_scan, scan
-from bluesky.protocols import Triggerable
-from bluesky.simulators import check_limits, plot_raster_path, print_summary, print_summary_wrapper, summarize_plan, \
-    RunEngineSimulator
-import bluesky.plan_stubs as bps
+from bluesky.simulators import (
+    RunEngineSimulator,
+    assert_message_and_return_remaining,
+    check_limits,
+    plot_raster_path,
+    print_summary,
+    print_summary_wrapper,
+    summarize_plan,
+)
+
 
 def test_print_summary(hw):
     det = hw.det
@@ -95,6 +104,8 @@ def test_simulator_add_handler(hw):
     callback.assert_called_once()
     msg = callback.mock_calls[0].args[0]
     assert msg.command == "sleep"
+    assert len(msgs) == 1
+    assert msgs[0].command == "sleep"
 
 def test_simulator_add_read_handler(hw):
     def trigger_and_return_position():
@@ -106,6 +117,9 @@ def test_simulator_add_read_handler(hw):
     sim.add_read_handler("det_a", 5, "det_a")
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "trigger" and msg.obj.name ==
+                                                                 "det")
+    assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
 
 def test_simulator_add_wait_handler(hw):
     def trigger_and_return_position():
@@ -120,3 +134,76 @@ def test_simulator_add_wait_handler(hw):
     sim.add_wait_handler(lambda _: sim.add_read_handler("det_a", 5, "det_a"))
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "trigger" and msg.obj.name ==
+                                                                 "det")
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
+    assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
+
+def test_fire_callback(hw):
+    callback = MagicMock()
+    run_start_uid = uuid.uuid4()
+    descriptor_uid = uuid.uuid4()
+    event_uid = uuid.uuid4()
+    def take_a_reading():
+        yield from bps.subscribe("all", callback)
+        yield from bp.count([hw.det], num=1)
+
+    start_doc = {
+        "plan_name": "count",
+        "uid": run_start_uid
+    }
+    descriptor_doc = {
+        "run_start": run_start_uid,
+        "uid": descriptor_uid
+    }
+    event_doc = {
+        "descriptor": descriptor_uid,
+        "uid": event_uid
+    }
+    def handle_open_run(msg):
+        sim.fire_callback("start", start_doc)
+
+    def handle_create(msg):
+        sim.fire_callback("descriptor", descriptor_doc)
+
+    def handle_save(msg):
+        sim.fire_callback("event", event_doc)
+
+    sim = RunEngineSimulator()
+    sim.add_handler_for_callback_subscribes()
+
+    sim.add_handler(handle_open_run, "open_run", predicate=lambda msg: msg.kwargs["plan_name"] == "count")
+    sim.add_handler(handle_create, "create", predicate=lambda msg: msg.kwargs["name"] == "primary")
+    sim.add_handler(handle_save, "save")
+
+    sim.simulate_plan(take_a_reading())
+    calls = callback.mock_calls
+    assert len(calls) == 3
+    assert calls[0].args == ("start", start_doc)
+    assert calls[1].args == ("descriptor", descriptor_doc)
+    assert calls[2].args == ("event", event_doc)
+
+
+
+def test_assert_message_and_return_remaining(hw):
+    def take_three_readings():
+        yield from bp.count([hw.det], num=3)
+
+    sim = RunEngineSimulator()
+    msgs = sim.simulate_plan(take_three_readings())
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "stage" and msg.obj.name == "det")
+    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "open_run" and msg.kwargs[
+        "plan_name"] == "count" and msg.kwargs["num_points"] == 3)
+    for _ in range(0, 3):
+        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "checkpoint")
+        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "trigger" and msg.obj.name
+                                                                     == "det")
+        trigger_group = msgs[0].kwargs["group"]
+        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait" and msg.kwargs[
+            "group"] == trigger_group)  # noqa: B023
+        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "create")
+        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name ==
+                                                                     "det")
+        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "save")
+    assert msgs[1].command == "close_run"

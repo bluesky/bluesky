@@ -1,14 +1,13 @@
-from collections.abc import Sequence, Callable, Generator
-from typing import Optional, Any
+from typing import Any, Callable, Generator, Optional, Sequence, Union
 from warnings import warn
 
+from bluesky.log import logger as LOGGER
 from bluesky.preprocessors import print_summary_wrapper
 from bluesky.run_engine import call_in_bluesky_event_loop, in_bluesky_event_loop
-from bluesky.utils import maybe_await, Msg
+from bluesky.utils import Msg, maybe_await
 
 from .protocols import Checkable
 
-from bluesky.log import logger as LOGGER
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     """Plot the raster path for this plan
@@ -140,7 +139,7 @@ class RunEngineSimulator:
 
     def add_handler_for_callback_subscribes(self):
         """Add a handler that registers all the callbacks from subscribe messages so we can call them later.
-        You probably want to call this as one of the first things unless you have a good reason not to.
+        You will need to call this as one of the first things if you wish to fire callbacks from the simulator.
         """
         self.message_handlers.append(
             MessageHandler(
@@ -149,16 +148,19 @@ class RunEngineSimulator:
             )
         )
 
-    def add_handler(self, handler: Callable[[Msg], object], commands: str | Sequence[str], obj_name: Optional[str] = None):
+    def add_handler(self, handler: Callable[[Msg], object], commands: Union[str, Sequence[str]],
+                    obj_name: Optional[str] = None, predicate: Optional[Callable[[Msg], bool]] = None):
         """Add the specified handler for a particular message. The handler is prepended so that
         newer handlers override older ones.
         Args:
-            handler: a lambda that accepts a Msg and returns an object; the object is sent to the current yield statement
-            in the generator, and is used when reading values from devices, the structure of the object depends on device
-            hinting.
-            commands: the command name for the message as defined in bluesky Message Protocol, or a sequence if more
-            than one matches
-            obj_name: the name property of the obj to match, can be None (the default) as not all messages have a name
+            handler: a lambda that accepts a Msg and returns an object; the object is sent to the current yield
+            statement in the generator, and is used when reading values from devices, the structure of the
+            object depends on device hinting.
+            commands: the command name for the message as defined in bluesky Message Protocol, or a sequence if
+            more than one matches.
+            obj_name: the name property of the obj to match, can be None (the default) as not all messages have
+            a name.
+            predicate: if specified, then the predicate is used to select the handler rather than the object name.
         """
         if isinstance(commands, str):
             commands = [commands]
@@ -166,7 +168,8 @@ class RunEngineSimulator:
         self.message_handlers.insert(0,
                                      MessageHandler(
                                          lambda msg: msg.command in commands
-                                                     and (obj_name is None or (msg.obj and msg.obj.name == obj_name)),
+                                             and ((predicate and predicate(msg))
+                                             or (obj_name is None or (msg.obj and msg.obj.name == obj_name))),
                                          handler,
                                      )
                                      )
@@ -271,13 +274,13 @@ class RunEngineSimulator:
 
 
 def assert_message_and_return_remaining(
-    self,
     messages: list[Msg],
     predicate: Callable[[Msg], bool],
     group: Optional[str] = None,
 ):
     """Find the next message matching the predicate, assert that we found it
-    Return: all the remaining messages starting from the matched message"""
+    Return: all the remaining messages starting from the matched message which is included as a
+    convenience to capture information that may be used in subsequent calls."""
     indices = [
         i
         for i in range(len(messages))
