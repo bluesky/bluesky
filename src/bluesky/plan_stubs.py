@@ -1547,7 +1547,7 @@ def one_1d_step(
         yield Msg("wait", None, group=grp)
 
     yield from move()
-    return (yield from take_reading(list(detectors) + [motor]))
+    return (yield from take_reading(list(detectors) + [motor]))  # type: ignore
 
 
 def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any]) -> MsgGenerator[None]:

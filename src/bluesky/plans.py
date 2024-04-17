@@ -980,11 +980,11 @@ def tune_centroid(
         sum_I = 0  # for peak centroid calculation, I(x)
         sum_xI = 0
         if os.environ.get("BLUESKY_PREDECLARE", False):
-            yield from bps.declare_stream(motor, *detectors, name="primary")
+            yield from bps.declare_stream(motor, *detectors, name="primary")  # type: ignore
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)
-            ret = yield from bps.trigger_and_read(list(detectors) + [motor])
+            ret = yield from bps.trigger_and_read(list(detectors) + [motor])  # type: ignore
             cur_I = ret[signal]["value"]
             sum_I += cur_I
             position = ret[motor_name]["value"]
