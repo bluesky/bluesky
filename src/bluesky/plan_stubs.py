@@ -66,7 +66,7 @@ TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]
 
 
 def declare_stream(
-    *objs: Readable, name: str, collect: bool =False
+    *objs: Readable, name: str, collect: bool = False
 ) -> MsgGenerator[Tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
@@ -907,7 +907,7 @@ def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **
 
 
 def collect(
-    obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: str = None
+    obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: Optional[str] = None
 ) -> MsgGenerator[List[PartialEvent]]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
