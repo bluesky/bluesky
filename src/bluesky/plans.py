@@ -37,7 +37,7 @@ PerStep = Callable[
     [
         Sequence[Readable],
         Mapping[Movable, Any],
-        Mapping[Movable, Any],
+        Any,
         Optional[bps.TakeReading],
     ],
     MsgGenerator,
