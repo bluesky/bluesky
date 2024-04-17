@@ -55,6 +55,7 @@ dev = [
     "numpydoc",
     "ophyd",
     "pandas",
+    "pickleshare",
     "pipdeptree",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
