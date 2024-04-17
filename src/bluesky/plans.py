@@ -99,7 +99,7 @@ def count(
         "hints": {},
     }
     _md.update(md or {})
-    _md["hints"].setdefault("dimensions", [(("time",), "primary")])
+    _md["hints"].setdefault("dimensions", [(("time",), "primary")])  # type: ignore
 
     # per_shot might define a different stream, so do not predeclare primary
     predeclare = per_shot is None and os.environ.get("BLUESKY_PREDECLARE", False)
@@ -212,7 +212,7 @@ def list_scan(
     # now add default_hints and override any hints from the original md (if
     # exists)
     _md["hints"] = default_hints
-    _md["hints"].update(md.get("hints", {}) or {})
+    _md["hints"].update(md.get("hints", {}) or {})  # type: ignore
 
     full_cycler = plan_patterns.inner_list_product(args)
 
@@ -342,9 +342,9 @@ def list_grid_scan(
         "motors": tuple(motor_names),
         "hints": {},
     }
-    _md.update(md or {})
+    _md.update(md or {})  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])
+        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])  # type: ignore
     except (AttributeError, KeyError):
         ...
 
@@ -474,7 +474,7 @@ def _scan_1d(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     if per_step is None:
         per_step = bps.one_1d_step
@@ -599,7 +599,7 @@ def log_scan(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
     if per_step is None:
@@ -738,7 +738,7 @@ def adaptive_scan(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
@@ -965,7 +965,7 @@ def tune_centroid(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     low_limit = min(start, stop)
     high_limit = max(start, stop)
@@ -1077,7 +1077,7 @@ def scan_nd(
         #  - the user did not pass it in and we got the default {}
         # If the user supplied hints includes a dimension entry, do not
         # change it, else set it to the one generated above
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
     if per_step is None:
@@ -1163,13 +1163,13 @@ def scan_nd(
     return (yield from inner_scan_nd())
 
 
-def inner_product_scan(  # type: ignore
+def inner_product_scan(
     detectors: Sequence[Readable],
     num: int,
     *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
-) -> MsgGenerator[str]:
+) -> MsgGenerator[None]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
@@ -1231,16 +1231,15 @@ def scan(
                 "as the last positional argument or as keyword "
                 "argument 'num'."
             )
-        num = args[-1]
+        num = args[-1]  # type: ignore
         args = args[:-1]
 
-    if not (float(num).is_integer() and num > 0.0):
+    if num and not (float(num).is_integer() and num > 0.0):
         raise ValueError(
             f"The parameter `num` is expected to be a number of "
             f"steps (not step size!) It must therefore be a "
             f"whole number. The given value was {num}."
         )
-    num = int(num)
 
     md_args = list(chain(*((repr(motor), start, stop) for motor, start, stop in partition(3, args))))
     motor_names = tuple(motor.name for motor, start, stop in partition(3, args))
@@ -1280,7 +1279,7 @@ def scan(
     # now add default_hints and override any hints from the original md (if
     # exists)
     _md["hints"] = default_hints
-    _md["hints"].update(md.get("hints", {}) or {})
+    _md["hints"].update(md.get("hints", {}) or {})  # type: ignore
 
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
@@ -1455,9 +1454,9 @@ def grid_scan(
         "hints": {},
     }
     _md.update(md or {})
-    _md["hints"].setdefault("gridding", "rectilinear")
+    _md["hints"].setdefault("gridding", "rectilinear")  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])
+        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])  # type: ignore
     except (AttributeError, KeyError):
         ...
 
@@ -1633,7 +1632,7 @@ def tweak(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].update({"dimensions": dimensions})
+        _md["hints"].update({"dimensions": dimensions})  # type: ignore
     _md.update(md or {})
     d = detector
     try:
@@ -1778,7 +1777,7 @@ def spiral_fermat(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].update({"dimensions": dimensions})
+        _md["hints"].update({"dimensions": dimensions})  # type: ignore
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
@@ -1959,8 +1958,8 @@ def spiral(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].update({"dimensions": dimensions})
-    _md.update(md or {})
+        _md["hints"].update({"dimensions": dimensions})  # type: ignore
+    _md.update(md or {})  # type: ignore
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
@@ -2128,9 +2127,9 @@ def spiral_square(
         "hints": {},
     }
     _md.update(md or {})
-    _md["hints"].setdefault("gridding", "rectilinear_nonsequential")
+    _md["hints"].setdefault("gridding", "rectilinear_nonsequential")  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in [y_motor, x_motor]])
+        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in [y_motor, x_motor]])  # type: ignore
     except (AttributeError, KeyError):
         ...
 

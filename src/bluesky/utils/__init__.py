@@ -94,7 +94,7 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
 P = TypeVar("P")
 
 #: Object usually returned from plan functions that is fed to the RunEngine
-MsgGenerator = Generator[Msg, Any, Optional[P]]
+MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
 CustomPlanMetadata = Dict[str, Any]

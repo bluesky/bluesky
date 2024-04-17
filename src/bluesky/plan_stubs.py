@@ -498,7 +498,7 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
         return default_value
 
     if hint is not None:
-        return ret[hint]["value"]
+        return ret[hint]["value"]  # type: ignore
 
     # handle the no hint 1 field case
     try:
@@ -513,7 +513,7 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
 
         raise ValueError(msg) from er
     else:
-        return data["value"]
+        return data["value"]  # type: ignore
 
 
 def stop(obj: Stoppable) -> MsgGenerator:
@@ -1020,10 +1020,10 @@ def stage(
     return ret
 
 
-def stage_all(  # type: ignore
+def stage_all(
     *args: Stageable,
     group: Optional[Hashable] = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """
     'Stage' one or more devices (i.e., prepare them for use, 'arm' them).
 
@@ -1103,7 +1103,7 @@ def unstage(
     return ret
 
 
-def unstage_all(*args: Stageable, group: Optional[Hashable] = None) -> MsgGenerator:  # type: ignore
+def unstage_all(*args: Stageable, group: Optional[Hashable] = None) -> MsgGenerator[None]:
     """
     'Unstage' one or more devices (i.e., put them in standby, 'disarm' them).
 
@@ -1402,12 +1402,12 @@ def broadcast_msg(
     return return_vals
 
 
-def repeater(  # type: ignore
+def repeater(
     n: Optional[int],
     gen_func: Callable[..., MsgGenerator],
     *args,
     **kwargs,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """
     Generate n chained copies of the messages from gen_func
 
@@ -1439,7 +1439,7 @@ def repeater(  # type: ignore
         yield from gen_func(*args, **kwargs)
 
 
-def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator:  # type: ignore
+def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]:
     """
     Generate n chained copies of the messages in a plan.
 
@@ -1471,7 +1471,7 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator:  # t
         yield from (m for m in lst_plan)
 
 
-def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator:  # type: ignore
+def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator[None]:
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1550,7 +1550,7 @@ def one_1d_step(
     return (yield from take_reading(list(detectors) + [motor]))
 
 
-def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any]) -> MsgGenerator:  # type: ignore
+def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any]) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan without any readings
 
@@ -1578,12 +1578,12 @@ def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any])
     yield Msg("wait", None, group=grp)
 
 
-def one_nd_step(  # type: ignore
+def one_nd_step(
     detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
     pos_cache: Mapping[Movable, Any],
     take_reading: Optional[TakeReading] = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan
 
@@ -1670,7 +1670,7 @@ def repeat(
             # No way to tell in advance if we have enough delays.
             pass
         else:
-            if num - 1 > num_delays:
+            if num and num - 1 > num_delays:
                 raise ValueError("num=%r but delays only provides %r entries" % (num, num_delays))  # noqa: UP031
         delay = iter(delay)
 
