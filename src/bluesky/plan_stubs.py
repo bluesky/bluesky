@@ -1620,7 +1620,7 @@ def one_nd_step(
 def repeat(
     plan: Callable[[], MsgGenerator],
     num: Optional[int] = 1,
-    delay: Optional[ScalarOrIterableFloat] = None,
+    delay: Optional[ScalarOrIterableFloat] = 0.0,
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
@@ -1665,7 +1665,7 @@ def repeat(
         delay = itertools.repeat(delay)
     else:
         try:
-            num_delays = len(delay)
+            num_delays = len(list(delay))
         except TypeError:
             # No way to tell in advance if we have enough delays.
             pass
