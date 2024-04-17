@@ -1889,7 +1889,7 @@ class EnsureIteratedPlan:
     def __del__(self):
         if self._stack:
             warning_message = "".join(self._stack)
-            warnings.warn(warning_message, RuntimeWarning)
+            warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
 
 def ensure_plan_iterated(plan):
