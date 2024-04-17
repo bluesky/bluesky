@@ -1,11 +1,11 @@
 import gc
-import multiprocessing
 import os
 import signal
 import threading
 import time
 from subprocess import run
 
+import multiprocess
 import numpy as np
 import pytest
 from event_model import sanitize_doc
@@ -13,7 +13,7 @@ from event_model import sanitize_doc
 from bluesky import Msg
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
-import multiprocess
+
 
 def test_proxy_script():
     p = run(["bluesky-0MQ-proxy", "-h"])
