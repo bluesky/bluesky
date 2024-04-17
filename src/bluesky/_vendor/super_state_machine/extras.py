@@ -4,6 +4,7 @@ from weakref import WeakKeyDictionary
 
 
 class ProxyString(str):
+
     """String that proxies every call to nested machine."""
 
     def __new__(cls, value, machine):
@@ -17,7 +18,8 @@ class ProxyString(str):
         return getattr(self.state_machine, name)
 
 
-class PropertyMachine:
+class PropertyMachine(object):
+
     """Descriptor to help using machines as properties."""
 
     def __init__(self, machine_type):

@@ -83,6 +83,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
+    "vendoring",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]
@@ -172,4 +173,17 @@ lint.select = [
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
-exclude = ["docs/source/conf.py", "docs/source/examples"]
+exclude = [
+    "docs/source/conf.py",
+    "docs/source/examples",
+    "src/bluesky/_vendor"
+]
+
+[tool.vendoring]
+destination = "src/bluesky/_vendor/"
+requirements = "src/bluesky/_vendor/vendor.txt"
+namespace = "bluesky._vendor"
+protected-files = ["__init__.py", "README.rst", "vendor.txt"]
+
+[tool.vendoring.license.fallback-urls]
+super_state_machine = "https://github.com/beregond/super_state_machine/blob/master/LICENSE"

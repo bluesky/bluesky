@@ -39,6 +39,7 @@ from cycler import cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
     Asset,
     HasHints,
@@ -54,7 +55,6 @@ from bluesky.protocols import (
     WritesStreamAssets,
     check_supports,
 )
-from bluesky.super_state_machine.errors import TransitionError
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
