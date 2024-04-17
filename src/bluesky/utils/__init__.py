@@ -1871,7 +1871,7 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
         return ret  # type: ignore
 
 
-class EnsureIteratedPlan:
+class Plan:
     def __init__(self, f, *args, **kwargs) -> None:
         self._iter = f(*args, **kwargs)
         self._stack = traceback.format_stack()
@@ -1892,7 +1892,7 @@ class EnsureIteratedPlan:
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
 
-def ensure_plan_iterated(plan):
+def plan(plan):
     """Decorator that warns user if a `yield from` is not called
 
     Parameters
@@ -1902,10 +1902,10 @@ def ensure_plan_iterated(plan):
 
     Returns
     -------
-    EnsureIteratedPlan
+    Plan
         Wrapped plans
     """
     @wraps(plan)
-    def wrapper(*args, **kwargs) -> EnsureIteratedPlan:
-        return EnsureIteratedPlan(plan, *args, **kwargs)
+    def wrapper(*args, **kwargs) -> Plan:
+        return Plan(plan, *args, **kwargs)
     return wrapper

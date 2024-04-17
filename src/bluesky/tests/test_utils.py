@@ -11,9 +11,9 @@ from bluesky.utils import (
     CallbackRegistry,
     Msg,
     ensure_generator,
-    ensure_plan_iterated,
     is_movable,
     merge_cycler,
+    plan,
     warn_if_msg_args_or_kwargs,
 )
 
@@ -504,7 +504,7 @@ https://github.com/bluesky/bluesky/issues"""
     assert len(recwarn) == 0
 
 
-@ensure_plan_iterated
+@plan
 def sample_plan():
     return (yield Msg("null"))
 
