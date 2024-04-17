@@ -1,53 +1,520 @@
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
-<head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Multi-Run Plans &mdash; bluesky 1.13.0a4.dev59+g6362ba15 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Multi-Run Plans &#8212; bluesky 1.13.0a4.dev64+g57027b3b documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <link href="_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
-        <script src="_static/documentation_options.js?v=ff9dcf53"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/js/theme.js"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="_static/documentation_options.js?v=dff96ffe"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'multi_run_plans';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev64+g57027b3b';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Debugging and Logging" href="debugging.html" />
-    <link rel="prev" title="Asynchronous Acquisition" href="async.html" /> 
-</head>
+    <link rel="prev" title="Asynchronous Acquisition" href="async.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
 
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <script>document.write(`<img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark" alt=""/>`);</script>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-          <a href="index.html" class="icon icon-home">
-            bluesky
-          </a>
-              <div class="version">
-                1.13.0a4.dev59+g6362ba15
-              </div>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
-<ul class="current">
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links-2">
+                    More
+                </button>
+                <ul id="pst-nav-more-links-2" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-3"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-3"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-3"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-3">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
 <li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
@@ -58,14 +525,7 @@
 <li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
 <li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Multi-Run Plans</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#definition-of-a-run">Definition of a ‘Run’</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#bluesky-features-for-support-of-multi-run-plans">Bluesky Features for Support of Multi-run Plans</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#plans-with-sequential-runs">Plans with Sequential Runs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#plans-with-nested-runs">Plans with Nested Runs</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Multi-Run Plans</a></li>
 <li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
@@ -75,60 +535,66 @@
 <li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
-</ul>
-
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">bluesky</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Multi-Run Plans</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/multi_run_plans.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="userindex.html" class="nav-link">User Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Multi-Run Plans</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="multi-run-plans">
-<h1>Multi-Run Plans<a class="headerlink" href="#multi-run-plans" title="Link to this heading">¶</a></h1>
+<h1>Multi-Run Plans<a class="headerlink" href="#multi-run-plans" title="Link to this heading">#</a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
 <p>This section is a brief tutorial on multi-run plans (introduced in Bluesky v1.6.0).
 A traditional single-run plan contains a set of instructions for performing only one run,
 which is assigned a scan ID and a UID. When a multi-run plan is executed by the Run Engine, multiple
@@ -147,7 +613,7 @@ examples that demonstrate the implementation of plans that contain sequential, n
 runs.</p>
 </section>
 <section id="definition-of-a-run">
-<h2>Definition of a ‘Run’<a class="headerlink" href="#definition-of-a-run" title="Link to this heading">¶</a></h2>
+<h2>Definition of a ‘Run’<a class="headerlink" href="#definition-of-a-run" title="Link to this heading">#</a></h2>
 <p>From the point of view of Bluesky, a run is a sequence of instructions (messages) for controlling
 the instrumental equipment that starts with <cite>open_run</cite> and ends with <cite>close_run</cite> message.
 We may also apply the term ‘run’ to a block of code which generates such a sequence of messages.
@@ -260,7 +726,7 @@ Bluesky features allow to implement nested plans, as well as include full-featur
 in pre- and post-plans.</p>
 </section>
 <section id="bluesky-features-for-support-of-multi-run-plans">
-<h2>Bluesky Features for Support of Multi-run Plans<a class="headerlink" href="#bluesky-features-for-support-of-multi-run-plans" title="Link to this heading">¶</a></h2>
+<h2>Bluesky Features for Support of Multi-run Plans<a class="headerlink" href="#bluesky-features-for-support-of-multi-run-plans" title="Link to this heading">#</a></h2>
 <p>In order to handle simultaneously open runs within a plan, Run Engine is looking at the run key attribute
 of each control message to decide which scan is currently being executed. The default value for the run key
 is <cite>None</cite>, but it could be manually set in the plan for any block of code which define the run. A run key
@@ -310,7 +776,7 @@ with run ids of the open scans. This is currently not recommended and should be 
 only at the developer’s own risk.</p>
 </section>
 <section id="plans-with-sequential-runs">
-<h2>Plans with Sequential Runs<a class="headerlink" href="#plans-with-sequential-runs" title="Link to this heading">¶</a></h2>
+<h2>Plans with Sequential Runs<a class="headerlink" href="#plans-with-sequential-runs" title="Link to this heading">#</a></h2>
 <p>Sequential calling of multiple runs is supported by older versions of Bluesky. There is no need
 to use multi-run plan features if runs are not overlapping (the next run is opened only after
 the previous run is closed), but run keys still can be assigned to all or some runs if needed.</p>
@@ -347,58 +813,58 @@ when the run opened.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="n">RE</span><span class="p">(</span><span class="n">plan_sequential_runs</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2024-04-17 15:12:54</span>
-<span class="go">Persistent Unique Scan ID: &#39;8d2067d8-dff6-4b44-ab8e-a333393870bb&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2024-04-17 17:16:15</span>
+<span class="go">Persistent Unique Scan ID: &#39;14be1a46-d820-47e1-8945-ec57b77bbfe0&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:12:54.3 |     -1.000 |      0.677 |</span>
-<span class="go">|         2 | 15:12:54.4 |     -0.778 |      1.491 |</span>
-<span class="go">|         3 | 15:12:54.4 |     -0.556 |      2.697 |</span>
-<span class="go">|         4 | 15:12:54.5 |     -0.333 |      4.004 |</span>
-<span class="go">|         5 | 15:12:54.5 |     -0.111 |      4.878 |</span>
-<span class="go">|         6 | 15:12:54.6 |      0.111 |      4.878 |</span>
-<span class="go">|         7 | 15:12:54.6 |      0.333 |      4.004 |</span>
-<span class="go">|         8 | 15:12:54.7 |      0.556 |      2.697 |</span>
-<span class="go">|         9 | 15:12:54.7 |      0.778 |      1.491 |</span>
-<span class="go">|        10 | 15:12:54.8 |      1.000 |      0.677 |</span>
+<span class="go">|         1 | 17:16:15.5 |     -1.000 |      0.677 |</span>
+<span class="go">|         2 | 17:16:15.6 |     -0.778 |      1.491 |</span>
+<span class="go">|         3 | 17:16:15.7 |     -0.556 |      2.697 |</span>
+<span class="go">|         4 | 17:16:15.7 |     -0.333 |      4.004 |</span>
+<span class="go">|         5 | 17:16:15.8 |     -0.111 |      4.878 |</span>
+<span class="go">|         6 | 17:16:15.8 |      0.111 |      4.878 |</span>
+<span class="go">|         7 | 17:16:15.9 |      0.333 |      4.004 |</span>
+<span class="go">|         8 | 17:16:15.9 |      0.556 |      2.697 |</span>
+<span class="go">|         9 | 17:16:16.0 |      0.778 |      1.491 |</span>
+<span class="go">|        10 | 17:16:16.0 |      1.000 |      0.677 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;8d2067d8&#39;] (scan num: 1)</span>
+<span class="go">generator scan [&#39;14be1a46&#39;] (scan num: 1)</span>
 
 
 
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-04-17 15:12:54</span>
-<span class="go">Persistent Unique Scan ID: &#39;71657633-55ef-4135-a1bc-9a7f52c16345&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-04-17 17:16:16</span>
+<span class="go">Persistent Unique Scan ID: &#39;0d98bdb1-6777-4baf-9c94-c9865d345b9d&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |     motor1 |       det1 |       det2 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det2 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:12:55.2 |      0.000 |      5.000 |      1.765 |</span>
-<span class="go">|         2 | 15:12:55.4 |      0.222 |      4.530 |      1.765 |</span>
-<span class="go">|         3 | 15:12:55.6 |      0.444 |      3.368 |      1.765 |</span>
-<span class="go">|         4 | 15:12:55.8 |      0.667 |      2.056 |      1.765 |</span>
-<span class="go">|         5 | 15:12:56.0 |      0.889 |      1.030 |      1.765 |</span>
-<span class="go">|         6 | 15:12:56.2 |      1.111 |      0.423 |      1.765 |</span>
-<span class="go">|         7 | 15:12:56.4 |      1.333 |      0.143 |      1.765 |</span>
-<span class="go">|         8 | 15:12:56.6 |      1.556 |      0.040 |      1.765 |</span>
-<span class="go">|         9 | 15:12:56.8 |      1.778 |      0.009 |      1.765 |</span>
-<span class="go">|        10 | 15:12:57.0 |      2.000 |      0.002 |      1.765 |</span>
+<span class="go">|         1 | 17:16:16.2 |      0.000 |      1.765 |      5.000 |</span>
+<span class="go">|         2 | 17:16:16.5 |      0.222 |      1.765 |      4.530 |</span>
+<span class="go">|         3 | 17:16:16.7 |      0.444 |      1.765 |      3.368 |</span>
+<span class="go">|         4 | 17:16:16.9 |      0.667 |      1.765 |      2.056 |</span>
+<span class="go">|         5 | 17:16:17.1 |      0.889 |      1.765 |      1.030 |</span>
+<span class="go">|         6 | 17:16:17.3 |      1.111 |      1.765 |      0.423 |</span>
+<span class="go">|         7 | 17:16:17.5 |      1.333 |      1.765 |      0.143 |</span>
+<span class="go">|         8 | 17:16:17.7 |      1.556 |      1.765 |      0.040 |</span>
+<span class="go">|         9 | 17:16:17.9 |      1.778 |      1.765 |      0.009 |</span>
+<span class="go">|        10 | 17:16:18.1 |      2.000 |      1.765 |      0.002 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator rel_scan [&#39;71657633&#39;] (scan num: 2)</span>
+<span class="go">generator rel_scan [&#39;0d98bdb1&#39;] (scan num: 2)</span>
 
 
 
 <span class="gh">Out[1]: </span>
-<span class="go">(&#39;8d2067d8-dff6-4b44-ab8e-a333393870bb&#39;,</span>
-<span class="go"> &#39;71657633-55ef-4135-a1bc-9a7f52c16345&#39;)</span>
+<span class="go">(&#39;14be1a46-d820-47e1-8945-ec57b77bbfe0&#39;,</span>
+<span class="go"> &#39;0d98bdb1-6777-4baf-9c94-c9865d345b9d&#39;)</span>
 </pre></div>
 </div>
 </section>
 <section id="plans-with-nested-runs">
-<h2>Plans with Nested Runs<a class="headerlink" href="#plans-with-nested-runs" title="Link to this heading">¶</a></h2>
+<h2>Plans with Nested Runs<a class="headerlink" href="#plans-with-nested-runs" title="Link to this heading">#</a></h2>
 <p>The following example illustrates the use of <cite>&#64;bpp.set_run_key_decorator</cite> to implement two nested runs:
 the ‘outer’ run interrupts measurements, calls the ‘inner’ run and then completes the measurements.
 The ‘outer’ and ‘inner’ runs are assigned different run ids (‘run_1’ and ‘run_2’). Note that
@@ -471,8 +937,8 @@ the table for the ‘outer’ run.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [2]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_outer</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2024-04-17 15:12:57</span>
-<span class="go">Persistent Unique Scan ID: &#39;dde99bdb-625a-47d1-892d-058be0983d4b&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2024-04-17 17:16:18</span>
+<span class="go">Persistent Unique Scan ID: &#39;4e1de8ec-97d5-447d-9abf-d76a266c6b06&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |      motor |</span>
@@ -484,11 +950,11 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-04-17 15:12:58</span>
-<span class="go">Persistent Unique Scan ID: &#39;31319c13-e635-4af4-b44d-123b880c1058&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-04-17 17:16:19</span>
+<span class="go">Persistent Unique Scan ID: &#39;dbf07bb3-6b48-4806-be1c-0330e24b9ddb&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |     motor2 |       det2 |     motor1 |</span>
+<span class="go">|   seq_num |       time |       det2 |     motor1 |     motor2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
@@ -502,7 +968,7 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;31319c13&#39;] (scan num: 2)</span>
+<span class="go">generator sim_plan_outer [&#39;dbf07bb3&#39;] (scan num: 2)</span>
 
 
 
@@ -512,13 +978,13 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;dde99bdb&#39;] (scan num: 1)</span>
+<span class="go">generator sim_plan_outer [&#39;4e1de8ec&#39;] (scan num: 1)</span>
 
 
 
 <span class="gh">Out[2]: </span>
-<span class="go">(&#39;dde99bdb-625a-47d1-892d-058be0983d4b&#39;,</span>
-<span class="go"> &#39;31319c13-e635-4af4-b44d-123b880c1058&#39;)</span>
+<span class="go">(&#39;4e1de8ec-97d5-447d-9abf-d76a266c6b06&#39;,</span>
+<span class="go"> &#39;dbf07bb3-6b48-4806-be1c-0330e24b9ddb&#39;)</span>
 </pre></div>
 </div>
 <p>The wrapper <cite>bpp.set_run_key_wrapper</cite> can be used instead of the decorator. For example
@@ -625,7 +1091,7 @@ performs callback subscriptions.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+-----------------+------------+-----------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;215d6315&#39;] (scan num: 2)</span>
+<span class="go">generator sim_plan_outer [&#39;fb702090&#39;] (scan num: 2)</span>
 
 
 <span class="go"> failed to format row </span>
@@ -634,12 +1100,12 @@ performs callback subscriptions.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+-----------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;12c4a9f1&#39;] (scan num: 1)</span>
+<span class="go">generator sim_plan_outer [&#39;c69be480&#39;] (scan num: 1)</span>
 
 
 <span class="gh">Out[3]: </span>
-<span class="go">(&#39;12c4a9f1-37d9-429d-88d8-e4c8bd1d5f30&#39;,</span>
-<span class="go"> &#39;215d6315-4ddb-4b2f-8c35-a7db4d42c010&#39;)</span>
+<span class="go">(&#39;c69be480-158d-419a-b2a5-3f62a050c770&#39;,</span>
+<span class="go"> &#39;fb702090-d588-47b2-a806-28ef3cc8cdf2&#39;)</span>
 </pre></div>
 </div>
 <p>In some cases it may be necessary to implement a run that could be interrupted
@@ -717,65 +1183,65 @@ before at each call.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_recursive</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2024-04-17 15:13:06</span>
-<span class="go">Persistent Unique Scan ID: &#39;0e3ecae0-6c81-4722-a59b-3bba9efe9593&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2024-04-17 17:16:27</span>
+<span class="go">Persistent Unique Scan ID: &#39;91159cd2-55aa-4b18-9bd4-c894f2bb8061&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-04-17 15:13:06</span>
-<span class="go">Persistent Unique Scan ID: &#39;d0ed85c1-499b-4190-908d-94f620cfc039&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-04-17 17:16:28</span>
+<span class="go">Persistent Unique Scan ID: &#39;644d4453-cf86-4809-9ecf-daff82387c03&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:06.6 |      5.000 |      0.000 |</span>
-<span class="go">|         2 | 15:13:06.9 |      4.616 |      0.200 |</span>
-<span class="go">|         3 | 15:13:07.0 |      3.631 |      0.400 |</span>
+<span class="go">|         1 | 17:16:28.1 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 17:16:28.3 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 17:16:28.5 |      0.400 |      3.631 |</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2024-04-17 15:13:07</span>
-<span class="go">Persistent Unique Scan ID: &#39;abe6b055-e7fa-4ef5-a726-887c8e014684&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2024-04-17 17:16:28</span>
+<span class="go">Persistent Unique Scan ID: &#39;16f210e5-1cf8-41c5-94f7-82eb434614e4&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:07.3 |      5.000 |      0.000 |</span>
-<span class="go">|         2 | 15:13:07.5 |      4.616 |      0.200 |</span>
-<span class="go">|         3 | 15:13:07.7 |      3.631 |      0.400 |</span>
-<span class="go">|         4 | 15:13:07.9 |      2.434 |      0.600 |</span>
-<span class="go">|         5 | 15:13:08.1 |      1.390 |      0.800 |</span>
-<span class="go">|         6 | 15:13:08.3 |      0.677 |      1.000 |</span>
-<span class="go">|         7 | 15:13:08.5 |      0.281 |      1.200 |</span>
-<span class="go">|         8 | 15:13:08.8 |      0.099 |      1.400 |</span>
+<span class="go">|         1 | 17:16:28.7 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 17:16:29.0 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 17:16:29.2 |      0.400 |      3.631 |</span>
+<span class="go">|         4 | 17:16:29.4 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 17:16:29.6 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 17:16:29.8 |      1.000 |      0.677 |</span>
+<span class="go">|         7 | 17:16:30.0 |      1.200 |      0.281 |</span>
+<span class="go">|         8 | 17:16:30.3 |      1.400 |      0.099 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive [&#39;abe6b055&#39;] (scan num: 3)</span>
+<span class="go">generator sim_plan_recursive [&#39;16f210e5&#39;] (scan num: 3)</span>
 
 
 
-<span class="go">|         4 | 15:13:09.3 |      2.434 |      0.600 |</span>
-<span class="go">|         5 | 15:13:09.5 |      1.390 |      0.800 |</span>
-<span class="go">|         6 | 15:13:09.7 |      0.677 |      1.000 |</span>
+<span class="go">|         4 | 17:16:30.8 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 17:16:31.0 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 17:16:31.3 |      1.000 |      0.677 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive [&#39;d0ed85c1&#39;] (scan num: 2)</span>
+<span class="go">generator sim_plan_recursive [&#39;644d4453&#39;] (scan num: 2)</span>
 
 
 
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive [&#39;0e3ecae0&#39;] (scan num: 1)</span>
+<span class="go">generator sim_plan_recursive [&#39;91159cd2&#39;] (scan num: 1)</span>
 
 
 
 <span class="gh">Out[4]: </span>
-<span class="go">(&#39;0e3ecae0-6c81-4722-a59b-3bba9efe9593&#39;,</span>
-<span class="go"> &#39;d0ed85c1-499b-4190-908d-94f620cfc039&#39;,</span>
-<span class="go"> &#39;abe6b055-e7fa-4ef5-a726-887c8e014684&#39;)</span>
+<span class="go">(&#39;91159cd2-55aa-4b18-9bd4-c894f2bb8061&#39;,</span>
+<span class="go"> &#39;644d4453-cf86-4809-9ecf-daff82387c03&#39;,</span>
+<span class="go"> &#39;16f210e5-1cf8-41c5-94f7-82eb434614e4&#39;)</span>
 </pre></div>
 </div>
 <p>The identical result can be achieved by using <cite>bpp.set_run_key_wrapper()</cite>:</p>
@@ -813,34 +1279,138 @@ before at each call.</p>
 </section>
 
 
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="async.html" class="btn btn-neutral float-left" title="Asynchronous Acquisition" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="debugging.html" class="btn btn-neutral float-right" title="Debugging and Logging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
-        </div>
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="async.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Asynchronous Acquisition</p>
       </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+    </a>
+    <a class="right-next"
+       href="debugging.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Debugging and Logging</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-</body>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#definition-of-a-run">Definition of a ‘Run’</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky-features-for-support-of-multi-run-plans">Bluesky Features for Support of Multi-run Plans</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plans-with-sequential-runs">Plans with Sequential Runs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plans-with-nested-runs">Plans with Nested Runs</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a4.dev64+g57027b3b/docs/multi_run_plans.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/multi_run_plans.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
 </html>

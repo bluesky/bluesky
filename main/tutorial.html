@@ -1,109 +1,521 @@
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
-<head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial &mdash; bluesky 1.13.0a4.dev59+g6362ba15 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Tutorial &#8212; bluesky 1.13.0a4.dev64+g57027b3b documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <link href="_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
-        <script src="_static/documentation_options.js?v=ff9dcf53"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/js/theme.js"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="_static/documentation_options.js?v=dff96ffe"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorial';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev64+g57027b3b';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Plans" href="plans.html" />
-    <link rel="prev" title="Bluesky Data Collection Framework" href="index.html" /> 
-</head>
+    <link rel="prev" title="User Documentation" href="userindex.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
 
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <script>document.write(`<img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark" alt=""/>`);</script>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-          <a href="index.html" class="icon icon-home">
-            bluesky
-          </a>
-              <div class="version">
-                1.13.0a4.dev59+g6362ba15
-              </div>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#before-you-begin">Before You Begin</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#if-you-get-lost-or-confused">If you get lost or confused…</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#the-runengine">The RunEngine</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#prepare-live-visualization">Prepare Live Visualization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#prepare-data-storage">Prepare Data Storage</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#add-a-progress-bar">Add a Progress Bar</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#common-experiments-plans">Common Experiments (“Plans”)</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#read-some-detectors">Read Some Detectors</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scan">Scan</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scan-multiple-motors-together">Scan Multiple Motors Together</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scan-multiple-motors-in-a-grid">Scan Multiple Motors in a Grid</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#aside-access-saved-data">Aside: Access Saved Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#simple-customization">Simple Customization</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#save-some-typing-with-partial">Save Some Typing with ‘Partial’</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#plans-in-series">Plans in Series</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#baseline-readings-and-other-supplemental-data">“Baseline” Readings (and other Supplemental Data)</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#configure">Configure</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#choose-baseline-devices">Choose “Baseline” Devices</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#use">Use</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#access-baseline-data">Access Baseline Data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#other-supplemental-data">Other Supplemental Data</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#pause-resume-suspend">Pause, Resume, Suspend</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#interactive-pause-resume">Interactive Pause &amp; Resume</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#automated-suspend-resume">Automated Suspend &amp; Resume</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#metadata">Metadata</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#simulate-and-introspect-plans">Simulate and Introspect Plans</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#devices">Devices</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#theory">Theory</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#implementation">Implementation</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#write-custom-plans">Write Custom Plans</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#move-in-parallel">Move in Parallel</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sleeping-timed-delays">Sleeping (Timed Delays)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#capture-data">Capture Data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#stage-and-unstage">Stage and Unstage</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#add-metadata">Add Metadata</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#add-hints-in-metadata">Add “Hints” in Metadata</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#adaptive-logic-in-a-plan">Adaptive Logic in a Plan</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#plan-cleanup-exception-handling">Plan “Cleanup” (Exception Handling)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#further-reading">Further Reading</a></li>
-</ul>
-</li>
-</ul>
-</li>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links-2">
+                    More
+                </button>
+                <ul id="pst-nav-more-links-2" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-3"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-3"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-3"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-3">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
 <li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
@@ -123,60 +535,66 @@
 <li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
-</ul>
-
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">bluesky</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Tutorial</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/tutorial.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="userindex.html" class="nav-link">User Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Tutorial</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="tutorial">
-<h1>Tutorial<a class="headerlink" href="#tutorial" title="Link to this heading">¶</a></h1>
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Link to this heading">#</a></h1>
 <section id="before-you-begin">
-<h2>Before You Begin<a class="headerlink" href="#before-you-begin" title="Link to this heading">¶</a></h2>
+<h2>Before You Begin<a class="headerlink" href="#before-you-begin" title="Link to this heading">#</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>NSLS-II deploys a free, public “sandbox” for trying the software in the
@@ -239,14 +657,14 @@ install it in this environment alongside bluesky and run it from there:</p>
 </ul>
 </section>
 <section id="if-you-get-lost-or-confused">
-<h2>If you get lost or confused…<a class="headerlink" href="#if-you-get-lost-or-confused" title="Link to this heading">¶</a></h2>
+<h2>If you get lost or confused…<a class="headerlink" href="#if-you-get-lost-or-confused" title="Link to this heading">#</a></h2>
 <p>…then we want to know! We have a friendly
 <a class="reference external" href="https://gitter.im/NSLS-II/DAMA">chat channel</a>, or you can
 <a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">file a bug</a> to let us know
 where our documentation could be made more clear.</p>
 </section>
 <section id="the-runengine">
-<span id="tutorial-run-engine-setup"></span><h2>The RunEngine<a class="headerlink" href="#the-runengine" title="Link to this heading">¶</a></h2>
+<span id="tutorial-run-engine-setup"></span><h2>The RunEngine<a class="headerlink" href="#the-runengine" title="Link to this heading">#</a></h2>
 <p>Bluesky encodes an experimental procedure as a <em>plan</em>, a sequence of
 atomic instructions. The <em>RunEngine</em> is an interpreter for plans. It lets
 us focus on the logic of our experimental procedure while it handles important
@@ -285,7 +703,7 @@ visualization and long-term storage. Example consumers include a live-updating
 plot, a curve-fitting algorithm, a database, a message queue, or a file in your
 preferred format. See <a class="reference internal" href="callbacks.html"><span class="doc">Live Visualization and Processing</span></a> for more detail.</p>
 <section id="prepare-live-visualization">
-<h3>Prepare Live Visualization<a class="headerlink" href="#prepare-live-visualization" title="Link to this heading">¶</a></h3>
+<h3>Prepare Live Visualization<a class="headerlink" href="#prepare-live-visualization" title="Link to this heading">#</a></h3>
 <p>To start, let’s use the all-purpose
 <code class="xref py py-class docutils literal notranslate"><span class="pre">BestEffortCallback</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.callbacks.best_effort</span> <span class="kn">import</span> <span class="n">BestEffortCallback</span>
@@ -306,7 +724,7 @@ experiment. But for this tutorial and for many real experiments, the
 <code class="xref py py-class docutils literal notranslate"><span class="pre">BestEffortCallback</span></code> will suffice.</p>
 </section>
 <section id="prepare-data-storage">
-<h3>Prepare Data Storage<a class="headerlink" href="#prepare-data-storage" title="Link to this heading">¶</a></h3>
+<h3>Prepare Data Storage<a class="headerlink" href="#prepare-data-storage" title="Link to this heading">#</a></h3>
 <p id="databroker-setup">The <a class="reference external" href="https://nsls-ii.github.io">databroker</a>, a library developed in tandem
 with bluesky, is an interface to searchable storage for metadata and data
 generated by bluesky. For this tutorial, we will spin up a databroker backed by
@@ -327,7 +745,7 @@ creates a fresh, separate temporary database.</p>
 </div>
 </section>
 <section id="add-a-progress-bar">
-<h3>Add a Progress Bar<a class="headerlink" href="#add-a-progress-bar" title="Link to this heading">¶</a></h3>
+<h3>Add a Progress Bar<a class="headerlink" href="#add-a-progress-bar" title="Link to this heading">#</a></h3>
 <p>Optionally, you can configure a progress bar.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="n">ProgressBarManager</span>
 <span class="n">RE</span><span class="o">.</span><span class="n">waiting_hook</span> <span class="o">=</span> <span class="n">ProgressBarManager</span><span class="p">()</span>
@@ -338,9 +756,9 @@ creates a fresh, separate temporary database.</p>
 </section>
 </section>
 <section id="common-experiments-plans">
-<span id="common-experiments"></span><h2>Common Experiments (“Plans”)<a class="headerlink" href="#common-experiments-plans" title="Link to this heading">¶</a></h2>
+<span id="common-experiments"></span><h2>Common Experiments (“Plans”)<a class="headerlink" href="#common-experiments-plans" title="Link to this heading">#</a></h2>
 <section id="read-some-detectors">
-<h3>Read Some Detectors<a class="headerlink" href="#read-some-detectors" title="Link to this heading">¶</a></h3>
+<h3>Read Some Detectors<a class="headerlink" href="#read-some-detectors" title="Link to this heading">#</a></h3>
 <p>Begin with a very simple experiment: trigger and read some detectors. Bluesky
 calls this “counting”, a term of art inherited from the spectroscopy
 community.</p>
@@ -363,19 +781,19 @@ like to configure <em>real</em> hardware with ophyd.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [2]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2024-04-17 15:13:18</span>
-<span class="go">Persistent Unique Scan ID: &#39;651c3d0e-3615-492b-9a39-bcaabbc7704c&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2024-04-17 17:16:40</span>
+<span class="go">Persistent Unique Scan ID: &#39;4ac76a44-e80a-42b4-bba3-fda9f737b621&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:18.7 |      0.000 |      1.213 |</span>
+<span class="go">|         1 | 17:16:40.5 |      0.000 |      1.213 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator count [&#39;651c3d0e&#39;] (scan num: 1)</span>
+<span class="go">generator count [&#39;4ac76a44&#39;] (scan num: 1)</span>
 
 
 
-<span class="gh">Out[2]: </span><span class="go">(&#39;651c3d0e-3615-492b-9a39-bcaabbc7704c&#39;,)</span>
+<span class="gh">Out[2]: </span><span class="go">(&#39;4ac76a44-e80a-42b4-bba3-fda9f737b621&#39;,)</span>
 </pre></div>
 </div>
 <p>A key feature of bluesky is that these detectors could be simple photodiodes or
@@ -412,34 +830,34 @@ baseline readings to be taken automatically before every experiment.</p></li>
 <p class="admonition-title">Warning</p>
 <p>Notice that entering a plan by itself doesn’t do anything:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-<span class="gh">Out[3]: </span><span class="go">&lt;generator object count at 0x7fd4dc492fc0&gt;</span>
+<span class="gh">Out[3]: </span><span class="go">&lt;generator object count at 0x7f2c94af16c0&gt;</span>
 </pre></div>
 </div>
 <p>If we mean to <em>execute</em> the plan, we must use the RunEngine:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-04-17 15:13:18</span>
-<span class="go">Persistent Unique Scan ID: &#39;f7089a94-b225-4ddb-a324-c3c49a3d519c&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-04-17 17:16:40</span>
+<span class="go">Persistent Unique Scan ID: &#39;9862b29a-5204-4c53-a5e8-d4045b141788&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 15:13:18.9 |      0.000 |</span>
-<span class="go">|         2 | 15:13:18.9 |      0.000 |</span>
-<span class="go">|         3 | 15:13:19.0 |      0.000 |</span>
+<span class="go">|         1 | 17:16:40.6 |      0.000 |</span>
+<span class="go">|         2 | 17:16:40.7 |      0.000 |</span>
+<span class="go">|         3 | 17:16:40.7 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;f7089a94&#39;] (scan num: 2)</span>
+<span class="go">generator count [&#39;9862b29a&#39;] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[4]: </span><span class="go">(&#39;f7089a94-b225-4ddb-a324-c3c49a3d519c&#39;,)</span>
+<span class="gh">Out[4]: </span><span class="go">(&#39;9862b29a-5204-4c53-a5e8-d4045b141788&#39;,)</span>
 </pre></div>
 </div>
 </div>
 </section>
 <section id="scan">
-<h3>Scan<a class="headerlink" href="#scan" title="Link to this heading">¶</a></h3>
+<h3>Scan<a class="headerlink" href="#scan" title="Link to this heading">#</a></h3>
 <p>Use <a class="reference internal" href="generated/bluesky.plans.scan.html#bluesky.plans.scan" title="bluesky.plans.scan"><code class="xref py py-func docutils literal notranslate"><span class="pre">scan()</span></code></a> to scan <code class="docutils literal notranslate"><span class="pre">motor</span></code> from <code class="docutils literal notranslate"><span class="pre">-1</span></code> to <code class="docutils literal notranslate"><span class="pre">1</span></code> in ten
 equally-spaced steps, wait for it to arrive at each step, and then trigger and
 read some detector, <code class="docutils literal notranslate"><span class="pre">det</span></code>.</p>
@@ -453,28 +871,28 @@ read some detector, <code class="docutils literal notranslate"><span class="pre"
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2024-04-17 15:13:19</span>
-<span class="go">Persistent Unique Scan ID: &#39;45cf8d33-f91b-4c12-8828-4e35deeafd3b&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2024-04-17 17:16:40</span>
+<span class="go">Persistent Unique Scan ID: &#39;2c14c3d4-e93b-4e19-86b4-13dc8ba31063&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:19.2 |     -1.000 |      0.607 |</span>
-<span class="go">|         2 | 15:13:19.3 |     -0.778 |      0.739 |</span>
-<span class="go">|         3 | 15:13:19.3 |     -0.556 |      0.857 |</span>
-<span class="go">|         4 | 15:13:19.4 |     -0.333 |      0.946 |</span>
-<span class="go">|         5 | 15:13:19.4 |     -0.111 |      0.994 |</span>
-<span class="go">|         6 | 15:13:19.5 |      0.111 |      0.994 |</span>
-<span class="go">|         7 | 15:13:19.5 |      0.333 |      0.946 |</span>
-<span class="go">|         8 | 15:13:19.6 |      0.556 |      0.857 |</span>
-<span class="go">|         9 | 15:13:19.6 |      0.778 |      0.739 |</span>
-<span class="go">|        10 | 15:13:19.7 |      1.000 |      0.607 |</span>
+<span class="go">|         1 | 17:16:40.9 |     -1.000 |      0.607 |</span>
+<span class="go">|         2 | 17:16:41.0 |     -0.778 |      0.739 |</span>
+<span class="go">|         3 | 17:16:41.0 |     -0.556 |      0.857 |</span>
+<span class="go">|         4 | 17:16:41.1 |     -0.333 |      0.946 |</span>
+<span class="go">|         5 | 17:16:41.1 |     -0.111 |      0.994 |</span>
+<span class="go">|         6 | 17:16:41.2 |      0.111 |      0.994 |</span>
+<span class="go">|         7 | 17:16:41.2 |      0.333 |      0.946 |</span>
+<span class="go">|         8 | 17:16:41.3 |      0.556 |      0.857 |</span>
+<span class="go">|         9 | 17:16:41.3 |      0.778 |      0.739 |</span>
+<span class="go">|        10 | 17:16:41.4 |      1.000 |      0.607 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;45cf8d33&#39;] (scan num: 3)</span>
+<span class="go">generator scan [&#39;2c14c3d4&#39;] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[5]: </span><span class="go">(&#39;45cf8d33-f91b-4c12-8828-4e35deeafd3b&#39;,)</span>
+<span class="gh">Out[5]: </span><span class="go">(&#39;2c14c3d4-e93b-4e19-86b4-13dc8ba31063&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -510,7 +928,7 @@ spacing.</p>
 <p>For a complete list of scan variations and other plans, see <a class="reference internal" href="plans.html"><span class="doc">Plans</span></a>.</p>
 </section>
 <section id="scan-multiple-motors-together">
-<span id="tutorial-multiple-motors"></span><h3>Scan Multiple Motors Together<a class="headerlink" href="#scan-multiple-motors-together" title="Link to this heading">¶</a></h3>
+<span id="tutorial-multiple-motors"></span><h3>Scan Multiple Motors Together<a class="headerlink" href="#scan-multiple-motors-together" title="Link to this heading">#</a></h3>
 <p>There are two different things we might mean by the phrase “scan multiple
 motors ‘together’”. In this case we mean that we move N motors along a line in
 M steps, such as moving X and Y motors along a diagonal. In the other case, we
@@ -549,29 +967,29 @@ are not technically meaningful; you may take them or leave them.</p>
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 4     Time: 2024-04-17 15:13:20</span>
-<span class="go">Persistent Unique Scan ID: &#39;fc10488a-69b8-43d6-8266-5fe0a68cd5c2&#39;</span>
+<span class="go">Transient Scan ID: 4     Time: 2024-04-17 17:16:42</span>
+<span class="go">Persistent Unique Scan ID: &#39;95bdc9ba-ab2c-403a-95cd-94febab780af&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:20.8 |     -1.500 |     -0.100 |      0.323 |</span>
-<span class="go">|         2 | 15:13:21.2 |     -1.200 |     -0.080 |      0.485 |</span>
-<span class="go">|         3 | 15:13:21.2 |     -0.900 |     -0.060 |      0.666 |</span>
-<span class="go">|         4 | 15:13:21.3 |     -0.600 |     -0.040 |      0.835 |</span>
-<span class="go">|         5 | 15:13:21.3 |     -0.300 |     -0.020 |      0.956 |</span>
-<span class="go">|         6 | 15:13:21.4 |      0.000 |      0.000 |      1.000 |</span>
-<span class="go">|         7 | 15:13:21.4 |      0.300 |      0.020 |      0.956 |</span>
-<span class="go">|         8 | 15:13:21.5 |      0.600 |      0.040 |      0.835 |</span>
-<span class="go">|         9 | 15:13:21.5 |      0.900 |      0.060 |      0.666 |</span>
-<span class="go">|        10 | 15:13:21.6 |      1.200 |      0.080 |      0.485 |</span>
-<span class="go">|        11 | 15:13:21.6 |      1.500 |      0.100 |      0.323 |</span>
+<span class="go">|         1 | 17:16:42.6 |     -1.500 |     -0.100 |      0.323 |</span>
+<span class="go">|         2 | 17:16:42.7 |     -1.200 |     -0.080 |      0.485 |</span>
+<span class="go">|         3 | 17:16:42.7 |     -0.900 |     -0.060 |      0.666 |</span>
+<span class="go">|         4 | 17:16:42.8 |     -0.600 |     -0.040 |      0.835 |</span>
+<span class="go">|         5 | 17:16:42.8 |     -0.300 |     -0.020 |      0.956 |</span>
+<span class="go">|         6 | 17:16:42.9 |      0.000 |      0.000 |      1.000 |</span>
+<span class="go">|         7 | 17:16:42.9 |      0.300 |      0.020 |      0.956 |</span>
+<span class="go">|         8 | 17:16:43.0 |      0.600 |      0.040 |      0.835 |</span>
+<span class="go">|         9 | 17:16:43.0 |      0.900 |      0.060 |      0.666 |</span>
+<span class="go">|        10 | 17:16:43.1 |      1.200 |      0.080 |      0.485 |</span>
+<span class="go">|        11 | 17:16:43.1 |      1.500 |      0.100 |      0.323 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;fc10488a&#39;] (scan num: 4)</span>
+<span class="go">generator scan [&#39;95bdc9ba&#39;] (scan num: 4)</span>
 
 
 
-<span class="gh">Out[6]: </span><span class="go">(&#39;fc10488a-69b8-43d6-8266-5fe0a68cd5c2&#39;,)</span>
+<span class="gh">Out[6]: </span><span class="go">(&#39;95bdc9ba-ab2c-403a-95cd-94febab780af&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -594,23 +1012,23 @@ use <a class="reference internal" href="generated/bluesky.plans.list_scan.html#b
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 5     Time: 2024-04-17 15:13:22</span>
-<span class="go">Persistent Unique Scan ID: &#39;0514f733-bbff-4c56-bac4-2d792b92029b&#39;</span>
+<span class="go">Transient Scan ID: 5     Time: 2024-04-17 17:16:44</span>
+<span class="go">Persistent Unique Scan ID: &#39;ed4597b6-33af-4f38-8fcf-b08b03bd219a&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:22.9 |      1.000 |     25.000 |      0.000 |</span>
-<span class="go">|         2 | 15:13:23.0 |      1.000 |     16.000 |      0.000 |</span>
-<span class="go">|         3 | 15:13:23.0 |      3.000 |      9.000 |      0.000 |</span>
-<span class="go">|         4 | 15:13:23.1 |      5.000 |      4.000 |      0.000 |</span>
-<span class="go">|         5 | 15:13:23.1 |      8.000 |      1.000 |      0.000 |</span>
+<span class="go">|         1 | 17:16:44.5 |      1.000 |     25.000 |      0.000 |</span>
+<span class="go">|         2 | 17:16:44.6 |      1.000 |     16.000 |      0.000 |</span>
+<span class="go">|         3 | 17:16:44.7 |      3.000 |      9.000 |      0.000 |</span>
+<span class="go">|         4 | 17:16:44.7 |      5.000 |      4.000 |      0.000 |</span>
+<span class="go">|         5 | 17:16:44.8 |      8.000 |      1.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator list_scan [&#39;0514f733&#39;] (scan num: 5)</span>
+<span class="go">generator list_scan [&#39;ed4597b6&#39;] (scan num: 5)</span>
 
 
 
-<span class="gh">Out[7]: </span><span class="go">(&#39;0514f733-bbff-4c56-bac4-2d792b92029b&#39;,)</span>
+<span class="gh">Out[7]: </span><span class="go">(&#39;ed4597b6-33af-4f38-8fcf-b08b03bd219a&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -618,7 +1036,7 @@ use <a class="reference internal" href="generated/bluesky.plans.list_scan.html#b
 </figure>
 </section>
 <section id="scan-multiple-motors-in-a-grid">
-<h3>Scan Multiple Motors in a Grid<a class="headerlink" href="#scan-multiple-motors-in-a-grid" title="Link to this heading">¶</a></h3>
+<h3>Scan Multiple Motors in a Grid<a class="headerlink" href="#scan-multiple-motors-in-a-grid" title="Link to this heading">#</a></h3>
 <p>In this case scan N motors through an N-dimensional rectangular grid. We’ll use
 the same simulated hardware as in the previous section:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det4</span><span class="p">,</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">motor3</span>
@@ -659,33 +1077,33 @@ axis.</p>
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 6     Time: 2024-04-17 15:13:24</span>
-<span class="go">Persistent Unique Scan ID: &#39;bdc5748e-8b5e-48ae-9f4a-6a86640e1d24&#39;</span>
+<span class="go">Transient Scan ID: 6     Time: 2024-04-17 17:16:46</span>
+<span class="go">Persistent Unique Scan ID: &#39;29bba621-a127-4169-a50b-98e4346d5b29&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:24.4 |     -1.500 |     -0.100 |      0.323 |</span>
-<span class="go">|         2 | 15:13:24.6 |     -1.500 |     -0.050 |      0.324 |</span>
-<span class="go">|         3 | 15:13:24.7 |     -1.500 |      0.000 |      0.325 |</span>
-<span class="go">|         4 | 15:13:24.8 |     -1.500 |      0.050 |      0.324 |</span>
-<span class="go">|         5 | 15:13:24.9 |     -1.500 |      0.100 |      0.323 |</span>
-<span class="go">|         6 | 15:13:25.0 |      0.000 |     -0.100 |      0.995 |</span>
-<span class="go">|         7 | 15:13:25.1 |      0.000 |     -0.050 |      0.999 |</span>
-<span class="go">|         8 | 15:13:25.1 |      0.000 |      0.000 |      1.000 |</span>
-<span class="go">|         9 | 15:13:25.2 |      0.000 |      0.050 |      0.999 |</span>
-<span class="go">|        10 | 15:13:25.3 |      0.000 |      0.100 |      0.995 |</span>
-<span class="go">|        11 | 15:13:25.4 |      1.500 |     -0.100 |      0.323 |</span>
-<span class="go">|        12 | 15:13:25.5 |      1.500 |     -0.050 |      0.324 |</span>
-<span class="go">|        13 | 15:13:25.6 |      1.500 |      0.000 |      0.325 |</span>
-<span class="go">|        14 | 15:13:25.7 |      1.500 |      0.050 |      0.324 |</span>
-<span class="go">|        15 | 15:13:25.8 |      1.500 |      0.100 |      0.323 |</span>
+<span class="go">|         1 | 17:16:46.3 |     -1.500 |     -0.100 |      0.323 |</span>
+<span class="go">|         2 | 17:16:46.5 |     -1.500 |     -0.050 |      0.324 |</span>
+<span class="go">|         3 | 17:16:46.6 |     -1.500 |      0.000 |      0.325 |</span>
+<span class="go">|         4 | 17:16:46.7 |     -1.500 |      0.050 |      0.324 |</span>
+<span class="go">|         5 | 17:16:46.8 |     -1.500 |      0.100 |      0.323 |</span>
+<span class="go">|         6 | 17:16:46.9 |      0.000 |     -0.100 |      0.995 |</span>
+<span class="go">|         7 | 17:16:47.0 |      0.000 |     -0.050 |      0.999 |</span>
+<span class="go">|         8 | 17:16:47.0 |      0.000 |      0.000 |      1.000 |</span>
+<span class="go">|         9 | 17:16:47.1 |      0.000 |      0.050 |      0.999 |</span>
+<span class="go">|        10 | 17:16:47.2 |      0.000 |      0.100 |      0.995 |</span>
+<span class="go">|        11 | 17:16:47.3 |      1.500 |     -0.100 |      0.323 |</span>
+<span class="go">|        12 | 17:16:47.4 |      1.500 |     -0.050 |      0.324 |</span>
+<span class="go">|        13 | 17:16:47.5 |      1.500 |      0.000 |      0.325 |</span>
+<span class="go">|        14 | 17:16:47.6 |      1.500 |      0.050 |      0.324 |</span>
+<span class="go">|        15 | 17:16:47.7 |      1.500 |      0.100 |      0.323 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator grid_scan [&#39;bdc5748e&#39;] (scan num: 6)</span>
+<span class="go">generator grid_scan [&#39;29bba621&#39;] (scan num: 6)</span>
 
 
 
-<span class="gh">Out[8]: </span><span class="go">(&#39;bdc5748e-8b5e-48ae-9f4a-6a86640e1d24&#39;,)</span>
+<span class="gh">Out[8]: </span><span class="go">(&#39;29bba621-a127-4169-a50b-98e4346d5b29&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -708,33 +1126,33 @@ use <a class="reference internal" href="generated/bluesky.plans.list_grid_scan.h
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 7     Time: 2024-04-17 15:13:28</span>
-<span class="go">Persistent Unique Scan ID: &#39;2c1e52ec-a6fa-4e1b-8804-04000e79104d&#39;</span>
+<span class="go">Transient Scan ID: 7     Time: 2024-04-17 17:16:50</span>
+<span class="go">Persistent Unique Scan ID: &#39;2bb7002a-4fd1-48eb-95c1-08c9ae01b14f&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:28.3 |      1.000 |     25.000 |      0.000 |</span>
-<span class="go">|         2 | 15:13:28.4 |      1.000 |     16.000 |      0.000 |</span>
-<span class="go">|         3 | 15:13:28.5 |      1.000 |      9.000 |      0.000 |</span>
-<span class="go">|         4 | 15:13:28.6 |      1.000 |     25.000 |      0.000 |</span>
-<span class="go">|         5 | 15:13:28.6 |      1.000 |     16.000 |      0.000 |</span>
-<span class="go">|         6 | 15:13:28.7 |      1.000 |      9.000 |      0.000 |</span>
-<span class="go">|         7 | 15:13:28.8 |      2.000 |     25.000 |      0.000 |</span>
-<span class="go">|         8 | 15:13:28.8 |      2.000 |     16.000 |      0.000 |</span>
-<span class="go">|         9 | 15:13:28.9 |      2.000 |      9.000 |      0.000 |</span>
-<span class="go">|        10 | 15:13:29.0 |      3.000 |     25.000 |      0.000 |</span>
-<span class="go">|        11 | 15:13:29.1 |      3.000 |     16.000 |      0.000 |</span>
-<span class="go">|        12 | 15:13:29.1 |      3.000 |      9.000 |      0.000 |</span>
-<span class="go">|        13 | 15:13:29.2 |      5.000 |     25.000 |      0.000 |</span>
-<span class="go">|        14 | 15:13:29.3 |      5.000 |     16.000 |      0.000 |</span>
-<span class="go">|        15 | 15:13:29.3 |      5.000 |      9.000 |      0.000 |</span>
+<span class="go">|         1 | 17:16:50.2 |      1.000 |     25.000 |      0.000 |</span>
+<span class="go">|         2 | 17:16:50.3 |      1.000 |     16.000 |      0.000 |</span>
+<span class="go">|         3 | 17:16:50.4 |      1.000 |      9.000 |      0.000 |</span>
+<span class="go">|         4 | 17:16:50.5 |      1.000 |     25.000 |      0.000 |</span>
+<span class="go">|         5 | 17:16:50.6 |      1.000 |     16.000 |      0.000 |</span>
+<span class="go">|         6 | 17:16:50.6 |      1.000 |      9.000 |      0.000 |</span>
+<span class="go">|         7 | 17:16:50.7 |      2.000 |     25.000 |      0.000 |</span>
+<span class="go">|         8 | 17:16:50.8 |      2.000 |     16.000 |      0.000 |</span>
+<span class="go">|         9 | 17:16:50.9 |      2.000 |      9.000 |      0.000 |</span>
+<span class="go">|        10 | 17:16:50.9 |      3.000 |     25.000 |      0.000 |</span>
+<span class="go">|        11 | 17:16:51.0 |      3.000 |     16.000 |      0.000 |</span>
+<span class="go">|        12 | 17:16:51.1 |      3.000 |      9.000 |      0.000 |</span>
+<span class="go">|        13 | 17:16:51.1 |      5.000 |     25.000 |      0.000 |</span>
+<span class="go">|        14 | 17:16:51.2 |      5.000 |     16.000 |      0.000 |</span>
+<span class="go">|        15 | 17:16:51.3 |      5.000 |      9.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator list_grid_scan [&#39;2c1e52ec&#39;] (scan num: 7)</span>
+<span class="go">generator list_grid_scan [&#39;2bb7002a&#39;] (scan num: 7)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">(&#39;2c1e52ec-a6fa-4e1b-8804-04000e79104d&#39;,)</span>
+<span class="gh">Out[9]: </span><span class="go">(&#39;2bb7002a-4fd1-48eb-95c1-08c9ae01b14f&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -749,7 +1167,7 @@ efficient peak-finders.</p>
 </section>
 </section>
 <section id="aside-access-saved-data">
-<h2>Aside: Access Saved Data<a class="headerlink" href="#aside-access-saved-data" title="Link to this heading">¶</a></h2>
+<h2>Aside: Access Saved Data<a class="headerlink" href="#aside-access-saved-data" title="Link to this heading">#</a></h2>
 <p>At this point it is natural to wonder, “How do I access my saved data?”
 From the point of view of <em>bluesky</em>, that’s really not bluesky’s concern, but
 it’s a reasonable question, so we’ll address a typical scenario.</p>
@@ -770,17 +1188,17 @@ its unique ID, which is returned by the RunEngine at collection time.</p>
 <span class="gp">In [12]: </span><span class="n">uid</span><span class="p">,</span> <span class="o">=</span> <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 8     Time: 2024-04-17 15:13:31</span>
-<span class="go">Persistent Unique Scan ID: &#39;5c503462-c5e9-4b65-843a-799b71473a0e&#39;</span>
+<span class="go">Transient Scan ID: 8     Time: 2024-04-17 17:16:53</span>
+<span class="go">Persistent Unique Scan ID: &#39;f9f4aff3-a7bd-4bfd-9214-5bb963ee9b2a&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 15:13:31.3 |      0.607 |</span>
-<span class="go">|         2 | 15:13:31.4 |      0.607 |</span>
-<span class="go">|         3 | 15:13:31.5 |      0.607 |</span>
+<span class="go">|         1 | 17:16:53.5 |      0.607 |</span>
+<span class="go">|         2 | 17:16:53.6 |      0.607 |</span>
+<span class="go">|         3 | 17:16:53.7 |      0.607 |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;5c503462&#39;] (scan num: 8)</span>
+<span class="go">generator count [&#39;f9f4aff3&#39;] (scan num: 8)</span>
 
 
 
@@ -806,9 +1224,9 @@ which in turn causes <code class="docutils literal notranslate"><span class="pre
 <p>Most of the useful metadata is in this dictionary:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [15]: </span><span class="n">header</span><span class="o">.</span><span class="n">start</span>
 <span class="gh">Out[15]: </span>
-<span class="go">{&#39;uid&#39;: &#39;5c503462-c5e9-4b65-843a-799b71473a0e&#39;,</span>
-<span class="go"> &#39;time&#39;: 1713366811.3786645,</span>
-<span class="go"> &#39;versions&#39;: {&#39;ophyd&#39;: &#39;1.9.0&#39;, &#39;bluesky&#39;: &#39;1.13.0a4.dev59+g6362ba15&#39;},</span>
+<span class="go">{&#39;uid&#39;: &#39;f9f4aff3-a7bd-4bfd-9214-5bb963ee9b2a&#39;,</span>
+<span class="go"> &#39;time&#39;: 1713374213.5731254,</span>
+<span class="go"> &#39;versions&#39;: {&#39;ophyd&#39;: &#39;1.9.0&#39;, &#39;bluesky&#39;: &#39;1.13.0a4.dev64+g57027b3b&#39;},</span>
 <span class="go"> &#39;scan_id&#39;: 8,</span>
 <span class="go"> &#39;plan_type&#39;: &#39;generator&#39;,</span>
 <span class="go"> &#39;plan_name&#39;: &#39;count&#39;,</span>
@@ -826,18 +1244,18 @@ which in turn causes <code class="docutils literal notranslate"><span class="pre
 <span class="gh">Out[16]: </span>
 <span class="go">                                 time       det</span>
 <span class="go">seq_num                                        </span>
-<span class="go">1       2024-04-17 15:13:31.394812584  0.606531</span>
-<span class="go">2       2024-04-17 15:13:31.478188038  0.606531</span>
-<span class="go">3       2024-04-17 15:13:31.537359715  0.606531</span>
+<span class="go">1       2024-04-17 17:16:53.585484982  0.606531</span>
+<span class="go">2       2024-04-17 17:16:53.650180101  0.606531</span>
+<span class="go">3       2024-04-17 17:16:53.700226068  0.606531</span>
 </pre></div>
 </div>
 <p>From here we refer to the
 <a class="reference external" href="https://nsls-ii.github.io/databroker/tutorial.html">databroker tutorial</a>.</p>
 </section>
 <section id="simple-customization">
-<span id="tutorial-simple-customization"></span><h2>Simple Customization<a class="headerlink" href="#simple-customization" title="Link to this heading">¶</a></h2>
+<span id="tutorial-simple-customization"></span><h2>Simple Customization<a class="headerlink" href="#simple-customization" title="Link to this heading">#</a></h2>
 <section id="save-some-typing-with-partial">
-<h3>Save Some Typing with ‘Partial’<a class="headerlink" href="#save-some-typing-with-partial" title="Link to this heading">¶</a></h3>
+<h3>Save Some Typing with ‘Partial’<a class="headerlink" href="#save-some-typing-with-partial" title="Link to this heading">#</a></h3>
 <p>Suppose we nearly always use the same detector(s) and we tire of typing out
 <code class="docutils literal notranslate"><span class="pre">count([det])</span></code>. We can write a custom variant of <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a>
 using a built-in function provided by Python itself, <a class="reference external" href="https://docs.python.org/3/library/functools.html#functools.partial" title="(in Python v3.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">functools.partial()</span></code></a>.</p>
@@ -854,7 +1272,7 @@ using a built-in function provided by Python itself, <a class="reference externa
 </div>
 </section>
 <section id="plans-in-series">
-<h3>Plans in Series<a class="headerlink" href="#plans-in-series" title="Link to this heading">¶</a></h3>
+<h3>Plans in Series<a class="headerlink" href="#plans-in-series" title="Link to this heading">#</a></h3>
 <p>A custom plan can dispatch out to other plans using the Python syntax
 <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>. (See <a class="reference internal" href="appendix.html#yield-from-primer"><span class="std std-ref">appendix</span></a> if you want to know
 why.) Examples:</p>
@@ -950,7 +1368,7 @@ one conductor and she needs to run whole show, start to finish.</p>
 </section>
 </section>
 <section id="baseline-readings-and-other-supplemental-data">
-<h2>“Baseline” Readings (and other Supplemental Data)<a class="headerlink" href="#baseline-readings-and-other-supplemental-data" title="Link to this heading">¶</a></h2>
+<h2>“Baseline” Readings (and other Supplemental Data)<a class="headerlink" href="#baseline-readings-and-other-supplemental-data" title="Link to this heading">#</a></h2>
 <p>In addition to the detector(s) and motor(s) of primary interest during an
 experiment, it is commonly useful to take a snapshot (“baseline reading”) of
 other hardware. This information is typically used to check consistency over
@@ -959,7 +1377,7 @@ week?”) Ideally, we’d like to <em>automatically</em> capture readings from t
 devices during all future experiments without any extra thought or typing per
 experiment. Bluesky provides a specific solution for this.</p>
 <section id="configure">
-<h3>Configure<a class="headerlink" href="#configure" title="Link to this heading">¶</a></h3>
+<h3>Configure<a class="headerlink" href="#configure" title="Link to this heading">#</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you are visiting user at a facility that runs bluesky, you may not need
@@ -982,7 +1400,7 @@ we did in the <a class="reference internal" href="#tutorial-run-engine-setup"><s
 </div>
 </section>
 <section id="choose-baseline-devices">
-<span id="id1"></span><h3>Choose “Baseline” Devices<a class="headerlink" href="#choose-baseline-devices" title="Link to this heading">¶</a></h3>
+<span id="id1"></span><h3>Choose “Baseline” Devices<a class="headerlink" href="#choose-baseline-devices" title="Link to this heading">#</a></h3>
 <p>We’ll choose the detectors/motors that we want to be read automatically at the
 beginning and end of each dataset (“run”). If you are using a shared
 configuration, this also might already have been done, so you should check the
@@ -1004,7 +1422,7 @@ doesn’t matter to bluesky that some are movable and some are not because it’
 just going to be <em>reading</em> them, and both detectors and motors can be read.</p>
 </section>
 <section id="use">
-<h3>Use<a class="headerlink" href="#use" title="Link to this heading">¶</a></h3>
+<h3>Use<a class="headerlink" href="#use" title="Link to this heading">#</a></h3>
 <p>Now we can just do a scan with the detector and motor of primary interest. The
 RunEngine will automatically take baseline readings before and after each run.
 Demo:</p>
@@ -1015,8 +1433,8 @@ Demo:</p>
 <span class="gp">In [23]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 9     Time: 2024-04-17 15:13:31</span>
-<span class="go">Persistent Unique Scan ID: &#39;3237ea32-335e-494f-a51e-b0803c4973c8&#39;</span>
+<span class="go">Transient Scan ID: 9     Time: 2024-04-17 17:16:53</span>
+<span class="go">Persistent Unique Scan ID: &#39;16444f51-2c73-408e-aab6-ea7bf7aa6503&#39;</span>
 <span class="go">New stream: &#39;baseline&#39;</span>
 <span class="go">Start-of-run baseline readings:</span>
 <span class="go">+--------------------------------+--------------------------------+</span>
@@ -1030,13 +1448,13 @@ Demo:</p>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:31.8 |     -1.000 |      0.607 |</span>
-<span class="go">|         2 | 15:13:31.8 |     -0.500 |      0.882 |</span>
-<span class="go">|         3 | 15:13:31.9 |      0.000 |      1.000 |</span>
-<span class="go">|         4 | 15:13:31.9 |      0.500 |      0.882 |</span>
-<span class="go">|         5 | 15:13:32.0 |      1.000 |      0.607 |</span>
+<span class="go">|         1 | 17:16:53.9 |     -1.000 |      0.607 |</span>
+<span class="go">|         2 | 17:16:54.0 |     -0.500 |      0.882 |</span>
+<span class="go">|         3 | 17:16:54.1 |      0.000 |      1.000 |</span>
+<span class="go">|         4 | 17:16:54.1 |      0.500 |      0.882 |</span>
+<span class="go">|         5 | 17:16:54.2 |      1.000 |      0.607 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;3237ea32&#39;] (scan num: 9)</span>
+<span class="go">generator scan [&#39;16444f51&#39;] (scan num: 9)</span>
 <span class="go">End-of-run baseline readings:</span>
 <span class="go">+--------------------------------+--------------------------------+</span>
 <span class="go">|                           det1 | 9.643749239819588e-22          |</span>
@@ -1048,7 +1466,7 @@ Demo:</p>
 
 
 
-<span class="gh">Out[23]: </span><span class="go">(&#39;3237ea32-335e-494f-a51e-b0803c4973c8&#39;,)</span>
+<span class="gh">Out[23]: </span><span class="go">(&#39;16444f51-2c73-408e-aab6-ea7bf7aa6503&#39;,)</span>
 </pre></div>
 </div>
 <p>We can clear or update the list of baseline detectors at any time.</p>
@@ -1061,7 +1479,7 @@ it’s easy to apply global configuration without updating every plan
 individually.</p>
 </section>
 <section id="access-baseline-data">
-<h3>Access Baseline Data<a class="headerlink" href="#access-baseline-data" title="Link to this heading">¶</a></h3>
+<h3>Access Baseline Data<a class="headerlink" href="#access-baseline-data" title="Link to this heading">#</a></h3>
 <p>If you access the data from our baseline scan, you might think that the
 baseline data is missing!</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [25]: </span><span class="n">header</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -1070,11 +1488,11 @@ baseline data is missing!</p>
 <span class="gh">Out[26]: </span>
 <span class="go">                                 time       det  motor  motor_setpoint</span>
 <span class="go">seq_num                                                               </span>
-<span class="go">1       2024-04-17 15:13:31.822206020  0.606531   -1.0            -1.0</span>
-<span class="go">2       2024-04-17 15:13:31.882706642  0.882497   -0.5            -0.5</span>
-<span class="go">3       2024-04-17 15:13:31.931132555  1.000000    0.0             0.0</span>
-<span class="go">4       2024-04-17 15:13:31.974754810  0.882497    0.5             0.5</span>
-<span class="go">5       2024-04-17 15:13:32.022692442  0.606531    1.0             1.0</span>
+<span class="go">1       2024-04-17 17:16:53.983169317  0.606531   -1.0            -1.0</span>
+<span class="go">2       2024-04-17 17:16:54.062218189  0.882497   -0.5            -0.5</span>
+<span class="go">3       2024-04-17 17:16:54.127125262  1.000000    0.0             0.0</span>
+<span class="go">4       2024-04-17 17:16:54.171940565  0.882497    0.5             0.5</span>
+<span class="go">5       2024-04-17 17:16:54.222038507  0.606531    1.0             1.0</span>
 </pre></div>
 </div>
 <p>Looking again at the output when we executed this scan, notice these lines:</p>
@@ -1088,20 +1506,20 @@ New stream: &#39;primary&#39;
 <span class="gh">Out[27]: </span>
 <span class="go">                                 time       det  motor  motor_setpoint</span>
 <span class="go">seq_num                                                               </span>
-<span class="go">1       2024-04-17 15:13:31.822206020  0.606531   -1.0            -1.0</span>
-<span class="go">2       2024-04-17 15:13:31.882706642  0.882497   -0.5            -0.5</span>
-<span class="go">3       2024-04-17 15:13:31.931132555  1.000000    0.0             0.0</span>
-<span class="go">4       2024-04-17 15:13:31.974754810  0.882497    0.5             0.5</span>
-<span class="go">5       2024-04-17 15:13:32.022692442  0.606531    1.0             1.0</span>
+<span class="go">1       2024-04-17 17:16:53.983169317  0.606531   -1.0            -1.0</span>
+<span class="go">2       2024-04-17 17:16:54.062218189  0.882497   -0.5            -0.5</span>
+<span class="go">3       2024-04-17 17:16:54.127125262  1.000000    0.0             0.0</span>
+<span class="go">4       2024-04-17 17:16:54.171940565  0.882497    0.5             0.5</span>
+<span class="go">5       2024-04-17 17:16:54.222038507  0.606531    1.0             1.0</span>
 </pre></div>
 </div>
 <p>We can access other streams by name.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [28]: </span><span class="n">header</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s1">&#39;baseline&#39;</span><span class="p">)</span>
 <span class="gh">Out[28]: </span>
-<span class="go">                                 time      det2  ...  motor2  motor2_setpoint</span>
+<span class="go">                                 time      det3  ...  motor2  motor2_setpoint</span>
 <span class="go">seq_num                                          ...                         </span>
-<span class="go">1       2024-04-17 15:13:31.808378935  0.000671  ...     9.0                9</span>
-<span class="go">2       2024-04-17 15:13:32.065808535  0.000671  ...     9.0                9</span>
+<span class="go">1       2024-04-17 17:16:53.969811916  1.213061  ...     9.0                9</span>
+<span class="go">2       2024-04-17 17:16:54.266149521  1.213061  ...     9.0                9</span>
 
 <span class="go">[2 rows x 8 columns]</span>
 </pre></div>
@@ -1111,16 +1529,16 @@ New stream: &#39;primary&#39;
 <a class="reference external" href="https://nsls-ii.github.io/databroker/tutorial.html">databroker tutorial</a>.</p>
 </section>
 <section id="other-supplemental-data">
-<h3>Other Supplemental Data<a class="headerlink" href="#other-supplemental-data" title="Link to this heading">¶</a></h3>
+<h3>Other Supplemental Data<a class="headerlink" href="#other-supplemental-data" title="Link to this heading">#</a></h3>
 <p>Above, we used <code class="docutils literal notranslate"><span class="pre">sd.baseline</span></code>. There is also <code class="docutils literal notranslate"><span class="pre">sd.monitors</span></code> for signals to
 monitor asynchronously during a run and <code class="docutils literal notranslate"><span class="pre">sd.flyers</span></code> for devices to “fly-scan”
 during a run. See <a class="reference internal" href="plans.html#supplemental-data"><span class="std std-ref">Supplemental Data</span></a> for details.</p>
 </section>
 </section>
 <section id="pause-resume-suspend">
-<span id="tutorial-pause-resume-suspend"></span><h2>Pause, Resume, Suspend<a class="headerlink" href="#pause-resume-suspend" title="Link to this heading">¶</a></h2>
+<span id="tutorial-pause-resume-suspend"></span><h2>Pause, Resume, Suspend<a class="headerlink" href="#pause-resume-suspend" title="Link to this heading">#</a></h2>
 <section id="interactive-pause-resume">
-<h3>Interactive Pause &amp; Resume<a class="headerlink" href="#interactive-pause-resume" title="Link to this heading">¶</a></h3>
+<h3>Interactive Pause &amp; Resume<a class="headerlink" href="#interactive-pause-resume" title="Link to this heading">#</a></h3>
 <p>Sometimes it is convenient to pause data collection, check on some things, and
 then either resume from where you left off or quit. The RunEngine makes it
 possible to do this cleanly and safely on <em>any</em> plan, including user-defined
@@ -1251,7 +1669,7 @@ these various ways. Observe that the RunEngine won’t let you run a new plan
 until you have resolved the paused plan using one of these methods.</p>
 </section>
 <section id="automated-suspend-resume">
-<h3>Automated Suspend &amp; Resume<a class="headerlink" href="#automated-suspend-resume" title="Link to this heading">¶</a></h3>
+<h3>Automated Suspend &amp; Resume<a class="headerlink" href="#automated-suspend-resume" title="Link to this heading">#</a></h3>
 <p>The RunEngine can be configured in advance to <em>automatically</em> pause and resume
 in response to external signals. To distinguish automatic pause/resume from
 interactive, user-initiated pause and resume, we call this behavior
@@ -1260,7 +1678,7 @@ interactive, user-initiated pause and resume, we call this behavior
 </section>
 </section>
 <section id="metadata">
-<span id="tutorial-metadata"></span><h2>Metadata<a class="headerlink" href="#metadata" title="Link to this heading">¶</a></h2>
+<span id="tutorial-metadata"></span><h2>Metadata<a class="headerlink" href="#metadata" title="Link to this heading">#</a></h2>
 <p>If users pass extra keyword arguments to <code class="docutils literal notranslate"><span class="pre">RE</span></code>, they are interpreted as
 metadata</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="n">user</span><span class="o">=</span><span class="s1">&#39;Dan&#39;</span><span class="p">,</span> <span class="n">mood</span><span class="o">=</span><span class="s1">&#39;skeptical&#39;</span><span class="p">)</span>
@@ -1294,7 +1712,7 @@ until removed) by editing the dictionary <code class="docutils literal notransla
 plan capture some metadata automatically. For more see, <a class="reference internal" href="metadata.html"><span class="doc">Recording Metadata</span></a>.</p>
 </section>
 <section id="simulate-and-introspect-plans">
-<h2>Simulate and Introspect Plans<a class="headerlink" href="#simulate-and-introspect-plans" title="Link to this heading">¶</a></h2>
+<h2>Simulate and Introspect Plans<a class="headerlink" href="#simulate-and-introspect-plans" title="Link to this heading">#</a></h2>
 <p>We have referred to a <em>plan</em> as a “sequence of instructions encoding an
 experimental procedure.” But what’s inside a plan really? Bluesky calls each
 atomic instruction inside a plan a <em>message</em>.  Handling the messages directly
@@ -1345,9 +1763,9 @@ to answer the question, “What will this plan do?”</p>
 <p>For more possibilities, see <a class="reference internal" href="simulation.html"><span class="doc">Simulation and Error Checking</span></a>.</p>
 </section>
 <section id="devices">
-<span id="tutorial-device"></span><h2>Devices<a class="headerlink" href="#devices" title="Link to this heading">¶</a></h2>
+<span id="tutorial-device"></span><h2>Devices<a class="headerlink" href="#devices" title="Link to this heading">#</a></h2>
 <section id="theory">
-<h3>Theory<a class="headerlink" href="#theory" title="Link to this heading">¶</a></h3>
+<h3>Theory<a class="headerlink" href="#theory" title="Link to this heading">#</a></h3>
 <p>The notion of a “Device” serves two goals:</p>
 <ul class="simple">
 <li><p>Provide a <strong>standard interface</strong> to all hardware for the sake of generality
@@ -1376,7 +1794,7 @@ asynchronous, such as <code class="docutils literal notranslate"><span class="pr
 multiple devices.</p>
 </section>
 <section id="implementation">
-<h3>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">¶</a></h3>
+<h3>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">#</a></h3>
 <p><a class="reference external" href="https://nsls-ii.github.io/ophyd">Ophyd</a>, a Python library that was
 developed in tandem with bluesky, implements this interface for devices that
 speak <a class="reference external" href="http://www.aps.anl.gov/epics/">EPICS</a>. But bluesky is not tied to
@@ -1448,7 +1866,7 @@ home_reverse         EpicsSignal         (&#39;nano_top_x_home_reverse&#39;)
 </section>
 </section>
 <section id="write-custom-plans">
-<span id="tutorial-custom-plans"></span><h2>Write Custom Plans<a class="headerlink" href="#write-custom-plans" title="Link to this heading">¶</a></h2>
+<span id="tutorial-custom-plans"></span><h2>Write Custom Plans<a class="headerlink" href="#write-custom-plans" title="Link to this heading">#</a></h2>
 <p>As mentioned in the <a class="reference internal" href="#tutorial-simple-customization"><span class="std std-ref">Simple Customization</span></a> section above, the
 “pre-assembled” plans with <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a> and
 <a class="reference internal" href="generated/bluesky.plans.scan.html#bluesky.plans.scan" title="bluesky.plans.scan"><code class="xref py py-func docutils literal notranslate"><span class="pre">scan()</span></code></a> are built from smaller “plan stubs”. We can
@@ -1459,7 +1877,7 @@ work with that.</p>
 </pre></div>
 </div>
 <section id="move-in-parallel">
-<h3>Move in Parallel<a class="headerlink" href="#move-in-parallel" title="Link to this heading">¶</a></h3>
+<h3>Move in Parallel<a class="headerlink" href="#move-in-parallel" title="Link to this heading">#</a></h3>
 <p>Before writing a custom plan to coordinate the motion of multiple devices,
 consider whether your use case could be addressed with one of the built-in
 <a class="reference internal" href="plans.html#multi-dimensional-scans"><span class="std std-ref">Multi-dimensional scans</span></a>.</p>
@@ -1501,7 +1919,7 @@ slow motor to arrive, and print a second message.</p>
 </div>
 </section>
 <section id="sleeping-timed-delays">
-<h3>Sleeping (Timed Delays)<a class="headerlink" href="#sleeping-timed-delays" title="Link to this heading">¶</a></h3>
+<h3>Sleeping (Timed Delays)<a class="headerlink" href="#sleeping-timed-delays" title="Link to this heading">#</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you need to wait for your motor to finish moving, temperature to finish
@@ -1528,7 +1946,7 @@ is 0.2 seconds.) Therefore, you should never incorporate long blocking function
 calls in your plan, such as <code class="docutils literal notranslate"><span class="pre">time.sleep(1)</span></code>.</p>
 </section>
 <section id="capture-data">
-<span id="tutorial-capture-data"></span><h3>Capture Data<a class="headerlink" href="#capture-data" title="Link to this heading">¶</a></h3>
+<span id="tutorial-capture-data"></span><h3>Capture Data<a class="headerlink" href="#capture-data" title="Link to this heading">#</a></h3>
 <p>Any plan that generates data must include instructions for grouping readings
 into <em>Events</em> (i.e. rows in a table) and grouping those Events into <em>Runs</em>
 (datasets that are given a “scan ID”). This is best explained by example.</p>
@@ -1552,19 +1970,19 @@ into <em>Events</em> (i.e. rows in a table) and grouping those Events into <em>R
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [36]: </span><span class="n">RE</span><span class="p">(</span><span class="n">one_run_one_event</span><span class="p">([</span><span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">]))</span>
 
 
-<span class="go">Transient Scan ID: 10     Time: 2024-04-17 15:13:32</span>
-<span class="go">Persistent Unique Scan ID: &#39;9f1b6ae1-edc4-407d-a47f-11dddfaa3e5f&#39;</span>
+<span class="go">Transient Scan ID: 10     Time: 2024-04-17 17:16:54</span>
+<span class="go">Persistent Unique Scan ID: &#39;3a573a4a-f4de-4906-af28-bc072d05706f&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:32.3 |      0.000 |      0.001 |</span>
+<span class="go">|         1 | 17:16:54.5 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator one_run_one_event [&#39;9f1b6ae1&#39;] (scan num: 10)</span>
+<span class="go">generator one_run_one_event [&#39;3a573a4a&#39;] (scan num: 10)</span>
 
 
 
-<span class="gh">Out[36]: </span><span class="go">(&#39;9f1b6ae1-edc4-407d-a47f-11dddfaa3e5f&#39;,)</span>
+<span class="gh">Out[36]: </span><span class="go">(&#39;3a573a4a-f4de-4906-af28-bc072d05706f&#39;,)</span>
 </pre></div>
 </div>
 <p>We observe:</p>
@@ -1589,21 +2007,21 @@ moved inside a for loop.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [37]: </span><span class="n">RE</span><span class="p">(</span><span class="n">one_run_multi_events</span><span class="p">([</span><span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 11     Time: 2024-04-17 15:13:32</span>
-<span class="go">Persistent Unique Scan ID: &#39;43f48106-5a36-4c14-acaf-c5ed9519cbe1&#39;</span>
+<span class="go">Transient Scan ID: 11     Time: 2024-04-17 17:16:55</span>
+<span class="go">Persistent Unique Scan ID: &#39;6efbd1b6-88db-4624-a3a1-89e91e85c5c6&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:32.8 |      0.000 |      0.001 |</span>
-<span class="go">|         2 | 15:13:33.1 |      0.000 |      0.001 |</span>
-<span class="go">|         3 | 15:13:33.3 |      0.000 |      0.001 |</span>
+<span class="go">|         1 | 17:16:55.1 |      0.000 |      0.001 |</span>
+<span class="go">|         2 | 17:16:55.3 |      0.000 |      0.001 |</span>
+<span class="go">|         3 | 17:16:55.5 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator one_run_multi_events [&#39;43f48106&#39;] (scan num: 11)</span>
+<span class="go">generator one_run_multi_events [&#39;6efbd1b6&#39;] (scan num: 11)</span>
 
 
 
-<span class="gh">Out[37]: </span><span class="go">(&#39;43f48106-5a36-4c14-acaf-c5ed9519cbe1&#39;,)</span>
+<span class="gh">Out[37]: </span><span class="go">(&#39;6efbd1b6-88db-4624-a3a1-89e91e85c5c6&#39;,)</span>
 </pre></div>
 </div>
 <p>We observe:</p>
@@ -1623,39 +2041,39 @@ moved inside a for loop.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [38]: </span><span class="n">RE</span><span class="p">(</span><span class="n">multi_runs_multi_events</span><span class="p">([</span><span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">num_runs</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 12     Time: 2024-04-17 15:13:33</span>
-<span class="go">Persistent Unique Scan ID: &#39;1d2de0b1-fb79-4852-91df-211685d79e98&#39;</span>
+<span class="go">Transient Scan ID: 12     Time: 2024-04-17 17:16:56</span>
+<span class="go">Persistent Unique Scan ID: &#39;db0e5586-4eb5-425c-bb2f-887b2539024e&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:33.8 |      0.000 |      0.001 |</span>
-<span class="go">|         2 | 15:13:34.0 |      0.000 |      0.001 |</span>
-<span class="go">|         3 | 15:13:34.2 |      0.000 |      0.001 |</span>
+<span class="go">|         1 | 17:16:56.1 |      0.000 |      0.001 |</span>
+<span class="go">|         2 | 17:16:56.3 |      0.000 |      0.001 |</span>
+<span class="go">|         3 | 17:16:56.5 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator multi_runs_multi_events [&#39;1d2de0b1&#39;] (scan num: 12)</span>
+<span class="go">generator multi_runs_multi_events [&#39;db0e5586&#39;] (scan num: 12)</span>
 
 
 
 
 
-<span class="go">Transient Scan ID: 13     Time: 2024-04-17 15:13:34</span>
-<span class="go">Persistent Unique Scan ID: &#39;d0cd6ea3-f33a-45cf-b533-349f210a8824&#39;</span>
+<span class="go">Transient Scan ID: 13     Time: 2024-04-17 17:16:57</span>
+<span class="go">Persistent Unique Scan ID: &#39;67ab7c9b-9f34-40ae-b164-a241ea1182e8&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:13:34.7 |      0.000 |      0.001 |</span>
-<span class="go">|         2 | 15:13:35.0 |      0.000 |      0.001 |</span>
-<span class="go">|         3 | 15:13:35.2 |      0.000 |      0.001 |</span>
+<span class="go">|         1 | 17:16:57.1 |      0.000 |      0.001 |</span>
+<span class="go">|         2 | 17:16:57.3 |      0.000 |      0.001 |</span>
+<span class="go">|         3 | 17:16:57.5 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator multi_runs_multi_events [&#39;d0cd6ea3&#39;] (scan num: 13)</span>
+<span class="go">generator multi_runs_multi_events [&#39;67ab7c9b&#39;] (scan num: 13)</span>
 
 
 
 <span class="gh">Out[38]: </span>
-<span class="go">(&#39;1d2de0b1-fb79-4852-91df-211685d79e98&#39;,</span>
-<span class="go"> &#39;d0cd6ea3-f33a-45cf-b533-349f210a8824&#39;)</span>
+<span class="go">(&#39;db0e5586-4eb5-425c-bb2f-887b2539024e&#39;,</span>
+<span class="go"> &#39;67ab7c9b-9f34-40ae-b164-a241ea1182e8&#39;)</span>
 </pre></div>
 </div>
 <p>We observe:</p>
@@ -1671,7 +2089,7 @@ important detail, addressed in the next section, which may be necessary to
 incorporate before trying these plans on real devices.</p>
 </section>
 <section id="stage-and-unstage">
-<h3>Stage and Unstage<a class="headerlink" href="#stage-and-unstage" title="Link to this heading">¶</a></h3>
+<h3>Stage and Unstage<a class="headerlink" href="#stage-and-unstage" title="Link to this heading">#</a></h3>
 <p>Complex devices often require some preliminary setup before they can be used
 for data collection, moving them from a resting state into a state where they
 are ready to acquire data. Bluesky accommodates this in a general way by
@@ -1750,7 +2168,7 @@ tutorial, in the section on baseline readings.
 <a class="reference internal" href="plans.html#bluesky.preprocessors.SupplementalData" title="bluesky.preprocessors.SupplementalData"><code class="xref py py-class docutils literal notranslate"><span class="pre">SupplementalData</span></code></a> is a preprocessor.</p>
 </section>
 <section id="add-metadata">
-<span id="tutorial-plan-metadata"></span><h3>Add Metadata<a class="headerlink" href="#add-metadata" title="Link to this heading">¶</a></h3>
+<span id="tutorial-plan-metadata"></span><h3>Add Metadata<a class="headerlink" href="#add-metadata" title="Link to this heading">#</a></h3>
 <p>To make it easier to search for data generated by the plan and to inspect what
 was done afterward, we should include some metadata. We create a dictionary and
 pass it to <a class="reference internal" href="generated/bluesky.preprocessors.run_decorator.html#bluesky.preprocessors.run_decorator" title="bluesky.preprocessors.run_decorator"><code class="xref py py-func docutils literal notranslate"><span class="pre">run_decorator()</span></code></a> (or, in the more
@@ -1812,7 +2230,7 @@ purpose, implemented like so:</p>
 </div>
 </section>
 <section id="add-hints-in-metadata">
-<h3>Add “Hints” in Metadata<a class="headerlink" href="#add-hints-in-metadata" title="Link to this heading">¶</a></h3>
+<h3>Add “Hints” in Metadata<a class="headerlink" href="#add-hints-in-metadata" title="Link to this heading">#</a></h3>
 <p>The metadata dictionary may optionally include a key named <code class="docutils literal notranslate"><span class="pre">'hints'</span></code>. This
 key has special significance to the
 <code class="xref py py-class docutils literal notranslate"><span class="pre">BestEffortCallback</span></code> and potentially
@@ -1901,7 +2319,7 @@ provided by the Device:</p>
 if they know better by passing in <code class="docutils literal notranslate"><span class="pre">scan(...,</span> <span class="pre">md={'hints':</span> <span class="pre">...})</span></code>.</p>
 </section>
 <section id="adaptive-logic-in-a-plan">
-<span id="tutorial-adaptive"></span><h3>Adaptive Logic in a Plan<a class="headerlink" href="#adaptive-logic-in-a-plan" title="Link to this heading">¶</a></h3>
+<span id="tutorial-adaptive"></span><h3>Adaptive Logic in a Plan<a class="headerlink" href="#adaptive-logic-in-a-plan" title="Link to this heading">#</a></h3>
 <p>Two-way communication is possible between the generator and the RunEngine.
 For example, the <code class="xref py py-func docutils literal notranslate"><span class="pre">trigger_and_read()</span></code> plan responds with its readings. We
 can use it to make an on-the-fly decision about whether to continue or stop.</p>
@@ -1929,21 +2347,21 @@ can use it to make an on-the-fly decision about whether to continue or stop.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [39]: </span><span class="n">RE</span><span class="p">(</span><span class="n">conditional_break</span><span class="p">(</span><span class="mf">0.2</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 14     Time: 2024-04-17 15:13:35</span>
-<span class="go">Persistent Unique Scan ID: &#39;18dc785f-e610-496b-9d20-0190f9608fd3&#39;</span>
+<span class="go">Transient Scan ID: 14     Time: 2024-04-17 17:16:58</span>
+<span class="go">Persistent Unique Scan ID: &#39;5796fbe5-4379-41b5-a5b3-bb4346150e7d&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 15:13:35.8 |      1.000 |</span>
-<span class="go">|         2 | 15:13:35.8 |      0.607 |</span>
-<span class="go">|         3 | 15:13:35.9 |      0.135 |</span>
+<span class="go">|         1 | 17:16:58.1 |      1.000 |</span>
+<span class="go">|         2 | 17:16:58.2 |      0.607 |</span>
+<span class="go">|         3 | 17:16:58.2 |      0.135 |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator conditional_break [&#39;18dc785f&#39;] (scan num: 14)</span>
+<span class="go">generator conditional_break [&#39;5796fbe5&#39;] (scan num: 14)</span>
 
 
 
-<span class="gh">Out[39]: </span><span class="go">(&#39;18dc785f-e610-496b-9d20-0190f9608fd3&#39;,)</span>
+<span class="gh">Out[39]: </span><span class="go">(&#39;5796fbe5-4379-41b5-a5b3-bb4346150e7d&#39;,)</span>
 </pre></div>
 </div>
 <p>The important line in this example is</p>
@@ -1965,7 +2383,7 @@ assigned to the variable <code class="docutils literal notranslate"><span class=
 see <a class="reference internal" href="msg.html#msg"><span class="std std-ref">Message Protocol</span></a>.</p>
 </section>
 <section id="plan-cleanup-exception-handling">
-<span id="tutorial-exception-handling"></span><h3>Plan “Cleanup” (Exception Handling)<a class="headerlink" href="#plan-cleanup-exception-handling" title="Link to this heading">¶</a></h3>
+<span id="tutorial-exception-handling"></span><h3>Plan “Cleanup” (Exception Handling)<a class="headerlink" href="#plan-cleanup-exception-handling" title="Link to this heading">#</a></h3>
 <p>If an exception is raised, the RunEngine gives the plan the opportunity to
 catch the exception and either handle it or merely yield some “clean up”
 messages before re-raising the exception and killing plan execution. (Recall
@@ -2000,7 +2418,7 @@ succinct and fully correct way of applying this general pattern.</p>
 </div>
 </section>
 <section id="further-reading">
-<h3>Further Reading<a class="headerlink" href="#further-reading" title="Link to this heading">¶</a></h3>
+<h3>Further Reading<a class="headerlink" href="#further-reading" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><a class="reference internal" href="plans.html#per-step-hook"><span class="std std-ref">Customize Step Scans with per_step</span></a></p></li>
 <li><p>Specifying checkpoints (TODO)</p></li>
@@ -2015,34 +2433,186 @@ succinct and fully correct way of applying this general pattern.</p>
 </section>
 
 
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Bluesky Data Collection Framework" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="plans.html" class="btn btn-neutral float-right" title="Plans" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
-        </div>
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="userindex.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">User Documentation</p>
       </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+    </a>
+    <a class="right-next"
+       href="plans.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Plans</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-</body>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#before-you-begin">Before You Begin</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#if-you-get-lost-or-confused">If you get lost or confused…</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-runengine">The RunEngine</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#prepare-live-visualization">Prepare Live Visualization</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#prepare-data-storage">Prepare Data Storage</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#add-a-progress-bar">Add a Progress Bar</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-experiments-plans">Common Experiments (“Plans”)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#read-some-detectors">Read Some Detectors</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scan">Scan</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scan-multiple-motors-together">Scan Multiple Motors Together</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scan-multiple-motors-in-a-grid">Scan Multiple Motors in a Grid</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#aside-access-saved-data">Aside: Access Saved Data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simple-customization">Simple Customization</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#save-some-typing-with-partial">Save Some Typing with ‘Partial’</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#plans-in-series">Plans in Series</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baseline-readings-and-other-supplemental-data">“Baseline” Readings (and other Supplemental Data)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#configure">Configure</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#choose-baseline-devices">Choose “Baseline” Devices</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use">Use</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#access-baseline-data">Access Baseline Data</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#other-supplemental-data">Other Supplemental Data</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pause-resume-suspend">Pause, Resume, Suspend</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#interactive-pause-resume">Interactive Pause &amp; Resume</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#automated-suspend-resume">Automated Suspend &amp; Resume</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#metadata">Metadata</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulate-and-introspect-plans">Simulate and Introspect Plans</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#devices">Devices</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#theory">Theory</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#write-custom-plans">Write Custom Plans</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#move-in-parallel">Move in Parallel</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sleeping-timed-delays">Sleeping (Timed Delays)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#capture-data">Capture Data</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-and-unstage">Stage and Unstage</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#add-metadata">Add Metadata</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#add-hints-in-metadata">Add “Hints” in Metadata</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#adaptive-logic-in-a-plan">Adaptive Logic in a Plan</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#plan-cleanup-exception-handling">Plan “Cleanup” (Exception Handling)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#further-reading">Further Reading</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a4.dev64+g57027b3b/docs/tutorial.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/tutorial.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
 </html>

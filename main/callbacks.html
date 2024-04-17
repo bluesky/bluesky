@@ -1,165 +1,525 @@
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
-<head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Visualization and Processing &mdash; bluesky 1.13.0a4.dev59+g6362ba15 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Live Visualization and Processing &#8212; bluesky 1.13.0a4.dev64+g57027b3b documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <link href="_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
-        <script src="_static/documentation_options.js?v=ff9dcf53"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/js/theme.js"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="_static/documentation_options.js?v=dff96ffe"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'callbacks';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev64+g57027b3b';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="bluesky.callbacks.best_effort.BestEffortCallback" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.html" />
-    <link rel="prev" title="Recording Metadata" href="metadata.html" /> 
-</head>
+    <link rel="prev" title="Recording Metadata" href="metadata.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
 
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <script>document.write(`<img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark" alt=""/>`);</script>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-          <a href="index.html" class="icon icon-home">
-            bluesky
-          </a>
-              <div class="version">
-                1.13.0a4.dev59+g6362ba15
-              </div>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
-<ul class="current">
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links-2">
+                    More
+                </button>
+                <ul id="pst-nav-more-links-2" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-3"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-3"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-3"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-3">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
 <li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Live Visualization and Processing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#overview-of-callbacks">Overview of Callbacks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#simplest-working-example">Simplest Working Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ways-to-invoke-callbacks">Ways to Invoke Callbacks</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#interactively">Interactively</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#persistently">Persistently</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#through-a-plan">Through a plan</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#callbacks-for-visualization-fitting">Callbacks for Visualization &amp; Fitting</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#livetable">LiveTable</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.LiveTable"><code class="docutils literal notranslate"><span class="pre">LiveTable</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#aside-making-plots-update-live">Aside: Making plots update live</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.utils.install_kicker"><code class="docutils literal notranslate"><span class="pre">install_kicker()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.utils.install_qt_kicker"><code class="docutils literal notranslate"><span class="pre">install_qt_kicker()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.utils.install_nb_kicker"><code class="docutils literal notranslate"><span class="pre">install_nb_kicker()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#liveplot-for-scalar-data">LivePlot (for scalar data)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.mpl_plotting.LivePlot"><code class="docutils literal notranslate"><span class="pre">LivePlot</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#live-image">Live Image</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.broker.LiveImage"><code class="docutils literal notranslate"><span class="pre">LiveImage</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#livegrid-gridded-heat-map">LiveGrid (gridded heat map)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.mpl_plotting.LiveGrid"><code class="docutils literal notranslate"><span class="pre">LiveGrid</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#livescatter-scattered-heat-map">LiveScatter (scattered heat map)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.mpl_plotting.LiveScatter"><code class="docutils literal notranslate"><span class="pre">LiveScatter</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#livefit">LiveFit</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.LiveFit"><code class="docutils literal notranslate"><span class="pre">LiveFit</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#livefitplot">LiveFitPlot</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.mpl_plotting.LiveFitPlot"><code class="docutils literal notranslate"><span class="pre">LiveFitPlot</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#peakstats">PeakStats</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.fitting.PeakStats"><code class="docutils literal notranslate"><span class="pre">PeakStats</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.mpl_plotting.plot_peak_stats"><code class="docutils literal notranslate"><span class="pre">plot_peak_stats()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#best-effort-callback">Best-Effort Callback</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.html">bluesky.callbacks.best_effort.BestEffortCallback</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_heading.html">bluesky.callbacks.best_effort.BestEffortCallback.enable_heading</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_heading.html">bluesky.callbacks.best_effort.BestEffortCallback.disable_heading</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_table.html">bluesky.callbacks.best_effort.BestEffortCallback.enable_table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_table.html">bluesky.callbacks.best_effort.BestEffortCallback.disable_table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_baseline.html">bluesky.callbacks.best_effort.BestEffortCallback.enable_baseline</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_baseline.html">bluesky.callbacks.best_effort.BestEffortCallback.disable_baseline</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_plots.html">bluesky.callbacks.best_effort.BestEffortCallback.enable_plots</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_plots.html">bluesky.callbacks.best_effort.BestEffortCallback.disable_plots</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#peak-stats">Peak Stats</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#hints">Hints</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#callback-for-export">Callback for Export</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#exporting-image-data-as-tiff-files">Exporting Image Data as TIFF Files</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.broker.LiveTiffExporter"><code class="docutils literal notranslate"><span class="pre">LiveTiffExporter</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#export-all-data-and-metadata-in-an-hdf5-file">Export All Data and Metadata in an HDF5 File</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#export-metadata-to-the-olog">Export Metadata to the Olog</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.olog.logbook_cb_factory"><code class="docutils literal notranslate"><span class="pre">logbook_cb_factory()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#verify-data-has-been-saved">Verify Data Has Been Saved</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ignoring-callback-exceptions">Ignoring Callback Exceptions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#bluesky.callbacks.core.make_callback_safe"><code class="docutils literal notranslate"><span class="pre">make_callback_safe()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#bluesky.callbacks.core.make_class_safe"><code class="docutils literal notranslate"><span class="pre">make_class_safe()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#filtering-by-document-type">Filtering by Document Type</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#writing-custom-callbacks">Writing Custom Callbacks</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#two-simple-custom-callbacks">Two Simple Custom Callbacks</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#using-multiple-document-types">Using multiple document types</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#subscriptions-in-separate-processes-or-host-with-0mq">Subscriptions in Separate Processes or Host with 0MQ</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#minimal-example">Minimal Example</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#publisher-remotedispatcher-api">Publisher / RemoteDispatcher API</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.zmq.Proxy"><code class="docutils literal notranslate"><span class="pre">Proxy</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.zmq.Publisher"><code class="docutils literal notranslate"><span class="pre">Publisher</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.zmq.RemoteDispatcher"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#secondary-event-stream">Secondary Event Stream</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#livedispatcher-api">LiveDispatcher API</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bluesky.callbacks.stream.LiveDispatcher"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Live Visualization and Processing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
 <li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
@@ -175,60 +535,66 @@
 <li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
-</ul>
-
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">bluesky</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Live Visualization and Processing</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/callbacks.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="userindex.html" class="nav-link">User Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Live...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="live-visualization-and-processing">
-<h1>Live Visualization and Processing<a class="headerlink" href="#live-visualization-and-processing" title="Link to this heading">¶</a></h1>
+<h1>Live Visualization and Processing<a class="headerlink" href="#live-visualization-and-processing" title="Link to this heading">#</a></h1>
 <section id="overview-of-callbacks">
-<span id="callbacks"></span><h2>Overview of Callbacks<a class="headerlink" href="#overview-of-callbacks" title="Link to this heading">¶</a></h2>
+<span id="callbacks"></span><h2>Overview of Callbacks<a class="headerlink" href="#overview-of-callbacks" title="Link to this heading">#</a></h2>
 <p>As the RunEngine executes a plan, it organizes metadata and data into
 <em>Documents,</em> Python dictionaries organized in a
 <a class="reference internal" href="documents.html"><span class="doc">specified but flexible</span></a> way. Each time a new Document is
@@ -250,7 +616,7 @@ or server so that they do not hold up data acquisition. Bluesky provides nice
 tooling for this use case — see <a class="reference internal" href="#zmq-callback"><span class="std std-ref">Subscriptions in Separate Processes or Host with 0MQ</span></a>.</p>
 </section>
 <section id="simplest-working-example">
-<h2>Simplest Working Example<a class="headerlink" href="#simplest-working-example" title="Link to this heading">¶</a></h2>
+<h2>Simplest Working Example<a class="headerlink" href="#simplest-working-example" title="Link to this heading">#</a></h2>
 <p>This example passes every Document to the <code class="docutils literal notranslate"><span class="pre">print</span></code> function, printing
 each Document as it is generated during data collection.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
@@ -263,9 +629,9 @@ each Document as it is generated during data collection.</p>
 the screen.  See <a class="reference internal" href="#livetable"><span class="std std-ref">LiveTable</span></a> below for a more refined option.</p>
 </section>
 <section id="ways-to-invoke-callbacks">
-<h2>Ways to Invoke Callbacks<a class="headerlink" href="#ways-to-invoke-callbacks" title="Link to this heading">¶</a></h2>
+<h2>Ways to Invoke Callbacks<a class="headerlink" href="#ways-to-invoke-callbacks" title="Link to this heading">#</a></h2>
 <section id="interactively">
-<h3>Interactively<a class="headerlink" href="#interactively" title="Link to this heading">¶</a></h3>
+<h3>Interactively<a class="headerlink" href="#interactively" title="Link to this heading">#</a></h3>
 <p>As in the simple example above, pass a second argument to the RunEngine.
 For some callback function <code class="docutils literal notranslate"><span class="pre">cb</span></code>, the usage is:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">plan</span><span class="p">(),</span> <span class="n">cb</span><span class="p">))</span>
@@ -283,7 +649,7 @@ For some callback function <code class="docutils literal notranslate"><span clas
 <a class="reference internal" href="#filtering"><span class="std std-ref">Filtering by Document Type</span></a>, below, for additional options.</p>
 </section>
 <section id="persistently">
-<h3>Persistently<a class="headerlink" href="#persistently" title="Link to this heading">¶</a></h3>
+<h3>Persistently<a class="headerlink" href="#persistently" title="Link to this heading">#</a></h3>
 <p>The RunEngine keeps a list of callbacks to apply to <em>every</em> plan it executes.
 For example, the callback that saves the data to a database is typically
 invoked this way. For some callback function <code class="docutils literal notranslate"><span class="pre">cb</span></code>, the usage is:</p>
@@ -350,7 +716,7 @@ default)</p>
 
 </section>
 <section id="through-a-plan">
-<span id="subs-decorator"></span><h3>Through a plan<a class="headerlink" href="#through-a-plan" title="Link to this heading">¶</a></h3>
+<span id="subs-decorator"></span><h3>Through a plan<a class="headerlink" href="#through-a-plan" title="Link to this heading">#</a></h3>
 <p>Use the <code class="docutils literal notranslate"><span class="pre">subs_decorator</span></code> <a class="reference internal" href="plans.html#preprocessors"><span class="std std-ref">plan preprocessor</span></a> to attach
 callbacks to a plan so that they are subscribed every time it is run.</p>
 <p>In this example, we define a new plan, <code class="docutils literal notranslate"><span class="pre">plan2</span></code>, that adds some callback
@@ -386,9 +752,9 @@ callbacks to a plan so that they are subscribed every time it is run.</p>
 </section>
 </section>
 <section id="callbacks-for-visualization-fitting">
-<h2>Callbacks for Visualization &amp; Fitting<a class="headerlink" href="#callbacks-for-visualization-fitting" title="Link to this heading">¶</a></h2>
+<h2>Callbacks for Visualization &amp; Fitting<a class="headerlink" href="#callbacks-for-visualization-fitting" title="Link to this heading">#</a></h2>
 <section id="livetable">
-<span id="id1"></span><h3>LiveTable<a class="headerlink" href="#livetable" title="Link to this heading">¶</a></h3>
+<span id="id1"></span><h3>LiveTable<a class="headerlink" href="#livetable" title="Link to this heading">#</a></h3>
 <p>As each data point is collected (i.e., as each Event Document is generated) a
 row is added to the table. Demo:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span>
@@ -403,16 +769,16 @@ row is added to the table. Demo:</p>
 <span class="go">+-----------+------------+------------+----------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor | motor_setpoint |        det |</span>
 <span class="go">+-----------+------------+------------+----------------+------------+</span>
-<span class="go">|         1 | 15:12:29.8 |      1.000 |          1.000 |      0.607 |</span>
-<span class="go">|         2 | 15:12:29.8 |      2.000 |          2.000 |      0.135 |</span>
-<span class="go">|         3 | 15:12:29.8 |      3.000 |          3.000 |      0.011 |</span>
-<span class="go">|         4 | 15:12:29.8 |      4.000 |          4.000 |      0.000 |</span>
-<span class="go">|         5 | 15:12:29.8 |      5.000 |          5.000 |      0.000 |</span>
+<span class="go">|         1 | 17:15:45.5 |      1.000 |          1.000 |      0.607 |</span>
+<span class="go">|         2 | 17:15:45.5 |      2.000 |          2.000 |      0.135 |</span>
+<span class="go">|         3 | 17:15:45.5 |      3.000 |          3.000 |      0.011 |</span>
+<span class="go">|         4 | 17:15:45.5 |      4.000 |          4.000 |      0.000 |</span>
+<span class="go">|         5 | 17:15:45.5 |      5.000 |          5.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+----------------+------------+</span>
-<span class="go">generator scan [&#39;6d626283&#39;] (scan num: 1)</span>
+<span class="go">generator scan [&#39;1569c9a4&#39;] (scan num: 1)</span>
 
 
-<span class="gh">Out[4]: </span><span class="go">(&#39;6d626283-3082-4464-bb2e-691678cef681&#39;,)</span>
+<span class="gh">Out[4]: </span><span class="go">(&#39;1569c9a4-fa96-4585-8546-e4327dfd8a0c&#39;,)</span>
 </pre></div>
 </div>
 <p>Pass an empty list of columns to show simply ‘time’ and ‘seq_num’ (sequence
@@ -442,7 +808,7 @@ specific field. They will not accept a device because it may have more than one
 field.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.LiveTable">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.</span></span><span class="sig-name descname"><span class="pre">LiveTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_name='primary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_header_interval=50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_width=12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_prec=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_pad=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separator_lines=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logbook=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/core.html#LiveTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.LiveTable" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.</span></span><span class="sig-name descname"><span class="pre">LiveTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_name='primary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_header_interval=50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_width=12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_prec=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_pad=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separator_lines=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logbook=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/core.html#LiveTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.LiveTable" title="Link to this definition">#</a></dt>
 <dd><p>Live updating table</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -478,7 +844,7 @@ field.</p>
 
 </section>
 <section id="aside-making-plots-update-live">
-<span id="kickers"></span><h3>Aside: Making plots update live<a class="headerlink" href="#aside-making-plots-update-live" title="Link to this heading">¶</a></h3>
+<span id="kickers"></span><h3>Aside: Making plots update live<a class="headerlink" href="#aside-making-plots-update-live" title="Link to this heading">#</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you are a user working with a pre-configured setup, you can probably
@@ -509,7 +875,7 @@ bluesky in particular. See
 for details.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.utils.install_kicker">
-<span class="sig-prename descclassname"><span class="pre">bluesky.utils.</span></span><span class="sig-name descname"><span class="pre">install_kicker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/utils.html#install_kicker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.utils.install_kicker" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.utils.</span></span><span class="sig-name descname"><span class="pre">install_kicker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/utils.html#install_kicker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.utils.install_kicker" title="Link to this definition">#</a></dt>
 <dd><p>Install a periodic callback to integrate drawing and asyncio event loops.</p>
 <p>This dispatches to <a class="reference internal" href="#bluesky.utils.install_qt_kicker" title="bluesky.utils.install_qt_kicker"><code class="xref py py-func docutils literal notranslate"><span class="pre">install_qt_kicker()</span></code></a> or <a class="reference internal" href="#bluesky.utils.install_nb_kicker" title="bluesky.utils.install_nb_kicker"><code class="xref py py-func docutils literal notranslate"><span class="pre">install_nb_kicker()</span></code></a>
 depending on the current matplotlib backend.</p>
@@ -526,7 +892,7 @@ depending on the current matplotlib backend.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.utils.install_qt_kicker">
-<span class="sig-prename descclassname"><span class="pre">bluesky.utils.</span></span><span class="sig-name descname"><span class="pre">install_qt_kicker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/utils.html#install_qt_kicker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.utils.install_qt_kicker" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.utils.</span></span><span class="sig-name descname"><span class="pre">install_qt_kicker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/utils.html#install_qt_kicker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.utils.install_qt_kicker" title="Link to this definition">#</a></dt>
 <dd><p>Install a periodic callback to integrate Qt and asyncio event loops.</p>
 <p>DEPRECATED: This functionality is now handled automatically by default and
 is configurable via the RunEngine’s new <code class="docutils literal notranslate"><span class="pre">during_task</span></code> parameter. Calling
@@ -545,7 +911,7 @@ bluesky.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.utils.install_nb_kicker">
-<span class="sig-prename descclassname"><span class="pre">bluesky.utils.</span></span><span class="sig-name descname"><span class="pre">install_nb_kicker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/utils.html#install_nb_kicker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.utils.install_nb_kicker" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.utils.</span></span><span class="sig-name descname"><span class="pre">install_nb_kicker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/utils.html#install_nb_kicker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.utils.install_nb_kicker" title="Link to this definition">#</a></dt>
 <dd><p>Install a periodic callback to integrate ipykernel and asyncio event loops.</p>
 <p>It is safe to call this function multiple times.</p>
 <dl class="field-list simple">
@@ -561,7 +927,7 @@ bluesky.</p>
 
 </section>
 <section id="liveplot-for-scalar-data">
-<span id="liveplot"></span><h3>LivePlot (for scalar data)<a class="headerlink" href="#liveplot-for-scalar-data" title="Link to this heading">¶</a></h3>
+<span id="liveplot"></span><h3>LivePlot (for scalar data)<a class="headerlink" href="#liveplot-for-scalar-data" title="Link to this heading">#</a></h3>
 <p>Plot scalars. Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span>
 <span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
@@ -585,7 +951,7 @@ bluesky.</p>
 </figure>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.mpl_plotting.LivePlot">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LivePlot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'run'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LivePlot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LivePlot" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LivePlot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'run'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LivePlot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LivePlot" title="Link to this definition">#</a></dt>
 <dd><p>Build a function that updates a plot from a stream of Events.</p>
 <p>Note: If your figure blocks the main thread when you are trying to
 scan with this callback, call <cite>plt.ion()</cite> in your IPython session.</p>
@@ -628,10 +994,10 @@ t=0 is 1 Jan 1970 (“the UNIX epoch”). Default is ‘run’.</p>
 
 </section>
 <section id="live-image">
-<h3>Live Image<a class="headerlink" href="#live-image" title="Link to this heading">¶</a></h3>
+<h3>Live Image<a class="headerlink" href="#live-image" title="Link to this heading">#</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.broker.LiveImage">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.broker.</span></span><span class="sig-name descname"><span class="pre">LiveImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_redraw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/broker.html#LiveImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.broker.LiveImage" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.broker.</span></span><span class="sig-name descname"><span class="pre">LiveImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_redraw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/broker.html#LiveImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.broker.LiveImage" title="Link to this definition">#</a></dt>
 <dd><p>Stream 2D images in a cross-section viewer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -657,7 +1023,7 @@ CrossSection2DView.interpolation</p>
 
 </section>
 <section id="livegrid-gridded-heat-map">
-<span id="liveraster"></span><h3>LiveGrid (gridded heat map)<a class="headerlink" href="#livegrid-gridded-heat-map" title="Link to this heading">¶</a></h3>
+<span id="liveraster"></span><h3>LiveGrid (gridded heat map)<a class="headerlink" href="#livegrid-gridded-heat-map" title="Link to this heading">#</a></h3>
 <p>Plot a scalar value as a function of two variables on a regular grid. Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">grid_scan</span>
 <span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det4</span><span class="p">,</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span>
@@ -672,7 +1038,7 @@ CrossSection2DView.interpolation</p>
 </figure>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.mpl_plotting.LiveGrid">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LiveGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raster_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'y'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aspect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'equal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_positive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'right'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_positive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'up'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LiveGrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LiveGrid" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LiveGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raster_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'y'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aspect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'equal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_positive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'right'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_positive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'up'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LiveGrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LiveGrid" title="Link to this definition">#</a></dt>
 <dd><p>Plot gridded 2D data in a “heat map”.</p>
 <p>This assumes that readings are placed on a regular grid and can be placed
 into an image by sequence number. The seq_num is used to determine which
@@ -721,7 +1087,7 @@ ID. Set to empty string to remove title.</p>
 
 </section>
 <section id="livescatter-scattered-heat-map">
-<h3>LiveScatter (scattered heat map)<a class="headerlink" href="#livescatter-scattered-heat-map" title="Link to this heading">¶</a></h3>
+<h3>LiveScatter (scattered heat map)<a class="headerlink" href="#livescatter-scattered-heat-map" title="Link to this heading">#</a></h3>
 <p>Plot a scalar value as a function of two variables. Unlike
 <a class="reference internal" href="#bluesky.callbacks.mpl_plotting.LiveGrid" title="bluesky.callbacks.mpl_plotting.LiveGrid"><code class="xref py py-class docutils literal notranslate"><span class="pre">bluesky.callbacks.mpl_plotting.LiveGrid</span></code></a>, this does not assume a regular grid.
 Example:</p>
@@ -743,7 +1109,7 @@ Example:</p>
 </figure>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.mpl_plotting.LiveScatter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LiveScatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LiveScatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LiveScatter" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LiveScatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LiveScatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LiveScatter" title="Link to this definition">#</a></dt>
 <dd><p>Plot scattered 2D data in a “heat map”.</p>
 <p>Alternatively, if the data is placed on a regular grid, you can use
 <a class="reference internal" href="#bluesky.callbacks.mpl_plotting.LiveGrid" title="bluesky.callbacks.mpl_plotting.LiveGrid"><code class="xref py py-func docutils literal notranslate"><span class="pre">bluesky.callbacks.mpl_plotting.LiveGrid()</span></code></a>.</p>
@@ -775,7 +1141,7 @@ Example:</p>
 
 </section>
 <section id="livefit">
-<h3>LiveFit<a class="headerlink" href="#livefit" title="Link to this heading">¶</a></h3>
+<h3>LiveFit<a class="headerlink" href="#livefit" title="Link to this heading">#</a></h3>
 <p>Perform a nonlinear least squared best fit to the data with a user-defined
 model function. The function can depend on any number of independent variables.
 We integrate with the package
@@ -853,7 +1219,7 @@ the number of accumulated data points is equal to the number of free parameters
 in the model.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.LiveFit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.</span></span><span class="sig-name descname"><span class="pre">LiveFit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">independent_vars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_guess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_every</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/fitting.html#LiveFit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.LiveFit" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.</span></span><span class="sig-name descname"><span class="pre">LiveFit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">independent_vars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_guess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_every</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/fitting.html#LiveFit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.LiveFit" title="Link to this definition">#</a></dt>
 <dd><p>Fit a model to data using nonlinear least-squares minimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -882,7 +1248,7 @@ end. Default is 1 (recompute after each new point).</p>
 
 </section>
 <section id="livefitplot">
-<h3>LiveFitPlot<a class="headerlink" href="#livefitplot" title="Link to this heading">¶</a></h3>
+<h3>LiveFitPlot<a class="headerlink" href="#livefitplot" title="Link to this heading">#</a></h3>
 <p>This is a variation on <code class="docutils literal notranslate"><span class="pre">LivePlot</span></code> that plots the best fit curve from
 <code class="docutils literal notranslate"><span class="pre">LiveFit</span></code>. It applies to 1D model functions only.</p>
 <p>Repeating the example from <code class="docutils literal notranslate"><span class="pre">LiveFit</span></code> above, adding a plot:</p>
@@ -934,7 +1300,7 @@ Notice that they can styled independently.</p>
 </figure>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.mpl_plotting.LiveFitPlot">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LiveFitPlot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">livefit</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LiveFitPlot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LiveFitPlot" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">LiveFitPlot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">livefit</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#LiveFitPlot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.LiveFitPlot" title="Link to this definition">#</a></dt>
 <dd><p>Add a plot to an instance of LiveFit.</p>
 <p>Note: If your figure blocks the main thread when you are trying to
 scan with this callback, call <cite>plt.ion()</cite> in your IPython session.</p>
@@ -963,7 +1329,7 @@ scan_id followed by a colon (“1: “).  Each</p>
 
 </section>
 <section id="peakstats">
-<h3>PeakStats<a class="headerlink" href="#peakstats" title="Link to this heading">¶</a></h3>
+<h3>PeakStats<a class="headerlink" href="#peakstats" title="Link to this heading">#</a></h3>
 <p>Compute statistics of peak-like data. Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.callbacks.fitting</span> <span class="kn">import</span> <span class="n">PeakStats</span>
 <span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">motor</span><span class="p">,</span> <span class="n">det</span>
@@ -985,7 +1351,7 @@ There is also a convenience function for plotting:</p>
 </figure>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.fitting.PeakStats">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.fitting.</span></span><span class="sig-name descname"><span class="pre">PeakStats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_derivative_and_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/fitting.html#PeakStats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.fitting.PeakStats" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.fitting.</span></span><span class="sig-name descname"><span class="pre">PeakStats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_derivative_and_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/fitting.html#PeakStats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.fitting.PeakStats" title="Link to this definition">#</a></dt>
 <dd><p>Compute peak statsitics after a run finishes.</p>
 <p>Results are stored in the attributes.</p>
 <dl class="field-list simple">
@@ -1026,7 +1392,7 @@ be the fwhm.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.callbacks.mpl_plotting.plot_peak_stats">
-<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">plot_peak_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peak_stats</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#plot_peak_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.plot_peak_stats" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.mpl_plotting.</span></span><span class="sig-name descname"><span class="pre">plot_peak_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peak_stats</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/mpl_plotting.html#plot_peak_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.mpl_plotting.plot_peak_stats" title="Link to this definition">#</a></dt>
 <dd><p>Plot data and various peak statistics.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1047,7 +1413,7 @@ be the fwhm.</p>
 </section>
 </section>
 <section id="best-effort-callback">
-<span id="id2"></span><h2>Best-Effort Callback<a class="headerlink" href="#best-effort-callback" title="Link to this heading">¶</a></h2>
+<span id="id2"></span><h2>Best-Effort Callback<a class="headerlink" href="#best-effort-callback" title="Link to this heading">#</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>This is a new, experimental feature. It will likely be changed in future
@@ -1072,30 +1438,30 @@ plans in <code class="xref py py-mod docutils literal notranslate"><span class="
 <span class="gp">In [9]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>  <span class="c1"># automatically prints table, shows plot</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-04-17 15:12:43</span>
-<span class="go">Persistent Unique Scan ID: &#39;9f3bc597-794e-4275-86e1-553671acdec4&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-04-17 17:16:05</span>
+<span class="go">Persistent Unique Scan ID: &#39;2588ba79-c411-4e7b-b4f9-51ff52a773b0&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:12:43.9 |      1.000 |      0.000 |      0.271 |</span>
-<span class="go">|         2 | 15:12:44.2 |      2.000 |      0.000 |      0.271 |</span>
-<span class="go">|         3 | 15:12:44.4 |      3.000 |      0.000 |      0.271 |</span>
-<span class="go">|         4 | 15:12:44.6 |      4.000 |      0.000 |      0.271 |</span>
-<span class="go">|         5 | 15:12:44.9 |      5.000 |      0.000 |      0.271 |</span>
+<span class="go">|         1 | 17:16:05.0 |      1.000 |      0.000 |      0.271 |</span>
+<span class="go">|         2 | 17:16:05.3 |      2.000 |      0.000 |      0.271 |</span>
+<span class="go">|         3 | 17:16:05.5 |      3.000 |      0.000 |      0.271 |</span>
+<span class="go">|         4 | 17:16:05.8 |      4.000 |      0.000 |      0.271 |</span>
+<span class="go">|         5 | 17:16:06.0 |      5.000 |      0.000 |      0.271 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;9f3bc597&#39;] (scan num: 2)</span>
+<span class="go">generator scan [&#39;2588ba79&#39;] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">(&#39;9f3bc597-794e-4275-86e1-553671acdec4&#39;,)</span>
+<span class="gh">Out[9]: </span><span class="go">(&#39;2588ba79-c411-4e7b-b4f9-51ff52a773b0&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
 <img alt="_images/callbacks-8.png" class="plot-directive" src="_images/callbacks-8.png" />
 </figure>
 <p>Use these methods to toggle on or off parts of the functionality.</p>
-<table class="autosummary longtable docutils align-default">
+<table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.callbacks.best_effort.BestEffortCallback.html#bluesky.callbacks.best_effort.BestEffortCallback" title="bluesky.callbacks.best_effort.BestEffortCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BestEffortCallback</span></code></a>(*[, fig_factory, ...])</p></td>
 <td><p></p></td>
@@ -1134,7 +1500,7 @@ subsequent runs are plotted on the same axes. It is <code class="docutils litera
 Overplotting only occurs if the names of the axes are the same from one plot
 to the next.</p>
 <section id="peak-stats">
-<h3>Peak Stats<a class="headerlink" href="#peak-stats" title="Link to this heading">¶</a></h3>
+<h3>Peak Stats<a class="headerlink" href="#peak-stats" title="Link to this heading">#</a></h3>
 <p>For each plot, simple peak-fitting is performed in the background. Of
 course, it may or may not be applicable depending on your data, and it is
 not shown by default. To view fitting annotations in a plot, click the
@@ -1143,7 +1509,7 @@ plot area and press Shift+P. (Lowercase p is a shortcut for
 <p>To access the peak-fit statistics programmatically, use <code class="docutils literal notranslate"><span class="pre">bec.peaks</span></code>.</p>
 </section>
 <section id="hints">
-<span id="id3"></span><h3>Hints<a class="headerlink" href="#hints" title="Link to this heading">¶</a></h3>
+<span id="id3"></span><h3>Hints<a class="headerlink" href="#hints" title="Link to this heading">#</a></h3>
 <p>The best-effort callback aims to print and plot useful information without
 being overwhelmingly comprehensive. Its usefulness is improved and tuned by the
 <code class="docutils literal notranslate"><span class="pre">hints</span></code> attribute on devices (if available) and <code class="docutils literal notranslate"><span class="pre">hints</span></code> metadata injected
@@ -1198,9 +1564,9 @@ decided whether to visualize 2D data with LiveGrid or with LiveScatter.</p>
 </section>
 </section>
 <section id="callback-for-export">
-<span id="export"></span><h2>Callback for Export<a class="headerlink" href="#callback-for-export" title="Link to this heading">¶</a></h2>
+<span id="export"></span><h2>Callback for Export<a class="headerlink" href="#callback-for-export" title="Link to this heading">#</a></h2>
 <section id="exporting-image-data-as-tiff-files">
-<h3>Exporting Image Data as TIFF Files<a class="headerlink" href="#exporting-image-data-as-tiff-files" title="Link to this heading">¶</a></h3>
+<h3>Exporting Image Data as TIFF Files<a class="headerlink" href="#exporting-image-data-as-tiff-files" title="Link to this heading">#</a></h3>
 <p>First, compose a filename template. The template can include metadata or event
 data from the scan.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># a template that includes the scan ID and sequence number in each filename</span>
@@ -1250,7 +1616,7 @@ experiment may not be acceptable.</p>
 recommended to use these expensive callbacks in a separate process.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.broker.LiveTiffExporter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.broker.</span></span><span class="sig-name descname"><span class="pre">LiveTiffExporter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/broker.html#LiveTiffExporter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.broker.LiveTiffExporter" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.broker.</span></span><span class="sig-name descname"><span class="pre">LiveTiffExporter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/broker.html#LiveTiffExporter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.broker.LiveTiffExporter" title="Link to this definition">#</a></dt>
 <dd><p>Save TIFF files.</p>
 <p>Incorporate metadata and data from individual data points in the filenames.</p>
 <dl class="field-list simple">
@@ -1282,7 +1648,7 @@ singleton</p>
 
 </section>
 <section id="export-all-data-and-metadata-in-an-hdf5-file">
-<h3>Export All Data and Metadata in an HDF5 File<a class="headerlink" href="#export-all-data-and-metadata-in-an-hdf5-file" title="Link to this heading">¶</a></h3>
+<h3>Export All Data and Metadata in an HDF5 File<a class="headerlink" href="#export-all-data-and-metadata-in-an-hdf5-file" title="Link to this heading">#</a></h3>
 <p>A Stop Document is emitted at the end of every run. Subscribe to it, using it
 as a cue to load the dataset via the DataBroker and export an HDF5 file
 using <a class="reference external" href="https://nsls-ii.github.io/suitcase">suitcase</a>.</p>
@@ -1303,7 +1669,7 @@ using <a class="reference external" href="https://nsls-ii.github.io/suitcase">su
 </div>
 </section>
 <section id="export-metadata-to-the-olog">
-<h3>Export Metadata to the Olog<a class="headerlink" href="#export-metadata-to-the-olog" title="Link to this heading">¶</a></h3>
+<h3>Export Metadata to the Olog<a class="headerlink" href="#export-metadata-to-the-olog" title="Link to this heading">#</a></h3>
 <p>The <a class="reference external" href="http://olog.github.io/2.2.7-SNAPSHOT/">Olog</a> (“operational log”) is an
 electronic logbook. We can use a callback to automatically generate log entries
 at the beginning of a run. The Python interface to Olog is not straightforward,
@@ -1369,7 +1735,7 @@ determine which template to use.</p>
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.callbacks.olog.logbook_cb_factory">
-<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.olog.</span></span><span class="sig-name descname"><span class="pre">logbook_cb_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logbook_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc_template</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_template</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc_dispatch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_dispatch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/olog.html#logbook_cb_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.olog.logbook_cb_factory" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.olog.</span></span><span class="sig-name descname"><span class="pre">logbook_cb_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logbook_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc_template</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_template</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc_dispatch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_dispatch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/olog.html#logbook_cb_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.olog.logbook_cb_factory" title="Link to this definition">#</a></dt>
 <dd><p>Create a logbook run_start callback</p>
 <p>The returned function is suitable for registering as
 a ‘start’ callback on the the BlueSky run engine.</p>
@@ -1401,7 +1767,7 @@ description and attachments respectively.</p>
 </section>
 </section>
 <section id="verify-data-has-been-saved">
-<h2>Verify Data Has Been Saved<a class="headerlink" href="#verify-data-has-been-saved" title="Link to this heading">¶</a></h2>
+<h2>Verify Data Has Been Saved<a class="headerlink" href="#verify-data-has-been-saved" title="Link to this heading">#</a></h2>
 <p>The following verifies that all Documents and external files from a run have
 been saved to disk and are accessible from the DataBroker.  It prints a message
 indicating success or failure.</p>
@@ -1415,7 +1781,7 @@ false alarm.</p>
 </div>
 </section>
 <section id="ignoring-callback-exceptions">
-<span id="debugging-callbacks"></span><h2>Ignoring Callback Exceptions<a class="headerlink" href="#ignoring-callback-exceptions" title="Link to this heading">¶</a></h2>
+<span id="debugging-callbacks"></span><h2>Ignoring Callback Exceptions<a class="headerlink" href="#ignoring-callback-exceptions" title="Link to this heading">#</a></h2>
 <p>If an exception is raised while processing a callback, the error can interrupt
 data collection. Sometimes, this is good: if, for example, the callback that is
 saving your data encounters an error, you want to know immediately rather than
@@ -1426,7 +1792,7 @@ These decorators may be used to wrap callbacks so that any errors they
 encounter are converted to log messages.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.callbacks.core.make_callback_safe">
-<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.core.</span></span><span class="sig-name descname"><span class="pre">make_callback_safe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/core.html#make_callback_safe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.core.make_callback_safe" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.core.</span></span><span class="sig-name descname"><span class="pre">make_callback_safe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/core.html#make_callback_safe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.core.make_callback_safe" title="Link to this definition">#</a></dt>
 <dd><p>If the wrapped func raises any exceptions, log them but continue.</p>
 <p>This is intended to ensure that any failures in non-critical callbacks do
 not interrupt data acquisition. It should <em>not</em> be applied to any
@@ -1456,7 +1822,7 @@ it fails.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.callbacks.core.make_class_safe">
-<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.core.</span></span><span class="sig-name descname"><span class="pre">make_class_safe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_wrap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/core.html#make_class_safe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.core.make_class_safe" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.core.</span></span><span class="sig-name descname"><span class="pre">make_class_safe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_wrap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/core.html#make_class_safe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.core.make_class_safe" title="Link to this definition">#</a></dt>
 <dd><p>If the wrapped func raises any exceptions, log them but continue.</p>
 <p>This is intended to ensure that any failures in non-critical callbacks do
 not interrupt data acquisition. It should <em>not</em> be applied to any
@@ -1497,7 +1863,7 @@ exceptions globally, but this feature is not recommended.</p>
 </div>
 </section>
 <section id="filtering-by-document-type">
-<span id="filtering"></span><h2>Filtering by Document Type<a class="headerlink" href="#filtering-by-document-type" title="Link to this heading">¶</a></h2>
+<span id="filtering"></span><h2>Filtering by Document Type<a class="headerlink" href="#filtering-by-document-type" title="Link to this heading">#</a></h2>
 <p>There are four “subscriptions” that a callback to receive documents from:</p>
 <ul class="simple">
 <li><p>‘start’</p></li>
@@ -1519,11 +1885,11 @@ documents, specify the document routing explicitly. Examples:</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">subs_decorator</span></code>, presented above, accepts the same variety of inputs.</p>
 </section>
 <section id="writing-custom-callbacks">
-<h2>Writing Custom Callbacks<a class="headerlink" href="#writing-custom-callbacks" title="Link to this heading">¶</a></h2>
+<h2>Writing Custom Callbacks<a class="headerlink" href="#writing-custom-callbacks" title="Link to this heading">#</a></h2>
 <p>Any function that accepts a Python dictionary as its argument can be used as
 a callback. Refer to simple examples above to get started.</p>
 <section id="two-simple-custom-callbacks">
-<h3>Two Simple Custom Callbacks<a class="headerlink" href="#two-simple-custom-callbacks" title="Link to this heading">¶</a></h3>
+<h3>Two Simple Custom Callbacks<a class="headerlink" href="#two-simple-custom-callbacks" title="Link to this heading">#</a></h3>
 <p>These simple examples illustrate the concept and the usage.</p>
 <p>First, we define a function that takes two arguments</p>
 <ol class="arabic simple">
@@ -1545,20 +1911,20 @@ We are setting up a <em>subscription</em>.</p>
 <span class="gp">In [13]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="p">{</span><span class="s1">&#39;event&#39;</span><span class="p">:</span> <span class="n">print_data</span><span class="p">})</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2024-04-17 15:12:46</span>
-<span class="go">Persistent Unique Scan ID: &#39;79a30d88-cf51-4094-b007-8db72d73985f&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2024-04-17 17:16:07</span>
+<span class="go">Persistent Unique Scan ID: &#39;2929b0a9-c23a-4ef3-beca-c3a51701d03f&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 15:12:46.3 |      0.000 |</span>
+<span class="go">|         1 | 17:16:07.4 |      0.000 |</span>
 <span class="go">Measured: {&#39;det&#39;: 3.726653172078671e-06}</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;79a30d88&#39;] (scan num: 3)</span>
+<span class="go">generator count [&#39;2929b0a9&#39;] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[13]: </span><span class="go">(&#39;79a30d88-cf51-4094-b007-8db72d73985f&#39;,)</span>
+<span class="gh">Out[13]: </span><span class="go">(&#39;2929b0a9-c23a-4ef3-beca-c3a51701d03f&#39;,)</span>
 </pre></div>
 </div>
 <p>Each time the RunEngine generates a new Event Document (i.e., data point)
@@ -1585,7 +1951,7 @@ For example:</p>
 </div>
 </section>
 <section id="using-multiple-document-types">
-<h3>Using multiple document types<a class="headerlink" href="#using-multiple-document-types" title="Link to this heading">¶</a></h3>
+<h3>Using multiple document types<a class="headerlink" href="#using-multiple-document-types" title="Link to this heading">#</a></h3>
 <p>Some tasks use only one Document type, but we often need to use more than one.
 For example, LiveTable uses ‘start’ kick off the creation of a fresh table,
 it uses ‘event’ to see the data, and it uses ‘stop’ to draw the bottom border.</p>
@@ -1614,7 +1980,7 @@ simple omit methods that aren’t required.</p>
 </section>
 </section>
 <section id="subscriptions-in-separate-processes-or-host-with-0mq">
-<span id="zmq-callback"></span><h2>Subscriptions in Separate Processes or Host with 0MQ<a class="headerlink" href="#subscriptions-in-separate-processes-or-host-with-0mq" title="Link to this heading">¶</a></h2>
+<span id="zmq-callback"></span><h2>Subscriptions in Separate Processes or Host with 0MQ<a class="headerlink" href="#subscriptions-in-separate-processes-or-host-with-0mq" title="Link to this heading">#</a></h2>
 <p>Because subscriptions are processed during a scan, it’s possible that they can
 slow down data collection. We mitigate this by making the subscriptions run in
 a separate process.</p>
@@ -1629,7 +1995,7 @@ be run if they were in the local <code class="docutils literal notranslate"><spa
 same proxy. RemoteDispatchers can filter the document stream based a byte
 prefix.</p>
 <section id="minimal-example">
-<h3>Minimal Example<a class="headerlink" href="#minimal-example" title="Link to this heading">¶</a></h3>
+<h3>Minimal Example<a class="headerlink" href="#minimal-example" title="Link to this heading">#</a></h3>
 <p>Start a 0MQ proxy using the CLI packaged with bluesky. It requires two ports as
 arguments.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bluesky-0MQ-proxy<span class="w"> </span><span class="m">5577</span><span class="w"> </span><span class="m">5578</span>
@@ -1722,10 +2088,10 @@ to publish documents to the proxy.</p>
 RemoteDispatcher should print the documents generated by this plan.</p>
 </section>
 <section id="publisher-remotedispatcher-api">
-<h3>Publisher / RemoteDispatcher API<a class="headerlink" href="#publisher-remotedispatcher-api" title="Link to this heading">¶</a></h3>
+<h3>Publisher / RemoteDispatcher API<a class="headerlink" href="#publisher-remotedispatcher-api" title="Link to this heading">#</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.Proxy">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">#</a></dt>
 <dd><p>Start a 0MQ proxy on the local host.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1778,7 +2144,7 @@ interrupted and is therefore unusable.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.Publisher">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix=b''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RE=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serializer=&lt;built-in</span> <span class="pre">function</span> <span class="pre">dumps&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Publisher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Publisher" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix=b''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RE=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serializer=&lt;built-in</span> <span class="pre">function</span> <span class="pre">dumps&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Publisher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Publisher" title="Link to this definition">#</a></dt>
 <dd><p>A callback that publishes documents to a 0MQ proxy.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1812,7 +2178,7 @@ mocking its interface is accepted.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.RemoteDispatcher">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">RemoteDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix=b''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq_asyncio=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deserializer=&lt;built-in</span> <span class="pre">function</span> <span class="pre">loads&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#RemoteDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.RemoteDispatcher" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">RemoteDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix=b''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq_asyncio=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deserializer=&lt;built-in</span> <span class="pre">function</span> <span class="pre">loads&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#RemoteDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.RemoteDispatcher" title="Link to this definition">#</a></dt>
 <dd><p>Dispatch documents received over the network from a 0MQ proxy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1848,7 +2214,7 @@ else mocking its interface is accepted.</p>
 </section>
 </section>
 <section id="secondary-event-stream">
-<h2>Secondary Event Stream<a class="headerlink" href="#secondary-event-stream" title="Link to this heading">¶</a></h2>
+<h2>Secondary Event Stream<a class="headerlink" href="#secondary-event-stream" title="Link to this heading">#</a></h2>
 <p>For certain applications, it may desirable to interpret event documents as
 they are created instead of waiting for them to reach offline storage. In order
 to keep this information completely quarantined from the raw data, the
@@ -1924,10 +2290,10 @@ class.</p>
 </pre></div>
 </div>
 <section id="livedispatcher-api">
-<h3>LiveDispatcher API<a class="headerlink" href="#livedispatcher-api" title="Link to this heading">¶</a></h3>
+<h3>LiveDispatcher API<a class="headerlink" href="#livedispatcher-api" title="Link to this heading">#</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.stream.</span></span><span class="sig-name descname"><span class="pre">LiveDispatcher</span></span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.stream.</span></span><span class="sig-name descname"><span class="pre">LiveDispatcher</span></span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher" title="Link to this definition">#</a></dt>
 <dd><p>A secondary event stream of processed data</p>
 <p>The LiveDipatcher base implementation does not change any of the data
 emitted, this task is left to sub-classes, but instead handles
@@ -1948,19 +2314,19 @@ RunEngine, effectively creating a small chain of callbacks</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.descriptor">
-<span class="sig-name descname"><span class="pre">descriptor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.descriptor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.descriptor" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">descriptor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.descriptor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.descriptor" title="Link to this definition">#</a></dt>
 <dd><p>Store a descriptor</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.emit">
-<span class="sig-name descname"><span class="pre">emit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.emit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.emit" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">emit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.emit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.emit" title="Link to this definition">#</a></dt>
 <dd><p>Check the document schema and send to the dispatcher</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.event">
-<span class="sig-name descname"><span class="pre">event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.event" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.event" title="Link to this definition">#</a></dt>
 <dd><p>Receive an event document from the raw stream.</p>
 <p>This should be reimplemented by a subclass.</p>
 <dl class="field-list simple">
@@ -1976,7 +2342,7 @@ RunEngine, effectively creating a small chain of callbacks</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.process_event">
-<span class="sig-name descname"><span class="pre">process_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'primary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.process_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.process_event" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">process_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'primary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.process_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.process_event" title="Link to this definition">#</a></dt>
 <dd><p>Process a modified event document then emit it for the modified stream</p>
 <p>This will pass an Event document to the dispatcher. If we have received
 a new event descriptor from the original stream, or we have received a
@@ -2005,25 +2371,25 @@ anywhere.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.start">
-<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_md</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.start" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_md</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.start" title="Link to this definition">#</a></dt>
 <dd><p>Receive a raw start document, re-emit it for the modified stream</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.stop">
-<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_md</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.stop" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_md</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.stop" title="Link to this definition">#</a></dt>
 <dd><p>Receive a raw stop document, re-emit it for the modified stream</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.subscribe">
-<span class="sig-name descname"><span class="pre">subscribe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.subscribe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.subscribe" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">subscribe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.subscribe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.subscribe" title="Link to this definition">#</a></dt>
 <dd><p>Convenience function for dispatcher subscription</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.callbacks.stream.LiveDispatcher.unsubscribe">
-<span class="sig-name descname"><span class="pre">unsubscribe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.unsubscribe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.unsubscribe" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">unsubscribe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/stream.html#LiveDispatcher.unsubscribe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.stream.LiveDispatcher.unsubscribe" title="Link to this definition">#</a></dt>
 <dd><p>Convenience function for dispatcher un-subscription</p>
 </dd></dl>
 
@@ -2034,34 +2400,239 @@ anywhere.</p>
 </section>
 
 
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="metadata.html" class="btn btn-neutral float-left" title="Recording Metadata" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="generated/bluesky.callbacks.best_effort.BestEffortCallback.html" class="btn btn-neutral float-right" title="bluesky.callbacks.best_effort.BestEffortCallback" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
-        </div>
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="metadata.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Recording Metadata</p>
       </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+    </a>
+    <a class="right-next"
+       href="generated/bluesky.callbacks.best_effort.BestEffortCallback.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">bluesky.callbacks.best_effort.BestEffortCallback</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-</body>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview-of-callbacks">Overview of Callbacks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simplest-working-example">Simplest Working Example</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ways-to-invoke-callbacks">Ways to Invoke Callbacks</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#interactively">Interactively</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#persistently">Persistently</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#through-a-plan">Through a plan</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#callbacks-for-visualization-fitting">Callbacks for Visualization &amp; Fitting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#livetable">LiveTable</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.LiveTable"><code class="docutils literal notranslate"><span class="pre">LiveTable</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#aside-making-plots-update-live">Aside: Making plots update live</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.utils.install_kicker"><code class="docutils literal notranslate"><span class="pre">install_kicker()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.utils.install_qt_kicker"><code class="docutils literal notranslate"><span class="pre">install_qt_kicker()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.utils.install_nb_kicker"><code class="docutils literal notranslate"><span class="pre">install_nb_kicker()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#liveplot-for-scalar-data">LivePlot (for scalar data)</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.mpl_plotting.LivePlot"><code class="docutils literal notranslate"><span class="pre">LivePlot</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#live-image">Live Image</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.broker.LiveImage"><code class="docutils literal notranslate"><span class="pre">LiveImage</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#livegrid-gridded-heat-map">LiveGrid (gridded heat map)</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.mpl_plotting.LiveGrid"><code class="docutils literal notranslate"><span class="pre">LiveGrid</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#livescatter-scattered-heat-map">LiveScatter (scattered heat map)</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.mpl_plotting.LiveScatter"><code class="docutils literal notranslate"><span class="pre">LiveScatter</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#livefit">LiveFit</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.LiveFit"><code class="docutils literal notranslate"><span class="pre">LiveFit</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#livefitplot">LiveFitPlot</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.mpl_plotting.LiveFitPlot"><code class="docutils literal notranslate"><span class="pre">LiveFitPlot</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#peakstats">PeakStats</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.fitting.PeakStats"><code class="docutils literal notranslate"><span class="pre">PeakStats</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.mpl_plotting.plot_peak_stats"><code class="docutils literal notranslate"><span class="pre">plot_peak_stats()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#best-effort-callback">Best-Effort Callback</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#peak-stats">Peak Stats</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hints">Hints</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#callback-for-export">Callback for Export</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exporting-image-data-as-tiff-files">Exporting Image Data as TIFF Files</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.broker.LiveTiffExporter"><code class="docutils literal notranslate"><span class="pre">LiveTiffExporter</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#export-all-data-and-metadata-in-an-hdf5-file">Export All Data and Metadata in an HDF5 File</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#export-metadata-to-the-olog">Export Metadata to the Olog</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.olog.logbook_cb_factory"><code class="docutils literal notranslate"><span class="pre">logbook_cb_factory()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#verify-data-has-been-saved">Verify Data Has Been Saved</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ignoring-callback-exceptions">Ignoring Callback Exceptions</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.core.make_callback_safe"><code class="docutils literal notranslate"><span class="pre">make_callback_safe()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.core.make_class_safe"><code class="docutils literal notranslate"><span class="pre">make_class_safe()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#filtering-by-document-type">Filtering by Document Type</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#writing-custom-callbacks">Writing Custom Callbacks</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#two-simple-custom-callbacks">Two Simple Custom Callbacks</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#using-multiple-document-types">Using multiple document types</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#subscriptions-in-separate-processes-or-host-with-0mq">Subscriptions in Separate Processes or Host with 0MQ</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#minimal-example">Minimal Example</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#publisher-remotedispatcher-api">Publisher / RemoteDispatcher API</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.zmq.Proxy"><code class="docutils literal notranslate"><span class="pre">Proxy</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.zmq.Publisher"><code class="docutils literal notranslate"><span class="pre">Publisher</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.zmq.RemoteDispatcher"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#secondary-event-stream">Secondary Event Stream</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#livedispatcher-api">LiveDispatcher API</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.descriptor"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.descriptor()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.emit"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.emit()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.event"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.event()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.process_event"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.process_event()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.start"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.start()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.stop"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.stop()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.subscribe"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.subscribe()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.callbacks.stream.LiveDispatcher.unsubscribe"><code class="docutils literal notranslate"><span class="pre">LiveDispatcher.unsubscribe()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a4.dev64+g57027b3b/docs/callbacks.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/callbacks.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
 </html>

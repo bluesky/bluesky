@@ -1,53 +1,520 @@
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
-<head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IPython ‘Magics’ [Experimental] &mdash; bluesky 1.13.0a4.dev59+g6362ba15 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>IPython ‘Magics’ [Experimental] &#8212; bluesky 1.13.0a4.dev64+g57027b3b documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <link href="_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
-        <script src="_static/documentation_options.js?v=ff9dcf53"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/js/theme.js"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="_static/documentation_options.js?v=dff96ffe"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'magics';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev64+g57027b3b';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Translating Direct PyEpics Code to Bluesky Code" href="from-pyepics-to-bluesky.html" />
-    <link rel="prev" title="bluesky.utils.DefaultDuringTask" href="generated/bluesky.utils.DefaultDuringTask.html" /> 
-</head>
+    <link rel="prev" title="bluesky.utils.DefaultDuringTask" href="generated/bluesky.utils.DefaultDuringTask.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
 
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <script>document.write(`<img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark" alt=""/>`);</script>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-          <a href="index.html" class="icon icon-home">
-            bluesky
-          </a>
-              <div class="version">
-                1.13.0a4.dev59+g6362ba15
-              </div>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
-<ul class="current">
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userindex.html">
+                        User Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="devindex.html">
+                        Developer Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+                        bluesky
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+                        ophyd
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+                        databroker
+                      </a>
+                    </li>
+                
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links-2">
+                    More
+                </button>
+                <ul id="pst-nav-more-links-2" class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+                        amostra
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+                        datamuxer
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+                        suitcase
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+                        NSLS-II Repositories
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+                        Bug Reports
+                      </a>
+                    </li>
+                
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-3"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-3"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-3"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-3">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
 <li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
@@ -62,84 +529,77 @@
 <li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">IPython ‘Magics’ [Experimental]</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#what-are-magics">What Are ‘Magics’?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#bluesky-magics">Bluesky Magics</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#moving-a-motor">Moving a Motor</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#taking-a-reading-using-ct-post-v1-3-0">Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Post v1.3.0)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#aside-on-the-automagic-feature-in-ipython">Aside on the automagic feature in IPython</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#listing-available-motors-using-wa-post-v1-3-0">Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Post v1.3.0)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#comparison-with-spec">Comparison with SPEC</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#taking-a-reading-using-ct-pre-v1-3-0">Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Pre v1.3.0)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#listing-available-motors-using-wa-pre-v1-3-0">Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Pre v1.3.0)</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">IPython ‘Magics’ [Experimental]</a></li>
 <li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
 <li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run_engine.html">The RunEngine run loop</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Collection</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/ophyd">ophyd</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Data Access and Management</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/databroker">databroker</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/amostra">amostra</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://nsls-ii.github.io/datamuxer">datamuxer</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://blueskyproject.io/suitcase">suitcase</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">GitHub Links</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/">NSLS-II Repositories</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/NSLS-II/Bug-Reports/issues">Bug Reports</a></li>
-</ul>
-
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">bluesky</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">IPython ‘Magics’ [Experimental]</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/magics.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="userindex.html" class="nav-link">User Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">IPython...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="ipython-magics-experimental">
-<h1>IPython ‘Magics’ [Experimental]<a class="headerlink" href="#ipython-magics-experimental" title="Link to this heading">¶</a></h1>
+<h1>IPython ‘Magics’ [Experimental]<a class="headerlink" href="#ipython-magics-experimental" title="Link to this heading">#</a></h1>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>This section covers an experimental feature of bluesky. It may be altered
 or removed in the future.</p>
 </div>
 <section id="what-are-magics">
-<h2>What Are ‘Magics’?<a class="headerlink" href="#what-are-magics" title="Link to this heading">¶</a></h2>
+<h2>What Are ‘Magics’?<a class="headerlink" href="#what-are-magics" title="Link to this heading">#</a></h2>
 <p>IPython is an interactive Python interpreter designed for and by scientists. It includes a feature called “magics” — convenience commands that aren’t part of the Python language itself. For example, <code class="docutils literal notranslate"><span class="pre">%history</span></code> is a magic:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
 
@@ -157,7 +617,7 @@ and, further,
 <a class="reference external" href="https://ipython.readthedocs.io/en/stable/config/custommagics.html">how to define custom magics</a>.</p>
 </section>
 <section id="bluesky-magics">
-<h2>Bluesky Magics<a class="headerlink" href="#bluesky-magics" title="Link to this heading">¶</a></h2>
+<h2>Bluesky Magics<a class="headerlink" href="#bluesky-magics" title="Link to this heading">#</a></h2>
 <p>Bundled with bluesky are some IPython magics. They are intended for maintenance
 tasks or casual sanity checks.  <strong>Intentionally, none of the magics save data;
 for that you should use the RunEngine and plans.</strong></p>
@@ -172,7 +632,7 @@ for that you should use the RunEngine and plans.</strong></p>
 </pre></div>
 </div>
 <section id="moving-a-motor">
-<h3>Moving a Motor<a class="headerlink" href="#moving-a-motor" title="Link to this heading">¶</a></h3>
+<h3>Moving a Motor<a class="headerlink" href="#moving-a-motor" title="Link to this heading">#</a></h3>
 <p>Suppose you want to move a motor interactively. You can use the <code class="docutils literal notranslate"><span class="pre">%mov</span></code> magic:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [7]: </span><span class="o">%</span><span class="k">mov</span> motor1 42
 </pre></div>
@@ -193,7 +653,7 @@ move multiple devices in parallel like so:</p>
 be described in the next section.</p>
 </section>
 <section id="taking-a-reading-using-ct-post-v1-3-0">
-<h3>Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Post v1.3.0)<a class="headerlink" href="#taking-a-reading-using-ct-post-v1-3-0" title="Link to this heading">¶</a></h3>
+<h3>Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Post v1.3.0)<a class="headerlink" href="#taking-a-reading-using-ct-post-v1-3-0" title="Link to this heading">#</a></h3>
 <p>Before we may make use of the power of magics for counting, we must “label”
 this hardware. To add a label, we must give hardware a <code class="docutils literal notranslate"><span class="pre">labels={'mylabel'}</span></code>
 keyword argument. For example, here we initialize five simulated signals: two
@@ -224,8 +684,8 @@ results to the screen without saving them or doing any fancy processing. Use
 the <code class="docutils literal notranslate"><span class="pre">%ct</span></code> magic:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="o">%</span><span class="k">ct</span> area_detectors
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.39928065 0.78794261]</span>
-<span class="go"> [0.19010476 0.02908554]]</span>
+<span class="go">adet1                          [[0.01263752 0.98324762]</span>
+<span class="go"> [0.89428495 0.0482148 ]]</span>
 </pre></div>
 </div>
 <p>Where the names after count are a list of whitespace separated labels. In this
@@ -233,28 +693,28 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <p>Running <code class="docutils literal notranslate"><span class="pre">%ct</span></code> without arguments looks for the <code class="docutils literal notranslate"><span class="pre">detectors</span></code> label by default:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [17]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.96437499 0.02811098]</span>
-<span class="go"> [0.6142399  0.18039671]]</span>
+<span class="go">adet1                          [[0.43713771 0.14319609]</span>
+<span class="go"> [0.89891584 0.90862193]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.57187445]</span>
+<span class="go">pointdet1                      [0.56488082]</span>
 </pre></div>
 </div>
 <p>In this case, we count both on the area detector and the point detector.</p>
 </section>
 <section id="aside-on-the-automagic-feature-in-ipython">
-<h3>Aside on the automagic feature in IPython<a class="headerlink" href="#aside-on-the-automagic-feature-in-ipython" title="Link to this heading">¶</a></h3>
+<h3>Aside on the automagic feature in IPython<a class="headerlink" href="#aside-on-the-automagic-feature-in-ipython" title="Link to this heading">#</a></h3>
 <p>If IPython’s ‘automagic’ feature is enabled, IPython will even let you drop the
 <code class="docutils literal notranslate"><span class="pre">%</span></code> as long as the meaning is unambiguous:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [18]: </span><span class="n">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.9083948  0.06308753]</span>
-<span class="go"> [0.83302363 0.2672501 ]]</span>
+<span class="go">adet1                          [[0.00448421 0.31635687]</span>
+<span class="go"> [0.0338464  0.6488458 ]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.32711669]</span>
+<span class="go">pointdet1                      [0.58798897]</span>
 
 <span class="gp">In [19]: </span><span class="n">ct</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Now ct is a variable so automagic will not work...</span>
 
@@ -264,19 +724,19 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <span class="go"># ... but the magic still works.</span>
 <span class="gp">In [21]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.38517165 0.40636191]</span>
-<span class="go"> [0.38882728 0.28288936]]</span>
+<span class="go">adet1                          [[0.95694412 0.32028842]</span>
+<span class="go"> [0.79401436 0.40862815]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.99110762]</span>
+<span class="go">pointdet1                      [0.85452467]</span>
 </pre></div>
 </div>
 <p>For what it’s worth, we recommend disabling ‘automagic’. The <code class="docutils literal notranslate"><span class="pre">%</span></code> is useful
 for flagging what follows as magical, non-Python code.</p>
 </section>
 <section id="listing-available-motors-using-wa-post-v1-3-0">
-<h3>Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Post v1.3.0)<a class="headerlink" href="#listing-available-motors-using-wa-post-v1-3-0" title="Link to this heading">¶</a></h3>
+<h3>Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Post v1.3.0)<a class="headerlink" href="#listing-available-motors-using-wa-post-v1-3-0" title="Link to this heading">#</a></h3>
 <p>Finally, the <code class="docutils literal notranslate"><span class="pre">%wa</span></code> magic displays the a list of labeled devices.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [22]: </span><span class="o">%</span><span class="k">wa</span> scan_motors
 <span class="go">scan_motors</span>
@@ -343,7 +803,7 @@ to have the same device in more than one list when calling <code class="docutils
 the user to decide whether they want overlapping labels or not.</p>
 </section>
 <section id="comparison-with-spec">
-<h3>Comparison with SPEC<a class="headerlink" href="#comparison-with-spec" title="Link to this heading">¶</a></h3>
+<h3>Comparison with SPEC<a class="headerlink" href="#comparison-with-spec" title="Link to this heading">#</a></h3>
 <p>The names of these magics, and the order of the parameters they take, are meant
 to feel familiar to users of <a class="reference internal" href="comparison-with-spec.html"><span class="doc">SPEC</span></a>.</p>
 <p>Again, they must be registered with IPython before they can be used:</p>
@@ -353,22 +813,22 @@ to feel familiar to users of <a class="reference internal" href="comparison-with
 </div>
 </section>
 <section id="taking-a-reading-using-ct-pre-v1-3-0">
-<h3>Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Pre v1.3.0)<a class="headerlink" href="#taking-a-reading-using-ct-pre-v1-3-0" title="Link to this heading">¶</a></h3>
+<h3>Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Pre v1.3.0)<a class="headerlink" href="#taking-a-reading-using-ct-pre-v1-3-0" title="Link to this heading">#</a></h3>
 <p>Previously, you could set a default list of detectors and them use <code class="docutils literal notranslate"><span class="pre">%ct</span></code>
 without any parameters. This behaviour is deprecated. Do not use this:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [24]: </span><span class="n">BlueskyMagics</span><span class="o">.</span><span class="n">detectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">area_detector</span><span class="p">,</span> <span class="n">point_detector</span><span class="p">]</span>
 
 <span class="gp">In [25]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.34513813 0.64100572]</span>
-<span class="go"> [0.41643835 0.85230086]]</span>
-<span class="go">pointdet1                      [0.02218278]</span>
+<span class="go">adet1                          [[0.9175226  0.04505371]</span>
+<span class="go"> [0.11561744 0.81255113]]</span>
+<span class="go">pointdet1                      [0.68824252]</span>
 </pre></div>
 </div>
 <p>This is no longer supported.</p>
 </section>
 <section id="listing-available-motors-using-wa-pre-v1-3-0">
-<h3>Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Pre v1.3.0)<a class="headerlink" href="#listing-available-motors-using-wa-pre-v1-3-0" title="Link to this heading">¶</a></h3>
+<h3>Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Pre v1.3.0)<a class="headerlink" href="#listing-available-motors-using-wa-pre-v1-3-0" title="Link to this heading">#</a></h3>
 <p>Previously, it was possible to supply a list of motors. This feature is also
 deprecated. Do not use this:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [26]: </span><span class="n">BlueskyMagics</span><span class="o">.</span><span class="n">positioners</span> <span class="o">=</span> <span class="p">[</span><span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">]</span>
@@ -379,7 +839,7 @@ deprecated. Do not use this:</p>
 <span class="go">motor2                         0           AttributeError AttributeError AttributeError</span>
 </pre></div>
 </div>
-<table class="docutils align-default">
+<table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Magic</p></th>
 <th class="head"><p>Plan Invoked</p></th>
@@ -405,34 +865,144 @@ deprecated. Do not use this:</p>
 </section>
 
 
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="generated/bluesky.utils.DefaultDuringTask.html" class="btn btn-neutral float-left" title="bluesky.utils.DefaultDuringTask" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="from-pyepics-to-bluesky.html" class="btn btn-neutral float-right" title="Translating Direct PyEpics Code to Bluesky Code" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>&#169; Copyright 2015, Brookhaven National Lab.</p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
-        </div>
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="generated/bluesky.utils.DefaultDuringTask.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">bluesky.utils.DefaultDuringTask</p>
       </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+    </a>
+    <a class="right-next"
+       href="from-pyepics-to-bluesky.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Translating Direct PyEpics Code to Bluesky Code</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-</body>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-are-magics">What Are ‘Magics’?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky-magics">Bluesky Magics</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#moving-a-motor">Moving a Motor</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#taking-a-reading-using-ct-post-v1-3-0">Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Post v1.3.0)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#aside-on-the-automagic-feature-in-ipython">Aside on the automagic feature in IPython</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#listing-available-motors-using-wa-post-v1-3-0">Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Post v1.3.0)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#comparison-with-spec">Comparison with SPEC</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#taking-a-reading-using-ct-pre-v1-3-0">Taking a reading using <code class="docutils literal notranslate"><span class="pre">%ct</span></code> (Pre v1.3.0)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#listing-available-motors-using-wa-pre-v1-3-0">Listing available motors using <code class="docutils literal notranslate"><span class="pre">%wa</span></code> (Pre v1.3.0)</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a4.dev64+g57027b3b/docs/magics.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/magics.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
 </html>
