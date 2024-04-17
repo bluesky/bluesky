@@ -69,6 +69,7 @@ dev = [
     "ruff",
     "scikit-image",
     "scipy",
+    "sphinx<7.3",
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
