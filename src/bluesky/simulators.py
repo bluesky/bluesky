@@ -1,4 +1,4 @@
-from typing import Any, Callable, Generator, Optional, Sequence, Union
+from typing import Any, Callable, Generator, List, Optional, Sequence, Union
 from warnings import warn
 
 from bluesky.log import logger as LOGGER
@@ -246,7 +246,7 @@ class RunEngineSimulator:
             if callback_docname == "all" or callback_docname == document_name:
                 callback_func(document_name, document)
 
-    def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> list[Msg]:
+    def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> List[Msg]:
         """Simulate the RunEngine executing the plan
         Args:
             gen: the generator function that executes the plan
@@ -277,7 +277,7 @@ class RunEngineSimulator:
 
 
 def assert_message_and_return_remaining(
-    messages: list[Msg],
+    messages: List[Msg],
     predicate: Callable[[Msg], bool],
     group: Optional[str] = None,
 ):
