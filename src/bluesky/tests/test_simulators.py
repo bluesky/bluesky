@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Generator
+from typing import Any, Generator
 from unittest.mock import MagicMock
 
 import pytest
@@ -85,16 +85,18 @@ def test_plot_raster_path(hw):
 
 
 def test_simulator_simulates_simple_plan():
-    def simple_plan() -> Generator[Msg, object, object]:
+    def simple_plan() -> Generator[Msg, Any, Any]:
         yield from bps.null()
 
     sim = RunEngineSimulator()
     messages = sim.simulate_plan(simple_plan())
     assert len(messages) == 1
-    assert messages[0] == Msg('null')
+    assert messages[0] == Msg("null")
+
 
 def test_simulator_add_handler(hw):
     callback = MagicMock()
+
     def do_sleep():
         yield from bps.sleep("60")
 
@@ -107,6 +109,7 @@ def test_simulator_add_handler(hw):
     assert len(msgs) == 1
     assert msgs[0].command == "sleep"
 
+
 def test_simulator_add_read_handler(hw):
     def trigger_and_return_position():
         yield from bps.trigger(hw.ab_det)
@@ -117,9 +120,11 @@ def test_simulator_add_read_handler(hw):
     sim.add_read_handler("det_a", 5, "det_a")
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
-    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "trigger" and msg.obj.name ==
-                                                                 "det")
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "det"
+    )
     assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
+
 
 def test_simulator_add_wait_handler(hw):
     def trigger_and_return_position():
@@ -135,32 +140,27 @@ def test_simulator_add_wait_handler(hw):
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
-    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "trigger" and msg.obj.name ==
-                                                                 "det")
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "det"
+    )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
     assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
+
 
 def test_fire_callback(hw):
     callback = MagicMock()
     run_start_uid = uuid.uuid4()
     descriptor_uid = uuid.uuid4()
     event_uid = uuid.uuid4()
+
     def take_a_reading():
         yield from bps.subscribe("all", callback)
         yield from bp.count([hw.det], num=1)
 
-    start_doc = {
-        "plan_name": "count",
-        "uid": run_start_uid
-    }
-    descriptor_doc = {
-        "run_start": run_start_uid,
-        "uid": descriptor_uid
-    }
-    event_doc = {
-        "descriptor": descriptor_uid,
-        "uid": event_uid
-    }
+    start_doc = {"plan_name": "count", "uid": run_start_uid}
+    descriptor_doc = {"run_start": run_start_uid, "uid": descriptor_uid}
+    event_doc = {"descriptor": descriptor_uid, "uid": event_uid}
+
     def handle_open_run(msg):
         sim.fire_callback("start", start_doc)
 
@@ -185,7 +185,6 @@ def test_fire_callback(hw):
     assert calls[2].args == ("event", event_doc)
 
 
-
 def test_assert_message_and_return_remaining(hw):
     def take_three_readings():
         yield from bp.count([hw.det], num=3)
@@ -193,17 +192,25 @@ def test_assert_message_and_return_remaining(hw):
     sim = RunEngineSimulator()
     msgs = sim.simulate_plan(take_three_readings())
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "stage" and msg.obj.name == "det")
-    msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "open_run" and msg.kwargs[
-        "plan_name"] == "count" and msg.kwargs["num_points"] == 3)
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "open_run"
+        and msg.kwargs["plan_name"] == "count"
+        and msg.kwargs["num_points"] == 3,
+    )
     for _ in range(0, 3):
         msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "checkpoint")
-        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "trigger" and msg.obj.name
-                                                                     == "det")
+        msgs = assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "det"
+        )
         trigger_group = msgs[0].kwargs["group"]
-        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait" and msg.kwargs[
-            "group"] == trigger_group)  # noqa: B023
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "wait" and msg.kwargs["group"] == trigger_group,  # noqa: B023
+        )
         msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "create")
-        msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name ==
-                                                                     "det")
+        msgs = assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "read" and msg.obj.name == "det"
+        )
         msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "save")
     assert msgs[1].command == "close_run"

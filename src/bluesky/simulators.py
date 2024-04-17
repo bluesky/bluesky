@@ -142,14 +142,19 @@ class RunEngineSimulator:
         You will need to call this as one of the first things if you wish to fire callbacks from the simulator.
         """
         self.message_handlers.append(
-            MessageHandler(
+            _MessageHandler(
                 lambda msg: msg.command == "subscribe",
                 lambda msg: self._add_callback(msg.args),
             )
         )
 
-    def add_handler(self, handler: Callable[[Msg], object], commands: Union[str, Sequence[str]],
-                    obj_name: Optional[str] = None, predicate: Optional[Callable[[Msg], bool]] = None):
+    def add_handler(
+        self,
+        handler: Callable[[Msg], object],
+        commands: Union[str, Sequence[str]],
+        obj_name: Optional[str] = None,
+        predicate: Optional[Callable[[Msg], bool]] = None,
+    ):
         """Add the specified handler for a particular message. The handler is prepended so that
         newer handlers override older ones.
         Args:
@@ -165,14 +170,16 @@ class RunEngineSimulator:
         if isinstance(commands, str):
             commands = [commands]
 
-        self.message_handlers.insert(0,
-                                     MessageHandler(
-                                         lambda msg: msg.command in commands
-                                             and ((predicate and predicate(msg))
-                                             or (obj_name is None or (msg.obj and msg.obj.name == obj_name))),
-                                         handler,
-                                     )
-                                     )
+        self.message_handlers.insert(
+            0,
+            _MessageHandler(
+                lambda msg: msg.command in commands
+                and (
+                    (predicate and predicate(msg)) or (obj_name is None or (msg.obj and msg.obj.name == obj_name))
+                ),
+                handler,
+            ),
+        )
 
     def add_read_handler(self, obj_name, value, dict_key="values"):
         """
@@ -198,9 +205,7 @@ class RunEngineSimulator:
 
         self.add_handler(lambda _: {dict_key: {"value": value}}, "read", obj_name)
 
-    def add_wait_handler(
-            self, handler: Callable[[Msg], None], group: str = GROUP_ANY
-    ) -> None:
+    def add_wait_handler(self, handler: Callable[[Msg], None], group: str = GROUP_ANY) -> None:
         """Add a wait handler for a particular message
         Args:
             handler: a lambda that accepts a Msg, use this to execute any code that simulates something that's
@@ -223,9 +228,9 @@ class RunEngineSimulator:
             ... sim.simulate_plan(close_shutter())
         """
         self.message_handlers.append(
-            MessageHandler(
+            _MessageHandler(
                 lambda msg: msg.command == "wait"
-                            and (group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group),
+                and (group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group),
                 handler,
             )
         )
@@ -241,7 +246,7 @@ class RunEngineSimulator:
             if callback_docname == "all" or callback_docname == document_name:
                 callback_func(document_name, document)
 
-    def simulate_plan(self, gen: Generator[Msg, object, object]) -> list[Msg]:
+    def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> list[Msg]:
         """Simulate the RunEngine executing the plan
         Args:
             gen: the generator function that executes the plan
@@ -257,9 +262,7 @@ class RunEngineSimulator:
                 send_value = None
                 messages.append(msg)
                 LOGGER.debug(f"<{msg}")
-                if handler := next(
-                        (h for h in self.message_handlers if h.predicate(msg)), None
-                ):
+                if handler := next((h for h in self.message_handlers if h.predicate(msg)), None):
                     send_value = handler.runnable(msg)
 
                 if send_value:
@@ -284,18 +287,14 @@ def assert_message_and_return_remaining(
     indices = [
         i
         for i in range(len(messages))
-        if (
-            not group
-            or (messages[i].kwargs and messages[i].kwargs.get("group") == group)
-        )
+        if (not group or (messages[i].kwargs and messages[i].kwargs.get("group") == group))
         and predicate(messages[i])
     ]
     assert indices, f"Nothing matched predicate {predicate}"
     return messages[indices[0] :]
 
 
-class MessageHandler:
-    """"""
+class _MessageHandler:
     def __init__(self, p: Callable[[Msg], bool], r: Callable[[Msg], object]):
         self.predicate = p
         self.runnable = r
