@@ -76,9 +76,46 @@ class AbstractDataView1D(AbstractDataView):
         if len(lbl_to_add) > 0:
             self.add_data(lbl_list=lbl_to_add, x_list=x_to_add, y_list=y_to_add)
 
+    def append_data2(self, lbl_list, x_list, y_list):
+        """
+        Append (x, y) coordinates to datasets identified by labels. If a dataset
+        for a label does not exist, it initializes a new dataset with the given
+        coordinates.
+
+        Parameters:
+        lbl_list : list of str
+            Names of the datasets to append data to.
+        x_list : list of np.ndarray
+            List of arrays containing x-coordinates for each label.
+        y_list : list of np.ndarray
+            List of arrays containing y-coordinates for each label.
+
+        x length must equal y length
+        """
+        new_labels = set(lbl_list) - self._data_dict.keys()  # Identify all new labels
+        existing_labels = set(lbl_list) & self._data_dict.keys()  # Identify all existing labels
+
+        # Prepare new data for bulk addition
+        new_data = {lbl: (x, y) for lbl, x, y in zip(lbl_list, x_list, y_list) if lbl in new_labels}
+
+        # Append new data in bulk where possible
+        if new_data:
+            self.add_data(
+                lbl_list=list(new_data.keys()),
+                x_list=[x[0] for x in new_data.values()],
+                y_list=[x[1] for x in new_data.values()],
+            )
+
+        # Update existing datasets
+        for lbl in existing_labels:
+            index = lbl_list.index(lbl)  # Get the index of the label from the original list
+            x, y = x_list[index], y_list[index]
+            prev_x, prev_y = self._data_dict[lbl]
+            self._data_dict[lbl] = (np.concatenate((prev_x, x)), np.concatenate((prev_y, y)))
+
 
 class AbstractDataView2D(AbstractDataView):
-    def __init__(self, data_list, key_list, *args, **kwargs):
+    def __init__(self, data_list: dict, ordered_key_list: list, *args, **kwargs):
         """
         Parameters
         ----------
@@ -92,9 +129,9 @@ class AbstractDataView2D(AbstractDataView):
             (x0, y0, x1, y1)
         """
         # super().__init__(data_list=data_list, key_list=key_list, *args, **kwargs)
-        super().__init__(data_list=data_list, key_list=key_list, **kwargs)
+        super().__init__(data_list=data_list, key_list=ordered_key_list, **kwargs)
 
-    def add_data(self, lbl_list, xy_list, corners_list=None, position=None):
+    def add_data(self, lbl_list: list[str], xy_list: np.ndarray, corners_list=None, position=None):
         """
         add data with the name 'lbl'.  Will overwrite data if
         'lbl' already exists in the data dictionary
@@ -103,10 +140,8 @@ class AbstractDataView2D(AbstractDataView):
         ----------
         lbl : String
             Name of the data set
-        x : np.ndarray
-            single vector of x-coordinates
-        y : np.ndarray
-            single vector of y-coordinates
+        xy_list : np.ndarray of x, y coordinates
+            vector of xy-coordinates
         position: int
             The position in the key list to begin inserting the data.
             Default (None) behavior is to append to the end of the list

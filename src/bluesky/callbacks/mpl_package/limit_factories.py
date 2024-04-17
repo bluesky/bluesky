@@ -68,12 +68,12 @@ def absolute_limit_factory(limit_args):
     return _absolute_limit
 
 
-def percentile_limit_factory(limit_args):
+def percentile_limit_factory(limit_args: tuple[float]):
     """
     Factory to return a percentile limit function
     """
 
-    def _percentile_limit(im):
+    def _percentile_limit(image_data: np.ndarray):
         """
         Sets limits based on percentile.
 
@@ -92,6 +92,6 @@ def percentile_limit_factory(limit_args):
            set the color limits of a ColorMappable object.
 
         """
-        return np.percentile(im, limit_args)
+        return np.percentile(image_data, limit_args)
 
     return _percentile_limit

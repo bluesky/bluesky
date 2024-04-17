@@ -84,7 +84,7 @@ class CrossSection2DView(AbstractDataView2D, AbstractMPLDataView):
         """
         # call up the inheritance chain
         super().__init__(
-            fig=base_figure, data_list=data_list, key_list=key_list, norm=normalization_function, cmap=cmap
+            fig=base_figure, data_list=data_list, ordered_key_list=key_list, norm=normalization_function, cmap=cmap
         )
         self._cross_section = CrossSection(
             base_figure, colormap=self._cmap, norm=self._norm, limit_func=limit_func, interpolation=interpolation
@@ -120,7 +120,7 @@ class CrossSection2DView(AbstractDataView2D, AbstractMPLDataView):
         """
         self._cross_section.update_limit_func(limit_func)
 
-    def update_interpolation(self, interpolation):
+    def update_interpolation(self, interpolation: InterpolationEnum):
         """
         Update the way that matplotlib interpolates the image. Default is none
 
