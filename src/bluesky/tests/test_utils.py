@@ -6,7 +6,6 @@ import pytest
 from cycler import cycler
 
 from bluesky import RunEngine
-from bluesky.plan_stubs import null
 from bluesky.utils import (
     CallbackRegistry,
     Msg,
