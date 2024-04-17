@@ -1071,7 +1071,8 @@ class RunEngine:
                     #
                     # Here we cheat a bit and use ctypes.
                     num_threads = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                        ctypes.c_ulong(self._th.ident), ctypes.py_object(_RunEnginePanic)
+                        ctypes.c_ulong(self._th.ident),
+                        ctypes.py_object(_RunEnginePanic),
                     )
                     # however, if the thread is in a system call (such
                     # as sleep or I/O) there is no way to interrupt it
@@ -1638,12 +1639,9 @@ class RunEngine:
                         self._msg_cache.append(msg)
 
                     # try to look up the coroutine to execute the command
-                    try:
-                        coro = self._command_registry[msg.command]
-                    # replace KeyError with a local sub-class and go
-                    # to top of the loop
-                    except KeyError:
-                        # TODO make this smarter
+                    if (coro := self._command_registry.get(msg.command, sentinel := object())) is sentinel:
+                        # Look up failed, so generate explanatory response
+                        # and continue the loop from the top
                         new_response = InvalidCommand(msg.command)
                         continue
 
@@ -1865,15 +1863,13 @@ class RunEngine:
         """
         # TODO extract this from the Msg
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence(
-                "A 'close_run' message was not received before the 'open_run' message"
-            ) from ke
-        ret = await current_run.close_run(msg)
-        del self._run_bundlers[run_key]
-        return ret
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is sentinel:
+            ims_msg = "A 'close_run' message was not received before the 'open_run' message"
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            ret = await current_run.close_run(msg)
+            del self._run_bundlers[run_key]
+            return ret
 
     async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
@@ -1891,15 +1887,15 @@ class RunEngine:
         Descriptor document.
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence(
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is sentinel:
+            ims_msg = (
                 "Cannot bundle readings without "
                 "an open run. That is, 'create' must "
                 "be preceded by 'open_run'."
-            ) from ke
-        return await current_run.create(msg)
+            )
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            return await current_run.create(msg)
 
     async def _declare_stream(self, msg):
         """Trigger the run engine to start bundling future obj.describe() calls for
@@ -1918,15 +1914,15 @@ class RunEngine:
         on declare_stream, rather than `describe`.
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence(
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is sentinel:
+            ims_msg = (
                 "Cannot bundle readings without "
                 "an open run. That is, 'create' must "
                 "be preceded by 'open_run'."
-            ) from ke
-        return await current_run.declare_stream(msg)
+            )
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            return await current_run.declare_stream(msg)
 
     async def _read(self, msg):
         """
@@ -1948,11 +1944,7 @@ class RunEngine:
                 "`read` must return a dictionary."
             )
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError:
-            ...
-        else:
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is not sentinel:
             await current_run.read(msg, ret)
 
         return ret
@@ -1996,12 +1988,12 @@ class RunEngine:
         """
 
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'monitor' message was sent but no run is open.") from ke
-        await current_run.monitor(msg)
-        await self._reset_checkpoint_state_coro()
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is not sentinel:
+            ims_msg = "A 'monitor' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.monitor(msg)
+            await self._reset_checkpoint_state_coro()
 
     async def _unmonitor(self, msg):
         """
@@ -2012,12 +2004,12 @@ class RunEngine:
             Msg('unmonitor', obj)
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'unmonitor' message was sent but no run is open.") from ke
-        await current_run.unmonitor(msg)
-        await self._reset_checkpoint_state_coro()
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is not sentinel:
+            ims_msg = "A 'unmonitor' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.unmonitor(msg)
+            await self._reset_checkpoint_state_coro()
 
     async def _save(self, msg):
         """Save the event that is currently being bundled
@@ -2027,14 +2019,13 @@ class RunEngine:
             Msg('save')
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            # sanity check -- this should be caught by 'create' which makes
-            # this code path impossible
-            raise IllegalMessageSequence("A 'save' message was sent but no run is open.") from ke
-
-        await current_run.save(msg)
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is not sentinel:
+            # sanity check:  This should have been caught by 'create'
+            # so this code path should not be traversed
+            ims_msg = "A 'save' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.save(msg)
 
     async def _drop(self, msg):
         """Drop the event that is currently being bundled
@@ -2044,11 +2035,11 @@ class RunEngine:
             Msg('drop')
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'drop' message was sent but no run is open.") from ke
-        await current_run.drop(msg)
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is not sentinel:
+            ims_msg = "A 'drop' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.drop(msg)
 
     async def _prepare(self, msg):
         """Prepare a flyer for a flyscan
@@ -2104,10 +2095,9 @@ class RunEngine:
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'kickoff' message was sent but no run is open.") from ke
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is not sentinel:
+            ims_msg = "A 'kickoff' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
 
         _, obj, args, kwargs, _ = msg
         obj = check_supports(obj, Flyable)
@@ -2190,12 +2180,11 @@ class RunEngine:
             Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'collect' message was sent but no run is open.") from ke
-
-        return await current_run.collect(msg)
+        if (current_run := self._run_bundlers.get(run_key, sentinel := object())) is not sentinel:
+            ims_msg = "A 'collect' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            return await current_run.collect(msg)
 
     async def _null(self, msg):
         """
@@ -2439,19 +2428,16 @@ class RunEngine:
             object.configure(*args, **kwargs)
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError:
-            current_run = None
+        current_run = self._run_bundlers.get(run_key)
+        if current_run is not None and current_run.bundling:
+            ims_msg = "Cannot configure after 'create' but before 'save' Aborting!"
+            raise IllegalMessageSequence(ims_msg)
         else:
-            if current_run.bundling:
-                raise IllegalMessageSequence("Cannot configure after 'create' but before 'save' Aborting!")
-        _, obj, args, kwargs, _ = msg
-
-        old, new = obj.configure(*args, **kwargs)
-        if current_run:
-            await current_run.configure(msg)
-        return old, new
+            _, obj, args, kwargs, _ = msg
+            old, new = obj.configure(*args, **kwargs)
+            if current_run:
+                await current_run.configure(msg)
+            return old, new
 
     def _add_status_to_group(self, obj: typing.Any, status_object: Status, group: str, action: str) -> None:
         p_event = asyncio.Event(**self._loop_for_kwargs)
@@ -2572,11 +2558,9 @@ class RunEngine:
         where ``TOKEN`` is the return value from ``RunEngine._subscribe()``
         """
         self.log.debug("Removing subscription %r", msg)
-        _, obj, args, kwargs, _ = msg
-        try:
-            token = kwargs["token"]
-        except KeyError:
-            (token,) = args
+        _, obj, arg, kwargs, _ = msg
+        if (token := kwargs.get("token", sentinel := object())) is not sentinel:
+            (token,) = arg
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
         await self._reset_checkpoint_state_coro()
