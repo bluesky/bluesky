@@ -1497,7 +1497,7 @@ def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] 
     """
     take_reading = trigger_and_read if take_reading is None else take_reading
     yield Msg("checkpoint")
-    yield from take_reading(list(detectors))
+    yield from take_reading(list(detectors))  # type: ignore  # Movable issue
 
 
 def one_1d_step(
@@ -1614,13 +1614,13 @@ def one_nd_step(
     take_reading = trigger_and_read if take_reading is None else take_reading
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
-    yield from take_reading(list(detectors) + list(motors))
+    yield from take_reading(list(detectors) + list(motors))  # type: ignore  # Movable issue
 
 
 def repeat(
     plan: Callable[[], MsgGenerator],
     num: Optional[int] = 1,
-    delay: Optional[ScalarOrIterableFloat] = 0.0,
+    delay: ScalarOrIterableFloat = 0.0,
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
@@ -1655,6 +1655,7 @@ def repeat(
     the plan will raise a ``ValueError`` during iteration.
     """
     # Create finite or infinite counter
+    iterator: Iterable
     if num is None:
         iterator = itertools.count()
     else:

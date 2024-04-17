@@ -189,7 +189,7 @@ def list_scan(
         "detectors": [det.name for det in detectors],
         "motors": motor_names,
         "num_points": length,
-        "num_intervals": length - 1,
+        "num_intervals": length - 1,  # type: ignore
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
         "plan_name": "list_scan",
         "plan_pattern": "inner_list_product",
@@ -449,7 +449,7 @@ def _scan_1d(
     :func:`bluesky.plans.rel_scan`
     """
     _check_detectors_type_input(detectors)
-    _md = {
+    _md: CustomPlanMetadata = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name],
         "num_points": num,
@@ -573,7 +573,7 @@ def log_scan(
     :func:`bluesky.plans.rel_log_scan`
     """
     _check_detectors_type_input(detectors)
-    _md = {
+    _md: CustomPlanMetadata = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name],
         "num_points": num,
@@ -1234,7 +1234,7 @@ def scan(
         num = args[-1]  # type: ignore
         args = args[:-1]
 
-    if not (float(num).is_integer() and num > 0.0):
+    elif not (float(num).is_integer() and num > 0.0):
         raise ValueError(
             f"The parameter `num` is expected to be a number of "
             f"steps (not step size!) It must therefore be a "
