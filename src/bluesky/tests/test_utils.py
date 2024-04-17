@@ -506,7 +506,7 @@ https://github.com/bluesky/bluesky/issues"""
 
 @ensure_plan_iterated
 def sample_plan():
-    yield from null()
+    return (yield Msg("null"))
 
 
 def iterating_plan():
