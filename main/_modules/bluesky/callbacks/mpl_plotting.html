@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bluesky.callbacks.mpl_plotting &mdash; bluesky 1.13.0a4.dev54+gb482d141 documentation</title>
+  <title>bluesky.callbacks.mpl_plotting &mdash; bluesky 1.13.0a4.dev57+ga054fab2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
@@ -13,7 +13,7 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../../_static/documentation_options.js?v=c9ca9714"></script>
+        <script src="../../../_static/documentation_options.js?v=eaa9d357"></script>
         <script src="../../../_static/doctools.js?v=888ff710"></script>
         <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             bluesky
           </a>
               <div class="version">
-                1.13.0a4.dev54+gb482d141
+                1.13.0a4.dev57+ga054fab2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -576,6 +576,10 @@
 <span class="sd">        Defines the positive direction of the y axis, takes the values &#39;up&#39;</span>
 <span class="sd">        (default) or &#39;down&#39;.</span>
 
+<span class="sd">    title : string, optional</span>
+<span class="sd">        Override title of plot. If None (default), title is generated from the scan</span>
+<span class="sd">        ID. Set to empty string to remove title.</span>
+
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :class:`bluesky.callbacks.mpl_plotting.LiveScatter`.</span>
@@ -595,6 +599,7 @@
         <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">x_positive</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
         <span class="n">y_positive</span><span class="o">=</span><span class="s2">&quot;up&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -604,7 +609,7 @@
         <span class="k">def</span> <span class="nf">setup</span><span class="p">():</span>
             <span class="c1"># Run this code in start() so that it runs on the correct thread.</span>
             <span class="k">nonlocal</span> <span class="n">raster_shape</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">clim</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">xlabel</span><span class="p">,</span> <span class="n">ylabel</span><span class="p">,</span> <span class="n">extent</span>  <span class="c1"># noqa: E741</span>
-            <span class="k">nonlocal</span> <span class="n">aspect</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">x_positive</span><span class="p">,</span> <span class="n">y_positive</span><span class="p">,</span> <span class="n">kwargs</span>
+            <span class="k">nonlocal</span> <span class="n">aspect</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">x_positive</span><span class="p">,</span> <span class="n">y_positive</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">kwargs</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">__setup_lock</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__setup_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
                     <span class="k">return</span>
@@ -632,6 +637,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">aspect</span> <span class="o">=</span> <span class="n">aspect</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">x_positive</span> <span class="o">=</span> <span class="n">x_positive</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">y_positive</span> <span class="o">=</span> <span class="n">y_positive</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">title</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__setup</span> <span class="o">=</span> <span class="n">setup</span>
 
@@ -674,7 +680,11 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;y_positive must be either &quot;up&quot; or &quot;down&quot;&#39;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">im</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;scan </span><span class="si">{uid}</span><span class="s2"> [</span><span class="si">{sid}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sid</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;scan_id&quot;</span><span class="p">],</span> <span class="n">uid</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">][:</span><span class="mi">6</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">title</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="s2">&quot;scan </span><span class="si">{uid}</span><span class="s2"> [</span><span class="si">{sid}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sid</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;scan_id&quot;</span><span class="p">],</span> <span class="n">uid</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">][:</span><span class="mi">6</span><span class="p">])</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">snaking</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;snaking&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
 
         <span class="n">cb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">)</span>
