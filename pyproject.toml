@@ -34,7 +34,6 @@ requires-python = ">=3.8"
 
 [project.optional-dependencies]
 dev = [
-    "area-detector-handlers",
     "attrs",
     "cloudpickle",
     "copier",
@@ -84,7 +83,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
-    "tiled[all]",
+    "tiled[all,dev]",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]

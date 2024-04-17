@@ -3,12 +3,11 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from area_detector_handlers import HandlerBase
 from event_model import DocumentRouter, RunRouter
 from event_model.documents import StreamDatum, StreamResource
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
-from tiled.client.utils import MSGPACK_MIME_TYPE, handle_error
+from tiled.client.utils import handle_error
 from tiled.structures.array import ArrayStructure, BuiltinDtype
 from tiled.structures.core import Spec, StructureFamily
 from tiled.structures.data_source import Asset, DataSource, Management
@@ -69,7 +68,7 @@ class Thing:
         return array
 
 
-class StreamHandlerBase(HandlerBase):
+class StreamHandlerBase:
     mimetype: str = ""
     _num_rows: int = 0
 
@@ -375,7 +374,5 @@ class _RunWriter(DocumentRouter):
             sr_node.context.http_client.put(
                 endpoint,
                 content=safe_json_dump({"data_source": data_source}),
-                headers={"Accept": MSGPACK_MIME_TYPE},
-                params={"data_source": 1},
             )
         ).json()
