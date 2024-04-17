@@ -33,11 +33,12 @@ from .utils import (
 PerShot = Callable[[Sequence[Readable], Optional[bps.TakeReading]], MsgGenerator]
 
 #: Plan function that can be used for each step in a scan
+PerStep1D = Callable[[Sequence[Readable], Movable, Any, Optional[bps.TakeReading]], MsgGenerator]
 PerStep = Callable[
     [
         Sequence[Readable],
         Mapping[Movable, Any],
-        Any,
+        Dict[Movable, Any],
         Optional[bps.TakeReading],
     ],
     MsgGenerator,
@@ -420,7 +421,7 @@ def _scan_1d(
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
+    per_step: Optional[PerStep1D] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
     """
