@@ -1020,7 +1020,7 @@ def stage(
     return ret
 
 
-def stage_all(
+def stage_all(  # type: ignore
     *args: Stageable,
     group: Optional[Hashable] = None,
 ) -> MsgGenerator:
@@ -1103,7 +1103,7 @@ def unstage(
     return ret
 
 
-def unstage_all(*args: Stageable, group: Optional[Hashable] = None) -> MsgGenerator:
+def unstage_all(*args: Stageable, group: Optional[Hashable] = None) -> MsgGenerator:  # type: ignore
     """
     'Unstage' one or more devices (i.e., put them in standby, 'disarm' them).
 
@@ -1402,7 +1402,7 @@ def broadcast_msg(
     return return_vals
 
 
-def repeater(
+def repeater(  # type: ignore
     n: Optional[int],
     gen_func: Callable[..., MsgGenerator],
     *args,
@@ -1439,7 +1439,7 @@ def repeater(
         yield from gen_func(*args, **kwargs)
 
 
-def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator:
+def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator:  # type: ignore
     """
     Generate n chained copies of the messages in a plan.
 
@@ -1471,7 +1471,7 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator:
         yield from (m for m in lst_plan)
 
 
-def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator:
+def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator:  # type: ignore
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1550,7 +1550,7 @@ def one_1d_step(
     return (yield from take_reading(list(detectors) + [motor]))
 
 
-def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any]) -> MsgGenerator:
+def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any]) -> MsgGenerator:  # type: ignore
     """
     Inner loop of an N-dimensional step scan without any readings
 
@@ -1578,7 +1578,7 @@ def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any])
     yield Msg("wait", None, group=grp)
 
 
-def one_nd_step(
+def one_nd_step(  # type: ignore
     detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
     pos_cache: Mapping[Movable, Any],

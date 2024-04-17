@@ -25,7 +25,6 @@ from .utils import (
     CustomPlanMetadata,
     Msg,
     MsgGenerator,
-    ReadableDeviceSequence,
     ScalarOrIterableFloat,
     get_hinted_fields,
 )
@@ -51,7 +50,7 @@ def _check_detectors_type_input(detectors):
 
 
 def count(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     num: Optional[int] = 1,
     delay: Optional[ScalarOrIterableFloat] = None,
     *,
@@ -118,7 +117,7 @@ def count(
 
 
 def list_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args: Tuple[Union[Movable, Any], List[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -221,7 +220,7 @@ def list_scan(
 
 
 def rel_list_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -278,7 +277,7 @@ def rel_list_scan(
 
 
 def list_grid_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -353,7 +352,7 @@ def list_grid_scan(
 
 
 def rel_list_grid_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -415,7 +414,7 @@ def rel_list_grid_scan(
 
 
 def _scan_1d(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     motor: NamedMovable,
     start: float,
     stop: float,
@@ -492,7 +491,7 @@ def _scan_1d(
 
 
 def _rel_scan_1d(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     motor: Movable,
     start: float,
     stop: float,
@@ -539,7 +538,7 @@ def _rel_scan_1d(
 
 
 def log_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     motor: NamedMovable,
     start: float,
     stop: float,
@@ -620,7 +619,7 @@ def log_scan(
 
 
 def rel_log_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     motor: Movable,
     start: float,
     stop: float,
@@ -667,7 +666,7 @@ def rel_log_scan(
 
 
 def adaptive_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     target_field: str,
     motor: NamedMovable,
     start: float,
@@ -796,7 +795,7 @@ def adaptive_scan(
 
 
 def rel_adaptive_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     target_field: str,
     motor: Movable,
     start: float,
@@ -867,7 +866,7 @@ def rel_adaptive_scan(
 
 
 def tune_centroid(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     signal: str,
     motor: NamedMovable,
     start: float,
@@ -985,7 +984,7 @@ def tune_centroid(
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)
-            ret = yield from bps.trigger_and_read(detectors + [motor])
+            ret = yield from bps.trigger_and_read(list(detectors) + [motor])
             cur_I = ret[signal]["value"]
             sum_I += cur_I
             position = ret[motor_name]["value"]
@@ -1020,7 +1019,7 @@ def tune_centroid(
 
 
 def scan_nd(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     cycler: Cycler,
     *,
     per_step: Optional[PerStep] = None,
@@ -1164,8 +1163,8 @@ def scan_nd(
     return (yield from inner_scan_nd())
 
 
-def inner_product_scan(
-    detectors: ReadableDeviceSequence,
+def inner_product_scan(  # type: ignore
+    detectors: Sequence[Readable],
     num: int,
     *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
@@ -1179,7 +1178,7 @@ def inner_product_scan(
 
 
 def scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args: Union[Movable, Any],
     num: Optional[int] = None,
     per_step: Optional[PerStep] = None,
@@ -1289,7 +1288,7 @@ def scan(
 
 
 def grid_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args,
     snake_axes: Optional[Union[Iterable, bool]] = None,
     per_step: Optional[PerStep] = None,
@@ -1466,7 +1465,7 @@ def grid_scan(
 
 
 def rel_grid_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args: Union[Movable, Any],
     snake_axes: Optional[Union[Iterable, bool]] = None,
     per_step: Optional[PerStep] = None,
@@ -1524,8 +1523,8 @@ def rel_grid_scan(
     return (yield from inner_rel_grid_scan())
 
 
-def relative_inner_product_scan(
-    detectors: ReadableDeviceSequence,
+def relative_inner_product_scan(  # type: ignore
+    detectors: Sequence[Readable],
     num: int,
     *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
@@ -1539,7 +1538,7 @@ def relative_inner_product_scan(
 
 
 def rel_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     *args: Union[Movable, Any],
     num=None,
     per_step: Optional[PerStep] = None,
@@ -1680,7 +1679,7 @@ def tweak(
 
 
 def spiral_fermat(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     x_motor: NamedMovable,
     y_motor: NamedMovable,
     x_start: float,
@@ -1786,7 +1785,7 @@ def spiral_fermat(
 
 
 def rel_spiral_fermat(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_range: float,
@@ -1863,7 +1862,7 @@ def rel_spiral_fermat(
 
 
 def spiral(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     x_motor: NamedMovable,
     y_motor: NamedMovable,
     x_start: float,
@@ -1967,7 +1966,7 @@ def spiral(
 
 
 def rel_spiral(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_range: float,
@@ -2041,7 +2040,7 @@ def rel_spiral(
 
 
 def spiral_square(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     x_motor: NamedMovable,
     y_motor: NamedMovable,
     x_center: float,
@@ -2139,7 +2138,7 @@ def spiral_square(
 
 
 def rel_spiral_square(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_range: float,
@@ -2336,7 +2335,7 @@ def fly(
 
 
 def x2x_scan(
-    detectors: ReadableDeviceSequence,
+    detectors: Sequence[Readable],
     motor1: NamedMovable,
     motor2: NamedMovable,
     start: float,
