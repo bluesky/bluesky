@@ -5,10 +5,13 @@ import numpy as np
 import pytest
 from cycler import cycler
 
+from bluesky import RunEngine
+from bluesky.plan_stubs import null
 from bluesky.utils import (
     CallbackRegistry,
     Msg,
     ensure_generator,
+    ensure_plan_iterated,
     is_movable,
     merge_cycler,
     warn_if_msg_args_or_kwargs,
@@ -499,3 +502,33 @@ https://github.com/bluesky/bluesky/issues"""
     # Called without kwargs doesn't warn
     warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {})
     assert len(recwarn) == 0
+
+
+@ensure_plan_iterated
+def sample_plan():
+    yield from null()
+
+
+def iterating_plan():
+    yield from sample_plan()
+
+
+def non_iterating_plan():
+    yield from sample_plan()
+    sample_plan()
+
+
+@pytest.mark.parametrize("gen_func, iterated", [
+    (non_iterating_plan, False),
+    (iterating_plan, True)
+])
+def test_warning_behavior(gen_func, iterated):
+    """Test that warnings are issued correctly based on iteration."""
+    RE = RunEngine()
+    if iterated:
+        with pytest.warns(None) as record:
+            RE(gen_func())
+        assert not record.list, "There should be no warnings if fully iterated"
+    else:
+        with pytest.warns(RuntimeWarning, match=r".*was never iterated.*"):
+            RE(gen_func())
