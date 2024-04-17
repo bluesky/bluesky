@@ -1666,7 +1666,7 @@ def repeat(
         delay = itertools.repeat(delay)
     else:
         try:
-            num_delays = len(list(delay))
+            num_delays = len(delay)
         except TypeError:
             # No way to tell in advance if we have enough delays.
             pass
