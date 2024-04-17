@@ -10,6 +10,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    ParamSpec,
     Protocol,
     Tuple,
     Type,
@@ -66,6 +67,7 @@ StreamAsset = Union[
 
 
 T = TypeVar("T")
+P = ParamSpec("P")
 SyncOrAsync = Union[T, Awaitable[T]]
 SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
 

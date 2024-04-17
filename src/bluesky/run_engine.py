@@ -34,9 +34,11 @@ from .protocols import (
     Stageable,
     Status,
     Stoppable,
+    T,
     Triggerable,
     check_supports,
 )
+from .tracing import tracer
 from .utils import (
     AsyncInput,
     CallbackRegistry,
@@ -58,7 +60,6 @@ from .utils import (
     warn_if_msg_args_or_kwargs,
 )
 
-tracer = trace.get_tracer(__name__)
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
 current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
@@ -2287,7 +2288,7 @@ class RunEngine:
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:
-            trace.get_current_span().set_attribute("no_group_given", "True")
+            trace.get_current_span().set_attribute("no_group_given", True)
         futs = list(self._groups.pop(group, []))
         if futs:
             status_objs = self._status_objs.pop(group)
@@ -2811,9 +2812,6 @@ def in_bluesky_event_loop() -> bool:
     else:
         # Check if running loop is bluesky event loop
         return loop is _bluesky_event_loop
-
-
-T = typing.TypeVar("T")
 
 
 def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Optional[float] = None) -> T:
