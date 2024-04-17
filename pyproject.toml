@@ -11,6 +11,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 description = "Experiment specification & orchestration."
 dependencies = [
@@ -51,7 +52,6 @@ dev = [
     "mypy",
     "myst-parser",
     "networkx",
-    "nose",
     "numpydoc",
     "ophyd",
     "pandas",
@@ -70,6 +70,7 @@ dev = [
     "ruff",
     "scikit-image",
     "scipy",
+    "sphinx<7.3",
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
@@ -112,11 +113,17 @@ ignore_missing_imports = true # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
+# Don't collect the interactive directory which is intended for manual execution
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore src/bluesky/tests/interactive
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = ["error", "ignore::PendingDeprecationWarning", "ignore::UserWarning", "ignore::DeprecationWarning"]
+filterwarnings = [
+    "error",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "src/bluesky/tests"
 
@@ -166,7 +173,4 @@ lint.select = [
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
-exclude = [
-    "docs/source/conf.py",
-    "docs/source/examples"
-]
+exclude = ["docs/source/conf.py", "docs/source/examples"]

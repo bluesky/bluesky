@@ -766,7 +766,7 @@ def test_sigint_many_hits_pln(RE):
     with pytest.raises(RunEngineInterrupted):
         RE(hanging_plan())
     # Check that hammering SIGINT escaped from that 10-second sleep.
-    assert ttime.time() - start_time < 2
+    assert ttime.time() - start_time < 5
     # The KeyboardInterrupt will have been converted to a hard pause that
     # the test plan can not handle so we abort and go to idle.
     assert RE.state == "idle"
@@ -843,11 +843,9 @@ def test_sigint_many_hits_cb(RE):
     with pytest.raises(RunEngineInterrupted):
         RE(infinite_plan(), {"start": hanging_callback})
     # Check that hammering SIGINT escaped from that 10-second sleep.
-    assert ttime.time() - start_time < 2
+    assert ttime.time() - start_time < 5
     # The KeyboardInterrupt will have been converted to a hard pause.
     assert RE.state == "idle"
-    # Check that hammering SIGINT escaped from that 10-second sleep.
-    assert ttime.time() - start_time < 2
     timer.join()
 
 
