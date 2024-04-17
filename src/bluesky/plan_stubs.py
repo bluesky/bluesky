@@ -1430,7 +1430,7 @@ def repeater(
     --------
     :func:`bluesky.plan_stubs.caching_repeater`
     """
-    it: Union[range, itertools.count]
+    it: Any
     it = range
     if n is None:
         n = 0
@@ -1462,7 +1462,7 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]
     :func:`bluesky.plan_stubs.repeater`
     """
     warnings.warn("The caching_repeater will be removed in a future version of bluesky.", stacklevel=2)
-    gen: Union[range, itertools.count]
+    gen: Any
     if n is None:
         gen = itertools.count(0)
     else:
