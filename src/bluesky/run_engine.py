@@ -18,6 +18,7 @@ from warnings import warn
 
 from event_model import DocumentNames
 from opentelemetry import trace
+from opentelemetry.trace import Span
 from super_state_machine.errors import TransitionError
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.machines import StateMachine
@@ -430,6 +431,8 @@ class RunEngine:
             self._loop_for_kwargs = {}
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
+
+        self._run_tracing_spans: list[Span] = []
 
         # When cleared, RunEngine._run will pause until set.
         self._run_permit = None
@@ -1319,6 +1322,7 @@ class RunEngine:
         self._reason = reason
 
         self._exit_status = "abort"
+        self._destroy_open_run_tracing_spans()
 
         was_paused = self._state == "paused"
         self._state = "aborting"
@@ -1422,6 +1426,7 @@ class RunEngine:
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Halting: skipping cleanup and marking exit_status as 'abort'...")
+        self._destroy_open_run_tracing_spans()
         self._interrupted = True
         was_paused = self._state == "paused"
         self._state = "halting"
@@ -1449,6 +1454,12 @@ class RunEngine:
                     self.log.exception("Failed to stop %r.", obj)
             else:
                 self.log.debug("No 'stop' method available on %r", obj)
+
+    def _destroy_open_run_tracing_spans(self):
+        while len(self._run_tracing_spans):
+            _span = self._run_tracing_spans.pop()
+            _span.set_attribute("exit_status", "aborted")
+            _span.end()
 
     async def _run(self):
         """Pull messages from the plan, process them, send results back.
@@ -1816,6 +1827,10 @@ class RunEngine:
         where **kwargs are any additional metadata that should go into
         the RunStart document
         """
+        _span = tracer.start_span(f"{_SPAN_NAME_PREFIX} run")
+        _span.set_attribute("message", repr(msg))
+        self._run_tracing_spans.append(_span)
+
         # TODO extract this from the Msg
         run_key = msg.run
         if run_key in self._run_bundlers:
@@ -1877,7 +1892,19 @@ class RunEngine:
             ) from ke
         ret = await current_run.close_run(msg)
         del self._run_bundlers[run_key]
+        self._close_run_trace(msg)
         return ret
+
+    def _close_run_trace(self, msg):
+        exit_status = msg.exit_status if hasattr(msg, "exit_status") else self._exit_status
+        reason = msg.reason if hasattr(msg, "reason") else self._reason
+        try:
+            _span: Span = self._run_tracing_spans.pop()
+            _span.set_attribute("exit_status", exit_status)
+            _span.set_attribute("reason", reason)
+            _span.end()
+        except IndexError:
+            logger.warning("No open traces left to close!")
 
     async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for

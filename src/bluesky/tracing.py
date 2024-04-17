@@ -1,4 +1,3 @@
-
 import functools
 from typing import Callable, cast
 
@@ -10,10 +9,9 @@ from .utils import MsgGenerator
 tracer = get_tracer(__name__)
 
 
-def trace_plan(
-    tracer: Tracer, span_name: str
-) -> Callable[[Callable[P, MsgGenerator]], Callable[P, MsgGenerator]]:
+def trace_plan(tracer: Tracer, span_name: str) -> Callable[[Callable[P, MsgGenerator]], Callable[P, MsgGenerator]]:
     """Wraps a generator function in tracer.start_as_current_span(span_name)"""
+
     def wrap(f: Callable[P, MsgGenerator]) -> Callable[P, MsgGenerator]:
         @functools.wraps(f)
         def wrap_f(*args: P.args, **kwargs: P.kwargs):

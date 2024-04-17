@@ -87,6 +87,7 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
             f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
         )
 
+
 MsgGenerator = Generator[Msg, Any, None]
 
 
