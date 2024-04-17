@@ -451,7 +451,8 @@ class LiveGrid(QtAwareCallback):
         (default) or 'down'.
 
     title : string, optional
-        Title for plot
+        Override title of plot. If None (default), title is generated from the scan
+        ID. Set to empty string to remove title.
 
     See Also
     --------
@@ -472,7 +473,7 @@ class LiveGrid(QtAwareCallback):
         ax=None,
         x_positive="right",
         y_positive="up",
-        title="",
+        title=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -554,7 +555,9 @@ class LiveGrid(QtAwareCallback):
 
         self.im = im
         self.ax.set_title(
-            self.title if self.title else "scan {uid} [{sid}]".format(sid=doc["scan_id"], uid=doc["uid"][:6])
+            self.title
+            if self.title is not None
+            else "scan {uid} [{sid}]".format(sid=doc["scan_id"], uid=doc["uid"][:6])
         )
         self.snaking = doc.get("snaking", (False, False))
 
