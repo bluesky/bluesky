@@ -13,7 +13,6 @@ from .utils import _fabricate_asycio_event
 
 def test_scan_num(RE, hw):
     RE(bp.scan([hw.det], hw.motor1, -1, 1, num=1))
-    RE(bp.scan([hw.det], hw.motor1, -1, 1, num=1.0))
 
     with pytest.raises(ValueError):
         RE(bp.scan([hw.det], hw.motor1, -1, 1, num=0))

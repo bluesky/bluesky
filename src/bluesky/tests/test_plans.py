@@ -594,7 +594,7 @@ def test_grid_scans_failing(RE, hw, plan):
     # Argument detectors is a generator
     generator = (detector for detector in [hw.det1, hw.det2])
     with pytest.raises(
-        TypeError, match="The input argument must be either as a list or a tuple of reabale objects."
+        TypeError, match="The input argument must be either as a list or a tuple of Readable objects."
     ):
         args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, True, hw.motor2, 7, 8, 9, False)
         RE(plan(generator, *args))

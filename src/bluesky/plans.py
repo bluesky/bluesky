@@ -1234,7 +1234,7 @@ def scan(
         num = args[-1]  # type: ignore
         args = args[:-1]
 
-    if num and not (float(num).is_integer() and num > 0.0):
+    if not (float(num).is_integer() and num > 0.0):
         raise ValueError(
             f"The parameter `num` is expected to be a number of "
             f"steps (not step size!) It must therefore be a "
