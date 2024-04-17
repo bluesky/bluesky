@@ -32,21 +32,19 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE   #
 # POSSIBILITY OF SUCH DAMAGE.                                          #
 ########################################################################
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-from .. import QtCore, QtGui
-from six.moves import zip
-from matplotlib.widgets import Cursor
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.ticker import NullLocator, LinearLocator
-from matplotlib.colors import Normalize
-import numpy as np
-
-from . import AbstractMPLDataView
-from .. import AbstractDataView2D
 
 import logging
+
+import numpy as np
+from matplotlib.colors import Colormap, Normalize
+from matplotlib.figure import Figure
+from matplotlib.ticker import LinearLocator, NullLocator
+from matplotlib.widgets import Cursor
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from .. import AbstractDataView2D
+from . import AbstractMPLDataView
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,6 +54,7 @@ def fullrange_limit_factory(limit_args=None):
 
     limit_args is ignored.
     """
+
     def _full_range(im):
         """
         Plot the entire range of the image
@@ -84,6 +83,7 @@ def absolute_limit_factory(limit_args):
     """
     Factory for making absolute limit functions
     """
+
     def _absolute_limit(im):
         """
         Plot the image based on the min/max values in limit_args
@@ -107,6 +107,7 @@ def absolute_limit_factory(limit_args):
 
         """
         return limit_args
+
     return _absolute_limit
 
 
@@ -114,6 +115,7 @@ def percentile_limit_factory(limit_args):
     """
     Factory to return a percentile limit function
     """
+
     def _percentile_limit(im):
         """
         Sets limits based on percentile.
@@ -138,10 +140,25 @@ def percentile_limit_factory(limit_args):
     return _percentile_limit
 
 
-_INTERPOLATION = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
-                  'spline36', 'hanning', 'hamming', 'hermite', 'kaiser',
-                  'quadric', 'catrom', 'gaussian', 'bessel', 'mitchell',
-                  'sinc', 'lanczos']
+_INTERPOLATION = [
+    "none",
+    "nearest",
+    "bilinear",
+    "bicubic",
+    "spline16",
+    "spline36",
+    "hanning",
+    "hamming",
+    "hermite",
+    "kaiser",
+    "quadric",
+    "catrom",
+    "gaussian",
+    "bessel",
+    "mitchell",
+    "sinc",
+    "lanczos",
+]
 
 
 class CrossSection2DView(AbstractDataView2D, AbstractMPLDataView):
@@ -149,12 +166,22 @@ class CrossSection2DView(AbstractDataView2D, AbstractMPLDataView):
     CrossSection2DView docstring
 
     """
+
     # list of valid options for the interpolation parameter. The first one is
     # the default value.
     interpolation = _INTERPOLATION
 
-    def __init__(self, fig, data_list, key_list, cmap=None, norm=None,
-                 limit_func=None, interpolation=None, **kwargs):
+    def __init__(
+        self,
+        base_figure: Figure,
+        data_list,
+        key_list,
+        cmap: str | Colormap | None = None,
+        normalization_function: Normalize | None = None,
+        limit_func=None,
+        interpolation=None,
+        **kwargs,
+    ):
         """
         Sets up figure with cross section viewer
 
@@ -163,27 +190,20 @@ class CrossSection2DView(AbstractDataView2D, AbstractMPLDataView):
         fig : matplotlib.figure.Figure
             The figure object to build the class on, will clear
             current contents
-        cmap : str,  colormap, or None
-           color map to use.  Defaults to gray
         clim_percentile : float or None
            percentile away from 0, 100 to put the max/min limits at
            ie, clim_percentile=5 -> vmin=5th percentile vmax=95th percentile
-        norm : Normalize or None
-           Normalization function to use
         interpolation : str, optional
             Interpolation method to use. List of valid options can be found in
             CrossSection2DView.interpolation
         """
-        if 'limit_args' in kwargs:
-            raise Exception("changed API, don't use limit_args anymore, use closures")
         # call up the inheritance chain
-        super(CrossSection2DView, self).__init__(fig=fig, data_list=data_list,
-                                                 key_list=key_list, norm=norm,
-                                                 cmap=cmap)
-        self._xsection = CrossSection(fig,
-                                      cmap=self._cmap, norm=self._norm,
-                                      limit_func=limit_func,
-                                      interpolation=interpolation)
+        super().__init__(
+            fig=base_figure, data_list=data_list, key_list=key_list, norm=normalization_function, cmap=cmap
+        )
+        self._xsection = CrossSection(
+            base_figure, cmap=self._cmap, norm=self._norm, limit_func=limit_func, interpolation=interpolation
+        )
 
     def update_cmap(self, cmap):
         self._xsection.update_cmap(cmap)
@@ -232,7 +252,7 @@ def auto_redraw(func):
     def inner(self, *args, **kwargs):
         if self._fig.canvas is None:
             return
-        force_redraw = kwargs.pop('force_redraw', None)
+        force_redraw = kwargs.pop("force_redraw", None)
         if force_redraw is None:
             force_redraw = self._auto_redraw
 
@@ -250,7 +270,7 @@ def auto_redraw(func):
     return inner
 
 
-class CrossSection(object):
+class CrossSection:
     """
     Class to manage the axes, artists and properties associated with
     showing a 2D image, a cross-hair cursor and two parasite axes which
@@ -292,10 +312,10 @@ class CrossSection(object):
 
 
     """
-    def __init__(self, fig, cmap=None, norm=None,
-                 limit_func=None, auto_redraw=True, interpolation=None,
-                 aspect='equal'):
 
+    def __init__(
+        self, fig, cmap=None, norm=None, limit_func=None, auto_redraw=True, interpolation=None, aspect="equal"
+    ):
         self._cursor_position_cbs = []
         if interpolation is None:
             interpolation = _INTERPOLATION[0]
@@ -306,7 +326,7 @@ class CrossSection(object):
         if limit_func is None:
             limit_func = fullrange_limit_factory()
         if cmap is None:
-            cmap = 'gray'
+            cmap = "gray"
         # stash the color map
         self._cmap = cmap
         # set the default norm if not passed
@@ -367,13 +387,11 @@ class CrossSection(object):
 
         # set up all the other axes
         # (set up the horizontal and vertical cuts)
-        self._ax_h = divider.append_axes('top', .5, pad=0.1,
-                                         sharex=self._im_ax)
+        self._ax_h = divider.append_axes("top", 0.5, pad=0.1, sharex=self._im_ax)
         self._ax_h.yaxis.set_major_locator(LinearLocator(numticks=2))
-        self._ax_v = divider.append_axes('left', .5, pad=0.1,
-                                         sharey=self._im_ax)
+        self._ax_v = divider.append_axes("left", 0.5, pad=0.1, sharey=self._im_ax)
         self._ax_v.xaxis.set_major_locator(LinearLocator(numticks=2))
-        self._ax_cb = divider.append_axes('right', .2, pad=.5)
+        self._ax_cb = divider.append_axes("right", 0.2, pad=0.5)
         # add the color bar
         self._cb = fig.colorbar(self._im, cax=self._ax_cb)
 
@@ -387,15 +405,9 @@ class CrossSection(object):
         self._ax_v.autoscale(enable=False)
 
         # create line artists
-        self._ln_v, = self._ax_v.plot([],
-                                      [], 'k-',
-                                      animated=True,
-                                      visible=False)
+        (self._ln_v,) = self._ax_v.plot([], [], "k-", animated=True, visible=False)
 
-        self._ln_h, = self._ax_h.plot([],
-                                      [], 'k-',
-                                      animated=True,
-                                      visible=False)
+        (self._ln_h,) = self._ax_h.plot([], [], "k-", animated=True, visible=False)
 
         # backgrounds for blitting
         self._ax_v_bk = None
@@ -411,7 +423,7 @@ class CrossSection(object):
         self._clear_cid = None
 
     def add_cursor_position_cb(self, callback):
-        """ Add a callback for the cursor position in the main axes
+        """Add a callback for the cursor position in the main axes
 
         Parameters
         ----------
@@ -448,11 +460,12 @@ class CrossSection(object):
                     for cb in self._cursor_position_cbs:
                         cb(col, row)
                     for data, ax, bkg, art, set_fun in zip(
-                            (self._imdata[row, :], self._imdata[:, col]),
-                            (self._ax_h, self._ax_v),
-                            (self._ax_h_bk, self._ax_v_bk),
-                            (self._ln_h, self._ln_v),
-                            (self._ln_h.set_ydata, self._ln_v.set_xdata)):
+                        (self._imdata[row, :], self._imdata[:, col]),
+                        (self._ax_h, self._ax_v),
+                        (self._ax_h_bk, self._ax_v_bk),
+                        (self._ln_h, self._ln_v),
+                        (self._ln_h.set_ydata, self._ln_v.set_xdata),
+                    ):
                         self._fig.canvas.restore_region(bkg)
                         set_fun(data)
                         ax.draw_artist(art)
@@ -472,15 +485,12 @@ class CrossSection(object):
         Connects all of the callbacks for the motion and click events
         """
         self._disconnect_callbacks()
-        self._cur = Cursor(self._im_ax, useblit=True, color='red', linewidth=2)
-        self._move_cid = self._fig.canvas.mpl_connect('motion_notify_event',
-                                                      self._move_cb)
+        self._cur = Cursor(self._im_ax, useblit=True, color="red", linewidth=2)
+        self._move_cid = self._fig.canvas.mpl_connect("motion_notify_event", self._move_cb)
 
-        self._click_cid = self._fig.canvas.mpl_connect('button_press_event',
-                                                       self._click_cb)
+        self._click_cid = self._fig.canvas.mpl_connect("button_press_event", self._click_cb)
 
-        self._clear_cid = self._fig.canvas.mpl_connect('draw_event',
-                                                       self._clear)
+        self._clear_cid = self._fig.canvas.mpl_connect("draw_event", self._clear)
         self._fig.tight_layout()
         self._fig.canvas.draw()
 
@@ -496,7 +506,7 @@ class CrossSection(object):
             self._click_cid = None
             return
 
-        for atr in ('_move_cid', '_clear_cid', '_click_cid'):
+        for atr in ("_move_cid", "_clear_cid", "_click_cid"):
             cid = getattr(self, atr, None)
             if cid is not None:
                 self._fig.canvas.mpl_disconnect(cid)
@@ -530,12 +540,11 @@ class CrossSection(object):
         self._imdata = init_image
 
         # update the extent of the image artist
-        self._im.set_extent([-0.5, im_shape[1] + .5,
-                             im_shape[0] + .5, -0.5])
+        self._im.set_extent([-0.5, im_shape[1] + 0.5, im_shape[0] + 0.5, -0.5])
 
         # update the limits of the image axes to match the exent
-        self._im_ax.set_xlim([-.05, im_shape[1] + .5])
-        self._im_ax.set_ylim([im_shape[0] + .5, -0.5])
+        self._im_ax.set_xlim([-0.05, im_shape[1] + 0.5])
+        self._im_ax.set_ylim([im_shape[0] + 0.5, -0.5])
 
         # update the format coords printer
         numrows, numcols = im_shape
@@ -549,20 +558,18 @@ class CrossSection(object):
             if col >= 0 and col < numcols and row >= 0 and row < numrows:
                 # if it does, grab the value
                 z = self._imdata[row, col]
-                return "X: {x:d} Y: {y:d} I: {i:.2f}".format(x=col, y=row, i=z)
+                return f"X: {col:d} Y: {row:d} I: {z:.2f}"
             else:
-                return "X: {x:d} Y: {y:d}".format(x=col, y=row)
+                return f"X: {col:d} Y: {row:d}"
 
         # replace the current format_coord function
         self._im_ax.format_coord = format_coord
 
         # net deal with the parasite axes and artist
-        self._ln_v.set_data(np.zeros(im_shape[0]),
-                            np.arange(im_shape[0]))
+        self._ln_v.set_data(np.zeros(im_shape[0]), np.arange(im_shape[0]))
         self._ax_v.set_ylim([0, im_shape[0]])
 
-        self._ln_h.set_data(np.arange(im_shape[1]),
-                            np.zeros(im_shape[1]))
+        self._ln_h.set_data(np.arange(im_shape[1]), np.zeros(im_shape[1]))
         self._ax_h.set_xlim([0, im_shape[1]])
 
         # if we have a cavas, then connect/set up junk
@@ -580,8 +587,7 @@ class CrossSection(object):
         # cursor widget.  The problem is that the mpl widget
         # skips updating it's saved background if the widget is inactive
         if self._cur:
-            self._cur.background = self._cur.canvas.copy_from_bbox(
-                self._cur.canvas.figure.bbox)
+            self._cur.background = self._cur.canvas.copy_from_bbox(self._cur.canvas.figure.bbox)
 
     @property
     def interpolation(self):

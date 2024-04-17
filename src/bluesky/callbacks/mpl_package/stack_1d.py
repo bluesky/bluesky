@@ -32,18 +32,15 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE   #
 # POSSIBILITY OF SUCH DAMAGE.                                          #
 ########################################################################
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-from matplotlib import cm
-import numpy as np
-
-from .. import QtCore, QtGui
-
-from . import AbstractMPLDataView
-from .. import AbstractDataView1D
 
 import logging
+
+import numpy as np
+from matplotlib import cm
+
+from .. import AbstractDataView1D
+from . import AbstractMPLDataView
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,8 +55,7 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
     _default_vert_offset = 0
     _default_autoscale = False
 
-    def __init__(self, fig, data_list, key_list, cmap=None, norm=None,
-                 *args, **kwargs):
+    def __init__(self, fig, data_list, key_list, cmap=None, norm=None, *args, **kwargs):
         """
         __init__ docstring
 
@@ -72,9 +68,8 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
         norm : mpl.colors.Normalize
         """
         # call the parent constructors
-        super(Stack1DView, self).__init__(fig=fig, data_list=data_list,
-                                          key_list=key_list, cmap=cmap,
-                                          norm=norm, *args, **kwargs)
+        # super().__init__(fig=fig, data_list=data_list, key_list=key_list, cmap=cmap, norm=norm, *args, **kwargs)
+        super().__init__(fig=fig, data_list=data_list, key_list=key_list, cmap=cmap, norm=norm, **kwargs)
 
         # set some defaults
         self._horz_offset = self._default_horz_offset
@@ -83,7 +78,7 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
 
         # create the matplotlib axes
         self._ax = self._fig.add_subplot(1, 1, 1)
-        self._ax.set_aspect('equal')
+        self._ax.set_aspect("equal")
         # create an ordered dict of lines that has identical keys as the
         # data_dict
         self._lines_dict = self.default_dict_type()
@@ -96,8 +91,8 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
             (x, y) = self._data_dict[key]
             # plot the (x,y) data with default offsets
             self._lines_dict[key] = self._ax.plot(
-                x + counter * self._horz_offset,
-                y + counter * self._vert_offset)[0]
+                x + counter * self._horz_offset, y + counter * self._vert_offset
+            )[0]
             # increment the counter
             counter += 1
 
@@ -139,7 +134,7 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
 
         # remove all keys from _lines_dict that are not in the _data_dict
         for key in self._lines_dict.keys():
-            if not key in self._data_dict:
+            if key not in self._data_dict:
                 self._lines_dict[key].remove()
                 continue
 
@@ -148,8 +143,8 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
             # get the (x,y) data from the dictionary
             (x, y) = self._data_dict[key]
             # compute the new horizontal and vertical offsets
-            new_x = x+counter * self._horz_offset
-            new_y = y+counter * self._vert_offset
+            new_x = x + counter * self._horz_offset
+            new_y = y + counter * self._vert_offset
 
             # compute the color for the line
             color = rgba.to_rgba(x=(counter / num_datasets))
@@ -161,9 +156,7 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
                 self._lines_dict[key].set_color(color)
             except KeyError:
                 # create a new line if the key does not exist
-                self._lines_dict[key] = self._ax.plot(new_x,
-                                                      new_y,
-                                                      color=color)[0]
+                self._lines_dict[key] = self._ax.plot(new_x, new_y, color=color)[0]
 
             # increment the counter
             counter += 1
@@ -185,7 +178,7 @@ class Stack1DView(AbstractDataView1D, AbstractMPLDataView):
             Automatically rescale the axes to show all the data (true)
             or stop automatically rescaling the axes (false)
         """
-        print("autoscaling: {0}".format(is_autoscaling))
+        print(f"autoscaling: {is_autoscaling}")
         self._autoscale = is_autoscaling
 
     def find_range(self):

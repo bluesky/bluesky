@@ -32,16 +32,13 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE   #
 # POSSIBILITY OF SUCH DAMAGE.                                          #
 ########################################################################
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-import six
-import numpy as np
-
-from .. import QtCore, QtGui
-from . import AbstractMPLDataView
-from .. import AbstractDataView2D
 
 import logging
+
+import numpy as np
+
+from . import AbstractDataView2D, AbstractMPLDataView
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,8 +48,7 @@ class ContourView(AbstractDataView2D, AbstractMPLDataView):
     data sets as a contour plot, starting from dataset 0 at y = 0
     """
 
-    def __init__(self, fig, data_list=None, cmap=None, norm=None, *args,
-                 **kwargs):
+    def __init__(self, fig, data_list=None, cmap=None, norm=None, *args, **kwargs):
         """
         __init__ docstring
 
@@ -72,13 +68,12 @@ class ContourView(AbstractDataView2D, AbstractMPLDataView):
         # no defaults yet
 
         # call the parent constructors
-        super(ContourView, self).__init__(data_list=data_list, fig=fig,
-                                          cmap=cmap, norm=norm, *args,
-                                          **kwargs)
+        # super().__init__(data_list=data_list, fig=fig, cmap=cmap, norm=norm, *args, **kwargs)
+        super().__init__(data_list=data_list, fig=fig, cmap=cmap, norm=norm, **kwargs)
 
         # create the matplotlib axes
         self._ax = self._fig.add_subplot(1, 1, 1)
-        self._ax.set_aspect('equal')
+        self._ax.set_aspect("equal")
 
         # plot the data
         self.replot()
@@ -93,7 +88,7 @@ class ContourView(AbstractDataView2D, AbstractMPLDataView):
         # 2-D contour.  Rewrite this replot method
 
         # get the keys from the dict
-        keys = list(six.iterkeys(self._data))
+        keys = list(self._data.keys())
         # number of datasets in the data dict
         num_keys = len(keys)
         # cannot plot data if there are no keys
