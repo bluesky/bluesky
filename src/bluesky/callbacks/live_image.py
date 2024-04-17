@@ -115,7 +115,7 @@ class LiveImage(BrokerCallbackBase):
         self.field = data_field_name
         self.cross_section = CrossSection(fig, cmap, norm, limit_func, auto_redraw, interpolation)
         if window_title:
-            self.cross_section.figure.canvas.set_window_title(window_title)
+            self.cross_section._figure.canvas.set_window_title(window_title)
         self.cross_section.figure.show()
 
     def event(self, doc):

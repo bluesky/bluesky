@@ -137,12 +137,12 @@ class CrossSection:
         #   +---+ +----------------------+
 
         # make the main axes
-        self._im_ax = figure.add_subplot(1, 1, 1)
-        self._im_ax.set_aspect(aspect)
-        self._im_ax.xaxis.set_major_locator(NullLocator())
-        self._im_ax.yaxis.set_major_locator(NullLocator())
+        self._image_axes = figure.add_subplot(1, 1, 1)
+        self._image_axes.set_aspect(aspect)
+        self._image_axes.xaxis.set_major_locator(NullLocator())
+        self._image_axes.yaxis.set_major_locator(NullLocator())
         self._imdata = None
-        self._im = self._im_ax.imshow(
+        self._im = self._image_axes.imshow(
             [[]],
             cmap=self._cmap,
             norm=self._norm,
@@ -151,20 +151,20 @@ class CrossSection:
         )
 
         # make it dividable
-        divider = make_axes_locatable(self._im_ax)
+        divider = make_axes_locatable(self._image_axes)
 
         # set up all the other axes
         # (set up the horizontal and vertical cuts)
-        self._ax_h = divider.append_axes("top", 0.5, pad=0.1, sharex=self._im_ax)
+        self._ax_h = divider.append_axes("top", 0.5, pad=0.1, sharex=self._image_axes)
         self._ax_h.yaxis.set_major_locator(LinearLocator(numticks=2))
-        self._ax_v = divider.append_axes("left", 0.5, pad=0.1, sharey=self._im_ax)
+        self._ax_v = divider.append_axes("left", 0.5, pad=0.1, sharey=self._image_axes)
         self._ax_v.xaxis.set_major_locator(LinearLocator(numticks=2))
         self._ax_cb = divider.append_axes("right", 0.2, pad=0.5)
         # add the color bar
         self._cb = figure.colorbar(self._im, cax=self._ax_cb)
 
         # add the cursor place holder
-        self._cur = None
+        self._cursor = None
 
         # turn off auto-scale for the horizontal cut
         self._ax_h.autoscale(enable=False)
@@ -212,7 +212,7 @@ class CrossSection:
             self._row = None
         else:
             # short circuit on other axes
-            if event.inaxes is not self._im_ax:
+            if event.inaxes is not self._image_axes:
                 return
             x, y = event.xdata, event.ydata
         numrows, numcols = self._imdata.shape
@@ -240,11 +240,11 @@ class CrossSection:
                         self._figure.canvas.blit(ax.bbox)
 
     def _click_cb(self, event):
-        if event.inaxes is not self._im_ax:
+        if event.inaxes is not self._image_axes:
             return
         self.active = not self.active
         if self.active:
-            self._cur.onmove(event)
+            self._cursor.onmove(event)
             self._move_cb(event)
 
     @auto_redraw
@@ -253,7 +253,7 @@ class CrossSection:
         Connects all of the callbacks for the motion and click events
         """
         self._disconnect_callbacks()
-        self._cur = Cursor(self._im_ax, useblit=True, color="red", linewidth=2)
+        self._cursor = Cursor(self._image_axes, useblit=True, color="red", linewidth=2)
         self._move_cid = self._figure.canvas.mpl_connect("motion_notify_event", self._move_cb)
 
         self._click_cid = self._figure.canvas.mpl_connect("button_press_event", self._click_cb)
@@ -281,10 +281,10 @@ class CrossSection:
                 setattr(self, atr, None)
 
         # clean up the cursor
-        if self._cur is not None:
-            self._cur.disconnect_events()
-            del self._cur
-            self._cur = None
+        if self._cursor is not None:
+            self._cursor.disconnect_events()
+            del self._cursor
+            self._cursor = None
 
     @auto_redraw
     def _init_artists(self, init_image):
@@ -311,8 +311,8 @@ class CrossSection:
         self._im.set_extent([-0.5, im_shape[1] + 0.5, im_shape[0] + 0.5, -0.5])
 
         # update the limits of the image axes to match the exent
-        self._im_ax.set_xlim([-0.05, im_shape[1] + 0.5])
-        self._im_ax.set_ylim([im_shape[0] + 0.5, -0.5])
+        self._image_axes.set_xlim([-0.05, im_shape[1] + 0.5])
+        self._image_axes.set_ylim([im_shape[0] + 0.5, -0.5])
 
         # update the format coords printer
         numrows, numcols = im_shape
@@ -330,7 +330,7 @@ class CrossSection:
             return f"X: {col:d} Y: {row:d}"
 
         # replace the current format_coord function
-        self._im_ax.format_coord = format_coord
+        self._image_axes.format_coord = format_coord
 
         # net deal with the parasite axes and artist
         self._ln_v.set_data(np.zeros(im_shape[0]), np.arange(im_shape[0]))
@@ -353,8 +353,8 @@ class CrossSection:
         # this involves reaching in and touching the guts of the
         # cursor widget.  The problem is that the mpl widget
         # skips updating it's saved background if the widget is inactive
-        if self._cur:
-            self._cur.background = self._cur.canvas.copy_from_bbox(self._cur.canvas.figure.bbox)
+        if self._cursor:
+            self._cursor.background = self._cursor.canvas.copy_from_bbox(self._cursor.canvas.figure.bbox)
 
     @property
     def interpolation(self):
@@ -367,7 +367,7 @@ class CrossSection:
     @active.setter
     def active(self, val):
         self._active = val
-        self._cur.active = val
+        self._cursor.active = val
 
     @auto_redraw
     def update_interpolation(self, interpolation):

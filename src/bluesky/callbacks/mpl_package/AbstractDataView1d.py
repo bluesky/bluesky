@@ -166,7 +166,9 @@ class AbstractDataView2D(AbstractDataView):
                 self._key_list.insert(i=position + counter, x=lbl)
                 counter += 1
 
-    def append_data(self, lbl_list, xy_list, axis=None, append_to_end=None) -> None:
+    def append_data(
+        self, lbl_list: list[str], xy_list: list[np.ndarray], axis: list[int] = None, append_to_end=None
+    ) -> None:
         """
         Append (x, y) coordinates to a dataset.  If there is no dataset
         called 'lbl', add the (x_data, y_data) tuple to a new entry
