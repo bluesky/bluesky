@@ -102,6 +102,9 @@ CustomPlanMetadata = Dict[str, Any]
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 
+#: Sequence of readable devices, allowed types to be passed to a plan
+ReadableDeviceSequence = Union[List[Readable], Tuple[Readable]]
+
 
 class RunEngineControlException(Exception):
     """Exception for signaling within the RunEngine."""

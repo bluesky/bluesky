@@ -36,6 +36,7 @@ from .protocols import (
     Flyable,
     Locatable,
     Movable,
+    NamedMovable,
     PartialEvent,
     Preparable,
     Readable,
@@ -319,7 +320,7 @@ def rel_set(
 
 
 def mv(
-    *args: Tuple[Union[Movable, Any], ...],
+    *args: Tuple[Union[Movable, NamedMovable, Any], ...],
     group: Optional[Hashable] = None,
     **kwargs,
 ) -> MsgGenerator[Tuple[Status, ...]]:
@@ -367,7 +368,7 @@ mov = mv  # synonym
 
 
 def mvr(
-    *args: Tuple[Union[Movable, Any], ...], group: Optional[Hashable] = None, **kwargs
+    *args: Tuple[Union[Movable, NamedMovable, Any], ...], group: Optional[Hashable] = None, **kwargs
 ) -> MsgGenerator[Tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -1618,7 +1619,7 @@ def one_nd_step(
 
 def repeat(
     plan: Callable[[], MsgGenerator],
-    num: int = 1,
+    num: Optional[int] = 1,
     delay: Optional[ScalarOrIterableFloat] = None,
 ) -> MsgGenerator[Any]:
     """

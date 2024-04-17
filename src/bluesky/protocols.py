@@ -519,6 +519,13 @@ class HasHints(HasName, Protocol):
         ...
 
 
+@runtime_checkable
+class NamedMovable(Movable, HasHints, Protocol):
+    """A movable object that has a name and hints."""
+
+    ...
+
+
 def check_supports(obj: T, protocol: Type[Any]) -> T:
     """Check that an object supports a protocol
 
