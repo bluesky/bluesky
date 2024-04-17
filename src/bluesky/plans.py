@@ -21,6 +21,11 @@ from . import preprocessors as bpp
 from .utils import Msg, get_hinted_fields
 
 
+def hide_last_line():
+    # stackoverflow.com/a/12586667/380231
+    print("\x1b[1A\x1b[2K\x1b[1A")
+
+
 def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     """
     Take one or more readings from detectors.
@@ -1505,8 +1510,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
             sys.stdout.flush()
             yield Msg("wait", None, "A")
             clear_output(wait=True)
-            # stackoverflow.com/a/12586667/380231
-            print("\x1b[1A\x1b[2K\x1b[1A")
+            hide_last_line()
 
     return (yield from tweak_core())
 

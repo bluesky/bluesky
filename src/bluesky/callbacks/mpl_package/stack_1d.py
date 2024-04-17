@@ -38,8 +38,8 @@ import logging
 import numpy as np
 from matplotlib import cm
 
-from .. import AbstractDataView1D
-from . import AbstractMPLDataView
+from bluesky.callbacks.mpl_package.AbstractDataView import AbstractMPLDataView
+from bluesky.callbacks.mpl_package.AbstractDataView1d import AbstractDataView1D
 
 logger = logging.getLogger(__name__)
 
