@@ -3,7 +3,7 @@
 from enum import Enum
 from functools import partial
 
-import six
+from bluesky._vendor import six
 
 from . import utils
 
