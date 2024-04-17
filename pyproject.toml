@@ -110,6 +110,7 @@ write_to = "src/bluesky/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
+exclude = ["src/bluesky/_vendor/"]
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
