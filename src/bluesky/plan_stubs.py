@@ -9,6 +9,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    Dict,
     Hashable,
     List,
     Mapping,
@@ -1303,7 +1304,7 @@ def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs) -> MsgGe
     return (yield Msg("wait_for", None, futures, **kwargs))
 
 
-def trigger_and_read(devices: List[Readable], name: str = "primary") -> MsgGenerator[Mapping[str, Reading]]:
+def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgGenerator[Mapping[str, Reading]]:
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -1552,7 +1553,7 @@ def one_1d_step(
     return (yield from take_reading(list(detectors) + [motor]))  # type: ignore
 
 
-def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any]) -> MsgGenerator[None]:
+def move_per_step(step: Mapping[Movable, Any], pos_cache: Dict[Movable, Any]) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan without any readings
 
@@ -1583,7 +1584,7 @@ def move_per_step(step: Mapping[Movable, Any], pos_cache: Mapping[Movable, Any])
 def one_nd_step(
     detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
-    pos_cache: Mapping[Movable, Any],
+    pos_cache: Dict[Movable, Any],
     take_reading: Optional[TakeReading] = None,
 ) -> MsgGenerator[None]:
     """
@@ -1668,7 +1669,7 @@ def repeat(
         delay = itertools.repeat(delay)
     else:
         try:
-            num_delays = len(delay)
+            num_delays = len(delay)  # type: ignore
         except TypeError:
             # No way to tell in advance if we have enough delays.
             pass
