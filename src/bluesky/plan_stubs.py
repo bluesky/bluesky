@@ -3,7 +3,6 @@ import operator
 import time
 import uuid
 import warnings
-from collections.abc import Iterable
 from functools import reduce
 from typing import (
     Any,
@@ -11,6 +10,7 @@ from typing import (
     Callable,
     Dict,
     Hashable,
+    Iterable,
     List,
     Mapping,
     Optional,
