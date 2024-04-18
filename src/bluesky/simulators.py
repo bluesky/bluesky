@@ -1,4 +1,5 @@
-from typing import Any, Callable, Generator, List, Optional, Sequence, Union
+from time import time
+from typing import Any, Callable, Generator, List, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 from bluesky.log import logger as LOGGER
@@ -6,7 +7,7 @@ from bluesky.preprocessors import print_summary_wrapper
 from bluesky.run_engine import call_in_bluesky_event_loop, in_bluesky_event_loop
 from bluesky.utils import Msg, maybe_await
 
-from .protocols import Checkable
+from .protocols import Checkable, Reading
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -109,24 +110,31 @@ async def check_limits_async(plan):
 
 
 class RunEngineSimulator:
-    """This class facilitates testing of a Bluesky plan by recording bluesky messages and
-     injecting responses according to the bluesky Message Protocol (see bluesky docs for details).
+    """Helps test a Bluesky plan by recording bluesky messages and
+     injecting responses according to the bluesky Message Protocol.
+
+    See bluesky docs for details of the message protocol.
 
     Basic usage consists of
-    1) Registering various handlers to respond to anticipated messages in the experiment plan and fire any
-    needed callbacks.
+    1) Registering various handlers to respond to anticipated messages in the experiment plan and fire
+     any needed callbacks.
     2) Calling simulate_plan()
-    3) Examining the returned message list and making asserts against them
+    3) Examining the returned message list and making asserts against them.
 
-    An example usage:
+    Attributes
+    ----------
+    return_value
+        The return value of the most recently executed plan.
+
+    Examples
+    --------
+
     >>> def my_plan():
     ...     pass
 
     >>> sim = RunEngineSimulator()
     >>> messages = sim.simulate_plan(my_plan())
     >>>
-
-
     """
 
     GROUP_ANY = "any"
@@ -139,6 +147,7 @@ class RunEngineSimulator:
 
     def add_handler_for_callback_subscribes(self):
         """Add a handler that registers all the callbacks from subscribe messages so we can call them later.
+
         You will need to call this as one of the first things if you wish to fire callbacks from the simulator.
         """
         self.message_handlers.append(
@@ -150,110 +159,183 @@ class RunEngineSimulator:
 
     def add_handler(
         self,
-        handler: Callable[[Msg], object],
         commands: Union[str, Sequence[str]],
-        obj_name: Optional[str] = None,
-        predicate: Optional[Callable[[Msg], bool]] = None,
+        handler: Callable[[Msg], object],
+        msg_filter: Optional[Union[str, Callable[[Msg], bool]]] = None,
+        index: int = 0,
     ):
-        """Add the specified handler for a particular message. The handler is prepended so that
-        newer handlers override older ones.
-        Args:
-            handler: a lambda that accepts a Msg and returns an object; the object is sent to the current yield
+        """Add the specified handler for a particular message.
+
+        Parameters
+        ----------
+        commands
+            The command name for the message as defined in bluesky Message Protocol, or a sequence if
+            more than one matches.
+        handler
+            A lambda that accepts a Msg and returns an object; the object is sent to the current yield
             statement in the generator, and is used when reading values from devices, the structure of the
             object depends on device hinting.
-            commands: the command name for the message as defined in bluesky Message Protocol, or a sequence if
-            more than one matches.
-            obj_name: the name property of the obj to match, can be None (the default) as not all messages have
-            a name.
-            predicate: if specified, then the predicate is used to select the handler rather than the object name.
+        msg_filter
+            This can either be a string corresponding to the Msg obj.name property to match, or it can
+            be a predicate on the Msg which returns a bool. The default is None which will match all
+            messages.
+        index
+            An optional integer indicating where to insert the handler, the default is 0 which
+            prepends it so that newer handlers override older ones. Specify -1 to append the handler.
+
         """
         if isinstance(commands, str):
             commands = [commands]
 
+        assert index >= -1, "Negative index values other than -1 unsupported"
+
         self.message_handlers.insert(
-            0,
+            index if index != -1 else len(self.message_handlers),
             _MessageHandler(
                 lambda msg: msg.command in commands
                 and (
-                    (predicate and predicate(msg)) or (obj_name is None or (msg.obj and msg.obj.name == obj_name))
+                    msg_filter is None
+                    or (callable(msg_filter) and msg_filter(msg))
+                    or (msg.obj and msg.obj.name == msg_filter)
                 ),
                 handler,
             ),
         )
 
-    def add_read_handler(self, obj_name, value, dict_key="values"):
+    def add_read_handler_for(self, obj_name: str, value: Any, dict_key: str = "values"):
         """
         Convenience method to register a handler to return a result from a 'read' command.
-        Args:
-             value: The value to return
-             dict_key: The key in the result dictionary to populate with the value, by default this is 'values'
 
-        Example:
-            In order to exercise a plan containing the following:
+        Parameters
+        ----------
+        obj_name
+            Name of the object to intercept reads for
+        value
+            The value to return. If value is a dict then dict_key is ignored and the result of the read
+            command is the supplied value. Otherwise, the result of the read command is a dict of the form
+            { dict_key: { "value": value } }
+        dict_key
+            The key in the result dictionary to populate with the value, by default this is 'values'
 
-            >>> def trigger_and_return_pin_tip():
-            ...     yield from bps.trigger(pin_tip)
-            ...     tip_pos = yield from bps.rd(pin_tip.triggered_tip)
-            ...     return tip_pos
+        Examples
+        --------
+        In order to exercise a plan containing the following:
 
+        >>> def trigger_and_return_pin_tip():
+        ...     yield from bps.trigger(pin_tip)
+        ...     tip_pos = yield from bps.rd(pin_tip.triggered_tip)
+        ...     return tip_pos
 
-            >>> sim = RunEngineSimulator()
-            >>> sim.add_read_handler("pin_tip_detection-triggered_tip", (8, 5))
-            >>> msgs = sim.simulate_plan(trigger_and_return_pin_tip())
-            >>> assert sim.return_value == (8, 5)
+        >>> sim = RunEngineSimulator()
+        >>> sim.add_read_handler("pin_tip_detection-triggered_tip", (8, 5))
+        >>> msgs = sim.simulate_plan(trigger_and_return_pin_tip())
+        >>> assert sim.return_value == (8, 5)
         """
 
-        self.add_handler(lambda _: {dict_key: {"value": value}}, "read", obj_name)
+        def handle_read(_):
+            return value if isinstance(value, dict) else {dict_key: Reading(value=value, timestamp=time())}
+
+        self.add_handler("read", handle_read, obj_name)
 
     def add_wait_handler(self, handler: Callable[[Msg], None], group: str = GROUP_ANY) -> None:
-        """Add a wait handler for a particular message
-        Args:
-            handler: a lambda that accepts a Msg, use this to execute any code that simulates something that's
+        """Add a wait handler for a particular message.
+
+        Parameters
+        ----------
+        handler
+            a lambda that accepts a Msg, use this to execute any code that simulates something that's
             supposed to complete when a group finishes
-            group: name of the group to wait for, default is GROUP_ANY which matches them all
+        group
+            name of the group to wait for, default is GROUP_ANY which matches them all
 
-        Example:
-            In order to exercise the following plan:
-            >>> def close_shutter():
-            ...     yield from bps.abs_set(detector_motion.shutter, 1, group="my_group")
-            ...     yield from bps.wait("my_group")
-            ...     done = yield from bps.rd("detector_motion_shutter")
-            ...     assert done == 1
+        Examples
+        --------
+        In order to exercise the following plan:
+        >>> def close_shutter():
+        ...     yield from bps.abs_set(detector_motion.shutter, 1, group="my_group")
+        ...     yield from bps.wait("my_group")
+        ...     done = yield from bps.rd("detector_motion_shutter")
+        ...     assert done == 1
 
-            >>> sim = RunEngineSimulator()
-            ... def simulate_detector_motion():
-            ...     sim.add_read_handler("detector_motion_shutter", 1)
-            ...
-            ... sim.add_wait_handler(simulate_detector_motion, "my_group")
-            ... sim.simulate_plan(close_shutter())
+        >>> sim = RunEngineSimulator()
+        ... def simulate_detector_motion():
+        ...     sim.add_read_handler("detector_motion_shutter", 1)
+        ...
+        ... sim.add_wait_handler(simulate_detector_motion, "my_group")
+        ... sim.simulate_plan(close_shutter())
         """
-        self.message_handlers.append(
-            _MessageHandler(
-                lambda msg: msg.command == "wait"
-                and (group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group),
-                handler,
-            )
+        self.add_handler(
+            "wait", handler, lambda msg: (group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group)
         )
 
+    def add_callback_handler_for(
+        self,
+        command: str,
+        *,
+        document_name: Optional[str] = None,
+        document: Optional[dict] = None,
+        docs: Optional[Sequence[Sequence[Tuple[str, dict]]]] = None,
+        msg_filter: Optional[Callable[[Msg], bool]] = None,
+    ):
+        """Add a handler to fire one or more callbacks in sequence when a matching command is encountered.
+
+        To fire a single callback just once, specify `document_name` and `document` parameters.
+        To fire a sequence of callbacks, across one or more message invocations, use the `docs` parameter.
+
+        Parameters
+        ----------
+        command
+            Name of the command to match.
+        document_name
+            Name of the document to match when used in single shot mode.
+        document
+            The document to fire in single shot mode.
+        docs: Sequence of Sequence of document_name, document tuples
+            On each receipt of a matching message, the sequence contained in the next element of `docs`
+            will be iterated over and each (document_name, document) pair will be fired to subscribed callbacks
+            in order.
+        """
+        if not docs:
+            if not document_name or not document:
+                raise ValueError("No document sequence specified and document or document_name not specified")
+            docs = [[(document_name, document)]]
+        it = iter(docs)
+
+        def handle_command(_):
+            for name, doc in next(it):
+                self.fire_callback(name, doc)
+
+        self.add_handler(command, handle_command, msg_filter)
+
     def fire_callback(self, document_name, document) -> None:
-        """Fire all the callbacks registered for this document type in order to simulate something happening
-        Args:
-             document_name: document name as defined in the Bluesky Message Protocol 'subscribe' call,
-             all subscribers filtering on this document name will be called
-             document: the document to send
+        """Fire all the callbacks registered for this document type in order to simulate something happening.
+
+        Parameters
+        ----------
+        document_name
+            document name as defined in the Bluesky Message Protocol 'subscribe' call,
+            all subscribers filtering on this document name will be called
+        document
+            the document to send
         """
         for callback_func, callback_docname in self.callbacks.values():
             if callback_docname == "all" or callback_docname == document_name:
                 callback_func(document_name, document)
 
     def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> List[Msg]:
-        """Simulate the RunEngine executing the plan
-        Args:
-            gen: the generator function that executes the plan
-        Returns:
-            a list of the messages generated by the plan
-        Postcondition:
-            return_value is populated with the return value of the plan
+        """Simulate the RunEngine executing the plan.
+
+        After executing the plan return_value is populated with the return value of the plan.
+
+        Parameters
+        ----------
+        gen
+            the generator function that executes the plan
+
+        Returns
+        -------
+        list[Msg]
+            list of the messages generated by the plan
         """
         messages = []
         send_value = None
@@ -281,9 +363,14 @@ def assert_message_and_return_remaining(
     predicate: Callable[[Msg], bool],
     group: Optional[str] = None,
 ):
-    """Find the next message matching the predicate, assert that we found it
-    Return: all the remaining messages starting from the matched message which is included as a
-    convenience to capture information that may be used in subsequent calls."""
+    """Find the next message matching the predicate, assert that we found it.
+
+    Returns
+    -------
+    list[Msg]
+        All the remaining messages starting from the matched message which is included as a
+        convenience to capture information that may be used in subsequent calls.
+    """
     indices = [
         i
         for i in range(len(messages))

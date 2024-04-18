@@ -1,4 +1,5 @@
 import uuid
+from functools import partial
 from typing import Any, Generator
 from unittest.mock import MagicMock
 
@@ -101,7 +102,7 @@ def test_simulator_add_handler(hw):
         yield from bps.sleep("60")
 
     sim = RunEngineSimulator()
-    sim.add_handler(lambda msg: callback(msg), "sleep")
+    sim.add_handler("sleep", lambda msg: callback(msg))
     msgs = sim.simulate_plan(do_sleep())
     callback.assert_called_once()
     msg = callback.mock_calls[0].args[0]
@@ -110,14 +111,49 @@ def test_simulator_add_handler(hw):
     assert msgs[0].command == "sleep"
 
 
-def test_simulator_add_read_handler(hw):
+@pytest.mark.parametrize("insert_order, expected", [([0, 0, 0], 2), ([-1, -1, -1], 0), ([0, 0, 1], 1)])
+def test_simulator_add_handler_append_with_index(hw, insert_order, expected):
+    sim = RunEngineSimulator()
+
+    def generate_value(id, msg):
+        return {"values": {"value": id}}
+
+    for index, id in zip(insert_order, range(0, len(insert_order))):
+        sim.add_handler("read", partial(generate_value, id), None, index)
+
+    def read_det():
+        value = yield from bps.rd("det_a")
+        return value
+
+    sim.simulate_plan(read_det())
+    result = sim.return_value
+    assert result == expected
+
+
+def test_simulator_add_read_handler_for(hw):
     def trigger_and_return_position():
         yield from bps.trigger(hw.ab_det)
         pos = yield from bps.rd(hw.ab_det.a)
         return pos
 
     sim = RunEngineSimulator()
-    sim.add_read_handler("det_a", 5, "det_a")
+    sim.add_read_handler_for("det_a", 5, "det_a")
+    msgs = sim.simulate_plan(trigger_and_return_position())
+    assert sim.return_value == 5
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "det"
+    )
+    assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
+
+
+def test_simulator_add_read_handler_for_with_dict(hw):
+    def trigger_and_return_position():
+        yield from bps.trigger(hw.ab_det)
+        pos = yield from bps.rd(hw.ab_det.a)
+        return pos
+
+    sim = RunEngineSimulator()
+    sim.add_read_handler_for("det_a", {"det_a": {"value": 5}})
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
     msgs = assert_message_and_return_remaining(
@@ -135,8 +171,8 @@ def test_simulator_add_wait_handler(hw):
         return pos
 
     sim = RunEngineSimulator()
-    sim.add_read_handler("det_a", 0, "det_a")
-    sim.add_wait_handler(lambda _: sim.add_read_handler("det_a", 5, "det_a"))
+    sim.add_read_handler_for("det_a", 0, "det_a")
+    sim.add_wait_handler(lambda _: sim.add_read_handler_for("det_a", 5, "det_a"))
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
@@ -161,21 +197,16 @@ def test_fire_callback(hw):
     descriptor_doc = {"run_start": run_start_uid, "uid": descriptor_uid}
     event_doc = {"descriptor": descriptor_uid, "uid": event_uid}
 
-    def handle_open_run(msg):
-        sim.fire_callback("start", start_doc)
-
-    def handle_create(msg):
-        sim.fire_callback("descriptor", descriptor_doc)
-
-    def handle_save(msg):
-        sim.fire_callback("event", event_doc)
-
     sim = RunEngineSimulator()
     sim.add_handler_for_callback_subscribes()
 
-    sim.add_handler(handle_open_run, "open_run", predicate=lambda msg: msg.kwargs["plan_name"] == "count")
-    sim.add_handler(handle_create, "create", predicate=lambda msg: msg.kwargs["name"] == "primary")
-    sim.add_handler(handle_save, "save")
+    sim.add_callback_handler_for(
+        "open_run",
+        document_name="start",
+        document=start_doc,
+        msg_filter=lambda msg: msg.kwargs["plan_name"] == "count",
+    )
+    sim.add_callback_handler_for("save", docs=[[("descriptor", descriptor_doc), ("event", event_doc)]])
 
     sim.simulate_plan(take_a_reading())
     calls = callback.mock_calls
