@@ -33,8 +33,11 @@ from .utils import (
 PerShot = Callable[[Sequence[Readable], Optional[bps.TakeReading]], MsgGenerator]
 
 #: Plan function that can be used for each step in a scan
-PerStep1D = Callable[[Sequence[Readable], Movable, Any, Optional[bps.TakeReading]], MsgGenerator]
-PerStep = Callable[
+PerStep1D = Callable[
+    [Sequence[Readable], Movable, Any, Optional[bps.TakeReading]],
+    MsgGenerator,
+]
+PerStepND = Callable[
     [
         Sequence[Readable],
         Mapping[Movable, Any],
@@ -43,6 +46,7 @@ PerStep = Callable[
     ],
     MsgGenerator,
 ]
+PerStep = Union[PerStep1D, PerStepND]
 
 
 def _check_detectors_type_input(detectors):
@@ -421,7 +425,7 @@ def _scan_1d(
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep1D] = None,
+    per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
     """
@@ -1141,7 +1145,7 @@ def scan_nd(
                 (step,) = step.values()
                 return (yield from user_per_step(detectors, motor, step))
 
-            per_step = adapter
+            per_step = adapter  # type: ignore
         else:
             raise TypeError(
                 "per_step must be a callable with the signature \n "
