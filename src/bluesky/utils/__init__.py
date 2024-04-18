@@ -37,10 +37,10 @@ import msgpack_numpy
 import numpy as np
 import zict
 from cycler import cycler
-from super_state_machine.errors import TransitionError
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
     Asset,
     HasHints,

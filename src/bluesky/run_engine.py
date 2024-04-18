@@ -19,9 +19,10 @@ from warnings import warn
 from event_model import DocumentNames
 from opentelemetry import trace
 from opentelemetry.trace import Span
-from super_state_machine.errors import TransitionError
-from super_state_machine.extras import PropertyMachine
-from super_state_machine.machines import StateMachine
+
+from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky._vendor.super_state_machine.extras import PropertyMachine
+from bluesky._vendor.super_state_machine.machines import StateMachine
 
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
