@@ -524,7 +524,7 @@ class RunBundler:
         # we do not have the descriptor cached, make it
         if descriptor_doc is None or d_objs is None:
             for obj in objs_read:
-                await self._ensure_cached(obj, collect=isinstance(obj, Collectable), stream_name=desc_key)
+                await self._ensure_cached(obj, collect=False)
                 objs_dks[obj] = self._describe_cache[obj]
 
             descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_dks)
