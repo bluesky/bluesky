@@ -1,0 +1,2 @@
+super_state_machine==2.0.2
+    six==1.16.0
