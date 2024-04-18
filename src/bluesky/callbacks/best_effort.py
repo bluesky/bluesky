@@ -284,7 +284,7 @@ class BestEffortCallback(QtAwareCallback):
                             stacklevel=1,
                         )
                     else:
-                        data_range = np.array([float(np.diff(e)) for e in extents])
+                        data_range = np.array([float(e[-1] - e[0]) for e in extents])
                         y_step, x_step = data_range / [max(1, s - 1) for s in shape]
                         adjusted_extent = [
                             extents[1][0] - x_step / 2,

@@ -36,38 +36,14 @@ Index
 -----
 
 .. toctree::
-   :caption: User Documentation
    :maxdepth: 1
 
-   tutorial
-   plans
-   documents
-   metadata
-   callbacks
-   state-machine
-   simulation
-   progress-bar
-   event_descriptors
-   async
-   multi_run_plans
-   debugging
-   run_engine_api
-   utils
-   magics
-   from-pyepics-to-bluesky
-   comparison-with-spec
-   hardware-interfaces
-   appendix
+   userindex
 
 .. toctree::
-   :caption: Developer Documentation
    :maxdepth: 1
 
-   hardware
-   msg
-   run_engine
-   api_changes
-   contributing
+   devindex
 
 .. toctree::
    :hidden:

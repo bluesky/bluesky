@@ -215,7 +215,7 @@ In the following example, two preassembled plans are called in sequence. Run Eng
 a single instance of BestEffortCallback, which is set up to display data specific for each run
 when the run opened.
 
-.. literalinclude:: examples/multi_run_plans_sequential.py
+.. literalinclude:: /examples/multi_run_plans_sequential.py
 
 .. ipython:: python
     :suppress:
@@ -242,7 +242,7 @@ of callback. Standard RunEngine subscription mechanism does not provide this cap
 subscription should be performed via `RunRouter`. The code in the following example demonstrates how
 to use `BestEffortCallback` to monitor data from multiple nested runs.
 
-.. literalinclude:: examples/multi_run_plans_nested.py
+.. literalinclude:: /examples/multi_run_plans_nested.py
 
 The output of the plan contains data from two runs with each run assigned its own ID and UID. The tables
 for the runs are printed by two separate instances of `BestEffortCallback`. The data from two tables
@@ -276,7 +276,7 @@ to its own set of callbacks. In the following example `run_key` is added to the 
 document metadata and used to distinguish between two runs in the function factory that
 performs callback subscriptions.
 
-.. literalinclude:: examples/multi_run_plans_select_cb.py
+.. literalinclude:: /examples/multi_run_plans_select_cb.py
 
 .. ipython:: python
     :suppress:
@@ -301,7 +301,7 @@ besides demonstration of the principle. The plan is calling itself recursively m
 the global counter `n_calls` reaches the maximum value of `n_calls_max`. The unique run key is generated
 before at each call.
 
-.. literalinclude:: examples/multi_run_plans_recursive.py
+.. literalinclude:: /examples/multi_run_plans_recursive.py
 
 .. ipython:: python
     :suppress:

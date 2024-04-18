@@ -358,7 +358,7 @@ API to control the behavior.
     from bluesky.utils import (AsyncInput, FailedPause, InvalidCommand, Msg,
                                ensure_generator)
     from bluesky.run_engine import RunEngineStateMachine, PropertyMachine
-    from super_state_machine.errors import TransitionError
+    from bluesky._vendor.super_state_machine.errors import TransitionError
 
 
     class RunEngine_v5:
@@ -693,7 +693,6 @@ API to control the behavior.
             # may be called by 'resume' or 'abort'
             self.state = 'running'
             self._last_sigint_time = None
-            self._num_sigints_processed = 0
 
             if self._task.done():
                 return

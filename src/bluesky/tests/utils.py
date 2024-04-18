@@ -65,3 +65,15 @@ def _fabricate_asycio_event(loop):
         h.cancel()
         raise Exception("failed to make asyncio event")
     return aio_event
+
+
+def _careful_event_set(ev):
+    "Helper to set 'do not lock test suite' backup sets"
+
+    def inner():
+        try:
+            ev.set()
+        except RuntimeError:
+            ...
+
+    return inner

@@ -450,6 +450,10 @@ class LiveGrid(QtAwareCallback):
         Defines the positive direction of the y axis, takes the values 'up'
         (default) or 'down'.
 
+    title : string, optional
+        Override title of plot. If None (default), title is generated from the scan
+        ID. Set to empty string to remove title.
+
     See Also
     --------
     :class:`bluesky.callbacks.mpl_plotting.LiveScatter`.
@@ -469,6 +473,7 @@ class LiveGrid(QtAwareCallback):
         ax=None,
         x_positive="right",
         y_positive="up",
+        title=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -478,7 +483,7 @@ class LiveGrid(QtAwareCallback):
         def setup():
             # Run this code in start() so that it runs on the correct thread.
             nonlocal raster_shape, I, clim, cmap, xlabel, ylabel, extent  # noqa: E741
-            nonlocal aspect, ax, x_positive, y_positive, kwargs
+            nonlocal aspect, ax, x_positive, y_positive, title, kwargs
             with self.__setup_lock:
                 if self.__setup_event.is_set():
                     return
@@ -506,6 +511,7 @@ class LiveGrid(QtAwareCallback):
             self.aspect = aspect
             self.x_positive = x_positive
             self.y_positive = y_positive
+            self.title = title
 
         self.__setup = setup
 
@@ -548,7 +554,11 @@ class LiveGrid(QtAwareCallback):
             raise ValueError('y_positive must be either "up" or "down"')
 
         self.im = im
-        self.ax.set_title("scan {uid} [{sid}]".format(sid=doc["scan_id"], uid=doc["uid"][:6]))
+        self.ax.set_title(
+            self.title
+            if self.title is not None
+            else "scan {uid} [{sid}]".format(sid=doc["scan_id"], uid=doc["uid"][:6])
+        )
         self.snaking = doc.get("snaking", (False, False))
 
         cb = self.ax.figure.colorbar(im, ax=self.ax)

@@ -11,7 +11,7 @@ repos:
       - id: ruff
         name: lint with ruff
         language: system
-        entry: ruff check --force-exclude
+        entry: ruff check --force-exclude --fix
         types: [python]
         require_serial: true
 

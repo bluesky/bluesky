@@ -1,8 +1,8 @@
 import asyncio
 import os
-from distutils.version import LooseVersion
 
 import numpy as np
+import packaging
 import pytest
 
 from bluesky.run_engine import RunEngine, TransitionError
@@ -29,14 +29,14 @@ def RE(request):
 
 
 @pytest.fixture(scope="function")
-def hw(tmpdir):
+def hw(tmp_path):
     import ophyd
     from ophyd.sim import hw
 
     # ophyd 1.4.0 added support for customizing the directory used by simulated
     # hardware that generates files
-    if LooseVersion(ophyd.__version__) >= LooseVersion("1.4.0"):
-        return hw(str(tmpdir))
+    if packaging.version.Version(ophyd.__version__) >= packaging.version.Version("1.4.0"):
+        return hw(str(tmp_path))
     else:
         return hw()
 

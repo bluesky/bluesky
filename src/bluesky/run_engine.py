@@ -17,9 +17,10 @@ from itertools import count
 from warnings import warn
 
 from event_model import DocumentNames
-from super_state_machine.errors import TransitionError
-from super_state_machine.extras import PropertyMachine
-from super_state_machine.machines import StateMachine
+
+from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky._vendor.super_state_machine.extras import PropertyMachine
+from bluesky._vendor.super_state_machine.machines import StateMachine
 
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
@@ -808,6 +809,8 @@ class RunEngine:
             If True, pause at the next checkpoint.
             False by default.
         """
+        if self.state == "panicked":
+            raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
         future = asyncio.run_coroutine_threadsafe(self._request_pause_coro(defer), loop=self.loop)
         # TODO add a timeout here?
         return future.result()

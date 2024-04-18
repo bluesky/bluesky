@@ -7,6 +7,7 @@ from ophyd import Device
 from ophyd.sim import NullStatus, TrivialFlyer
 
 from bluesky import Msg
+from bluesky.plan_stubs import close_run, complete, complete_all, kickoff, kickoff_all, open_run, wait
 from bluesky.plans import count, fly
 from bluesky.protocols import Preparable
 from bluesky.run_engine import IllegalMessageSequence
@@ -456,3 +457,82 @@ def test_prepare(RE):
     assert flyer.call_counts["kickoff"] == 1
     assert flyer.call_counts["complete"] == 1
     assert flyer.call_counts["collect"] == 1
+
+
+def test_kickoff_complete_all_single_device(RE):
+    flyer1 = FlyerDevice(name="flyer1")
+
+    def fly_plan():
+        yield from open_run()
+        yield from kickoff_all(flyer1, group="foo")
+        yield from wait(group="foo")
+        yield from complete_all(flyer1, group="bar")
+        yield from wait(group="bar")
+        yield from close_run()
+
+    RE(fly_plan())
+
+    assert flyer1.call_counts["kickoff"] == 1
+    assert flyer1.call_counts["complete"] == 1
+
+
+def test_kickoff_complete_all_take_multiple_devices(RE):
+    flyer1 = FlyerDevice(name="flyer1")
+    flyer2 = FlyerDevice(name="flyer2")
+
+    def fly_plan():
+        yield from open_run()
+        yield from kickoff_all(flyer1, flyer2, group="foo")
+        yield from wait(group="foo")
+        yield from complete_all(flyer1, flyer2, group="bar")
+        yield from wait(group="bar")
+        yield from close_run()
+
+    RE(fly_plan())
+
+    assert flyer1.call_counts["kickoff"] == 1
+    assert flyer2.call_counts["kickoff"] == 1
+    assert flyer1.call_counts["complete"] == 1
+    assert flyer2.call_counts["complete"] == 1
+
+
+def test_kickoff_all_complete_seperately(RE):
+    flyer1 = FlyerDevice(name="flyer1")
+    flyer2 = FlyerDevice(name="flyer2")
+
+    def fly_plan():
+        yield from open_run()
+        yield from kickoff_all(flyer1, flyer2, group="foo")
+        yield from wait(group="foo")
+        yield from complete(flyer1, group="bar")
+        yield from complete(flyer2, group="bar")
+        yield from wait(group="bar")
+        yield from close_run()
+
+    RE(fly_plan())
+
+    assert flyer1.call_counts["kickoff"] == 1
+    assert flyer2.call_counts["kickoff"] == 1
+    assert flyer1.call_counts["complete"] == 1
+    assert flyer2.call_counts["complete"] == 1
+
+
+def test_kickoff_seperately_complete_all(RE):
+    flyer1 = FlyerDevice(name="flyer1")
+    flyer2 = FlyerDevice(name="flyer2")
+
+    def fly_plan():
+        yield from open_run()
+        yield from kickoff(flyer1, group="foo")
+        yield from kickoff(flyer2, group="foo")
+        yield from wait(group="foo")
+        yield from complete_all(flyer1, flyer2, group="bar")
+        yield from wait(group="bar")
+        yield from close_run()
+
+    RE(fly_plan())
+
+    assert flyer1.call_counts["kickoff"] == 1
+    assert flyer2.call_counts["kickoff"] == 1
+    assert flyer1.call_counts["complete"] == 1
+    assert flyer2.call_counts["complete"] == 1

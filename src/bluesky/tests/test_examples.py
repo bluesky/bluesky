@@ -23,7 +23,7 @@ from bluesky.examples import (
     wait_one,
 )
 
-from .utils import _fabricate_asycio_event
+from .utils import _careful_event_set, _fabricate_asycio_event
 
 
 def test_msgs(hw):
@@ -286,7 +286,7 @@ def test_suspend(RE, hw):
     assert RE.state == "idle"
 
     def resume_cb():
-        RE.loop.call_soon_threadsafe(ev.set)
+        RE.loop.call_soon_threadsafe(_careful_event_set(ev))
 
     def local_suspend():
         RE.request_suspend(ev.wait)
@@ -318,7 +318,7 @@ def test_pause_resume(RE):
 
     def done():
         print("Done")
-        RE.loop.call_soon_threadsafe(ev.set)
+        RE.loop.call_soon_threadsafe(_careful_event_set(ev))
 
     pid = os.getpid()
 
@@ -359,7 +359,10 @@ def test_pause_abort(RE):
 
     def done():
         print("Done")
-        RE.loop.call_soon_threadsafe(ev.set)
+        try:
+            RE.loop.call_soon_threadsafe(_careful_event_set(ev))
+        except RuntimeError:
+            ...
 
     pid = os.getpid()
 
@@ -399,7 +402,10 @@ def test_abort(RE):
 
     def done():
         print("Done")
-        RE.loop.call_soon_threadsafe(ev.set)
+        try:
+            RE.loop.call_soon_threadsafe(_careful_event_set(ev))
+        except RuntimeError:
+            ...
 
     pid = os.getpid()
 
