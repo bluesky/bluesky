@@ -34,6 +34,5 @@ jobs:
               echo "Issue already exists, not creating a new one."
             fi
           fi
-
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
