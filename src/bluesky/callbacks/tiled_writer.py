@@ -378,15 +378,16 @@ class _RunWriter(DocumentRouter):
         sr_node, handler = self.get_sr_node(doc["stream_resource"], desc_uid=doc["descriptor"])
         handler.consume_stream_datum(doc)
 
-        # Update StreamResource node in Tiled; note one-based indexing of data sources.
+        # Update StreamResource node in Tiled
+        # TODO: Assigning data_source.id in the object and passing it in http params is superflous, but currently Tiled requires it.  # noqa
         sr_node.refresh()
-        sr_0 = sr_node.data_sources()[0]
         data_source = handler.get_data_source()
-        data_source.id = sr_0["id"]
+        data_source.id = sr_node.data_sources()[0]["id"]  # ID of the exisiting DataSource record
         endpoint = sr_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             sr_node.context.http_client.put(
                 endpoint,
                 content=safe_json_dump({"data_source": data_source}),
+                params={"data_source": data_source.id},
             )
         ).json()
