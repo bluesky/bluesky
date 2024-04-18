@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Callable
 
 import numpy as np
 from matplotlib.colors import Colormap, Normalize
@@ -14,6 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 def auto_redraw(func):
+    """
+    decorator to automatically redraw the figure after a function call
+    """
+
     def inner(self, *args, **kwargs):
         if self._fig.canvas is None:
             return
@@ -82,7 +87,7 @@ class CrossSection:
         figure: Figure,
         colormap: Colormap = "gray",
         norm=None,
-        limit_func=None,
+        limit_func: Callable[[Any | None], Callable[[Any], tuple]] = None,
         auto_redraw=True,
         interpolation: InterpolationEnum = InterpolationEnum.NONE,
         aspect="equal",
@@ -106,7 +111,7 @@ class CrossSection:
         norm.vmin, norm.vmax = 0, 1
         self._norm = norm
         # save a copy of the limit function, we will need it later
-        self._limit_func = limit_func
+        self._limit_func: Callable[[Any | None], Callable[[Any], tuple]] = limit_func
 
         # this is used by the widget logic
         self._active = True

@@ -1,11 +1,5 @@
 from enum import Enum
 
-# NOTE errors
-#  test_simulators /old modulenae, plot ratser path,
-# test_live_plotter
-# test_disable
-# test_many-grids
-
 
 class InterpolationEnum(Enum):
     NONE = ("none",)
