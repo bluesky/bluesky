@@ -33,6 +33,8 @@ class AverageStream(LiveDispatcher):
         # Grab the average key
         self.n = doc.get("average", self.n)
         # Define our nodes
+        if self.source is None:
+            self.source = reactivex.subject.ReplaySubject()
         if not self.out_stream:
             self.out_stream = self.source.pipe(
                 reactivex.operators.buffer_with_count(self.n), reactivex.operators.map(self._average_events)
@@ -87,3 +89,10 @@ def test_average_stream(RE, hw):
     assert evt["data"]["motor_setpoint"] == -0.5  # mean of range(-5, 5)
     assert start_uid in d.stop
     assert d.stop[start_uid]["num_events"] == {"primary": 1}
+    # Repeat for array data
+    RE(stepscan(hw.direct_img, hw.motor), {"all": avg})
+    assert c.value == 1 + 1 + 2 + 1 + 1 + 2  # events, descriptor, start and stop
+    start_uid = d.start[1]["uid"]
+    desc_uid = d.descriptor[start_uid][0]["uid"]
+    evt = d.event[desc_uid][0]
+    assert evt["data"]["img"].ndim == 2

@@ -1254,7 +1254,7 @@ class.
 .. code-block:: python
 
     class AverageStream(LiveDispatcher):
-        """ReactiveX Implementation of AverageStream"""
+        """Stream that averages data points together using ReactiveX"""
 
         def __init__(self, n=None):
             self.n = n
