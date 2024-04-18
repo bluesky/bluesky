@@ -19,7 +19,6 @@ jobs:
       - name: Install basic dependencies
         run: run python -m pip install --upgrade pip setuptools wheel
 
-# https://medium.com/just-another-buzzword/how-to-automatically-add-issues-to-a-github-project-with-github-actions-657c602328f8
       - name: Check and warn on Python version support
         run: |
           issue_title="Python Version Support Warning"
