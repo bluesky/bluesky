@@ -26,7 +26,7 @@ jobs:
       - name: Check and warn on Python version support
         run: |
           issue_title="Python Version Support Warning"
-          output=$(python scripts/check_python_version_support.py)
+          output=$(python .github/scripts/check_python_version_support.py)
           if [ ! -z "$output" ]; then
             # Check if the issue already exists
             existing_issue=$(gh issue list --search "title:$issue_title" --json number,title --jq '.[] | select(.title == "$issue_title") | .number')

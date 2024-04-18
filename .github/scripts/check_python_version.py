@@ -36,7 +36,7 @@ package_releases = {
 }
 
 # Get supported versions from pyproject.toml
-with open("../pyproject.toml", "rb") as f:
+with open("pyproject.toml", "rb") as f:
     pyproject = tomllib.load(f)
 specifiers_set = SpecifierSet(pyproject["project"]["requires-python"])
 supported_versions = [
