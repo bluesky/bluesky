@@ -38,6 +38,8 @@ jobs:
             else
               echo "Issue already exists, not creating a new one."
             fi
+          else
+            echo "Python version support is up to date."
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
