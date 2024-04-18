@@ -11,3 +11,5 @@ jobs:
     uses: ./.github/workflows/_tox.yml
     with:
       tox: docs build -- -b linkcheck
+  version-support:
+    uses: ./.github/workflows/_version_support.yml

@@ -1,0 +1,39 @@
+on:
+  workflow_call:
+
+jobs:
+  check-python-version:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Install basic dependencies
+        run: run python -m pip install --upgrade pip setuptools wheel
+
+# https://medium.com/just-another-buzzword/how-to-automatically-add-issues-to-a-github-project-with-github-actions-657c602328f8
+      - name: Check and warn on Python version support
+        run: |
+          issue_title="Python Version Support Warning"
+          output=$(python scripts/check_python_version_support.py)
+          if [ ! -z "$output" ]; then
+            # Check if the issue already exists
+            existing_issue=$(gh issue list --search "title:$issue_title" --json number,title --jq '.[] | select(.title == "$issue_title") | .number')
+            if [ -z "$existing_issue" ]; then
+              # Create a new issue if one does not exist
+              echo "$output" | gh issue create --title "$issue_title" --body "$output"
+            else
+              echo "Issue already exists, not creating a new one."
+            fi
+          fi
+
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
