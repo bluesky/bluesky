@@ -1510,7 +1510,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
             sys.stdout.flush()
             yield Msg("wait", None, "A")
             clear_output(wait=True)
-            hide_last_line()
+            _hide_last_line()
 
     return (yield from tweak_core())
 
