@@ -1,4 +1,9 @@
-on: workflow_dispatch
+on: 
+  push:
+    branches:
+      - bld-python-version-support
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
   check-python-version:
