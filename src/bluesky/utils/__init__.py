@@ -17,7 +17,18 @@ from collections import namedtuple
 from collections.abc import Iterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
-from typing import Any, AsyncIterable, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -25,10 +36,10 @@ import msgpack_numpy
 import numpy as np
 import zict
 from cycler import cycler
-from super_state_machine.errors import TransitionError
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
     Asset,
     HasHints,
@@ -65,7 +76,9 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     __slots__ = ()
 
     def __new__(cls, command, obj=None, *args, run=None, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)  # noqa: UP008
+        return super(Msg, cls).__new__(  # noqa: UP008
+            cls, command, obj, args, kwargs, run
+        )
 
     def __repr__(self):
         return (
@@ -643,8 +656,8 @@ def snake_cyclers(cyclers, snake_booleans):
         lengths.append(len(c))
     total_length = np.prod(lengths)
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
-        num_tiles = np.product(lengths[:i])
-        num_repeats = np.product(lengths[i + 1 :])
+        num_tiles = np.prod(lengths[:i])
+        num_repeats = np.prod(lengths[i + 1 :])
         for k, v in c._transpose().items():
             if snake:
                 v = v + v[::-1]
@@ -861,7 +874,12 @@ SEARCH_PATH = []
 ENV_VAR = "BLUESKY_HISTORY_PATH"
 if ENV_VAR in os.environ:
     SEARCH_PATH.append(os.environ[ENV_VAR])
-SEARCH_PATH.extend([os.path.expanduser("~/.config/bluesky/bluesky_history.db"), "/etc/bluesky/bluesky_history.db"])
+SEARCH_PATH.extend(
+    [
+        os.path.expanduser("~/.config/bluesky/bluesky_history.db"),
+        "/etc/bluesky/bluesky_history.db",
+    ]
+)
 
 
 def get_history():
@@ -1340,7 +1358,12 @@ class TerminalProgressBar(ProgressBarBase):
             # cases differ from the naive computaiton performed by
             # format_meter.
             meter = tqdm.format_meter(
-                n=n, total=total, elapsed=time_elapsed, unit=unit, prefix=name, ncols=self.ncols
+                n=n,
+                total=total,
+                elapsed=time_elapsed,
+                unit=unit,
+                prefix=name,
+                ncols=self.ncols,
             )
         else:
             # Simply display completeness.
@@ -1566,7 +1589,10 @@ def merge_cycler(cyc):
             raise ValueError("Passed in a mix of real and pseudo axis. Can not cope, failing")
         pseudo_axes = type_map["pseudo"]
         if len(pseudo_axes) > 1:
-            p_cyc = reduce(operator.add, (cycler(my_name(c), input_data[c]) for c in type_map["pseudo"]))
+            p_cyc = reduce(
+                operator.add,
+                (cycler(my_name(c), input_data[c]) for c in type_map["pseudo"]),
+            )
             output_data.append(cycler(parent, list(p_cyc)))
         elif len(pseudo_axes) == 1:
             (c,) = pseudo_axes
@@ -1848,7 +1874,7 @@ In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("{msg.command}") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg, PendingDeprecationWarning)  # noqa: B028
+        warnings.warn(error_msg)  # noqa: B028
 
 
 def maybe_update_hints(hints: Dict[str, Hints], obj):

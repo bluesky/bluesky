@@ -366,6 +366,15 @@ def test_live_grid(RE, hw):
         RE(grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2, -5, 5, 10, False), LiveRaster((6, 10), "det4"))
 
 
+def test_live_grid_title(RE, hw):
+    hw.motor1.delay = 0
+    hw.motor2.delay = 0
+    RE(
+        grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2, -5, 5, 10, False),
+        LiveGrid((6, 10), "det4", title="Det 4 Grid Plot"),
+    )
+
+
 def test_live_scatter(RE, hw):
     RE(
         grid_scan([hw.det5], hw.jittery_motor1, -3, 3, 6, hw.jittery_motor2, -5, 5, 10, False),
