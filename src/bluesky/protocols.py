@@ -10,7 +10,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    ParamSpec,
     Protocol,
     Tuple,
     Type,
@@ -30,6 +29,11 @@ from typing_extensions import TypedDict
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
+
+try:
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec  # type: ignore
 
 
 # TODO: these are not placed in Events by RE yet
