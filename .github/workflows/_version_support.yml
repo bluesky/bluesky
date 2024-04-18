@@ -31,8 +31,8 @@ jobs:
           output=$(python ./.github/scripts/check_python_version.py)
           if [ ! -z "$output" ]; then
             # Check if the issue already exists
-            existing_issue=$(gh issue list --search "title:$issue_title" --json number,title --jq '.[] | select(.title == "$issue_title") | .number')
-            if [ -z "$existing_issue" ]; then
+            existing_issue=$(gh issue list --search "$issue_title in:title" --json number,title)
+            if [[ -z "$existing_issue" || "$existing_issue" == "[]" ]]; then
               # Create a new issue if one does not exist
               echo "$output" | gh issue create --title "$issue_title" --body "$output"
             else
