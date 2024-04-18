@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import time as ttime
 from collections import defaultdict, deque
+from itertools import combinations
 from typing import Any, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional, Tuple, Union
 
 from event_model import (
@@ -632,26 +633,28 @@ class RunBundler:
         """
         self._uncollected.add(msg.obj)
 
-    async def _cache_describe_collect(self, obj: Collectable, stream_name: Optional[str] = None):
+    async def _cache_describe_collect(self, collectable: Collectable, stream_name: Optional[str] = None):
         def is_data_key(obj: Any) -> bool:
-            return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
+            data_key_fields = {"dtype", "shape", "source"}
+            return isinstance(obj, dict) and all(field in obj for field in data_key_fields)
 
         "Read the object's describe and cache it."
-        obj = check_supports(obj, Collectable)
-        c = await maybe_await(obj.describe_collect())
+        collectable = check_supports(collectable, Collectable)
+        collect_descriptor: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]] = await maybe_await(
+            collectable.describe_collect()
+        )
 
-        # Required all(not to handle TrivialFlyer test case of str: {}
-        if all(not is_data_key(value) for value in c.values()):
-            for stream in c:
+        if all(not is_data_key(value) for value in collect_descriptor.values()):
+            for stream in collect_descriptor:
                 if stream not in self._describe_collect_cache:
                     self._describe_collect_cache[stream] = {}
-                self._describe_collect_cache[stream][obj] = c[stream]
+                self._describe_collect_cache[stream][collectable] = collect_descriptor[stream]
         else:
             # Single nested
             assert stream_name is not None, "Single nested data keys should be pre-declared"
             if stream_name not in self._describe_collect_cache:
                 self._describe_collect_cache[stream_name] = {}
-            self._describe_collect_cache[stream_name][obj] = c
+            self._describe_collect_cache[stream_name][collectable] = collect_descriptor
 
     async def _describe_collect(self, collect_object: Flyable):
         """Read an object's describe_collect and cache it.
@@ -681,18 +684,27 @@ class RunBundler:
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
         # Make sure you can't use identical data keys in multiple streams
-        duplicates: Dict[str, DataKey] = defaultdict(dict)
-        for stream, device_map in self._describe_collect_cache.items():
-            for other_stream, other_device_map in self._describe_collect_cache.items():
-                if other_stream != stream:
-                    for device, datakeys in device_map.items():
-                        if device in other_device_map and datakeys == other_device_map[device]:
-                            duplicates[stream][device] = datakeys
+        duplicates: Dict[Tuple[str, str], list[str]] = {}
+        for stream, other_stream in combinations(self._describe_collect_cache.keys(), 2):
+            if (
+                collect_object in self._describe_collect_cache[stream]
+                and collect_object in self._describe_collect_cache[other_stream]
+            ):
+                duplicate_field_names = [
+                    field_name
+                    for field_name in self._describe_collect_cache[stream][collect_object]
+                    if field_name in self._describe_collect_cache[other_stream][collect_object]
+                ]
+                if duplicate_field_names:
+                    duplicates[(stream, other_stream)] = duplicate_field_names
+
         if len(duplicates) > 0:
             raise RuntimeError(
-                f"Can't use identical data keys in multiple streams: {duplicates}",
-                f"Data keys: {list(duplicates.values())}",
-                f"streams: {duplicates.keys()}",
+                f"Collectable {collect_object.name} repeats data keys in multiple streams:"
+                + "".join(
+                    f"\n{streams} both contain fields {duplicate_data_keys}."
+                    for streams, duplicate_data_keys in duplicates.items()
+                )
             )
 
         for stream_name, devices in self._describe_collect_cache.items():

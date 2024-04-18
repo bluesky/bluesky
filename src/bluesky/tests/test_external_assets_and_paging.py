@@ -417,7 +417,8 @@ def test_new_style_with_no_stream_name_and_no_pre_declare_does_not_try_and_make_
 def test_same_key_in_multiple_streams_fails(RE):
     with pytest.raises(
         RuntimeError,
-        match=re.escape("Can't use identical data keys in multiple streams"),
+        match=re.escape("""Collectable det repeats data keys in multiple streams:
+('stream1', 'stream2') both contain fields ['pv']."""),
     ):
         RE(collect_plan(MultiKeyOldCollectable(name="det"), pre_declare=False))
 
