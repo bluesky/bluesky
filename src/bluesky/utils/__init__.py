@@ -656,8 +656,8 @@ def snake_cyclers(cyclers, snake_booleans):
         lengths.append(len(c))
     total_length = np.prod(lengths)
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
-        num_tiles = np.product(lengths[:i])
-        num_repeats = np.product(lengths[i + 1 :])
+        num_tiles = np.prod(lengths[:i])
+        num_repeats = np.prod(lengths[i + 1 :])
         for k, v in c._transpose().items():
             if snake:
                 v = v + v[::-1]
