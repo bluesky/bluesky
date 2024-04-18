@@ -1904,6 +1904,9 @@ This is the general idea:
             # Do this even if an Exception is raised.
             yield from cleanup_plan()
 
+Note: The `contingency_wrapper` is superior to the `finalize_wrapper` as it accepts exceptions as arguments,
+allowing for targeted cleanup based on specific failure modes.
+
 The exception in question may originate from the plan itself or from the
 RunEngine when it attempts to execute a given command.
 
