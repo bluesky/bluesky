@@ -1,5 +1,6 @@
+import dataclasses
 from abc import abstractmethod
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -71,16 +72,30 @@ class Thing:
 class StreamHandlerBase:
     mimetype: str = ""
     _num_rows: int = 0
+    _skips: List = dataclasses.field(default_factory=list)
 
     def __init__(self):
         pass
 
     @abstractmethod
     def consume_stream_datum(self, doc):
-        # This will be called for every new StreamDatum received.
-        # Actions:
-        #   - Consume new StreamDatum
-        #   - Update shape and chunks
+        """Process a new StreamDatum and update the internal data structure
+
+        This will be called for every new StreamDatum received.
+        Actions:
+          - Consume new StreamDatum
+          - Update shape and chunks
+        """
+        pass
+
+    @abstractmethod
+    def get_data_source(self):
+        """Return a DataSource object reflecting the current state of the streamed dataset.
+
+        The returned DataSource is conceptually similar (and can be an instance of) tiled.structures.DataSource. In
+        general, it describes associated Assets (filepaths, mimetype) along with their internal data structure
+        (array shape, chunks, additional parameters) and should contain all information necessary to read the file.
+        """
         pass
 
 
@@ -88,7 +103,14 @@ class HDF5StreamHandler(StreamHandlerBase):
     mimetype = "application/x-hdf5"
 
     def __init__(
-        self, data_uri, path, data_shape, data_type, chunk_size: Optional[int] = None, swmr=True, **kwargs
+        self,
+        data_uri,
+        path,
+        data_shape,
+        data_type,
+        chunk_size: Optional[int] = None,
+        swmr: Optional[bool] = True,
+        **kwargs,
     ):
         self.assets = [Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")]
         self.path = path.strip("/").split("/")
@@ -96,10 +118,11 @@ class HDF5StreamHandler(StreamHandlerBase):
         self.data_type = np.dtype(data_type)
         self.chunk_size = chunk_size
         self.adapter_parameters = {"path": self.path}
+        self.swmr = swmr
 
     @property
     def shape(self):
-        """Shape including the 0-th dimension -- number of rows"""
+        """Full shape including the 0-th dimension -- number of rows"""
         # TODO Add reshape, skips.
         return [self._num_rows, *self.data_shape]
 
@@ -143,15 +166,6 @@ class HDF5StreamHandler(StreamHandlerBase):
             parameters=self.adapter_parameters,
             management=Management.external,
         )
-
-    # Does this belong here??
-
-    #     def consume_and_read_stream_datum(self, *stream_datum_docs):
-    #         self.consume_stream_datum(*stream_datum_docs)
-    #         import h5py
-    #
-    #         array = ...
-    #         return array
 
 
 class TIFFStreamHandler(StreamHandlerBase):
@@ -299,7 +313,7 @@ class _RunWriter(DocumentRouter):
             parent_node["events"].write_partition(df, 0)
 
     def stream_resource(self, doc: StreamResource):
-        # Only cache the StreamResource for now; add the node when at least one StreamDatum is added
+        # Only _cache_ the StreamResource for now; add the node when at least one StreamDatum is added
         self._sr_cache[doc["uid"]] = doc
 
     def get_sr_node(self, sr_uid: str, desc_uid: str = None):
