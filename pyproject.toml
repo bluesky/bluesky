@@ -21,6 +21,7 @@ dependencies = [
     "msgpack",
     "msgpack-numpy",
     "numpy",
+    "redis-json-dict",
     "super_state_machine",
     "toolz",
     "tqdm>=4.44",
