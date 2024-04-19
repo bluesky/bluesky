@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.13.0a4.dev76+gdf908825 documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.13.0a4.dev78+gadd624e1 documentation</title>
   
   
   
@@ -35,14 +35,14 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../../_static/documentation_options.js?v=0158c947"></script>
+    <script src="../../_static/documentation_options.js?v=52b63879"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev76+gdf908825';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev78+gadd624e1';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -2250,12 +2250,11 @@ document.write(`
                         <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
                     <span class="c1"># try to look up the coroutine to execute the command</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="n">coro</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
-                    <span class="c1"># replace KeyError with a local sub-class and go</span>
-                    <span class="c1"># to top of the loop</span>
-                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-                        <span class="c1"># TODO make this smarter</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">coro</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+                    <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+                        <span class="c1"># flag invalid command</span>
+                        <span class="c1"># and return to the top of the loop</span>
                         <span class="n">new_response</span> <span class="o">=</span> <span class="n">InvalidCommand</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
                         <span class="k">continue</span>
 
@@ -2477,12 +2476,11 @@ document.write(`
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># TODO extract this from the Msg</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
-                <span class="s2">&quot;A &#39;close_run&#39; message was not received before the &#39;open_run&#39; message&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">)</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;A &#39;close_run&#39; message was not received before the &#39;open_run&#39; message&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">close_run</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">ret</span>
@@ -2503,14 +2501,15 @@ document.write(`
 <span class="sd">        Descriptor document.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;Cannot bundle readings without &quot;</span>
                 <span class="s2">&quot;an open run. That is, &#39;create&#39; must &quot;</span>
                 <span class="s2">&quot;be preceded by &#39;open_run&#39;.&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_declare_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
@@ -2530,14 +2529,15 @@ document.write(`
 <span class="sd">        on declare_stream, rather than `describe`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;Cannot bundle readings without &quot;</span>
                 <span class="s2">&quot;an open run. That is, &#39;create&#39; must &quot;</span>
                 <span class="s2">&quot;be preceded by &#39;open_run&#39;.&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
@@ -2560,11 +2560,9 @@ document.write(`
                 <span class="s2">&quot;`read` must return a dictionary.&quot;</span>
             <span class="p">)</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="o">...</span>
-        <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ret</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">ret</span>
@@ -2608,11 +2606,13 @@ document.write(`
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;A &#39;monitor&#39; message was sent but no run is open.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
-        <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">monitor</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;A &#39;monitor&#39; message was sent but no run is open.&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">monitor</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state_coro</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_unmonitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
@@ -2624,11 +2624,13 @@ document.write(`
 <span class="sd">            Msg(&#39;unmonitor&#39;, obj)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;A &#39;unmonitor&#39; message was sent but no run is open.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
-        <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">unmonitor</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;An &#39;unmonitor&#39; message was sent but no run is open.&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">unmonitor</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state_coro</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
@@ -2639,14 +2641,15 @@ document.write(`
 <span class="sd">            Msg(&#39;save&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
             <span class="c1"># sanity check -- this should be caught by &#39;create&#39; which makes</span>
             <span class="c1"># this code path impossible</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;A &#39;save&#39; message was sent but no run is open.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
-
-        <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;A &#39;save&#39; message was sent but no run is open.&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Drop the event that is currently being bundled</span>
@@ -2656,11 +2659,13 @@ document.write(`
 <span class="sd">            Msg(&#39;drop&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;A &#39;drop&#39; message was sent but no run is open.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
-        <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;A &#39;drop&#39; message was sent but no run is open.&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare a flyer for a flyscan</span>
@@ -2716,10 +2721,11 @@ document.write(`
 <span class="sd">            Msg(&#39;kickoff&#39;, flyer_object, start, stop, step, group=&lt;name&gt;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;A &#39;kickoff&#39; message was sent but no run is open.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;A &#39;kickoff&#39; message was sent but no run is open.&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
 
         <span class="n">_</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">msg</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Flyable</span><span class="p">)</span>
@@ -2802,10 +2808,12 @@ document.write(`
 <span class="sd">            Msg(&#39;collect&#39;, flyer_object, stream=True, return_payload=False, name=&quot;a_name&quot;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">ke</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;A &#39;collect&#39; message was sent but no run is open.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ke</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="c1"># TODO add test exercising this path</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;A &#39;collect&#39; message was sent but no run is open.&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
@@ -3051,13 +3059,13 @@ document.write(`
 <span class="sd">            object.configure(*args, **kwargs)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">current_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
             <span class="n">current_run</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">current_run</span><span class="o">.</span><span class="n">bundling</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;Cannot configure after &#39;create&#39; but before &#39;save&#39; Aborting!&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">current_run</span><span class="o">.</span><span class="n">bundling</span><span class="p">:</span>
+            <span class="n">ims_msg</span> <span class="o">=</span> <span class="s2">&quot;Cannot configure after &#39;create&#39; but before &#39;save&#39; Aborting!&quot;</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">msg</span>
 
         <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -3184,11 +3192,9 @@ document.write(`
 <span class="sd">        where ``TOKEN`` is the return value from ``RunEngine._subscribe()``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Removing subscription </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">msg</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">token</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;token&quot;</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">token</span><span class="p">,)</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">token</span> <span class="o">:=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;token&quot;</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">()))</span> <span class="ow">is</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">token</span><span class="p">,)</span> <span class="o">=</span> <span class="n">arg</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">unsubscribe</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_temp_callback_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state_coro</span><span class="p">()</span>
