@@ -1888,7 +1888,7 @@ class Plan:
 
     def __del__(self):
         if self._stack:
-            warning_message = "".join(self._stack)
+            warning_message = "\n" + "".join(self._stack)
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
 
