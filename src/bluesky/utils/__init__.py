@@ -17,25 +17,16 @@ from collections import namedtuple
 from collections.abc import Iterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
-from typing import (
-    Any,
-    AsyncIterable,
-    AsyncIterator,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, AsyncIterable, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
 import msgpack_numpy
 import numpy as np
+import redis as _redis
 import zict
 from cycler import cycler
+from redis_json_dict import RedisJSONDict as _RedisJSONDict
 from super_state_machine.errors import TransitionError
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
@@ -868,6 +859,74 @@ class PersistentDict(collections.abc.MutableMapping):
     def reload(self):
         """Force a reload from disk, overwriting current cache"""
         self._cache = dict(self._func.items())
+
+
+class RedisPersistentDict(_RedisJSONDict):
+    """
+    A MutableMapping which syncs its contents to Redis.
+
+    Create persistent dictionary with a new redis client
+    >>> d = RedisPersistentDict(host='localhost', port=6379, prefix='my_prefix')
+
+    RedisPersistentDict supports all keyword arguments in redis.Redis() for
+    creating a new Redis client. Alternatively, an existing Redis client can
+    be specified using 'redis_client' argument.
+
+    Create persistent dictionary using an existing redis client
+    >>> d = RedisPersistentDict(redis_client=redis_client, prefix='my_prefix')
+    """
+
+    def __init__(self, *args, prefix="bluesky_metadata_", redis_client=None, **kwargs) -> None:
+        if redis_client is not None:
+            if not isinstance(redis_client, _redis.client.Redis):
+                raise TypeError("'redis_client' must be a valid Redis client object (redis.client.Redis).")
+            if kwargs:
+                warnings.warn("Keyrord arguments are ignored since 'redis_client' is specified.")  # noqa: B028
+        if not isinstance(prefix, str):
+            raise TypeError("'prefix' must be a valid non-empty string.")
+        if not prefix:
+            raise ValueError("'prefix' must be a valid non-empty string.")
+        self._prefix = prefix
+        self._redis_client = redis_client if redis_client else _redis.Redis(*args, **kwargs)
+        super().__init__(redis_client=self._redis_client, prefix=self._prefix)
+
+    @property
+    def prefix(self):
+        return self._prefix
+
+    @property
+    def redis_client(self):
+        return self._redis_client
+
+    def __repr__(self):
+        return super().__repr__()
+
+    def __iter__(self):
+        yield from super().__iter__()
+
+    def __len__(self):
+        return super().__len__()
+
+    def __getitem__(self, key):
+        return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        return super().__setitem__(key, value)
+
+    def __delitem__(self, key):
+        return super().__delitem__(key)
+
+    def clear(self):
+        return super().clear()
+
+    def update(self, d):
+        return super().update(d)
+
+    def __copy__(self):
+        return super().__copy__()
+
+    def __deepcopy__(self, memo):
+        return super().__deepcopy__(memo)
 
 
 SEARCH_PATH = []
