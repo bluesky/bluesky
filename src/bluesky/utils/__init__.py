@@ -27,10 +27,10 @@ import redis as _redis
 import zict
 from cycler import cycler
 from redis_json_dict import RedisJSONDict as _RedisJSONDict
-from super_state_machine.errors import TransitionError
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
     Asset,
     HasHints,
@@ -647,8 +647,8 @@ def snake_cyclers(cyclers, snake_booleans):
         lengths.append(len(c))
     total_length = np.prod(lengths)
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
-        num_tiles = np.product(lengths[:i])
-        num_repeats = np.product(lengths[i + 1 :])
+        num_tiles = np.prod(lengths[:i])
+        num_repeats = np.prod(lengths[i + 1 :])
         for k, v in c._transpose().items():
             if snake:
                 v = v + v[::-1]
