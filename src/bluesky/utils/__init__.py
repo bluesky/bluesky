@@ -1875,10 +1875,7 @@ class Plan:
     def __init__(self, f, *args, **kwargs) -> None:
         self._iter = f(*args, **kwargs)
         self._stack = traceback.format_stack()
-        # Find the index in the stack trace where the function `f` is called
-        func_index = next((i for i, s in enumerate(self._stack) if f.__name__ in s), None)
-        if func_index is not None:
-            self._stack = self._stack[func_index:func_index+1]
+        self._stack = self._stack[:-2]
         self._stack += [f"RuntimeWarning: plan `{f.__name__}` was never iterated"
                         ", did you mean to use `yield from`?"]
 
