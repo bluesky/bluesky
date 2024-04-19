@@ -10,7 +10,6 @@ import threading
 import time
 import types
 import warnings
-from collections import namedtuple
 from functools import partial
 from inspect import Parameter, Signature
 from typing import (
@@ -18,8 +17,6 @@ from typing import (
     Callable,
     List,
     Optional,
-    Tuple,
-    Type,
 )
 from weakref import WeakKeyDictionary, ref
 
@@ -32,82 +29,6 @@ from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.utils.helper_functions import _L2norm, normalize_subs_input
-
-
-class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
-    """Namedtuple sub-class to encapsulate a message from the plan to the RE.
-
-    This class provides 3 key features:
-
-    1. dot access to the contents
-    2. default values and a variadic signature for args / kwargs
-    3. a nice repr
-    """
-
-    __slots__ = ()
-
-    def __new__(cls, command, obj=None, *args, run=None, **kwargs):
-        return super(Msg, cls).__new__(  # noqa: UP008
-            cls, command, obj, args, kwargs, run
-        )
-
-    def __repr__(self):
-        return (
-            f"Msg({self.command!r}, obj={self.obj!r}, "
-            f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
-        )
-
-
-PLAN_TYPES: Tuple[Type, ...] = (types.GeneratorType,)
-try:
-    from types import CoroutineType
-except ImportError:
-    # < py35
-    pass
-else:
-    PLAN_TYPES = PLAN_TYPES + (CoroutineType,)
-    del CoroutineType
-
-
-def ensure_generator(plan):
-    """
-    Ensure that the input is a generator.
-
-    Parameters
-    ----------
-    plan : iterable or iterator
-
-    Returns
-    -------
-    gen : coroutine
-    """
-    if isinstance(plan, Msg):
-        return single_gen(plan)
-    gen = iter(plan)  # no-op on generators; needed for classes
-    if not isinstance(gen, PLAN_TYPES):
-        # If plan does not support .send, we must wrap it in a generator.
-        gen = (msg for msg in gen)
-
-    return gen
-
-
-def single_gen(msg):
-    """Turn a single message into a plan
-
-    If ``lambda x: yield x`` were valid Python, this would be equivalent.
-    In Python 3.6 or 3.7 we might get lambda generators.
-
-    Parameters
-    ----------
-    msg : Msg
-        a single message
-
-    Yields
-    ------
-    msg : Msg
-        the input message
-    """
-    return (yield msg)
 
 
 class RunEngineControlException(Exception):

@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import inspect
 import itertools
 import operator
@@ -8,24 +7,20 @@ import sys
 import uuid
 import warnings
 from functools import reduce, wraps
-from typing import Any, AsyncIterable, AsyncIterator, Dict, Iterable, List, Optional, Union
+from typing import AsyncIterator, Dict, Iterable, List
 
 import numpy as np
 from cycler import cycler
 
 from bluesky.protocols import (
-    Asset,
     HasHints,
     HasParent,
     Hints,
     Movable,
     Readable,
-    StreamAsset,
     SyncOrAsync,
     SyncOrAsyncIterator,
     T,
-    WritesExternalAssets,
-    WritesStreamAssets,
     check_supports,
 )
 
@@ -541,18 +536,6 @@ def ensure_uid(doc_or_uid):
         return doc_or_uid
 
 
-def ts_msg_hook(msg, file=sys.stdout):
-    t = f"{datetime.datetime.now():%H:%M:%S.%f}"
-    msg_fmt = "{: <17s} -> {!s: <15s} args: {}, kwargs: {}, run: {}".format(
-        msg.command,
-        msg.obj.name if hasattr(msg.obj, "name") else msg.obj,
-        msg.args,
-        msg.kwargs,
-        f"'{msg.run}'" if isinstance(msg.run, str) else msg.run,
-    )
-    print(f"{t} {msg_fmt}", file=file)
-
-
 def make_decorator(wrapper):
     """
     Turn a generator instance wrapper into a generator function decorator.
@@ -778,21 +761,6 @@ def get_hinted_fields(obj) -> List[str]:
         return []
 
 
-already_warned: Dict[Any, bool] = {}
-
-
-def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
-    if args or kwargs and not already_warned.get(msg.command):
-        already_warned[msg.command] = True
-        error_msg = f"""\
-About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
-In the future the passing of Msg.args and Msg.kwargs down to hardware from
-Msg("{msg.command}") may be deprecated. If you have a use case for these,
-we would like to know about it, so please open an issue at
-https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg)  # noqa: B028
-
-
 def maybe_update_hints(hints: Dict[str, Hints], obj):
     if isinstance(obj, HasHints):
         hints[obj.name] = obj.hints
@@ -805,22 +773,6 @@ async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator
     else:
         for v in iterator:  # type: ignore
             yield v
-
-
-async def maybe_collect_asset_docs(
-    msg, obj, index: Optional[int] = None, *args, **kwargs
-) -> AsyncIterable[Union[Asset, StreamAsset]]:
-    # The if/elif statement must be done in this order because isinstance for protocol
-    # doesn't check for exclusive signatures, and WritesExternalAssets will also
-    # return true for a WritesStreamAsset as they both contain collect_asset_docs
-    if isinstance(obj, WritesStreamAssets):
-        warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
-        async for stream_doc in iterate_maybe_async(obj.collect_asset_docs(index, *args, **kwargs)):
-            yield stream_doc
-    elif isinstance(obj, WritesExternalAssets):
-        warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
-        async for doc in iterate_maybe_async(obj.collect_asset_docs(*args, **kwargs)):
-            yield doc
 
 
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
