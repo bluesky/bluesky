@@ -2,6 +2,7 @@ from .utils import (
     AsyncInput,
     CallbackRegistry,
     DefaultDuringTask,
+    DuringTask,
     FailedPause,
     FailedStatus,
     IllegalMessageSequence,
@@ -42,4 +43,7 @@ from .utils import (
     single_gen,
     snake_cyclers,
     warn_if_msg_args_or_kwargs,
+    install_nb_kicker,
+    install_qt_kicker,
+    install_kicker,
 )
