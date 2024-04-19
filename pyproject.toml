@@ -189,3 +189,6 @@ protected-files = ["__init__.py", "README.rst", "vendor.txt"]
 
 [tool.vendoring.license.fallback-urls]
 super_state_machine = "https://github.com/beregond/super_state_machine/blob/master/LICENSE"
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
