@@ -24,6 +24,7 @@ from .utils import (
     merge_cycler,
     plan,
     separate_devices,
+    short_uid,
 )
 from .utils import (
     short_uid as _short_uid,
@@ -522,6 +523,25 @@ def wait(group=None, *, timeout=None):
     return (yield Msg("wait", None, group=group, timeout=timeout))
 
 
+def wait_and_move_on(group=None, *, flush_period=None):
+    """
+    Wait for all statuses in a group to report being finished.
+
+    Parameters
+    ----------
+    group : string (or any hashable object), optional
+        Identifier given to `abs_set`, `rel_set`, `trigger`; None by default
+    flush_period : float (or int) optional
+        Period in seconds to wait before returning from command
+
+    Yields
+    ------
+    msg : Msg
+        Msg('wait_and_move_on', None, group=group, flush_period=flush_period)
+    """
+    return (yield Msg("wait_and_move_on", None, group=group, flush_period=flush_period))
+
+
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
 
 
@@ -840,6 +860,44 @@ def collect(obj, *args, stream=False, return_payload=True, name=None):
     :func:`bluesky.plan_stubs.wait`
     """
     return (yield Msg("collect", obj, *args, stream=stream, return_payload=return_payload, name=name))
+
+
+@plan
+def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
+    """
+    Collect data from one or more fly-scanning devices and emit documents, then collect and emit
+    data from one or more Collectable detectors until all are done.
+
+    Parameters
+    ----------
+    flyers: An iterable sequnce of fly-able devices with 'kickoff', 'complete' and
+        'collect' methods.
+    dets: An iterable sequence of collectable devices with 'describe_collect' method.
+    flush_period: float, int
+        Time period in seconds between each yield from collect while waiting for triggered
+        objects to be done
+    stream_name: str, optional
+        If not None, will collect for the named string specifically, else collect will be performed
+        on all streams.
+
+
+    Yields
+    ------
+    msg : Msg
+        A 'complete' message or 'collect' message
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.complete`
+    :func:`bluesky.plan_stubs.collect`
+    """
+    group = short_uid(label="complete")
+    for flyer in flyers:
+        yield from complete(flyer, group=group, wait=False)
+    done = False
+    while not done:
+        done = yield from wait_and_move_on(group=group, flush_period=flush_period)
+        yield from collect(*dets, name=stream_name)
 
 
 @plan

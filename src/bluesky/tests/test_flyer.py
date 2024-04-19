@@ -4,15 +4,78 @@ from collections import defaultdict
 import pytest
 from ophyd import Component as Cpt
 from ophyd import Device
-from ophyd.sim import NullStatus, TrivialFlyer
+from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
 
 from bluesky import Msg
-from bluesky.plan_stubs import close_run, complete, complete_all, kickoff, kickoff_all, open_run, wait
+from bluesky.plan_stubs import (
+    close_run,
+    collect_while_completing,
+    complete,
+    complete_all,
+    declare_stream,
+    kickoff,
+    kickoff_all,
+    open_run,
+    wait,
+)
 from bluesky.plans import count, fly
 from bluesky.protocols import Preparable
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
+
+
+def collect_while_completing_plan(flyers, dets, stream_name: str = "test_stream", pre_declare: bool = True):
+    yield from open_run()
+    if pre_declare:
+        yield from declare_stream(*dets, name=stream_name, collect=True)
+    yield from collect_while_completing(flyers, dets, flush_period=0.1, stream_name=stream_name)
+    yield from close_run()
+
+
+def test_collect_while_completing_plan_trivial_case(RE):
+    completed = []
+    collected = []
+
+    class StatusDoneAfterSecondCall(StatusBase):
+        times_called = 0
+
+        @property
+        def done(self):
+            self.times_called += 1
+            return self.times_called >= 10
+
+    class SlowFlyer:
+        name = "trivial-flyer"
+        custom_status = StatusDoneAfterSecondCall()
+
+        def kickoff(self):
+            return NullStatus()
+
+        def complete(self):
+            completed.append(self)
+            return self.custom_status
+
+    class TrivialDetector:
+        name = "trivial-detector"
+
+        def describe_collect(self):
+            collected.append(self)
+            return {
+                "data_key_1": {
+                    "dims": [],
+                    "dtype": "string",
+                    "shape": [],
+                    "source": "",
+                }
+            }
+
+    det = TrivialDetector()
+    flyer = SlowFlyer()
+    RE(collect_while_completing_plan([flyer], [det]))
+    assert not RE._seen_wait_and_move_on_keys  # key should be removed from set when collection done
+    assert det in collected
+    assert flyer in completed
 
 
 @requires_ophyd

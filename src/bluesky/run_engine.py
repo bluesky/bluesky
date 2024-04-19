@@ -502,6 +502,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of Events to wait for
         self._status_objs = defaultdict(set)  # status objects to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
+        self._seen_wait_and_move_on_keys = set()  # group ids that have been passed to _wait_and_move_on
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
@@ -529,6 +530,7 @@ class RunEngine:
             "trigger": self._trigger,
             "sleep": self._sleep,
             "wait": self._wait,
+            "wait_and_move_on": self._wait_and_move_on,
             "checkpoint": self._checkpoint,
             "clear_checkpoint": self._clear_checkpoint,
             "rewindable": self._rewindable,
@@ -2307,6 +2309,50 @@ class RunEngine:
                     # inferred this from the status_obj, but there are edge
                     # cases.
                     self.waiting_hook(None)
+
+    async def _wait_and_move_on(self, msg):
+        """Block progress until every object that was triggered or set
+        with the keyword argument `group=<GROUP>` is done, or the timeout period
+        set with keyword argument `flush_period=<FLUSH_PERIOD>` is reached. Returns
+        a boolean that is True when all triggered objects are done.
+
+        Expected message object is:
+
+            Msg('wait_and_move_on', group=<GROUP>, flush_period=<FLUSH_PERIOD>)
+
+        where ``<GROUP>`` is any hashable key and ``<FLUSH_PERIOD>`` is a float or int.
+        """
+        done = False
+        if msg.args:
+            (group,) = msg.args
+        else:
+            group = msg.kwargs["group"]
+        futs = list(self._groups.pop(group, []))
+        if futs:
+            status_objs = self._status_objs.pop(group)
+            try:
+                if group not in self._seen_wait_and_move_on_keys:
+                    self._seen_wait_and_move_on_keys.add(group)
+                    if self.waiting_hook is not None:
+                        # Notify the waiting_hook function that the RunEngine is
+                        # waiting for these status_objs to complete. Users can use
+                        # the information these encapsulate to create a progress
+                        # bar.
+                        self.waiting_hook(status_objs)
+                await self._wait_for(Msg("wait_for", None, futs, timeout=msg.kwargs.get("flush_period", None)))
+            except WaitForTimeoutError:
+                # We might wait to call wait again, so put the futures and status objects back in
+                self._groups[group] = futs
+                self._status_objs[group] = status_objs
+            finally:
+                if all(obj.done for obj in status_objs):
+                    if self.waiting_hook is not None:
+                        # Notify the waiting_hook function that we have moved on by
+                        # sending it `None`.
+                        self.waiting_hook(None)
+                    self._seen_wait_and_move_on_keys.remove(group)
+                    done = True
+            return done
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """
