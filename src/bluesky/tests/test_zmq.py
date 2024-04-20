@@ -20,10 +20,7 @@ def test_proxy_script():
     assert p.returncode == 0
 
 
-def test_zmq_basic(RE, hw):
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
-
+def _start_proxy_proc():
     def start_proxy(start_event):
         start_event.set()
         Proxy(5567, 5568).start()
@@ -35,9 +32,44 @@ def test_zmq_basic(RE, hw):
     assert proxy_start_event.is_set()
     time.sleep(0.2)
 
+    return proxy_proc
+
+
+def _start_dispatcher_proc(prefix=None):
+    def make_and_start_dispatcher(queue, start_event):
+        def put_in_queue(name, doc):
+            print("putting ", name, "in queue")
+            start_event.set()
+            queue.put((name, doc))
+
+        kwargs = {"prefix": prefix} if prefix else {}
+        d = RemoteDispatcher("127.0.0.1:5568", **kwargs)
+        d.subscribe(put_in_queue)
+        print("REMOTE IS READY TO START")
+        d.loop.call_later(9, d.stop)
+        start_event.set()
+        d.start()
+
+    dispatcher_start_event = multiprocess.Event()
+    queue = multiprocess.Queue()
+    dispatcher_proc = multiprocess.Process(
+        target=make_and_start_dispatcher, daemon=True, args=(queue, dispatcher_start_event)
+    )
+    dispatcher_proc.start()
+    dispatcher_start_event.wait(timeout=5)
+    assert dispatcher_start_event.is_set()
+    time.sleep(0.2)
+
+    return dispatcher_proc, queue
+
+
+def test_zmq_basic(RE, hw):
+    # COMPONENT 1
+    # Run a 0MQ proxy on a separate process.
+    proxy_proc = _start_proxy_proc()
+
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-
     p = Publisher("127.0.0.1:5567")  # noqa
     RE.subscribe(p)
 
@@ -45,28 +77,7 @@ def test_zmq_basic(RE, hw):
     # Run a RemoteDispatcher on another separate process. Pass the documents
     # it receives over a Queue to this process, so we can count them for our
     # test.
-
-    def make_and_start_dispatcher(queue, start_event):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            start_event.set()
-            queue.put((name, doc))
-
-        d = RemoteDispatcher("127.0.0.1:5568")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        start_event.set()
-        d.start()
-
-
-    dispatcher_start_event = multiprocess.Event()
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue, dispatcher_start_event))
-    dispatcher_proc.start()
-    dispatcher_start_event.wait(timeout=5)
-    assert dispatcher_start_event.is_set()
-    time.sleep(0.2)
+    dispatcher_proc, queue = _start_dispatcher_proc()
 
     # Generate two documents. The Publisher will send them to the proxy
     # device over 5567, and the proxy will send them to the
@@ -153,49 +164,17 @@ def test_zmq_RD_ports_spec(host):
 def test_zmq_no_RE_basic(RE):
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
-
-    def start_proxy(start_event):
-        start_event.set()
-        Proxy(5567, 5568).start()
-
-    proxy_start_event = multiprocess.Event()
-    proxy_proc = multiprocess.Process(target=start_proxy, args=(proxy_start_event,), daemon=True)
-    proxy_proc.start()
-    proxy_start_event.wait(timeout=5)
-    assert proxy_start_event.is_set()
-    time.sleep(0.2)
+    proxy_proc = _start_proxy_proc()
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-
     p = Publisher("127.0.0.1:5567")  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
     # it receives over a Queue to this process, so we can count them for our
     # test.
-
-    def make_and_start_dispatcher(queue, start_event):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            start_event.set()
-            queue.put((name, doc))
-
-        d = RemoteDispatcher("127.0.0.1:5568")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        start_event.set()
-        d.start()
-
-
-    dispatcher_start_event = multiprocess.Event()
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue, dispatcher_start_event))
-    dispatcher_proc.start()
-    dispatcher_start_event.wait(timeout=5)
-    assert dispatcher_start_event.is_set()
-    time.sleep(0.2)
+    dispatcher_proc, queue = _start_dispatcher_proc()
 
     # Generate two documents. The Publisher will send them to the proxy
     # device over 5567, and the proxy will send them to the
@@ -234,16 +213,7 @@ def test_zmq_no_RE_newserializer(RE):
 
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
-    def start_proxy(start_event):
-        start_event.set()
-        Proxy(5567, 5568).start()
-
-    proxy_start_event = multiprocess.Event()
-    proxy_proc = multiprocess.Process(target=start_proxy, args=(proxy_start_event,), daemon=True)
-    proxy_proc.start()
-    proxy_start_event.wait(timeout=5)
-    assert proxy_start_event.is_set()
-    time.sleep(0.2)
+    proxy_proc = _start_proxy_proc()
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
@@ -253,27 +223,7 @@ def test_zmq_no_RE_newserializer(RE):
     # Run a RemoteDispatcher on another separate process. Pass the documents
     # it receives over a Queue to this process, so we can count them for our
     # test.
-    def make_and_start_dispatcher(queue, start_event):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            start_event.set()
-            queue.put((name, doc))
-
-        d = RemoteDispatcher("127.0.0.1:5568")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        start_event.set()
-        d.start()
-
-
-    dispatcher_start_event = multiprocess.Event()
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue, dispatcher_start_event))
-    dispatcher_proc.start()
-    dispatcher_start_event.wait(timeout=5)
-    assert dispatcher_start_event.is_set()
-    time.sleep(0.2)
+    dispatcher_proc, queue = _start_dispatcher_proc()
 
     # Generate two documents. The Publisher will send them to the proxy
     # device over 5567, and the proxy will send them to the
@@ -310,16 +260,7 @@ def test_zmq_no_RE_newserializer(RE):
 def test_zmq_prefix(RE, hw):
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
-    def start_proxy(start_event):
-        start_event.set()
-        Proxy(5567, 5568).start()
-
-    proxy_start_event = multiprocess.Event()
-    proxy_proc = multiprocess.Process(target=start_proxy, args=(proxy_start_event,), daemon=True)
-    proxy_proc.start()
-    proxy_start_event.wait(timeout=5)
-    assert proxy_start_event.is_set()
-    time.sleep(0.2)
+    proxy_proc = _start_proxy_proc()
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
@@ -332,33 +273,7 @@ def test_zmq_prefix(RE, hw):
     # Run a RemoteDispatcher on another separate process. Pass the documents
     # it receives over a Queue to this process, so we can count them for our
     # test.
-
-    def make_and_start_dispatcher(queue, start_event):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            start_event.set()
-            queue.put((name, doc))
-
-        d = RemoteDispatcher("127.0.0.1:5568", prefix=b"sb")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        start_event.set()
-        d.start()
-
-
-    dispatcher_start_event = multiprocess.Event()
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue, dispatcher_start_event))
-    dispatcher_proc.start()
-    dispatcher_start_event.wait(timeout=5)
-    assert dispatcher_start_event.is_set()
-    time.sleep(0.2)
-
-    # queue = multiprocess.Queue()
-    # dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    # dispatcher_proc.start()
-    # time.sleep(5)  # As above, give this plenty of time to start.
+    dispatcher_proc, queue = _start_dispatcher_proc(prefix=b"sb")
 
     # Generate two documents. The Publisher will send them to the proxy
     # device over 5567, and the proxy will send them to the
