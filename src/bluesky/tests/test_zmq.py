@@ -30,6 +30,8 @@ def _start_proxy_proc():
     proxy_proc.start()
     proxy_start_event.wait(timeout=5)
     assert proxy_start_event.is_set()
+    # The event only monitors that the process is started.
+    # Extra delay is needed to ensure that the proxy is started.
     time.sleep(0.2)
 
     return proxy_proc
@@ -58,6 +60,8 @@ def _start_dispatcher_proc(prefix=None):
     dispatcher_proc.start()
     dispatcher_start_event.wait(timeout=5)
     assert dispatcher_start_event.is_set()
+    # The event is set before dispatcher is started. It indicates that the process
+    # is running. Extra delay is needed to ensure that the dispatcher is started.
     time.sleep(0.2)
 
     return dispatcher_proc, queue
