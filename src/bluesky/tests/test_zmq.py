@@ -20,7 +20,7 @@ def test_proxy_script():
     assert p.returncode == 0
 
 
-def test_zmq(RE, hw):
+def test_zmq_basic(RE, hw):
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
@@ -139,7 +139,7 @@ def test_zmq_RD_ports_spec(host):
     del d
 
 
-def test_zmq_no_RE(RE):
+def test_zmq_no_RE_basic(RE):
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
