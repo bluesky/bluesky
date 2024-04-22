@@ -151,7 +151,7 @@ class CrossSection:
             [[]],
             cmap=self._cmap,
             norm=self._norm,
-            interpolation=self._interpolation.value,
+            interpolation=str(self._interpolation.value),
             aspect=aspect,
         )
 
