@@ -116,7 +116,7 @@ class LiveImage(BrokerCallbackBase):
         self.cross_section = CrossSection(fig, cmap, norm, limit_func, auto_redraw, interpolation)
         if window_title:
             self.cross_section._figure.canvas.set_window_title(window_title)
-        self.cross_section.figure.show()
+        self.cross_section._figure.show()
 
     def event(self, doc):
         super().event(doc)
@@ -125,4 +125,4 @@ class LiveImage(BrokerCallbackBase):
 
     def update(self, data):
         self.cross_section.update_image(data)
-        self.cross_section.figure.canvas.draw_idle()
+        self.cross_section.draw_idle()

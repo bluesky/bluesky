@@ -464,3 +464,6 @@ class CrossSection:
     @auto_redraw
     def autoscale_vertical(self, enable):
         self._ax_v.autoscale(enable=False)
+
+    def draw_idle(self):
+        self._figure.canvas.draw_idle()
