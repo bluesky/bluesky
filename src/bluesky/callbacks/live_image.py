@@ -101,11 +101,11 @@ class LiveImage(BrokerCallbackBase):
         data_field_name: str,
         *,
         db=None,
-        cmap: str | Colormap | None = None,
+        cmap: Colormap | None = None,
         norm: Normalize | None = None,
         limit_func=None,
         auto_redraw: bool = True,
-        interpolation: InterpolationEnum = None,
+        interpolation: InterpolationEnum | None = None,
         window_title=None,
     ):
         import matplotlib.pyplot as plt

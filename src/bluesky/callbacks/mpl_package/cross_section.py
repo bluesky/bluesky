@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 import numpy as np
 from matplotlib.colors import Colormap, Normalize
@@ -85,14 +85,14 @@ class CrossSection:
     def __init__(
         self,
         figure: Figure,
-        colormap: Colormap = "gray",
+        colormap: Colormap | None = None,
         norm=None,
-        limit_func: Callable[[Any | None], Callable[[Any], tuple]] = None,
+        limit_func: Callable[[Any | None], Callable[[Any], tuple]] | None = None,
         auto_redraw=True,
         interpolation: InterpolationEnum = InterpolationEnum.NONE,
         aspect="equal",
     ):
-        self._cursor_position_cbs = []
+        self._cursor_position_cbs: List[Any] = []
         self._interpolation = interpolation
         # used to determine if setting properties should force a re-draw
         self._auto_redraw = auto_redraw
@@ -151,7 +151,7 @@ class CrossSection:
             [[]],
             cmap=self._cmap,
             norm=self._norm,
-            interpolation=self._interpolation,
+            interpolation=self._interpolation.value,
             aspect=aspect,
         )
 
@@ -328,7 +328,7 @@ class CrossSection:
             col = int(x + 0.5)
             row = int(y + 0.5)
             point_falls_inside_array: bool = col >= 0 and col < numcols and row >= 0 and row < numrows
-            if point_falls_inside_array:
+            if point_falls_inside_array and self._imdata is not None:
                 # if it does, grab the value
                 z = self._imdata[row, col]
                 return f"X: {col:d} Y: {row:d} I: {z:.2f}"
