@@ -506,7 +506,7 @@ def sleep(time):
 
 
 @plan
-def wait(group=None, *, timeout=None):
+def wait(group=None, *, timeout=None, move_on=False):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -518,28 +518,9 @@ def wait(group=None, *, timeout=None):
     Yields
     ------
     msg : Msg
-        Msg('wait', None, group=group)
+        Msg('wait', None, group=group, move_on=move_on, timeout=timeout)
     """
-    return (yield Msg("wait", None, group=group, timeout=timeout))
-
-
-def wait_and_move_on(group=None, *, flush_period=None):
-    """
-    Wait for all statuses in a group to report being finished.
-
-    Parameters
-    ----------
-    group : string (or any hashable object), optional
-        Identifier given to `abs_set`, `rel_set`, `trigger`; None by default
-    flush_period : float (or int) optional
-        Period in seconds to wait before returning from command
-
-    Yields
-    ------
-    msg : Msg
-        Msg('wait_and_move_on', None, group=group, flush_period=flush_period)
-    """
-    return (yield Msg("wait_and_move_on", None, group=group, flush_period=flush_period))
+    return (yield Msg("wait", None, group=group, move_on=move_on, timeout=timeout))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -896,7 +877,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
         yield from complete(flyer, group=group, wait=False)
     done = False
     while not done:
-        done = yield from wait_and_move_on(group=group, flush_period=flush_period)
+        done = yield from wait(group=group, timeout=flush_period, move_on=True)
         yield from collect(*dets, name=stream_name)
 
 

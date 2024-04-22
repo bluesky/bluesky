@@ -104,8 +104,8 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
         (trigger, ("det",), {"group": "A"}, [Msg("trigger", "det", group="A")]),
         (sleep, (2,), {}, [Msg("sleep", None, 2)]),
-        (wait, (), {}, [Msg("wait", None, group=None, timeout=None)]),
-        (wait, ("A",), {}, [Msg("wait", None, group="A", timeout=None)]),
+        (wait, (), {}, [Msg("wait", None, move_on=False, group=None, timeout=None)]),
+        (wait, ("A",), {}, [Msg("wait", None, group="A", move_on=False, timeout=None)]),
         (checkpoint, (), {}, [Msg("checkpoint")]),
         (clear_checkpoint, (), {}, [Msg("clear_checkpoint")]),
         (pause, (), {}, [Msg("pause", None, defer=False)]),
@@ -697,6 +697,7 @@ def test_trigger_and_read(hw):
     for msg in msgs:
         msg.kwargs.pop("group", None)
         msg.kwargs.pop("timeout", None)
+        msg.kwargs.pop("move_on", None)
     assert msgs == expected
 
     msgs = list(trigger_and_read([det], "custom"))
@@ -704,6 +705,7 @@ def test_trigger_and_read(hw):
     for msg in msgs:
         msg.kwargs.pop("group", None)
         msg.kwargs.pop("timeout", None)
+        msg.kwargs.pop("move_on", None)
     assert msgs == expected
 
 
