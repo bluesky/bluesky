@@ -8,8 +8,8 @@ from matplotlib.ticker import LinearLocator, NullLocator
 from matplotlib.widgets import Cursor
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from bluesky.callbacks.mpl_package.interpolation import InterpolationEnum
-from bluesky.callbacks.mpl_package.limit_factories import fullrange_limit_factory
+from bluesky.callbacks._mpl_image_cross_section.interpolation import InterpolationEnum
+from bluesky.callbacks._mpl_image_cross_section.limit_factories import fullrange_limit_factory
 
 logger = logging.getLogger(__name__)
 
