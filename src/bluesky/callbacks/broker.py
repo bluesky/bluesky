@@ -232,7 +232,7 @@ class LiveImage(BrokerCallbackBase):
         norm: Normalize | None = None,
         limit_func=None,
         auto_redraw: bool = True,
-        interpolation: InterpolationEnum | None = None,
+        interpolation: InterpolationEnum = InterpolationEnum.NONE,
         window_title=None,
     ):
         import matplotlib.pyplot as plt
