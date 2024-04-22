@@ -25,8 +25,8 @@ from bluesky.protocols import (
 
 
 @pytest.fixture
-def catalog(tmpdir):
-    catalog = in_memory(writable_storage=tmpdir)
+def catalog(tmp_path):
+    catalog = in_memory(writable_storage=str(tmp_path))
     yield catalog
 
 
@@ -179,9 +179,9 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         return {}
 
 
-def test_stream_datum_readable_counts(RE, client, tmpdir):
+def test_stream_datum_readable_counts(RE, client, tmp_path):
     tw = TiledWriter(client)
-    det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
+    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     RE(bp.count([det], 3), tw)
     arrs = client.values().last()["primary"]["external"].values()
     assert arrs[0].shape == (3,)
@@ -190,8 +190,8 @@ def test_stream_datum_readable_counts(RE, client, tmpdir):
     assert arrs[1][:] is not None
 
 
-def test_stream_datum_collectable(RE, client, tmpdir):
-    det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
+def test_stream_datum_collectable(RE, client, tmp_path):
+    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     tw = TiledWriter(client)
     RE(collect_plan(det, name="primary"), tw)
     arrs = client.values().last()["primary"]["external"].values()
