@@ -12,8 +12,8 @@ from event_model import DocumentNames, compose_run
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
 from bluesky.callbacks import CallbackBase, CallbackCounter, LiveFit, LiveTable
+from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.core import make_callback_safe, make_class_safe
-from bluesky.callbacks.live_image import BrokerCallbackBase
 from bluesky.callbacks.mpl_plotting import (
     LiveFitPlot,
     LiveGrid,
