@@ -1,5 +1,15 @@
 from time import time
-from typing import Any, Callable, Generator, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 from warnings import warn
 
 from bluesky.log import logger as LOGGER
@@ -8,6 +18,8 @@ from bluesky.run_engine import call_in_bluesky_event_loop, in_bluesky_event_loop
 from bluesky.utils import Msg, maybe_await
 
 from .protocols import Checkable, Reading
+
+END = "end"
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -105,7 +117,9 @@ async def check_limits_async(plan):
             if isinstance(obj, Checkable):
                 await maybe_await(obj.check_value(msg.args[0]))
             else:
-                warn(f"{obj.name} has no check_value() method" f" to check if {msg.args[0]} is within its limits.")  # noqa: B028
+                warn(  # noqa: B028
+                    f"{obj.name} has no check_value() method" f" to check if {msg.args[0]} is within its limits."
+                )
                 ignore.append(obj)
 
 
@@ -162,7 +176,7 @@ class RunEngineSimulator:
         commands: Union[str, Sequence[str]],
         handler: Callable[[Msg], object],
         msg_filter: Optional[Union[str, Callable[[Msg], bool]]] = None,
-        index: int = 0,
+        index: Union[int, Literal["end"]] = 0,
     ):
         """Add the specified handler for a particular message.
 
@@ -181,16 +195,14 @@ class RunEngineSimulator:
             messages.
         index
             An optional integer indicating where to insert the handler, the default is 0 which
-            prepends it so that newer handlers override older ones. Specify -1 to append the handler.
+            prepends it so that newer handlers override older ones. Specify END to append the handler.
 
         """
         if isinstance(commands, str):
             commands = [commands]
 
-        assert index >= -1, "Negative index values other than -1 unsupported"
-
         self.message_handlers.insert(
-            index if index != -1 else len(self.message_handlers),
+            index if index != END else len(self.message_handlers),
             _MessageHandler(
                 lambda msg: msg.command in commands
                 and (
@@ -265,7 +277,9 @@ class RunEngineSimulator:
         ... sim.simulate_plan(close_shutter())
         """
         self.add_handler(
-            "wait", handler, lambda msg: (group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group)
+            "wait",
+            handler,
+            lambda msg: (group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group),
         )
 
     def add_callback_handler_for(

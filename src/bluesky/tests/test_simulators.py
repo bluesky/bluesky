@@ -10,6 +10,7 @@ import bluesky.plans as bp
 from bluesky import Msg
 from bluesky.plans import grid_scan, scan
 from bluesky.simulators import (
+    END,
     RunEngineSimulator,
     assert_message_and_return_remaining,
     check_limits,
@@ -33,7 +34,11 @@ def test_old_module_name(hw):
     motor = hw.motor
     motor1 = hw.motor1
     motor2 = hw.motor2
-    from bluesky.plan_tools import plot_raster_path, print_summary, print_summary_wrapper
+    from bluesky.plan_tools import (
+        plot_raster_path,
+        print_summary,
+        print_summary_wrapper,
+    )
 
     with pytest.warns(UserWarning):
         print_summary(scan([det], motor, -1, 1, 10))
@@ -111,7 +116,10 @@ def test_simulator_add_handler(hw):
     assert msgs[0].command == "sleep"
 
 
-@pytest.mark.parametrize("insert_order, expected", [([0, 0, 0], 2), ([-1, -1, -1], 0), ([0, 0, 1], 1)])
+@pytest.mark.parametrize(
+    "insert_order, expected",
+    [([0, 0, 0], 2), ([END, END, END], 0), ([0, 0, 1], 1), ([0, -1, 2], 1)],
+)
 def test_simulator_add_handler_append_with_index(hw, insert_order, expected):
     sim = RunEngineSimulator()
 
