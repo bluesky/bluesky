@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -45,17 +45,15 @@ class StreamHandlerBase:
         - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
     """
 
-    mimetype: str = ""
+    mimetype: Union[str, Set[str]] = ""
 
     def __init__(self, sres: StreamResource, desc: EventDescriptor):
-        assert (
-            self.mimetype == sres["mimetype"]
-        ), f"A data source of {sres['mimetype']} mimetype can not be handled with {self.__class__.__name__}."
+        self._validate_mimetype(sres["mimetype"])
 
         self.data_key = sres["data_key"]
         self.uri = sres["uri"]
-        self.sres_parameters = sres["parameters"]
-        self.assets = []
+        self.assets: List[Asset] = []
+        self._sres_parameters = sres["parameters"]
 
         # Find data shape and machine dtype; dtype_str takes precedence if specified
         data_desc = desc["data_keys"][self.data_key]
@@ -64,24 +62,31 @@ class StreamHandlerBase:
         self.dtype = data_desc["dtype"]
         self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
         self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
-        self.chunk_size = self.sres_parameters.get("chunk_size", None)
+        self.chunk_size = self._sres_parameters.get("chunk_size", None)
 
         self._num_rows: int = 0
-        self._skips: List[int] = []
-        self._seqnums_to_indices_map = {}
+        self._has_skips: bool = False
+        self._seqnums_to_indices_map: Dict[int, int] = {}
+
+    def _validate_mimetype(self, mimetype):
+        if isinstance(self.mimetype, "str") and (mimetype == self.mimetype):
+            return None
+        elif isinstance(self.mimetype, set) and (mimetype in self.mimetype):
+            return None
+        else:
+            raise ValueError(f"A data source of {mimetype} type cannot be handled with {self.__class__.__name__}.")
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> Tuple[int]:
         """Native shape of the data stored in assets
 
         This includes the leading (0-th) dimension corresponding to the number of rows, including skipped rows, if
         any. The number of relevant usable data rows may be lower, which is determined by the `seq_nums` field of
         StreamDatum documents."""
-        # TODO Add reshape, skips.
-        return [self._num_rows, *self.datum_shape]
+        return self._num_rows, *self.datum_shape
 
     @property
-    def chunks(self) -> List[List[int]]:
+    def chunks(self) -> Tuple[Tuple[int]]:
         """Chunking specification based on the Stream Resource parameter `chunk_size`:
         None or 0 -- single chunk for all existing and new elements
         int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
@@ -93,7 +98,17 @@ class StreamHandlerBase:
             if self._num_rows % self.chunk_size:
                 dim0_chunk.append(self._num_rows % self.chunk_size)
 
-        return [dim0_chunk] + [[d] for d in self.datum_shape]
+        return tuple(dim0_chunk), *[(d,) for d in self.datum_shape]
+
+    @property
+    def has_skips(self) -> bool:
+        """Indicates whether any rows should be skipped when mapping their indices to frame numbers
+
+        This flag is intended to provide a shortcut for more efficient data access when there are no skips, and the
+        mapping between indices and seq_nums is straightforward. In other case, the _seqnums_to_indices_map needs
+        to be taken into account.
+        """
+        return self._num_rows > len(self._seqnums_to_indices_map)
 
     @property
     @abstractmethod
@@ -147,14 +162,14 @@ class HDF5StreamHandler(StreamHandlerBase):
     def __init__(self, sres: StreamResource, desc: EventDescriptor):
         super().__init__(sres, desc)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
-        self.swmr = self.sres_parameters.get("swmr", True)
+        self.swmr = self._sres_parameters.get("swmr", True)
 
     def consume_stream_datum(self, doc):
         super().consume_stream_datum(doc)
 
     @property
     def adapter_parameters(self):
-        return {"path": self.sres_parameters["path"].strip("/").split("/")}
+        return {"path": self._sres_parameters["path"].strip("/").split("/")}
 
 
 class TIFFStreamHandler(StreamHandlerBase):
@@ -310,7 +325,7 @@ class _RunWriter(DocumentRouter):
 
         self._sres_cache[doc["uid"]] = self._ensure_sres_backcompat(doc)
 
-    def get_sres_node(self, sres_uid: str, desc_uid: str = None):
+    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None):
         """Get the Stream Resource node if it already exists or register if from a cached SR document"""
 
         if sres_uid in self._sres_nodes.keys():
