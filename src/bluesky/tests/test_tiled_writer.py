@@ -62,19 +62,6 @@ class Named(HasName):
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
-    def describe(self) -> Dict[str, DataKey]:
-        """Describe datasets which will be backed by StreamResources"""
-        return {
-            f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
-            f"{self.name}-sd2": DataKey(source="file", dtype="array", shape=[10, 15], external="STREAM:"),
-            f"{self.name}-sd3": DataKey(
-                source="file", dtype="array", dtype_str="uint8", shape=[5, 7, 4], external="STREAM:"
-            ),
-        }
-
-    def describe_collect(self) -> Dict[str, DataKey]:
-        return self.describe()
-
     def _get_hdf5_stream(self, data_key: str, index: int) -> (StreamResource, StreamDatum):
         file_path = self.root + "/dataset.h5"
         uid = f"{data_key}-uid"
@@ -102,7 +89,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                     (0, *data_shape),
                     maxshape=(None, *data_shape),
                     dtype=np.dtype("double"),
-                    chunks=(10, *data_shape),
+                    chunks=(100, *data_shape),
                 )
 
         indx_min, indx_max = self.counter, self.counter + index
@@ -111,7 +98,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             descriptor="",
             uid=f"{uid}/{self.counter}",
             indices={"start": indx_min, "stop": indx_max},
-            seq_nums={"start": 0, "stop": 0},
+            seq_nums={"start": 0, "stop": 0},  # seq_nums will be overwritten by RunBundler
         )
 
         # Write (append to) the hdf5 dataset
@@ -131,7 +118,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             stream_resource = None
             if self.counter == 0:
                 stream_resource = StreamResource(
-                    parameters={"path": "", "chunk_size": 1},
+                    parameters={"chunk_size": 1},
                     data_key=data_key,
                     root=self.root,
                     uri="file://localhost" + self.root,
@@ -146,7 +133,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 descriptor="",
                 uid=f"{uid}/{self.counter}",
                 indices={"start": indx_min, "stop": indx_max},
-                seq_nums={"start": 0, "stop": 0},
+                seq_nums={"start": 0, "stop": 0},  # seq_nums will be overwritten by RunBundler
             )
 
             # Write a tiff file
@@ -155,24 +142,39 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         return stream_resource, stream_datum
 
+    def describe(self) -> Dict[str, DataKey]:
+        """Describe datasets which will be backed by StreamResources"""
+        return {
+            f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
+            f"{self.name}-sd2": DataKey(source="file", dtype="array", shape=[10, 15], external="STREAM:"),
+            f"{self.name}-sd3": DataKey(
+                source="file", dtype="array", dtype_str="uint8", shape=[5, 7, 4], external="STREAM:"
+            ),
+        }
+
+    def describe_collect(self) -> Dict[str, DataKey]:
+        return self.describe()
+
     def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:
         """Produce a StreamResource and StreamDatum for all data keys for 0:index"""
         index = index or 1
-        for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
-            stream_resource, stream_datum = self._get_hdf5_stream(data_key, index)
+        data_keys_methods = {
+            f"{self.name}-sd1": self._get_hdf5_stream,
+            f"{self.name}-sd2": self._get_hdf5_stream,
+            f"{self.name}-sd3": self._get_tiff_stream,
+        }
+
+        for data_key, method in data_keys_methods.items():
+            stream_resource, stream_datum = method(data_key, index)
             if stream_resource is not None:
                 yield "stream_resource", stream_resource
             yield "stream_datum", stream_datum
-        for data_key in [f"{self.name}-sd3"]:
-            stream_resource, stream_datum = self._get_tiff_stream(data_key, index)
-            if stream_resource is not None:
-                yield "stream_resource", stream_resource
-            yield "stream_datum", stream_datum
+
         self.counter += index
 
     def get_index(self) -> int:
         """Report how many frames were written"""
-        return 10
+        return self.counter
 
     def read(self) -> Dict[str, Reading]:
         """Produce an empty event"""
@@ -186,8 +188,10 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     arrs = client.values().last()["primary"]["external"].values()
     assert arrs[0].shape == (3,)
     assert arrs[1].shape == (3, 10, 15)
+    assert arrs[2].shape == (3, 5, 7, 4)
     assert arrs[0].read() is not None
-    assert arrs[1][:] is not None
+    assert arrs[1].read() is not None
+    assert arrs[2].read() is not None
 
 
 def test_stream_datum_collectable(RE, client, tmp_path):
@@ -196,7 +200,8 @@ def test_stream_datum_collectable(RE, client, tmp_path):
     RE(collect_plan(det, name="primary"), tw)
     arrs = client.values().last()["primary"]["external"].values()
     assert arrs[0].read() is not None
-    assert arrs[1][:] is not None
+    assert arrs[1].read() is not None
+    assert arrs[2].read() is not None
 
 
 def collect_plan(*objs, name="primary"):

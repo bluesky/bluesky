@@ -1,11 +1,10 @@
-import dataclasses
 from abc import abstractmethod
-from typing import List, Optional
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 from event_model import DocumentRouter, RunRouter
-from event_model.documents import StreamDatum, StreamResource
+from event_model.documents import EventDescriptor, StreamDatum, StreamResource
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.utils import handle_error
@@ -28,106 +27,61 @@ DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "s
 # Move these into external repo (probably area-detector-handlers)
 # and use the existing handler discovery mechanism.
 
-"""
-A Handler consumes documents from Bluesky. It composes details (DataSource and its Assets) that will go into the
-Tiled database. Each Handler (more specifically, a StreamHandler) is instantiated per a Stream Resource.
-
-Tiled Adapters will later use this to read the data, with good random access and bulk access support.
-
-We put this code into handlers so that additional, possibly very unusual, formats can be supported by users without
-getting a PR merged into Bluesky or Tiled.
-
-The STREAM_HANDLER_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can together be
-used to support:
-    - ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
-      parameters (the handler's job);
-    - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
-"""
-
-# The below is confusing (to Dan).
-# We have a use for StreamDatum(s) in, data out.
-# No dependency on Tiled, its database, HTTP, etc.
-# We just want fast incremental access to streaming data.
-
-# In common:
-# - knowledge of format details (meaning of parameters like swmr)
-# - instance state to track things like num_total_rows.
-
-# Different:
-# - The "at rest" use case has a conceptual dependency on
-#   DataSource Asset.
-# - The streaming data use case has an import dependency o
-#   whatever the I/O library is (e.g. h5py).
-
-
-class Thing:
-    def __init__(self, data_uri, swmr):  # TODO Add reshape, skips.
-        ...
-
-    def read_stream_datum(self, *stream_datum_docs):
-        array = ...
-        return array
-
 
 class StreamHandlerBase:
+    """
+    A Handler consumes documents from Bluesky. It composes details (DataSource and its Assets) that will go into
+    the Tiled database. Each Handler (more specifically, a StreamHandler) is instantiated per a Stream Resource.
+
+    Tiled Adapters will later use this to read the data, with good random access and bulk access support.
+
+    We put this code into handlers so that additional, possibly very unusual, formats can be supported by users
+    without getting a PR merged into Bluesky or Tiled.
+
+    The STREAM_HANDLER_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can be used
+    together to support:
+        - ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
+          parameters (the handler's job);
+        - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
+    """
+
     mimetype: str = ""
-    _num_rows: int = 0
-    _skips: List = dataclasses.field(default_factory=list)
 
-    def __init__(self):
-        pass
+    def __init__(self, sres: StreamResource, desc: EventDescriptor):
+        assert (
+            self.mimetype == sres["mimetype"]
+        ), f"A data source of {sres['mimetype']} mimetype can not be handled with {self.__class__.__name__}."
 
-    @abstractmethod
-    def consume_stream_datum(self, doc):
-        """Process a new StreamDatum and update the internal data structure
+        self.data_key = sres["data_key"]
+        self.uri = sres["uri"]
+        self.sres_parameters = sres["parameters"]
+        self.assets = []
 
-        This will be called for every new StreamDatum received.
-        Actions:
-          - Consume new StreamDatum
-          - Update shape and chunks
-        """
-        pass
+        # Find data shape and machine dtype; dtype_str takes precedence if specified
+        data_desc = desc["data_keys"][self.data_key]
+        self.datum_shape = tuple(data_desc["shape"])
+        self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
+        self.dtype = data_desc["dtype"]
+        self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
+        self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
+        self.chunk_size = self.sres_parameters.get("chunk_size", None)
 
-    @abstractmethod
-    def get_data_source(self):
-        """Return a DataSource object reflecting the current state of the streamed dataset.
-
-        The returned DataSource is conceptually similar (and can be an instance of) tiled.structures.DataSource. In
-        general, it describes associated Assets (filepaths, mimetype) along with their internal data structure
-        (array shape, chunks, additional parameters) and should contain all information necessary to read the file.
-        """
-        pass
-
-
-class HDF5StreamHandler(StreamHandlerBase):
-    mimetype = "application/x-hdf5"
-
-    def __init__(
-        self,
-        data_uri,
-        path,
-        data_shape,
-        data_type,
-        chunk_size: Optional[int] = None,
-        swmr: Optional[bool] = True,
-        **kwargs,
-    ):
-        self.assets = [Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")]
-        self.path = path.strip("/").split("/")
-        self.data_shape = data_shape  # Intrinsic data shape (single frame as written in HDF5 file)
-        self.data_type = np.dtype(data_type)
-        self.chunk_size = chunk_size
-        self.adapter_parameters = {"path": self.path}
-        self.swmr = swmr
+        self._num_rows: int = 0
+        self._skips: List[int] = []
+        self._seqnums_to_indices_map = {}
 
     @property
-    def shape(self):
-        """Full shape including the 0-th dimension -- number of rows"""
+    def shape(self) -> List[int]:
+        """Native shape of the data stored in assets
+
+        This includes the leading (0-th) dimension corresponding to the number of rows, including skipped rows, if
+        any. The number of relevant usable data rows may be lower, which is determined by the `seq_nums` field of
+        StreamDatum documents."""
         # TODO Add reshape, skips.
-        return [self._num_rows, *self.data_shape]
+        return [self._num_rows, *self.datum_shape]
 
     @property
-    def chunks(self):
+    def chunks(self) -> List[List[int]]:
         """Chunking specification based on the Stream Resource parameter `chunk_size`:
         None or 0 -- single chunk for all existing and new elements
         int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
@@ -139,27 +93,46 @@ class HDF5StreamHandler(StreamHandlerBase):
             if self._num_rows % self.chunk_size:
                 dim0_chunk.append(self._num_rows % self.chunk_size)
 
-        return [dim0_chunk] + [[d] for d in self.data_shape]
+        return [dim0_chunk] + [[d] for d in self.datum_shape]
 
+    @property
+    @abstractmethod
+    def adapter_parameters(self) -> Dict:
+        """A dictionary of parameters passed to an Adapter
+
+        These parameters are intended to provide any additional information required to read a data source of a
+        specific mimetype, e.g. "path" or "data_uris".
+        """
+        pass
+
+    @abstractmethod
     def consume_stream_datum(self, doc):
-        """Append StreamDatum to an existing Handler (StreamResource)"""
-        # TODO Add reshape, skips.
+        """Process a new StreamDatum and update the internal data structure
+
+        This will be called for every new StreamDatum received.
+        Actions:
+          - Consume new StreamDatum
+          - Update the list of assets, if necessary
+          - Update shape and chunks
+        """
         self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]  # Number of rows added by StreamDatum
+        new_seqnums = range(doc["seq_nums"]["start"], doc["seq_nums"]["stop"])
+        new_indices = range(doc["indices"]["start"], doc["indices"]["stop"])
+        self._seqnums_to_indices_map.update(dict(zip(new_seqnums, new_indices)))
 
     def get_data_source(self):
-        """Return an instance of Tiled DataSource associated with the handler/StreamResource
+        """Return a DataSource object reflecting the current state of the streamed dataset.
 
-        This will be called when we want to update Tiled. If the rate of StreamDatum consumed is high, we may
-        not update Tiled _every_ time we consume a new StreamDatum, but do some batching of update. This is why
-        this is its own method.
+        The returned DataSource is conceptually similar (and can be an instance of) tiled.structures.DataSource. In
+        general, it describes associated Assets (filepaths, mimetype) along with their internal data structure
+        (array shape, chunks, additional parameters) and should contain all information necessary to read the file.
         """
-
         return DataSource(
             mimetype=self.mimetype,
             assets=self.assets,
             structure_family=StructureFamily.array,
             structure=ArrayStructure(
-                data_type=BuiltinDtype.from_numpy_dtype(self.data_type),
+                data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
                 shape=self.shape,
                 chunks=self.chunks,
             ),
@@ -168,48 +141,47 @@ class HDF5StreamHandler(StreamHandlerBase):
         )
 
 
+class HDF5StreamHandler(StreamHandlerBase):
+    mimetype = "application/x-hdf5"
+
+    def __init__(self, sres: StreamResource, desc: EventDescriptor):
+        super().__init__(sres, desc)
+        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
+        self.swmr = self.sres_parameters.get("swmr", True)
+
+    def consume_stream_datum(self, doc):
+        super().consume_stream_datum(doc)
+
+    @property
+    def adapter_parameters(self):
+        return {"path": self.sres_parameters["path"].strip("/").split("/")}
+
+
 class TIFFStreamHandler(StreamHandlerBase):
     mimetype = "multipart/related;type=image/tiff"
 
-    def __init__(self, data_uri, data_shape, data_type, **kwargs):
-        self.data_uri = data_uri
-        self.assets = []
-        self.data_shape = data_shape
-        self.data_type = np.dtype(data_type)
-        self.adapter_parameters = {"data_uris": []}
-
-    @property
-    def shape(self):
-        """Shape including the 0-th dimension -- number of rows"""
-        # TODO Add reshape, skips.
-        return [self._num_rows, *self.data_shape]
+    def __init__(self, sres: StreamResource, desc: EventDescriptor):
+        super().__init__(sres, desc)
+        self.chunk_size = 1
+        self.data_uris: List[str] = []
 
     def consume_stream_datum(self, doc):
         indx = int(doc["uid"].split("/")[1])
-        new_data_uri = self.data_uri.strip("/") + "/" + f"{indx:05d}.tif"
+        new_datum_uri = self.uri.strip("/") + "/" + f"{indx:05d}.tif"
         new_asset = Asset(
-            data_uri=new_data_uri,
+            data_uri=new_datum_uri,
             is_directory=False,
             parameter="data_uris",
             num=len(self.assets) + 1,
         )
         self.assets.append(new_asset)
-        self.adapter_parameters["data_uris"].append(new_data_uri)
-        self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]  # Number of rows added by StreamDatum
+        self.data_uris.append(new_datum_uri)
 
-    def get_data_source(self):
-        return DataSource(
-            mimetype=self.mimetype,
-            assets=self.assets,
-            structure_family=StructureFamily.array,
-            structure=ArrayStructure(
-                data_type=BuiltinDtype.from_numpy_dtype(self.data_type),
-                shape=self.shape,
-                chunks=[[1] * self.shape[0]] + [[d] for d in self.data_shape],
-            ),
-            parameters=self.adapter_parameters,
-            management=Management.external,
-        )
+        super().consume_stream_datum(doc)
+
+    @property
+    def adapter_parameters(self):
+        return {"data_uris": self.data_uris}
 
 
 STREAM_HANDLER_REGISTRY = {
@@ -249,9 +221,27 @@ class _RunWriter(DocumentRouter):
         self.client = client
         self.root_node = None
         self._desc_nodes = {}  # references to descriptor containers by their uid's
-        self._sr_nodes = {}
-        self._sr_cache = {}
+        self._sres_nodes = {}
+        self._sres_cache = {}
         self._handlers = {}
+
+    def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
+        """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+
+        Will make changes to and return the _same_instance_ of StreamRsource dictionary.
+        """
+
+        if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
+            raise RuntimeError("StreamResource document is missing a mimetype or spec")
+        else:
+            sres["mimetype"] = sres.get("mimetype", MIMETYPE_LOOKUP[sres["spec"]])
+        if "parameters" not in sres.keys():
+            sres["parameters"] = sres.pop("resource_kwargs", {})
+        if "uri" not in sres.keys():
+            file_path = sres.pop("root").strip("/") + "/" + sres.pop("resource_path").strip("/")
+            sres["uri"] = "file://localhost/" + file_path
+
+        return sres
 
     def start(self, doc):
         self.root_node = self.client.create_container(
@@ -313,79 +303,59 @@ class _RunWriter(DocumentRouter):
             parent_node["events"].write_partition(df, 0)
 
     def stream_resource(self, doc: StreamResource):
-        # Only _cache_ the StreamResource for now; add the node when at least one StreamDatum is added
-        self._sr_cache[doc["uid"]] = doc
+        """Process a StreamResource document
 
-    def get_sr_node(self, sr_uid: str, desc_uid: str = None):
+        Only _cache_ the StreamResource for now; add the node when at least one StreamDatum is added
+        """
+
+        self._sres_cache[doc["uid"]] = self._ensure_sres_backcompat(doc)
+
+    def get_sres_node(self, sres_uid: str, desc_uid: str = None):
         """Get the Stream Resource node if it already exists or register if from a cached SR document"""
 
-        if sr_uid in self._sr_nodes.keys():
-            sr_node = self._sr_nodes[sr_uid]
-            handler = self._handlers[sr_uid]
+        if sres_uid in self._sres_nodes.keys():
+            sres_node = self._sres_nodes[sres_uid]
+            handler = self._handlers[sres_uid]
 
-        elif sr_uid in self._sr_cache.keys():
+        elif sres_uid in self._sres_cache.keys():
             if not desc_uid:
                 raise RuntimeError("Descriptor uid must be specified to initialise a Stream Resource node")
 
-            sr_doc = self._sr_cache.pop(sr_uid)
-
-            # POST /api/v1/register/{path}
+            sres_doc = self._sres_cache.pop(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
-            data_key = sr_doc["data_key"]
-
-            # Find data shape and machine dtype; dtype_str takes precedence if specified
-            data_desc = dict(desc_node.metadata)["data_keys"][data_key]
-            data_shape = tuple(data_desc["shape"])
-            data_shape = data_shape if data_shape != (1,) else ()
-            data_type = data_desc["dtype"]
-            data_type = DTYPE_LOOKUP[data_type] if data_type in DTYPE_LOOKUP.keys() else data_type
-            data_type = np.dtype(data_desc.get("dtype_str", data_type))
-
-            # Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
-            if ("mimetype" not in sr_doc.keys()) and ("spec" not in sr_doc.keys()):
-                raise RuntimeError("StreamResource document is missing a mimetype or spec")
-            else:
-                sr_doc["mimetype"] = sr_doc.get("mimetype", MIMETYPE_LOOKUP[sr_doc["spec"]])
-            if "parameters" not in sr_doc.keys():
-                sr_doc["parameters"] = sr_doc.pop("resource_kwargs", {})
-            if "uri" not in sr_doc.keys():
-                file_path = sr_doc.pop("root").strip("/") + "/" + sr_doc.pop("resource_path").strip("/")
-                sr_doc["uri"] = "file://localhost/" + file_path
 
             # Initialise a bluesky handler for the StreamResource
-            handler_class = STREAM_HANDLER_REGISTRY[sr_doc["mimetype"]]
-            handler = handler_class(
-                sr_doc["uri"], data_shape=data_shape, data_type=data_type, **sr_doc["parameters"]
-            )
+            handler_class = STREAM_HANDLER_REGISTRY[sres_doc["mimetype"]]
+            handler = handler_class(sres_doc, dict(desc_node.metadata))
 
-            sr_node = desc_node["external"].new(
-                key=data_key,
+            sres_node = desc_node["external"].new(
+                key=handler.data_key,
                 structure_family=StructureFamily.array,
                 data_sources=[handler.get_data_source()],
-                metadata=sr_doc,
+                metadata=sres_doc,
                 specs=[],
             )
 
-            self._handlers[sr_uid] = handler
-            self._sr_nodes[sr_uid] = sr_node
+            self._handlers[sres_uid] = handler
+            self._sres_nodes[sres_uid] = sres_node
         else:
-            raise RuntimeError(f"Stream Resource {sr_uid} is referenced before being declared.")
+            raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being declared.")
 
-        return sr_node, handler
+        return sres_node, handler
 
     def stream_datum(self, doc: StreamDatum):
         # Get the Stream Resource node and handler
-        sr_node, handler = self.get_sr_node(doc["stream_resource"], desc_uid=doc["descriptor"])
+        sres_node, handler = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
         handler.consume_stream_datum(doc)
 
         # Update StreamResource node in Tiled
         # TODO: Assigning data_source.id in the object and passing it in http params is superflous, but currently Tiled requires it.  # noqa
-        sr_node.refresh()
+        sres_node.refresh()
         data_source = handler.get_data_source()
-        data_source.id = sr_node.data_sources()[0]["id"]  # ID of the exisiting DataSource record
-        endpoint = sr_node.uri.replace("/metadata/", "/data_source/", 1)
+        data_source.id = sres_node.data_sources()[0]["id"]  # ID of the exisiting DataSource record
+        endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
-            sr_node.context.http_client.put(
+            sres_node.context.http_client.put(
                 endpoint,
                 content=safe_json_dump({"data_source": data_source}),
                 params={"data_source": data_source.id},
