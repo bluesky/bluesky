@@ -2277,7 +2277,10 @@ class RunEngine:
 
     async def _wait(self, msg):
         """Block progress until every object that was triggered or set
-        with the keyword argument `group=<GROUP>` is done.
+        with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
+        true when all triggered objects are done. When the keyword argument
+        `move_on=<MOVE_ON>` is true, this method can return before all objects are done
+        after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
 
         Expected message object is:
 
