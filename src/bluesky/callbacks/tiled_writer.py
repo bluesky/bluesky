@@ -69,7 +69,7 @@ class StreamHandlerBase:
         self._seqnums_to_indices_map: Dict[int, int] = {}
 
     def _validate_mimetype(self, mimetype):
-        if isinstance(self.mimetype, "str") and (mimetype == self.mimetype):
+        if isinstance(self.mimetype, str) and (mimetype == self.mimetype):
             return None
         elif isinstance(self.mimetype, set) and (mimetype in self.mimetype):
             return None
