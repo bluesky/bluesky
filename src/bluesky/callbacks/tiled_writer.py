@@ -7,6 +7,8 @@ from event_model import DocumentRouter, RunRouter
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
+from tiled.client.base import BaseClient
+from tiled.client.container import Container
 from tiled.client.utils import handle_error
 from tiled.structures.array import ArrayStructure, BuiltinDtype
 from tiled.structures.core import Spec, StructureFamily
@@ -23,9 +25,9 @@ MIMETYPE_LOOKUP = {
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
 
-# TODO (probably in a future PR?):
-# Move these into external repo (probably area-detector-handlers)
-# and use the existing handler discovery mechanism.
+# TODO: Move StreamHandler classes into external repo (probably area-detector-handlers) and use the existing
+# handler discovery mechanism.
+# GitHub Issue: https://github.com/bluesky/bluesky/issues/1740
 
 
 class StreamHandlerBase:
@@ -40,9 +42,13 @@ class StreamHandlerBase:
 
     The STREAM_HANDLER_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can be used
     together to support:
-        - ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
+        - Ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
           parameters (the handler's job);
         - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
+
+    To implement new StreamHandlers for other mimetypes, subclass StreamHandlerBase, possibly expand the
+    `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
+    property matches the expected adapter signature.
     """
 
     mimetype: Union[str, Set[str]] = ""
@@ -64,7 +70,7 @@ class StreamHandlerBase:
         self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
         self.chunk_size = self._sres_parameters.get("chunk_size", None)
 
-        self._num_rows: int = 0
+        self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
         self._seqnums_to_indices_map: Dict[int, int] = {}
 
@@ -72,9 +78,10 @@ class StreamHandlerBase:
         if isinstance(self.mimetype, str) and (mimetype == self.mimetype):
             return None
         elif isinstance(self.mimetype, set) and (mimetype in self.mimetype):
+            self.mimetype = mimetype
             return None
         else:
-            raise ValueError(f"A data source of {mimetype} type cannot be handled with {self.__class__.__name__}.")
+            raise ValueError(f"A data source of {mimetype} type can not be handled by {self.__class__.__name__}.")
 
     @property
     def shape(self) -> Tuple[int]:
@@ -120,22 +127,24 @@ class StreamHandlerBase:
         """
         pass
 
-    @abstractmethod
-    def consume_stream_datum(self, doc):
+    def consume_stream_datum(self, doc: StreamDatum):
         """Process a new StreamDatum and update the internal data structure
 
-        This will be called for every new StreamDatum received.
+        This will be called for every new StreamDatum received to account for the new added rows.
+        This method _may_need_ to be subclassed and expanded depending on a specific mimetype.
         Actions:
-          - Consume new StreamDatum
-          - Update the list of assets, if necessary
+          - Parse the fields in a new StreamDatum
+          - Increment the number of rows (implemented by the Base class)
+          - Keep track of the correspondence between indices and seq_nums (implemented by the Base class)
+          - Update the list of assets, including their uris, if necessary
           - Update shape and chunks
         """
-        self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]  # Number of rows added by StreamDatum
+        self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]
         new_seqnums = range(doc["seq_nums"]["start"], doc["seq_nums"]["stop"])
         new_indices = range(doc["indices"]["start"], doc["indices"]["stop"])
         self._seqnums_to_indices_map.update(dict(zip(new_seqnums, new_indices)))
 
-    def get_data_source(self):
+    def get_data_source(self) -> DataSource:
         """Return a DataSource object reflecting the current state of the streamed dataset.
 
         The returned DataSource is conceptually similar (and can be an instance of) tiled.structures.DataSource. In
@@ -164,11 +173,8 @@ class HDF5StreamHandler(StreamHandlerBase):
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
 
-    def consume_stream_datum(self, doc):
-        super().consume_stream_datum(doc)
-
     @property
-    def adapter_parameters(self):
+    def adapter_parameters(self) -> Dict:
         return {"path": self._sres_parameters["path"].strip("/").split("/")}
 
 
@@ -180,7 +186,7 @@ class TIFFStreamHandler(StreamHandlerBase):
         self.chunk_size = 1
         self.data_uris: List[str] = []
 
-    def consume_stream_datum(self, doc):
+    def consume_stream_datum(self, doc: StreamDatum):
         indx = int(doc["uid"].split("/")[1])
         new_datum_uri = self.uri.strip("/") + "/" + f"{indx:05d}.tif"
         new_asset = Asset(
@@ -195,7 +201,7 @@ class TIFFStreamHandler(StreamHandlerBase):
         super().consume_stream_datum(doc)
 
     @property
-    def adapter_parameters(self):
+    def adapter_parameters(self) -> Dict:
         return {"data_uris": self.data_uris}
 
 
@@ -232,13 +238,13 @@ class TiledWriter:
 class _RunWriter(DocumentRouter):
     "Write the document from one Bluesky Run into Tiled."
 
-    def __init__(self, client):
+    def __init__(self, client: BaseClient):
         self.client = client
         self.root_node = None
-        self._desc_nodes = {}  # references to descriptor containers by their uid's
-        self._sres_nodes = {}
-        self._sres_cache = {}
-        self._handlers = {}
+        self._desc_nodes: Dict[str, Container] = {}  # references to descriptor containers by their uid's
+        self._sres_nodes: Dict[str, BaseClient] = {}
+        self._sres_cache: Dict[str, StreamResource] = {}
+        self._handlers: Dict[str, StreamHandlerBase] = {}
 
     def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
@@ -271,7 +277,7 @@ class _RunWriter(DocumentRouter):
         metadata = {"stop": doc, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
-    def descriptor(self, doc):
+    def descriptor(self, doc: EventDescriptor):
         desc_name = doc["name"]
         metadata = dict(doc)
 
@@ -295,7 +301,7 @@ class _RunWriter(DocumentRouter):
         desc_node.update_metadata(metadata)
         self._desc_nodes[uid] = desc_node
 
-    def event(self, doc: dict):
+    def event(self, doc):
         descriptor_node = self._desc_nodes[doc["descriptor"]]
         parent_node = descriptor_node["internal"]
         df_dict = {c: [v] for c, v in doc["data"].items()}
@@ -325,8 +331,8 @@ class _RunWriter(DocumentRouter):
 
         self._sres_cache[doc["uid"]] = self._ensure_sres_backcompat(doc)
 
-    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None):
-        """Get the Stream Resource node if it already exists or register if from a cached SR document"""
+    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> Tuple[BaseClient, StreamHandlerBase]:
+        """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""
 
         if sres_uid in self._sres_nodes.keys():
             sres_node = self._sres_nodes[sres_uid]
@@ -364,7 +370,7 @@ class _RunWriter(DocumentRouter):
         handler.consume_stream_datum(doc)
 
         # Update StreamResource node in Tiled
-        # TODO: Assigning data_source.id in the object and passing it in http params is superflous, but currently Tiled requires it.  # noqa
+        # NOTE: Assigning data_source.id in the object and passing it in http params is superflous, but it is currently required by Tiled.  # noqa
         sres_node.refresh()
         data_source = handler.get_data_source()
         data_source.id = sres_node.data_sources()[0]["id"]  # ID of the exisiting DataSource record
