@@ -1,11 +1,11 @@
 import gc
-import multiprocessing
 import os
 import signal
 import threading
 import time
 from subprocess import run
 
+import multiprocess
 import numpy as np
 import pytest
 from event_model import sanitize_doc
@@ -26,7 +26,7 @@ def test_zmq(RE, hw):
     def start_proxy():
         Proxy(5567, 5568).start()
 
-    proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
+    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
 
@@ -52,8 +52,8 @@ def test_zmq(RE, hw):
         d.loop.call_later(9, d.stop)
         d.start()
 
-    queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
+    queue = multiprocess.Queue()
+    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
@@ -145,7 +145,7 @@ def test_zmq_no_RE(RE):
     def start_proxy():
         Proxy(5567, 5568).start()
 
-    proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
+    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
 
@@ -170,8 +170,8 @@ def test_zmq_no_RE(RE):
         d.loop.call_later(9, d.stop)
         d.start()
 
-    queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
+    queue = multiprocess.Queue()
+    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
@@ -215,7 +215,7 @@ def test_zmq_no_RE_newserializer(RE):
     def start_proxy():
         Proxy(5567, 5568).start()
 
-    proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
+    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
 
@@ -238,8 +238,8 @@ def test_zmq_no_RE_newserializer(RE):
         d.loop.call_later(9, d.stop)
         d.start()
 
-    queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
+    queue = multiprocess.Queue()
+    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
@@ -281,7 +281,7 @@ def test_zmq_prefix(RE, hw):
     def start_proxy():
         Proxy(5567, 5568).start()
 
-    proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
+    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
 
@@ -308,8 +308,8 @@ def test_zmq_prefix(RE, hw):
         d.loop.call_later(9, d.stop)
         d.start()
 
-    queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
+    queue = multiprocess.Queue()
+    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
