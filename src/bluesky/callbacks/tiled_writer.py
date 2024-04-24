@@ -288,7 +288,7 @@ class _RunWriter(DocumentRouter):
         time_dict = {uid: metadata.pop("time")}
         var_fields = {"configuration": conf_dict, "time": time_dict}
 
-        if desc_name not in self.root_node.keys():
+        if self.root_node and (desc_name not in self.root_node.keys()):
             # Create a new descriptor node; write only the fixed part of the metadata
             desc_node = self.root_node.create_container(key=desc_name, metadata=metadata)
             desc_node.create_container(key="external")
