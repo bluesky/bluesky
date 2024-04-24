@@ -273,12 +273,18 @@ class _RunWriter(DocumentRouter):
         )
 
     def stop(self, doc):
+        if self.root_node is None:
+            raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
+
         doc = dict(doc)
         doc.pop("start", None)
         metadata = {"stop": doc, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc: EventDescriptor):
+        if self.root_node is None:
+            raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
+
         desc_name = doc["name"]
         metadata = dict(doc)
 
@@ -288,7 +294,7 @@ class _RunWriter(DocumentRouter):
         time_dict = {uid: metadata.pop("time")}
         var_fields = {"configuration": conf_dict, "time": time_dict}
 
-        if self.root_node and (desc_name not in self.root_node.keys()):
+        if desc_name not in self.root_node.keys():
             # Create a new descriptor node; write only the fixed part of the metadata
             desc_node = self.root_node.create_container(key=desc_name, metadata=metadata)
             desc_node.create_container(key="external")
