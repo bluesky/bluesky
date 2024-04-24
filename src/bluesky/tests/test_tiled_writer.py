@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator, Optional, Tuple
 
 import h5py
 import numpy as np
@@ -62,7 +62,7 @@ class Named(HasName):
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
-    def _get_hdf5_stream(self, data_key: str, index: int) -> (StreamResource, StreamDatum):
+    def _get_hdf5_stream(self, data_key: str, index: int) -> Tuple[StreamResource, StreamDatum]:
         file_path = self.root + "/dataset.h5"
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
@@ -109,7 +109,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         return stream_resource, stream_datum
 
-    def _get_tiff_stream(self, data_key: str, index: int) -> (StreamResource, StreamDatum):
+    def _get_tiff_stream(self, data_key: str, index: int) -> Tuple[StreamResource, StreamDatum]:
         file_path = self.root
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"

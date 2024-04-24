@@ -94,7 +94,7 @@ class StreamHandlerBase:
         return self._num_rows, *self.datum_shape
 
     @property
-    def chunks(self) -> Tuple[Tuple[int]]:
+    def chunks(self) -> Tuple[Tuple[int, ...], ...]:
         """Chunking specification based on the Stream Resource parameter `chunk_size`:
         None or 0 -- single chunk for all existing and new elements
         int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
@@ -241,7 +241,7 @@ class _RunWriter(DocumentRouter):
 
     def __init__(self, client: BaseClient):
         self.client = client
-        self.root_node = None
+        self.root_node: Union[None, Container] = None
         self._desc_nodes: Dict[str, Container] = {}  # references to descriptor containers by their uid's
         self._sres_nodes: Dict[str, BaseClient] = {}
         self._sres_cache: Dict[str, StreamResource] = {}
