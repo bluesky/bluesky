@@ -295,7 +295,7 @@ class _RunWriter(DocumentRouter):
             desc_node.create_container(key="internal")
         else:
             # Get existing descriptor node (with fixed and variable metadata saved before)
-            desc_node = self.root_nodes[desc_name]
+            desc_node = self.root_node[desc_name]
 
         # Update (add new values to) variable fields of the metadata
         metadata = deep_update(dict(desc_node.metadata), var_fields)
