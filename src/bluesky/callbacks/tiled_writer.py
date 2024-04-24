@@ -48,7 +48,8 @@ class StreamHandlerBase:
 
     To implement new StreamHandlers for other mimetypes, subclass StreamHandlerBase, possibly expand the
     `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
-    property matches the expected adapter signature.
+    property matches the expected adapter signature. Declare a specific mimetype or a set of acceptable mimetypes
+    to allow valiadtion and automated discovery of the subclassed StreamHandler.
     """
 
     mimetype: Union[str, Set[str]] = ""
