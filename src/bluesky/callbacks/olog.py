@@ -173,5 +173,5 @@ class OlogCallback(CallbackBase):
             pformat(doc),
         )
         olog_status = self.client.log(document_content, logbooks=self.logbook)
-        logger.debug("client.log returned %s", olog_status)  # noqa: UP031
+        logger.debug("client.log returned %s" % olog_status)  # noqa: UP031
         super().start(doc)
