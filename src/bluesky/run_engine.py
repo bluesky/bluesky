@@ -907,7 +907,7 @@ class RunEngine:
 
         # If we are in the wrong state, raise.
         if not self._state.is_idle:
-            raise RuntimeError("The RunEngine is in a %s state" % self._state)
+            raise RuntimeError(f"The RunEngine is in a {self._state} state")
 
         futs = []
         tripped_justifications = []
