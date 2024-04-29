@@ -1,4 +1,3 @@
-import ast
 import time as ttime
 import warnings
 from datetime import datetime
@@ -52,8 +51,7 @@ def test_disable(RE, hw):
     assert bec._table is not None
 
     bec.peaks.com  # noqa: B018
-    bec.peaks["com"]
-    assert ast.literal_eval(repr(bec.peaks)) == vars(bec.peaks)
+    assert "det_a" in bec.peaks["com"]
 
     bec.clear()
     assert bec._table is None
@@ -203,14 +201,6 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     assert err_msg_substr not in caplog.text, "Best Effort Callback failed while executing nested plans"
 
 
-from importlib.metadata import metadata  # noqa: E402
-
-from packaging import version  # noqa: E402
-
-JSONSCHEMA_VERSION: version.Version = version.parse(metadata("jsonschema")["version"])
-
-
-@pytest.mark.xfail(JSONSCHEMA_VERSION >= version.parse("3.0.0"), reason="Deprecations in jsonschema")
 def test_plot_ints(RE):
     from ophyd import Signal
 

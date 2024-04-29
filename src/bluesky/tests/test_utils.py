@@ -117,7 +117,13 @@ def test_cycler_merge_mixed(hw, children):
 
 
 def test_is_movable(hw):
-    obj_list = [(10, False), (1.05, False), ("some_string", False), (hw.det, False), (hw.motor, True)]
+    obj_list = [
+        (10, False),
+        (1.05, False),
+        ("some_string", False),
+        (hw.det, False),
+        (hw.motor, True),
+    ]
     for obj, result in obj_list:
         assert is_movable(obj) == result, (
             f"The object {obj} is incorrectly recognized " f"as {'' if result else 'not '}movable"
@@ -484,7 +490,7 @@ def test_msg_args_kwargs_emits_warning_first_time(recwarn):
     assert len(recwarn) == 0
     warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {"arg": "value"})
     assert len(recwarn) == 1
-    w = recwarn.pop(PendingDeprecationWarning)
+    w = recwarn.pop(UserWarning)
     assert (
         str(w.message)
         == """\

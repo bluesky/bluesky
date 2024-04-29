@@ -150,6 +150,7 @@ def test_table(RE, hw):
 
     fout.seek(0)
     _compare_tables(fout, KNOWN_TABLE)
+    fout.close()
 
 
 KNOWN_TABLE = """+------------+--------------+----------------+----------------+
@@ -252,6 +253,7 @@ def test_evil_table_names(RE):
 |         2  |  12:47:09.7  |     0  |     0  |     0  |     0  |
 +------------+--------------+--------+--------+--------+--------+"""
     _compare_tables(fout, reference)
+    fout.close()
 
 
 def test_live_fit(RE, hw):
@@ -362,6 +364,15 @@ def test_live_grid(RE, hw):
     # Test the deprecated name.
     with pytest.warns(UserWarning):
         RE(grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2, -5, 5, 10, False), LiveRaster((6, 10), "det4"))
+
+
+def test_live_grid_title(RE, hw):
+    hw.motor1.delay = 0
+    hw.motor2.delay = 0
+    RE(
+        grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2, -5, 5, 10, False),
+        LiveGrid((6, 10), "det4", title="Det 4 Grid Plot"),
+    )
 
 
 def test_live_scatter(RE, hw):

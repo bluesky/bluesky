@@ -11,6 +11,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 description = "Experiment specification & orchestration."
 dependencies = [
@@ -20,7 +21,6 @@ dependencies = [
     "msgpack",
     "msgpack-numpy",
     "numpy",
-    "super_state_machine",
     "toolz",
     "tqdm>=4.44",
     "typing-extensions>=4.0.0;python_version<'3.11'",
@@ -48,14 +48,14 @@ dev = [
     "lmfit",
     "matplotlib >=3.5.0",
     "mongoquery",
+    "multiprocess",
     "mypy",
     "myst-parser",
     "networkx",
-    "nose",
     "numpydoc",
     "ophyd",
     "pandas",
-    "pims",
+    "pickleshare",
     "pipdeptree",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
@@ -70,6 +70,7 @@ dev = [
     "ruff",
     "scikit-image",
     "scipy",
+    "sphinx<7.3",
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
@@ -83,6 +84,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
+    "vendoring",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]
@@ -109,14 +111,21 @@ write_to = "src/bluesky/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
+exclude = ["src/bluesky/_vendor/"]
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
+# Don't collect the interactive directory which is intended for manual execution
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore src/bluesky/tests/interactive
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = ["error", "ignore::PendingDeprecationWarning", "ignore::UserWarning", "ignore::DeprecationWarning"]
+filterwarnings = [
+    "error",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "src/bluesky/tests"
 
@@ -168,5 +177,15 @@ lint.select = [
 ]
 exclude = [
     "docs/source/conf.py",
-    "docs/source/examples"
+    "docs/source/examples",
+    "src/bluesky/_vendor"
 ]
+
+[tool.vendoring]
+destination = "src/bluesky/_vendor/"
+requirements = "src/bluesky/_vendor/vendor.txt"
+namespace = "bluesky._vendor"
+protected-files = ["__init__.py", "README.rst", "vendor.txt"]
+
+[tool.vendoring.license.fallback-urls]
+super_state_machine = "https://github.com/beregond/super_state_machine/blob/master/LICENSE"

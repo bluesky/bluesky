@@ -18,7 +18,18 @@ from collections import namedtuple
 from collections.abc import Iterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
-from typing import Any, AsyncIterable, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -29,6 +40,7 @@ from cycler import cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
     Asset,
     HasHints,
@@ -65,7 +77,9 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     __slots__ = ()
 
     def __new__(cls, command, obj=None, *args, run=None, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)  # noqa: UP008
+        return super(Msg, cls).__new__(  # noqa: UP008
+            cls, command, obj, args, kwargs, run
+        )
 
     def __repr__(self):
         return (
@@ -234,7 +248,6 @@ class SigintHandler(SignalHandler):
         super().__init__(signal.SIGINT, log=RE.log)
         self.RE = RE
         self.last_sigint_time = None  # time most recent SIGINT was processed
-        self.num_sigints_processed = 0  # count SIGINTs processed
 
     def __enter__(self):
         return super().__enter__()
@@ -250,8 +263,15 @@ class SigintHandler(SignalHandler):
                 self.count = 1
                 if self.last_sigint_time is not None:
                     self.log.debug("It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.")
+
                 # weeee push these to threads to not block the main thread
-                threading.Thread(target=self.RE.request_pause, args=(True,)).start()
+                def maybe_defer_pause():
+                    try:
+                        self.RE.request_pause(True)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_defer_pause).start()
                 print(
                     "A 'deferred pause' has been requested. The "
                     "RunEngine will pause at the next checkpoint. "
@@ -265,7 +285,14 @@ class SigintHandler(SignalHandler):
                 # - Ctrl-C twice within 10 seconds -> hard pause
                 self.log.debug("RunEngine detected two SIGINTs. A hard pause will be requested.")
 
-                threading.Thread(target=self.RE.request_pause, args=(False,)).start()
+                # weeee push these to threads to not block the main thread
+                def maybe_prompt_pause():
+                    try:
+                        self.RE.request_pause(False)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_prompt_pause).start()
             self.last_sigint_time = time.time()
 
 
@@ -848,7 +875,12 @@ SEARCH_PATH = []
 ENV_VAR = "BLUESKY_HISTORY_PATH"
 if ENV_VAR in os.environ:
     SEARCH_PATH.append(os.environ[ENV_VAR])
-SEARCH_PATH.extend([os.path.expanduser("~/.config/bluesky/bluesky_history.db"), "/etc/bluesky/bluesky_history.db"])
+SEARCH_PATH.extend(
+    [
+        os.path.expanduser("~/.config/bluesky/bluesky_history.db"),
+        "/etc/bluesky/bluesky_history.db",
+    ]
+)
 
 
 def get_history():
@@ -1327,7 +1359,12 @@ class TerminalProgressBar(ProgressBarBase):
             # cases differ from the naive computaiton performed by
             # format_meter.
             meter = tqdm.format_meter(
-                n=n, total=total, elapsed=time_elapsed, unit=unit, prefix=name, ncols=self.ncols
+                n=n,
+                total=total,
+                elapsed=time_elapsed,
+                unit=unit,
+                prefix=name,
+                ncols=self.ncols,
             )
         else:
             # Simply display completeness.
@@ -1553,7 +1590,10 @@ def merge_cycler(cyc):
             raise ValueError("Passed in a mix of real and pseudo axis. Can not cope, failing")
         pseudo_axes = type_map["pseudo"]
         if len(pseudo_axes) > 1:
-            p_cyc = reduce(operator.add, (cycler(my_name(c), input_data[c]) for c in type_map["pseudo"]))
+            p_cyc = reduce(
+                operator.add,
+                (cycler(my_name(c), input_data[c]) for c in type_map["pseudo"]),
+            )
             output_data.append(cycler(parent, list(p_cyc)))
         elif len(pseudo_axes) == 1:
             (c,) = pseudo_axes
@@ -1687,7 +1727,13 @@ class DefaultDuringTask(DuringTask):
                 # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
                 # adapted from code at
                 # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
-                if os.name == "posix" and hasattr(signal, "set_wakeup_fd"):
+                if (
+                    os.name == "posix"
+                    and hasattr(signal, "set_wakeup_fd")
+                    and
+                    # TODO also check if main interpreter
+                    threading.current_thread() is threading.main_thread()
+                ):
                     # Wake up Python interpreter via pipe so that SIGINT
                     # can be handled immediately.
                     # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
@@ -1829,7 +1875,7 @@ In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("{msg.command}") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg, PendingDeprecationWarning)  # noqa: B028
+        warnings.warn(error_msg)  # noqa: B028
 
 
 def maybe_update_hints(hints: Dict[str, Hints], obj):
