@@ -1,4 +1,5 @@
 import operator
+import warnings
 from functools import reduce
 
 import numpy as np
@@ -523,14 +524,15 @@ def non_iterating_plan():
     sample_plan()
 
 
-@pytest.mark.parametrize("gen_func, iterated", [(non_iterating_plan, False), (iterating_plan, True)])
+@pytest.mark.parametrize("gen_func, iterated", [(iterating_plan, True), (non_iterating_plan, False)])
 def test_warning_behavior(gen_func, iterated):
     """Test that warnings are issued correctly based on iteration."""
     RE = RunEngine()
     if iterated:
-        with pytest.warns() as record:
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
             RE(gen_func())
-        assert not record.list, "There should be no warnings if fully iterated"
+            assert not record, "There should be no warnings if fully iterated"
     else:
         with pytest.warns(RuntimeWarning, match=r".*was never iterated.*"):
             RE(gen_func())
