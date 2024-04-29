@@ -1938,6 +1938,7 @@ class Plan:
     def __getattr__(self, name):
         return getattr(self._iter, name)
 
+
 def plan(plan):
     """Decorator that warns user if a `yield from` is not called
 
