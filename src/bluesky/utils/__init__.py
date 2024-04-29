@@ -1935,6 +1935,8 @@ class Plan:
             warning_message = "\n" + "".join(self._stack)
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
+    def __getattr__(self, name):
+        return getattr(self._iter, name)
 
 def plan(plan):
     """Decorator that warns user if a `yield from` is not called
