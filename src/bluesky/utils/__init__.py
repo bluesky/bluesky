@@ -1876,8 +1876,9 @@ class Plan:
         self._iter = f(*args, **kwargs)
         self._stack = traceback.format_stack()
         self._stack = self._stack[:-2]
-        self._stack += [f"RuntimeWarning: plan `{f.__name__}` was never iterated"
-                        ", did you mean to use `yield from`?"]
+        self._stack += [
+            f"RuntimeWarning: plan `{f.__name__}` was never iterated" ", did you mean to use `yield from`?"
+        ]
 
     def __iter__(self):
         self._stack = None
@@ -1902,7 +1903,9 @@ def plan(plan):
     Plan
         Wrapped plans
     """
+
     @wraps(plan)
     def wrapper(*args, **kwargs) -> Plan:
         return Plan(plan, *args, **kwargs)
+
     return wrapper

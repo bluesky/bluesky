@@ -517,10 +517,7 @@ def non_iterating_plan():
     sample_plan()
 
 
-@pytest.mark.parametrize("gen_func, iterated", [
-    (non_iterating_plan, False),
-    (iterating_plan, True)
-])
+@pytest.mark.parametrize("gen_func, iterated", [(non_iterating_plan, False), (iterating_plan, True)])
 def test_warning_behavior(gen_func, iterated):
     """Test that warnings are issued correctly based on iteration."""
     RE = RunEngine()
