@@ -1881,7 +1881,7 @@ class Plan:
 
     def __iter__(self):
         self._stack = None
-        yield from self._iter
+        return (yield from self._iter)
 
     def __del__(self):
         if self._stack:
