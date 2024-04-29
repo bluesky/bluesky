@@ -528,7 +528,7 @@ def test_warning_behavior(gen_func, iterated):
     """Test that warnings are issued correctly based on iteration."""
     RE = RunEngine()
     if iterated:
-        with pytest.warns(None) as record:
+        with pytest.warns() as record:
             RE(gen_func())
         assert not record.list, "There should be no warnings if fully iterated"
     else:

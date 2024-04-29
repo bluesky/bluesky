@@ -1930,6 +1930,9 @@ class Plan:
         self._stack = None
         return (yield from self._iter)
 
+    def __next__(self):
+        return next(self._iter)
+
     def __del__(self):
         if self._stack:
             warning_message = "\n" + "".join(self._stack)
