@@ -52,7 +52,7 @@ class StreamHandlerBase:
     automated discovery of the subclassed StreamHandler.
     """
 
-    supported_mimetypes: Set[str] = {}
+    supported_mimetypes: Set[str] = set()
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         self.mimetype = self.get_supported_mimetype(stream_resource)
