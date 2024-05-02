@@ -279,7 +279,6 @@ class _RunWriter(DocumentRouter):
             raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
 
         doc = dict(doc)
-        doc.pop("start", None)
         metadata = {"stop": doc, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
