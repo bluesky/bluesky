@@ -201,7 +201,7 @@ class TIFFStreamHandler(StreamHandlerBase):
 
     @property
     def adapter_parameters(self) -> Dict:
-        return {"data_uris": self.data_uris}
+        return {}
 
 
 STREAM_HANDLER_REGISTRY = {
