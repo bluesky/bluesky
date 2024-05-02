@@ -54,16 +54,16 @@ class StreamHandlerBase:
 
     supported_mimetypes: Set[str] = {}
 
-    def __init__(self, sres: StreamResource, desc: EventDescriptor):
-        self.mimetype = self.get_supported_mimetype(sres)
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        self.mimetype = self.get_supported_mimetype(stream_resource)
 
-        self.data_key = sres["data_key"]
-        self.uri = sres["uri"]
+        self.data_key = stream_resource["data_key"]
+        self.uri = stream_resource["uri"]
         self.assets: List[Asset] = []
-        self._sres_parameters = sres["parameters"]
+        self._sres_parameters = stream_resource["parameters"]
 
         # Find data shape and machine dtype; dtype_str takes precedence if specified
-        data_desc = desc["data_keys"][self.data_key]
+        data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
         self.dtype = data_desc["dtype"]
@@ -166,8 +166,8 @@ class StreamHandlerBase:
 class HDF5StreamHandler(StreamHandlerBase):
     supported_mimetypes = {"application/x-hdf5"}
 
-    def __init__(self, sres: StreamResource, desc: EventDescriptor):
-        super().__init__(sres, desc)
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
 
@@ -179,8 +179,8 @@ class HDF5StreamHandler(StreamHandlerBase):
 class TIFFStreamHandler(StreamHandlerBase):
     supported_mimetypes = {"multipart/related;type=image/tiff"}
 
-    def __init__(self, sres: StreamResource, desc: EventDescriptor):
-        super().__init__(sres, desc)
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        super().__init__(stream_resource, descriptor)
         self.chunk_size = 1
         self.data_uris: List[str] = []
 
