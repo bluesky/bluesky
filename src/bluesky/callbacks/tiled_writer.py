@@ -25,31 +25,32 @@ MIMETYPE_LOOKUP = {
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
 
-# TODO: Move StreamHandler classes into external repo (probably area-detector-handlers) and use the existing
+# TODO: Move Consolidator classes into external repo (probably area-detector-handlers) and use the existing
 # handler discovery mechanism.
 # GitHub Issue: https://github.com/bluesky/bluesky/issues/1740
 
 
-class StreamHandlerBase:
+class ConsolidatorBase:
     """
-    A Handler consumes documents from Bluesky. It composes details (DataSource and its Assets) that will go into
-    the Tiled database. Each Handler (more specifically, a StreamHandler) is instantiated per a Stream Resource.
+    A Consolidator consumes documents from Bluesky; it is similar to usual Bluesky Handlers but is designed to work
+    with streaming data (received via StreamResource and StreamDatum documents). It composes details (DataSource
+    and its Assets) that will go into the Tiled database. Each Consolidator is instantiated per a Stream Resource.
 
     Tiled Adapters will later use this to read the data, with good random access and bulk access support.
 
-    We put this code into handlers so that additional, possibly very unusual, formats can be supported by users
-    without getting a PR merged into Bluesky or Tiled.
+    We put this code into consolidators so that additional, possibly very unusual, formats can be supported by
+    users without getting a PR merged into Bluesky or Tiled.
 
-    The STREAM_HANDLER_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can be used
+    The CONSOLIDATOR_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can be used
     together to support:
         - Ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
-          parameters (the handler's job);
+          parameters (the consolidator's job);
         - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
 
-    To implement new StreamHandlers for other mimetypes, subclass StreamHandlerBase, possibly expand the
+    To implement new Consolidators for other mimetypes, subclass ConsolidatorBase, possibly expand the
     `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
     property matches the expected adapter signature. Declare a set of supported mimetypes to allow valiadtion and
-    automated discovery of the subclassed StreamHandler.
+    automated discovery of the subclassed Consolidator.
     """
 
     supported_mimetypes: Set[str] = set()
@@ -163,7 +164,7 @@ class StreamHandlerBase:
         )
 
 
-class HDF5StreamHandler(StreamHandlerBase):
+class HDF5Consolidator(ConsolidatorBase):
     supported_mimetypes = {"application/x-hdf5"}
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
@@ -176,7 +177,7 @@ class HDF5StreamHandler(StreamHandlerBase):
         return {"path": self._sres_parameters["path"].strip("/").split("/")}
 
 
-class TIFFStreamHandler(StreamHandlerBase):
+class TIFFConsolidator(ConsolidatorBase):
     supported_mimetypes = {"multipart/related;type=image/tiff"}
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
@@ -207,9 +208,9 @@ class TIFFStreamHandler(StreamHandlerBase):
         super().consume_stream_datum(doc)
 
 
-STREAM_HANDLER_REGISTRY = {
-    "application/x-hdf5": HDF5StreamHandler,
-    "multipart/related;type=image/tiff": TIFFStreamHandler,
+CONSOLIDATOR_REGISTRY = {
+    "application/x-hdf5": HDF5Consolidator,
+    "multipart/related;type=image/tiff": TIFFConsolidator,
 }
 
 
@@ -246,7 +247,7 @@ class _RunWriter(DocumentRouter):
         self._desc_nodes: Dict[str, Container] = {}  # references to descriptor containers by their uid's
         self._sres_nodes: Dict[str, BaseClient] = {}
         self._sres_cache: Dict[str, StreamResource] = {}
-        self._handlers: Dict[str, StreamHandlerBase] = {}
+        self._handlers: Dict[str, ConsolidatorBase] = {}
 
     def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
@@ -339,7 +340,7 @@ class _RunWriter(DocumentRouter):
 
         self._sres_cache[doc["uid"]] = self._ensure_sres_backcompat(doc)
 
-    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> Tuple[BaseClient, StreamHandlerBase]:
+    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> Tuple[BaseClient, ConsolidatorBase]:
         """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""
 
         if sres_uid in self._sres_nodes.keys():
@@ -353,8 +354,8 @@ class _RunWriter(DocumentRouter):
             sres_doc = self._sres_cache.pop(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
-            # Initialise a bluesky handler for the StreamResource
-            handler_class = STREAM_HANDLER_REGISTRY[sres_doc["mimetype"]]
+            # Initialise a bluesky handler (consolidator) for the StreamResource
+            handler_class = CONSOLIDATOR_REGISTRY[sres_doc["mimetype"]]
             handler = handler_class(sres_doc, dict(desc_node.metadata))
 
             sres_node = desc_node["external"].new(
@@ -373,7 +374,7 @@ class _RunWriter(DocumentRouter):
         return sres_node, handler
 
     def stream_datum(self, doc: StreamDatum):
-        # Get the Stream Resource node and handler
+        # Get the Stream Resource node and the associtaed handler (consolidator)
         sres_node, handler = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
         handler.consume_stream_datum(doc)
 
