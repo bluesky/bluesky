@@ -118,7 +118,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             stream_resource = None
             if self.counter == 0:
                 stream_resource = StreamResource(
-                    parameters={"chunk_size": 1},
+                    parameters={"chunk_size": 1, "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
                     uri="file://localhost" + self.root,

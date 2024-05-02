@@ -1,5 +1,4 @@
 import copy
-from abc import abstractmethod
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
@@ -49,8 +48,8 @@ class StreamHandlerBase:
 
     To implement new StreamHandlers for other mimetypes, subclass StreamHandlerBase, possibly expand the
     `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
-    property matches the expected adapter signature. Declare a specific mimetype or a set of supported mimetypes
-    to allow valiadtion and automated discovery of the subclassed StreamHandler.
+    property matches the expected adapter signature. Declare a set of supported mimetypes to allow valiadtion and
+    automated discovery of the subclassed StreamHandler.
     """
 
     supported_mimetypes: Set[str] = {}
@@ -117,14 +116,14 @@ class StreamHandlerBase:
         return self._num_rows > len(self._seqnums_to_indices_map)
 
     @property
-    @abstractmethod
     def adapter_parameters(self) -> Dict:
         """A dictionary of parameters passed to an Adapter
 
         These parameters are intended to provide any additional information required to read a data source of a
-        specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF sequence.
+        specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF
+        sequence.
         """
-        pass
+        return {}
 
     def consume_stream_datum(self, doc: StreamDatum):
         """Process a new StreamDatum and update the internal data structure
@@ -182,12 +181,20 @@ class TIFFStreamHandler(StreamHandlerBase):
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
-        self.chunk_size = 1
         self.data_uris: List[str] = []
+
+    def get_datum_uri(self, indx: int):
+        """Return a full uri for a datum (an individual TIFF file) based on its index in the sequence.
+
+        This relies on the `template` parameter passed in the StreamResource, which is a string either in the "new"
+        Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
+        integer index, e.g. "{:05}.tif".
+        """
+        return self.uri.strip("/") + "/" + self._sres_parameters["template"].format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
         indx = int(doc["uid"].split("/")[1])
-        new_datum_uri = self.uri.strip("/") + "/" + f"{indx:05d}.tif"
+        new_datum_uri = self.get_datum_uri(indx)
         new_asset = Asset(
             data_uri=new_datum_uri,
             is_directory=False,
@@ -198,10 +205,6 @@ class TIFFStreamHandler(StreamHandlerBase):
         self.data_uris.append(new_datum_uri)
 
         super().consume_stream_datum(doc)
-
-    @property
-    def adapter_parameters(self) -> Dict:
-        return {}
 
 
 STREAM_HANDLER_REGISTRY = {
