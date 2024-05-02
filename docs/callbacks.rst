@@ -1299,6 +1299,8 @@ class.
                 if info["dtype"] in ("number", "array", "integer"):
                     # Average together
                     average_evt[key] = np.mean([evt["data"][key] for evt in events], axis=0)
+                else:
+                    raise TypeError(f"Data Key {key} has invalid data type: {info['dtype']}")
             return {"data": average_evt, "descriptor": desc_id}
 
         def event(self, doc, **kwargs):

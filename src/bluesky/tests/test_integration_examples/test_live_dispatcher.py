@@ -4,6 +4,7 @@ Examples are found in: docs/callbacks.rst
 
 import numpy as np
 import pytest
+from ophyd.sim import Cpt, SynGauss, SynSignal
 
 from bluesky.callbacks import CallbackCounter
 from bluesky.callbacks.stream import LiveDispatcher
@@ -53,6 +54,8 @@ class AverageStream(LiveDispatcher):
             if info["dtype"] in ("number", "array", "integer"):
                 # Average together
                 average_evt[key] = np.mean([evt["data"][key] for evt in events], axis=0)
+            else:
+                raise TypeError(f"Data Key {key} has invalid data type: {info['dtype']}")
         return {"data": average_evt, "descriptor": desc_id}
 
     def event(self, doc, **kwargs):
@@ -96,3 +99,34 @@ def test_average_stream(RE, hw):
     desc_uid = d.descriptor[start_uid][0]["uid"]
     evt = d.event[desc_uid][0]
     assert evt["data"]["img"].ndim == 2
+
+
+class TestDet(SynGauss):
+    string_cpt = Cpt(SynSignal, func=lambda: "string", kind="config")
+
+
+def test_average_stream_errors(RE, hw):
+    noisy_det = TestDet(
+        "noisy_det",
+        hw.motor,
+        "motor",
+        center=0,
+        Imax=1,
+        noise="uniform",
+        sigma=1,
+        noise_multiplier=0.1,
+        labels={"detectors"},
+    )
+
+    # Create callback chain
+    avg = AverageStream(10)
+    c = CallbackCounter()
+    d = DocCollector()
+    avg.subscribe(c)
+    avg.subscribe(d.insert)
+    RE(stepscan(noisy_det, hw.motor), {"all": avg})
+    assert c.value == 1 + 1 + 2  # events, descriptor, start and stop
+    # Will riase if the string becomes hinted
+    noisy_det.string_cpt.kind = "hinted"
+    with pytest.raises(TypeError):
+        RE(stepscan(noisy_det, hw.motor), {"all": avg})
