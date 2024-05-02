@@ -48,14 +48,14 @@ class StreamHandlerBase:
 
     To implement new StreamHandlers for other mimetypes, subclass StreamHandlerBase, possibly expand the
     `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
-    property matches the expected adapter signature. Declare a specific mimetype or a set of acceptable mimetypes
+    property matches the expected adapter signature. Declare a specific mimetype or a set of supported mimetypes
     to allow valiadtion and automated discovery of the subclassed StreamHandler.
     """
 
-    mimetype: Union[str, Set[str]] = ""
+    supported_mimetypes: Set[str] = {}
 
     def __init__(self, sres: StreamResource, desc: EventDescriptor):
-        self._validate_mimetype(sres["mimetype"])
+        self.mimetype = self.get_supported_mimetype(sres)
 
         self.data_key = sres["data_key"]
         self.uri = sres["uri"]
@@ -75,14 +75,11 @@ class StreamHandlerBase:
         self._has_skips: bool = False
         self._seqnums_to_indices_map: Dict[int, int] = {}
 
-    def _validate_mimetype(self, mimetype):
-        if isinstance(self.mimetype, str) and (mimetype == self.mimetype):
-            return None
-        elif isinstance(self.mimetype, set) and (mimetype in self.mimetype):
-            self.mimetype = mimetype
-            return None
-        else:
-            raise ValueError(f"A data source of {mimetype} type can not be handled by {self.__class__.__name__}.")
+    @classmethod
+    def get_supported_mimetype(cls, sres):
+        if sres["mimetype"] not in cls.supported_mimetypes:
+            raise ValueError(f"A data source of {sres['mimetype']} type can not be handled by {cls.__name__}.")
+        return sres["mimetype"]
 
     @property
     def shape(self) -> Tuple[int]:
@@ -167,7 +164,7 @@ class StreamHandlerBase:
 
 
 class HDF5StreamHandler(StreamHandlerBase):
-    mimetype = "application/x-hdf5"
+    supported_mimetypes = {"application/x-hdf5"}
 
     def __init__(self, sres: StreamResource, desc: EventDescriptor):
         super().__init__(sres, desc)
@@ -180,7 +177,7 @@ class HDF5StreamHandler(StreamHandlerBase):
 
 
 class TIFFStreamHandler(StreamHandlerBase):
-    mimetype = "multipart/related;type=image/tiff"
+    supported_mimetypes = {"multipart/related;type=image/tiff"}
 
     def __init__(self, sres: StreamResource, desc: EventDescriptor):
         super().__init__(sres, desc)
