@@ -1,3 +1,4 @@
+import copy
 from abc import abstractmethod
 from typing import Dict, List, Optional, Set, Tuple, Union
 
@@ -247,9 +248,10 @@ class _RunWriter(DocumentRouter):
     def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
 
-        Will make changes to and return the _same_instance_ of StreamRsource dictionary.
+        Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
 
+        sres = copy.copy(sres)
         if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
             raise RuntimeError("StreamResource document is missing a mimetype or spec")
         else:
