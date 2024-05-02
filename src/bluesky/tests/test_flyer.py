@@ -1,7 +1,10 @@
 import functools
 from collections import defaultdict
+from time import time
+from typing import Dict
 
 import pytest
+from event_model.documents.event import PartialEvent
 from ophyd import Component as Cpt
 from ophyd import Device
 from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
@@ -37,7 +40,7 @@ def test_collect_while_completing_plan_trivial_case(RE):
     completed = []
     collected = []
 
-    class StatusDoneAfterSecondCall(StatusBase):
+    class StatusDoneAfterTenthCall(StatusBase):
         times_called = 0
 
         @property
@@ -47,7 +50,7 @@ def test_collect_while_completing_plan_trivial_case(RE):
 
     class SlowFlyer:
         name = "trivial-flyer"
-        custom_status = StatusDoneAfterSecondCall()
+        custom_status = StatusDoneAfterTenthCall()
 
         def kickoff(self):
             return NullStatus()
@@ -58,22 +61,44 @@ def test_collect_while_completing_plan_trivial_case(RE):
 
     class TrivialDetector:
         name = "trivial-detector"
+        times_collected = 0
 
         def describe_collect(self):
             collected.append(self)
             return {
-                "data_key_1": {
+                "times_collected": {
                     "dims": [],
-                    "dtype": "string",
+                    "dtype": "number",
                     "shape": [],
-                    "source": "",
+                    "source": "times_collected",
                 }
             }
 
+        def collect(self):
+            self.times_collected += 1
+            yield PartialEvent(
+                data={"times_collected": self.times_collected},
+                timestamps={"times_collected": time()},
+            )
+
     det = TrivialDetector()
     flyer = SlowFlyer()
-    RE(collect_while_completing_plan([flyer], [det]))
-    assert not RE._seen_wait_and_move_on_keys  # key should be removed from set when collection done
+    docs = defaultdict(list)
+
+    def assert_emitted(docs: Dict[str, list], **numbers: int):
+        assert list(docs) == list(numbers)
+        assert {name: len(d) for name, d in docs.items()} == numbers
+
+    RE(collect_while_completing_plan([flyer], [det]), lambda name, doc: docs[name].append(doc))
+    for idx, event in enumerate(docs["event_page"]):
+        print(idx, event)
+        assert "times_collected" in event["data"] and event["data"]["times_collected"] == [idx + 1]
+    # The detector will be collected nine times as the flyer's done property is
+    # checked once during the initial complete call, then the detector collects
+    # every loop and checks if the flyer is done until it is checked for a tenth time
+    assert_emitted(docs, start=1, descriptor=1, event_page=9, stop=1)
+    # key should be removed from set when collection done
+    assert not RE._seen_wait_and_move_on_keys
     assert det in collected
     assert flyer in completed
 
