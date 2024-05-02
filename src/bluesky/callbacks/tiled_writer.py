@@ -122,7 +122,7 @@ class StreamHandlerBase:
         """A dictionary of parameters passed to an Adapter
 
         These parameters are intended to provide any additional information required to read a data source of a
-        specific mimetype, e.g. "path" or "data_uris".
+        specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF sequence.
         """
         pass
 
