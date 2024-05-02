@@ -84,7 +84,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
-    "tiled[all,dev]",
+    "tiled[minimal-client,minimal-server]",
     "vendoring",
 ]
 ipython = ["ipython"]
