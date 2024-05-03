@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.13.0a4.dev78+gadd624e1 documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.13.0a4.dev175+gbc8222be documentation</title>
   
   
   
@@ -35,14 +35,14 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../../_static/documentation_options.js?v=52b63879"></script>
+    <script src="../../_static/documentation_options.js?v=f6c7cad1"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev78+gadd624e1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev175+gbc8222be';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -1494,7 +1494,7 @@ document.write(`
 
         <span class="c1"># If we are in the wrong state, raise.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">is_idle</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;The RunEngine is in a </span><span class="si">%s</span><span class="s2"> state&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The RunEngine is in a </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="si">}</span><span class="s2"> state&quot;</span><span class="p">)</span>
 
         <span class="n">futs</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">tripped_justifications</span> <span class="o">=</span> <span class="p">[]</span>
