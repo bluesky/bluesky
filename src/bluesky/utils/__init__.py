@@ -1938,8 +1938,11 @@ class Plan:
             warning_message = "\n" + "".join(self._stack)
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
-    def __getattr__(self, name):
-        return getattr(self._iter, name)
+    def send(self, value):
+        return self._iter.send(value)
+
+    def throw(self, typ, val=None, tb=None):
+        return self._iter.throw(typ, val, tb)
 
 
 def plan(plan):
