@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from event_model import DocumentRouter, RunRouter
+from event_model import RunRouter
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
@@ -15,6 +15,8 @@ from tiled.structures.core import Spec, StructureFamily
 from tiled.structures.data_source import Asset, DataSource, Management
 from tiled.structures.table import TableStructure
 from tiled.utils import safe_json_dump
+
+from .core import CallbackBase
 
 MIMETYPE_LOOKUP = {
     "hdf5": "application/x-hdf5",
@@ -238,7 +240,7 @@ class TiledWriter:
         self._run_router(name, doc)
 
 
-class _RunWriter(DocumentRouter):
+class _RunWriter(CallbackBase):
     "Write the document from one Bluesky Run into Tiled."
 
     def __init__(self, client: BaseClient):
