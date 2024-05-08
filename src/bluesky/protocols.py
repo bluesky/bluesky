@@ -59,6 +59,7 @@ Asset = Union[
     Tuple[Literal["datum"], Datum],
 ]
 
+
 StreamAsset = Union[
     Tuple[Literal["stream_resource"], StreamResource],
     Tuple[Literal["stream_datum"], StreamDatum],

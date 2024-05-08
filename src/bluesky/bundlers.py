@@ -763,7 +763,7 @@ class RunBundler:
     ) -> int:
         if doc["seq_nums"] != StreamRange(start=0, stop=0):
             raise EventModelValueError(
-                f"Received `seq_nums` {doc['seq_nums']} from devices {doc['data_keys']} "
+                f"Received `seq_nums` {doc['seq_nums']} in stream {doc['stream_resource']} "
                 "during `collect()` or `describe_collect()`. `seq_nums` should be None or "
                 "`StreamRange(start=0, stop=0)` on `ComposeStreamDatum` when used with the "
                 "run engine."

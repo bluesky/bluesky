@@ -656,8 +656,8 @@ def snake_cyclers(cyclers, snake_booleans):
         lengths.append(len(c))
     total_length = np.prod(lengths)
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
-        num_tiles = np.product(lengths[:i])
-        num_repeats = np.product(lengths[i + 1 :])
+        num_tiles = np.prod(lengths[:i])
+        num_repeats = np.prod(lengths[i + 1 :])
         for k, v in c._transpose().items():
             if snake:
                 v = v + v[::-1]
@@ -909,17 +909,17 @@ def get_history():
     else:
         for path in SEARCH_PATH:
             if os.path.isfile(path):
-                print("Loading metadata history from %s" % path)
+                print(f"Loading metadata history from {path}")
                 return historydict.HistoryDict(path)
         # No existing file was found. Try creating one.
         path = SEARCH_PATH[0]
         try:
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            print("Storing metadata history in a new file at %s." % path)
+            print(f"Storing metadata history in a new file at {path}.")
             return historydict.HistoryDict(path)
         except OSError as exc:
             print(exc)
-            print("Failed to create metadata history file at %s" % path)
+            print(f"Failed to create metadata history file at {path}")
             print("Storing HistoryDict in memory; it will not persist when session is ended.")
             return historydict.HistoryDict(":memory:")
 
@@ -1762,7 +1762,7 @@ class DefaultDuringTask(DuringTask):
                         try:
                             os.read(int(rfd), 4096)
                         except OSError as inst:
-                            print("failed to read wakeup fd: %s\n" % inst)
+                            print(f"failed to read wakeup fd: {inst}\n")
 
                         wakeupsn.setEnabled(True)
 
