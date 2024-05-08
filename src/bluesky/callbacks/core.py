@@ -2,6 +2,7 @@
 Useful callbacks for the Run Engine
 """
 
+import copy
 import logging
 import os
 import time as ttime
@@ -11,12 +12,22 @@ from datetime import datetime
 from functools import partial as _partial
 from functools import wraps as _wraps
 from itertools import count
+from typing import Dict, Optional
 
 from event_model import DocumentRouter
+from event_model.documents import EventDescriptor, StreamDatum, StreamResource
 
+from ..consolidators import ConsolidatorBase, consolidator_factory
 from ..utils import ensure_uid
 
 logger = logging.getLogger(__name__)
+
+MIMETYPE_LOOKUP = {
+    "hdf5": "application/x-hdf5",
+    "ADHDF5_SWMR_STREAM": "application/x-hdf5",
+    "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
+    "AD_TIFF": "multipart/related;type=image/tiff",
+}
 
 
 def make_callback_safe(func=None, *, logger=None):
@@ -230,6 +241,84 @@ class CollectThenCompute(CallbackBase):
 
     def compute(self):
         raise NotImplementedError("This method must be defined by a subclass.")
+
+
+class CollectLiveStream(CallbackBase):
+    def __init__(self):
+        self._start_doc = None
+        self._stop_doc = None
+        self._desc_docs: Dict[str, EventDescriptor] = {}
+        self._sres_docs: Dict[str, StreamResource] = {}
+        self.streams: Dict[str, ConsolidatorBase] = {}
+
+    def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
+        """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+
+        Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
+        """
+
+        sres = copy.copy(sres)
+        if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
+            raise RuntimeError("StreamResource document is missing a mimetype or spec")
+        else:
+            sres["mimetype"] = sres.get("mimetype", MIMETYPE_LOOKUP[sres["spec"]])
+        if "parameters" not in sres.keys():
+            sres["parameters"] = sres.pop("resource_kwargs", {})
+        if "uri" not in sres.keys():
+            file_path = sres.pop("root").strip("/") + "/" + sres.pop("resource_path").strip("/")
+            sres["uri"] = "file://localhost/" + file_path
+
+        return sres
+
+    def start(self, doc):
+        self._start_doc = doc
+        super().start(doc)
+
+    def descriptor(self, doc: EventDescriptor):
+        self._desc_docs[doc["uid"]] = doc
+        super().descriptor(doc)
+        print(f"Processed descriptor {doc}")
+
+    def stream_resource(self, doc: StreamResource):
+        self._sres_docs[doc["uid"]] = self._ensure_sres_backcompat(doc)
+        print(f"Received StreamResource {doc}")
+
+    def get_or_create_stream(self, sres_uid: str, desc_uid: Optional[str] = None):
+        """Get an existing Stream Consolidator, if it already exists, or register it from a SR document"""
+
+        if sres_uid in self.streams.keys():
+            handler = self.streams[sres_uid]
+
+        elif sres_uid in self._sres_docs.keys():
+            if not desc_uid:
+                raise RuntimeError("Descriptor uid must be specified to initialise a Stream Consolidator")
+
+            # Initialise a Bluesky Consolidator for the StreamResource
+            sres_doc = self._sres_docs[sres_uid]
+            desc_doc = self._desc_docs[desc_uid]
+            handler = consolidator_factory(sres_doc, desc_doc)
+
+            self.streams[sres_uid] = handler
+        else:
+            raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being declared.")
+
+        return handler
+
+    def stream_datum(self, doc: StreamDatum):
+        """Get the Stream Resource node and the associtaed handler (consolidator)"""
+        handler = self.get_or_create_stream(doc["stream_resource"], desc_uid=doc["descriptor"])
+        handler.consume_stream_datum(doc)
+
+    def stop(self, doc):
+        self._stop_doc = doc
+        super().stop(doc)
+
+    def reset(self):
+        self._start_doc = None
+        self._stop_doc = None
+        self._sres_docs.clear()
+        self._desc_docs.clear()
+        self.streams.clear()
 
 
 @make_class_safe(logger=logger)

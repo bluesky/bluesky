@@ -13,7 +13,7 @@ from tiled.structures.core import Spec
 from tiled.structures.table import TableStructure
 from tiled.utils import safe_json_dump
 
-from ..consolidators import CONSOLIDATOR_REGISTRY, ConsolidatorBase, DataSource, StructureFamily
+from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
 
@@ -158,8 +158,7 @@ class _RunWriter(CallbackBase):
             desc_node = self._desc_nodes[desc_uid]
 
             # Initialise a bluesky handler (consolidator) for the StreamResource
-            handler_class = CONSOLIDATOR_REGISTRY[sres_doc["mimetype"]]
-            handler = handler_class(sres_doc, dict(desc_node.metadata))
+            handler = consolidator_factory(sres_doc, dict(desc_node.metadata))
 
             sres_node = desc_node["external"].new(
                 key=handler.data_key,

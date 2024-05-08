@@ -231,3 +231,8 @@ CONSOLIDATOR_REGISTRY = {
     "application/x-hdf5": HDF5Consolidator,
     "multipart/related;type=image/tiff": TIFFConsolidator,
 }
+
+
+def consolidator_factory(stream_resource_doc, descriptor_doc):
+    consolidator_class = CONSOLIDATOR_REGISTRY[stream_resource_doc["mimetype"]]
+    return consolidator_class(stream_resource_doc, descriptor_doc)
