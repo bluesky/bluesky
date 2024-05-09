@@ -1,11 +1,11 @@
 import logging
-
+from typing import Tuple
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 # for Python 3.12 - the type to all 3 of the functions could be
-# type LimitFactory = Callable[[Any | None], Callable[[Any], tuple[np.ndarray]]]
+# type LimitFactory = Callable[[Any | None], Callable[[Any], Tuple[np.ndarray]]]
 
 
 def fullrange_limit_factory(limit_args=None):
@@ -71,7 +71,7 @@ def absolute_limit_factory(limit_args):
     return _absolute_limit
 
 
-def percentile_limit_factory(limit_args: tuple[float]):
+def percentile_limit_factory(limit_args: Tuple[float]):
     """
     Factory to return a percentile limit function
     """
