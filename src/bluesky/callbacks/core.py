@@ -295,7 +295,7 @@ class CollectLiveStream(CallbackBase):
         print(f"Received StreamResource {doc}")
 
     def get_or_create_stream(self, sres_uid: str, desc_uid: Optional[str] = None):
-        """Get an existing Stream Consolidator, if it already exists, or register it from a SR document"""
+        """Get a Stream Consolidator, if it already exists, or register it from a SR document"""
 
         if sres_uid in self.streams.keys():
             handler = self.streams[sres_uid]
@@ -316,16 +316,13 @@ class CollectLiveStream(CallbackBase):
         return handler
 
     def stream_datum(self, doc: StreamDatum):
-        """Get the Stream Resource node and the associtaed handler (consolidator)"""
+        """Get the Stream Resource node and the associated handler (consolidator)"""
         handler = self.get_or_create_stream(doc["stream_resource"], desc_uid=doc["descriptor"])
         handler.consume_stream_datum(doc)
 
     def stop(self, doc):
         self._stop_doc = doc
         super().stop(doc)
-
-    def last():
-        return None
 
     def reset(self):
         self._start_doc = None

@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
+from tiled.mimetypes import DEFAULT_ADAPTERS_BY_MIMETYPE
 from tiled.structures.array import ArrayStructure, BuiltinDtype
 
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
@@ -182,6 +183,14 @@ class ConsolidatorBase:
             management=Management.external,
         )
 
+    def get_adapter(self):
+        adapter_class = DEFAULT_ADAPTERS_BY_MIMETYPE[self.mimetype]
+        ds = self.get_data_source()
+        adapter = adapter_class(
+            data_uris=[asset.data_uri for asset in ds.assets], structure=ds.structure, **self.adapter_parameters
+        )
+        return adapter
+
 
 class HDF5Consolidator(ConsolidatorBase):
     supported_mimetypes = {"application/x-hdf5"}
@@ -194,6 +203,12 @@ class HDF5Consolidator(ConsolidatorBase):
     @property
     def adapter_parameters(self) -> Dict:
         return {"path": self._sres_parameters["path"].strip("/").split("/")}
+
+    def get_adapter(self):
+        adapter_class = DEFAULT_ADAPTERS_BY_MIMETYPE[self.mimetype]
+        ds = self.get_data_source()
+        adapter = adapter_class(data_uri=ds.assets[0].data_uri, structure=ds.structure, **self.adapter_parameters)
+        return adapter
 
 
 class TIFFConsolidator(ConsolidatorBase):
