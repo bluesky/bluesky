@@ -87,7 +87,7 @@ class CrossSection:
         figure: Figure,
         colormap: Optional[Colormap] = None,
         norm=None,
-        limit_func: Optional[Callable[[Any | None], Callable[[Any], tuple]]] = None,
+        limit_func: Optional[Callable[[Optional[Any]], Callable[[Any], tuple]]] = None,
         auto_redraw=True,
         interpolation: InterpolationEnum = InterpolationEnum.NONE,
         aspect="equal",
@@ -111,7 +111,7 @@ class CrossSection:
         norm.vmin, norm.vmax = 0, 1
         self._norm = norm
         # save a copy of the limit function, we will need it later
-        self._limit_func: Callable[[Any | None], Callable[[Any], tuple]] = limit_func
+        self._limit_func: Callable[[Optional[Any]], Callable[[Any], tuple]] = limit_func
 
         # this is used by the widget logic
         self._active = True
