@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 import numpy as np
 from matplotlib.colors import Colormap, Normalize
@@ -85,9 +85,9 @@ class CrossSection:
     def __init__(
         self,
         figure: Figure,
-        colormap: Colormap | None = None,
+        colormap: Optional[Colormap] = None,
         norm=None,
-        limit_func: Callable[[Any | None], Callable[[Any], tuple]] | None = None,
+        limit_func: Optional[Callable[[Any | None], Callable[[Any], tuple]]] = None,
         auto_redraw=True,
         interpolation: InterpolationEnum = InterpolationEnum.NONE,
         aspect="equal",
