@@ -1,5 +1,6 @@
 import os
 import time as ttime
+from typing import Optional
 
 import numpy as np
 from matplotlib.colors import Colormap, Normalize
@@ -228,8 +229,8 @@ class LiveImage(BrokerCallbackBase):
         data_field_name: str,
         *,
         db=None,
-        cmap: Colormap | None = None,
-        norm: Normalize | None = None,
+        cmap: Optional[Colormap] = None,
+        norm: Optional[Normalize] = None,
         limit_func=None,
         auto_redraw: bool = True,
         interpolation: InterpolationEnum = InterpolationEnum.NONE,
