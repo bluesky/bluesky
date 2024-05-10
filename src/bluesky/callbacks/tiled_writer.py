@@ -116,9 +116,10 @@ class _RunWriter(CallbackBase):
     def event(self, doc):
         descriptor_node = self._desc_nodes[doc["descriptor"]]
         parent_node = descriptor_node["internal"]
-        df_dict = {c: [v] for c, v in doc["data"].items()}
-        df_dict.update({f"ts_{c}": [v] for c, v in doc["timestamps"].items()})
-        df = pd.DataFrame(df_dict)
+        df_dict = {"seq_num": doc["seq_num"]}
+        df_dict.update(doc["data"])
+        df_dict.update({f"ts_{c}": v for c, v in doc["timestamps"].items()})
+        df = pd.DataFrame(df_dict, index=[0])
         if "events" in parent_node.keys():
             parent_node["events"].append_partition(df, 0)
         else:

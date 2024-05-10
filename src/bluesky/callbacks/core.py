@@ -247,8 +247,10 @@ class CollectLiveStream(CallbackBase):
     def __init__(self):
         self._start_doc = None
         self._stop_doc = None
+        self._event_docs = deque()
         self._desc_docs: Dict[str, EventDescriptor] = {}
         self._sres_docs: Dict[str, StreamResource] = {}
+        self.events = deque()
         self.streams: Dict[str, ConsolidatorBase] = {}
 
     def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
@@ -278,6 +280,15 @@ class CollectLiveStream(CallbackBase):
         self._desc_docs[doc["uid"]] = doc
         super().descriptor(doc)
         print(f"Processed descriptor {doc}")
+
+    def event(self, doc):
+        self._event_docs.append(doc)
+        event_dict = {"seq_num": doc["seq_num"], "descriptor": doc["descriptor"]}
+        event_dict.update(doc["data"])
+        event_dict.update({f"ts_{c}": v for c, v in doc["timestamps"].items()})
+        self.events.append(event_dict)
+
+        super().event(doc)
 
     def stream_resource(self, doc: StreamResource):
         self._sres_docs[doc["uid"]] = self._ensure_sres_backcompat(doc)
@@ -313,12 +324,17 @@ class CollectLiveStream(CallbackBase):
         self._stop_doc = doc
         super().stop(doc)
 
+    def last():
+        return None
+
     def reset(self):
         self._start_doc = None
         self._stop_doc = None
+        self._event_docs.clear()
         self._sres_docs.clear()
         self._desc_docs.clear()
         self.streams.clear()
+        self.events.clear()
 
 
 @make_class_safe(logger=logger)

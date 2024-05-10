@@ -154,9 +154,8 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
 def test_stream_datum_collectable(RE, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
-    # tw = TiledWriter(client)
-    collector = CollectLiveStream()
-    RE(collect_plan(det, name="primary"), collector)
+    cl = CollectLiveStream()
+    RE(collect_plan(det, name="primary"), cl)
     # arrs = client.values().last()["primary"]["external"].values()
     # assert arrs[0].read() is not None
     # assert arrs[1].read() is not None
