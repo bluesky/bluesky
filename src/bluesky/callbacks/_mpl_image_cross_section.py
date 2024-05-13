@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Callable, List, Optional
+from enum import Enum
+from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 from matplotlib.colors import Colormap, Normalize
@@ -8,10 +9,27 @@ from matplotlib.ticker import LinearLocator, NullLocator
 from matplotlib.widgets import Cursor
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from bluesky.callbacks._mpl_image_cross_section.interpolation import InterpolationEnum
-from bluesky.callbacks._mpl_image_cross_section.limit_factories import fullrange_limit_factory
-
 logger = logging.getLogger(__name__)
+
+
+class InterpolationEnum(Enum):
+    NONE = ("none",)
+    NEAREST = ("nearest",)
+    BILINEAR = ("bilinear",)
+    BICUBIC = ("bicubic",)
+    SPLINE16 = ("spline16",)
+    SPLINE36 = ("spline36",)
+    HANNING = ("hanning",)
+    HAMMING = ("hamming",)
+    HERMITE = ("hermite",)
+    KAISER = ("kaiser",)
+    QUADRIC = ("quadric",)
+    CATROM = ("catrom",)
+    GAUSSIAN = ("gaussian",)
+    BESSEL = ("bessel",)
+    MITCHELL = ("mitchell",)
+    SINC = ("sinc",)
+    LANCZOS = ("lanczos",)
 
 
 def auto_redraw(func):
@@ -467,3 +485,99 @@ class CrossSection:
 
     def draw_idle(self):
         self._figure.canvas.draw_idle()
+
+
+# for Python 3.12 - the type to all 3 of the functions could be
+# type LimitFactory = Callable[[Any | None], Callable[[Any], Tuple[np.ndarray]]]
+
+
+def fullrange_limit_factory(limit_args=None):
+    """
+    Factory for returning full-range limit functions
+
+    limit_args is ignored.
+    """
+
+    def _full_range(im):
+        """
+        Plot the entire range of the image
+
+        Parameters
+        ----------
+        im : ndarray
+           image data, nominally 2D
+
+        limit_args : object
+           Ignored, here to match signature with other
+           limit functions
+
+        Returns
+        -------
+        climits : tuple
+           length 2 tuple to be passed to `im.clim(...)` to
+           set the color limits of a ColorMappable object.
+        """
+        return (np.nanmin(im), np.nanmax(im))
+
+    return _full_range
+
+
+def absolute_limit_factory(limit_args):
+    """
+    Factory for making absolute limit functions
+    """
+
+    def _absolute_limit(im):
+        """
+        Plot the image based on the min/max values in limit_args
+
+        This function is a no-op and just return the input limit_args.
+
+        Parameters
+        ----------
+        im : ndarray
+            image data.  Ignored in this method
+
+        limit_args : array
+           (min_value, max_value)  Values are in absolute units
+           of the image.
+
+        Returns
+        -------
+        climits : tuple
+           length 2 tuple to be passed to `im.clim(...)` to
+           set the color limits of a ColorMappable object.
+
+        """
+        return limit_args
+
+    return _absolute_limit
+
+
+def percentile_limit_factory(limit_args: Tuple[float]):
+    """
+    Factory to return a percentile limit function
+    """
+
+    def _percentile_limit(image_data: np.ndarray):
+        """
+        Sets limits based on percentile.
+
+        Parameters
+        ----------
+        im : ndarray
+            image data
+
+        limit_args : tuple of floats in [0, 100]
+            upper and lower percetile values
+
+        Returns
+        -------
+        climits : tuple
+           length 2 tuple to be passed to `im.clim(...)` to
+           set the color limits of a ColorMappable object.
+
+        """
+        return np.percentile(image_data, limit_args)
+
+    return _percentile_limit
