@@ -117,7 +117,7 @@ class CrossSection:
         # clean defaults
         if limit_func is None:
             # note - cannot import this in the defaults init
-            limit_func = fullrange_limit_factory()
+            limit_func = percentile_limit_factory()
         # stash the color map
         self._cmap = colormap
         # set the default norm if not passed
