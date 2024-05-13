@@ -184,6 +184,10 @@ class ConsolidatorBase:
         )
 
     def get_adapter(self):
+        # NOTE: Currently, different Tiled adapters have slightly different signatures and arguments (e.g.
+        # data_uri vs data_uris). Sustom parameters (at least in most cases) can be passed as `**kwargs`, but there
+        # might be a possibility to further unify the adapter signature. In the meantime, creation of Adapters for
+        # different mimetypes need to be explicitly subclassed in different Consolidators.
         adapter_class = DEFAULT_ADAPTERS_BY_MIMETYPE[self.mimetype]
         ds = self.get_data_source()
         adapter = adapter_class(
