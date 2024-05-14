@@ -5,8 +5,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.colors import Colormap, Normalize
 
-from bluesky.callbacks._mpl_image_cross_section.cross_section import CrossSection
-from bluesky.callbacks._mpl_image_cross_section.interpolation import InterpolationEnum
+from bluesky.callbacks._mpl_image_cross_section import CrossSection, InterpolationEnum
 from bluesky.callbacks.core import CallbackBase
 
 from ..utils import ensure_uid
