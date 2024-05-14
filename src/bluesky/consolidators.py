@@ -1,3 +1,4 @@
+import collections
 import dataclasses
 import enum
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -183,17 +184,43 @@ class ConsolidatorBase:
             management=Management.external,
         )
 
-    def get_adapter(self):
-        # NOTE: Currently, different Tiled adapters have slightly different signatures and arguments (e.g.
-        # data_uri vs data_uris). Sustom parameters (at least in most cases) can be passed as `**kwargs`, but there
-        # might be a possibility to further unify the adapter signature. In the meantime, creation of Adapters for
-        # different mimetypes need to be explicitly subclassed in different Consolidators.
-        adapter_class = DEFAULT_ADAPTERS_BY_MIMETYPE[self.mimetype]
-        ds = self.get_data_source()
-        adapter = adapter_class(
-            data_uris=[asset.data_uri for asset in ds.assets], structure=ds.structure, **self.adapter_parameters
+    def get_adapter(self, adapters_by_mimetype=None):
+        """Return an Adapter suitable for reading the data
+
+        Uses a dictionary mapping of a mimetype to a callable that returns an Adapter instance.
+        This might be a class, classmethod constructor, factory function...
+        it does not matter here; it is just a callable.
+        """
+
+        # NOTE: This could be a method on DataSource instead, which seems more appropriate.
+
+        # User-provided adapters take precedence over defaults.
+        all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
+        adapter_factory = all_adapters_by_mimetype[self.mimetype]
+
+        # Construct kwargs to pass to Adapter.
+        parameters = collections.defaultdict(list)
+        for asset in self.assets:
+            if asset.parameter is None:
+                # This asset is not directly opened by the Adapter. It is used indirectly, such as the case of HDF5
+                # virtual dataset 'data' files are referenced from 'master' files.
+                continue
+            if asset.num is None:
+                # This parameters takes the URI as a scalar value.
+                parameters[asset.parameter] = asset.data_uri
+            else:
+                # This parameters takes a list of URIs.
+                parameters[asset.parameter].append(asset.data_uri)
+
+        parameters["structure"] = ArrayStructure(
+            data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
+            shape=self.shape,
+            chunks=self.chunks,
         )
-        return adapter
+        adapter_kwargs = dict(parameters)
+        adapter_kwargs.update(self.adapter_parameters)
+
+        return adapter_factory(**adapter_kwargs)
 
 
 class HDF5Consolidator(ConsolidatorBase):
@@ -207,12 +234,6 @@ class HDF5Consolidator(ConsolidatorBase):
     @property
     def adapter_parameters(self) -> Dict:
         return {"path": self._sres_parameters["path"].strip("/").split("/")}
-
-    def get_adapter(self):
-        adapter_class = DEFAULT_ADAPTERS_BY_MIMETYPE[self.mimetype]
-        ds = self.get_data_source()
-        adapter = adapter_class(data_uri=ds.assets[0].data_uri, structure=ds.structure, **self.adapter_parameters)
-        return adapter
 
 
 class TIFFConsolidator(ConsolidatorBase):
