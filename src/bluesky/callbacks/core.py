@@ -2,6 +2,7 @@
 Useful callbacks for the Run Engine
 """
 
+import collections
 import copy
 import logging
 import os
@@ -12,10 +13,10 @@ from datetime import datetime
 from functools import partial as _partial
 from functools import wraps as _wraps
 from itertools import count
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from event_model import DocumentRouter
-from event_model.documents import EventDescriptor, StreamDatum, StreamResource
+from event_model.documents import Event, EventDescriptor, StreamDatum, StreamResource
 
 from ..consolidators import ConsolidatorBase, consolidator_factory
 from ..utils import ensure_uid
@@ -247,11 +248,12 @@ class CollectLiveStream(CallbackBase):
     def __init__(self):
         self._start_doc = None
         self._stop_doc = None
-        self._event_docs = deque()
-        self._desc_docs: Dict[str, EventDescriptor] = {}
-        self._sres_docs: Dict[str, StreamResource] = {}
+        self._event_docs: Dict[str, Event] = {}  # Keyed by Event uid
+        self._desc_docs: Dict[str, EventDescriptor] = {}  # Keyed by Descriptor uid
+        self._sres_docs: Dict[str, StreamResource] = {}  # Keyed by Stream Resource uid
+        self._data_key_to_sres_uid: Dict[str, List[str]] = collections.defaultdict(list)
         self.events = deque()
-        self.streams: Dict[str, ConsolidatorBase] = {}
+        self.stream_consolidators: Dict[str, ConsolidatorBase] = {}  # Keyed by Stream Resource uid
 
     def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
@@ -279,10 +281,9 @@ class CollectLiveStream(CallbackBase):
     def descriptor(self, doc: EventDescriptor):
         self._desc_docs[doc["uid"]] = doc
         super().descriptor(doc)
-        print(f"Processed descriptor {doc}")
 
     def event(self, doc):
-        self._event_docs.append(doc)
+        # self._event_docs.append(doc)
         event_dict = {"seq_num": doc["seq_num"], "descriptor": doc["descriptor"]}
         event_dict.update(doc["data"])
         event_dict.update({f"ts_{c}": v for c, v in doc["timestamps"].items()})
@@ -292,13 +293,13 @@ class CollectLiveStream(CallbackBase):
 
     def stream_resource(self, doc: StreamResource):
         self._sres_docs[doc["uid"]] = self._ensure_sres_backcompat(doc)
-        print(f"Received StreamResource {doc}")
+        self._data_key_to_sres_uid[doc["data_key"]].append(doc["uid"])  # Multiple Streams Resources per data_key
 
-    def get_or_create_stream(self, sres_uid: str, desc_uid: Optional[str] = None):
-        """Get a Stream Consolidator, if it already exists, or register it from a SR document"""
+    def _get_or_create_handler(self, sres_uid: str, desc_uid: Optional[str] = None):
+        """Get a Handler / Stream Consolidator, if it already exists, or register it from a SR document"""
 
-        if sres_uid in self.streams.keys():
-            handler = self.streams[sres_uid]
+        if sres_uid in self.stream_consolidators.keys():
+            handler = self.stream_consolidators[sres_uid]
 
         elif sres_uid in self._sres_docs.keys():
             if not desc_uid:
@@ -309,7 +310,7 @@ class CollectLiveStream(CallbackBase):
             desc_doc = self._desc_docs[desc_uid]
             handler = consolidator_factory(sres_doc, desc_doc)
 
-            self.streams[sres_uid] = handler
+            self.stream_consolidators[sres_uid] = handler
         else:
             raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being declared.")
 
@@ -317,21 +318,23 @@ class CollectLiveStream(CallbackBase):
 
     def stream_datum(self, doc: StreamDatum):
         """Get the Stream Resource node and the associated handler (consolidator)"""
-        handler = self.get_or_create_stream(doc["stream_resource"], desc_uid=doc["descriptor"])
+        handler = self._get_or_create_handler(doc["stream_resource"], desc_uid=doc["descriptor"])
         handler.consume_stream_datum(doc)
 
     def stop(self, doc):
         self._stop_doc = doc
         super().stop(doc)
 
-    def reset(self):
-        self._start_doc = None
-        self._stop_doc = None
-        self._event_docs.clear()
-        self._sres_docs.clear()
-        self._desc_docs.clear()
-        self.streams.clear()
-        self.events.clear()
+    def get_adapter(self, data_key):
+        if data_key in self._data_key_to_sres_uid.keys():
+            sres_uids = self._data_key_to_sres_uid[data_key]
+            if len(sres_uids) > 0:
+                # NOTE: Returns adapter for only the last Stream if several Stream Resources have the same data_key
+                return self.stream_consolidators[sres_uids[-1]].get_adapter()
+        else:
+            raise RuntimeError(f"No data received for {data_key}.")
+
+        return None
 
 
 @make_class_safe(logger=logger)

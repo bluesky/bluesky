@@ -1,6 +1,10 @@
+import json
+import time
 from typing import Dict, Iterator, Optional, Tuple
 
 import h5py
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import tifffile as tf
 from event_model.documents.event_descriptor import DataKey
@@ -9,6 +13,7 @@ from event_model.documents.stream_resource import StreamResource
 
 import bluesky.plan_stubs as bps
 from bluesky.callbacks.core import CollectLiveStream
+from bluesky.callbacks.mpl_plotting import LiveStreamPlot
 from bluesky.protocols import (
     Collectable,
     HasName,
@@ -17,6 +22,9 @@ from bluesky.protocols import (
     StreamAsset,
     WritesStreamAssets,
 )
+
+matplotlib.use("QtAgg")
+plt.ion()
 
 
 class Named(HasName):
@@ -44,7 +52,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         stream_resource = None
         if self.counter == 0:
             stream_resource = StreamResource(
-                parameters={"path": hdf5_path, "chunk_size": False},
+                parameters={"path": hdf5_path, "chunk_size": False, "swmr": True},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
@@ -54,7 +62,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 uid=uid,
             )
             # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
-            with h5py.File(file_path, "a") as f:
+            with h5py.File(file_path, "a", swmr=True) as f:
                 dset = f.require_dataset(
                     hdf5_path,
                     (0, *data_shape),
@@ -73,7 +81,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         )
 
         # Write (append to) the hdf5 dataset
-        with h5py.File(file_path, "a") as f:
+        with h5py.File(file_path, "a", swmr=True) as f:
             dset = f[hdf5_path]
             dset.resize([indx_max, *data_shape])
             dset[indx_min:indx_max, ...] = np.random.randn(indx_max - indx_min, *data_shape)
@@ -152,18 +160,49 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         return {}
 
 
+class JSONWriter:
+    """Writer for a JSON array"""
+
+    def __init__(self, filepath):
+        self.file = open(filepath, "w")
+        self.file.write("[\n")
+
+    def __call__(self, name, doc):
+        json.dump({"name": name, "doc": doc}, self.file)
+        if name == "stop":
+            self.file.write("\n]")
+            self.file.close()
+        else:
+            self.file.write(",\n")
+
+
+# def test_ophyd_async_collectable(RE, tmp_path):
+#     cl = CollectLiveStream()
+#     # pl = LiveStreamPlot(cl, data_key = 'det-sd2')
+#     wr = JSONWriter('../demo_stream_documents/documents_test.json')
+#     RE.subscribe(wr)
+#     # RE.subscribe(pl)
+#     sim_pattern_detector = SimPatternDetector(name="PATTERN1", path=tmp_path)
+#     RE(bp.count([sim_pattern_detector], num=5), cl)
+
+#     breakpoint()
+
+
 def test_stream_datum_collectable(RE, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     cl = CollectLiveStream()
+    pl = LiveStreamPlot(cl, data_key="det-sd2")
+    RE.subscribe(pl)
+    wr = JSONWriter("../demo_stream_documents/documents_test.json")
+    RE.subscribe(wr)
     RE(collect_plan(det, name="primary"), cl)
-    # arrs = client.values().last()["primary"]["external"].values()
-    # assert arrs[0].read() is not None
-    # assert arrs[1].read() is not None
-    # assert arrs[2].read() is not None
+    # breakpoint()
 
 
-def collect_plan(*objs, name="primary"):
+def collect_plan(*objs, name="primary", num=5):
     yield from bps.open_run()
     yield from bps.declare_stream(*objs, collect=True, name=name)
-    yield from bps.collect(*objs, return_payload=False, name=name)
+    for _ in range(num):
+        time.sleep(1)
+        yield from bps.collect(*objs, return_payload=False, name=name)
     yield from bps.close_run()

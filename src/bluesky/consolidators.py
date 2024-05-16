@@ -3,10 +3,13 @@ import dataclasses
 import enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import h5py
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
+from tiled.adapters.array import ArrayAdapter
 from tiled.mimetypes import DEFAULT_ADAPTERS_BY_MIMETYPE
 from tiled.structures.array import ArrayStructure, BuiltinDtype
+from tiled.utils import path_from_uri
 
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
@@ -52,8 +55,9 @@ class DataSource:
 
 
 class ConsolidatorBase:
-    """
-    A Consolidator consumes documents from Bluesky; it is similar to usual Bluesky Handlers but is designed to work
+    """Consolidator of StremDatums
+
+    A Consolidator consumes documents from RE; it is similar to usual Bluesky Handlers but is designed to work
     with streaming data (received via StreamResource and StreamDatum documents). It composes details (DataSource
     and its Assets) that will go into the Tiled database. Each Consolidator is instantiated per a Stream Resource.
 
@@ -233,7 +237,12 @@ class HDF5Consolidator(ConsolidatorBase):
 
     @property
     def adapter_parameters(self) -> Dict:
-        return {"path": self._sres_parameters["path"].strip("/").split("/")}
+        return {"path": self._sres_parameters["path"].strip("/").split("/"), "swmr": self.swmr}
+
+    def get_adapter(self):
+        with h5py.File(path_from_uri(self.uri), "r", swmr=True) as f:
+            arr = np.array(f["/".join(self.adapter_parameters["path"])])
+        return ArrayAdapter.from_array(arr, shape=self.shape, chunks=self.chunks)
 
 
 class TIFFConsolidator(ConsolidatorBase):
