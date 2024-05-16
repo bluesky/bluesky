@@ -188,15 +188,20 @@ class JSONWriter:
 #     breakpoint()
 
 
-def test_stream_datum_collectable(RE, tmp_path):
+def test_hdf5_plotting(RE, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     cl = CollectLiveStream()
     pl = LiveStreamPlot(cl, data_key="det-sd2")
     RE.subscribe(pl)
-    wr = JSONWriter("../demo_stream_documents/documents_test.json")
-    RE.subscribe(wr)
     RE(collect_plan(det, name="primary"), cl)
-    # breakpoint()
+
+
+def test_tiff_plotting(RE, tmp_path):
+    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
+    cl = CollectLiveStream()
+    pl = LiveStreamPlot(cl, data_key="det-sd3")
+    RE.subscribe(pl)
+    RE(collect_plan(det, name="primary"), cl)
 
 
 def collect_plan(*objs, name="primary", num=5):
