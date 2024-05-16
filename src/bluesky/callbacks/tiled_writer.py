@@ -301,6 +301,7 @@ class _RunWriter(DocumentRouter):
             desc_node = self.root_node.create_container(key=desc_name, metadata=metadata)
             desc_node.create_container(key="external")
             desc_node.create_container(key="internal")
+            desc_node.create_container(key="configuration")
         else:
             # Get existing descriptor node (with fixed and variable metadata saved before)
             desc_node = self.root_node[desc_name]
@@ -308,14 +309,39 @@ class _RunWriter(DocumentRouter):
         # Update (add new values to) variable fields of the metadata
         metadata = deep_update(dict(desc_node.metadata), var_fields)
         desc_node.update_metadata(metadata)
+
+        # Write the configuration data; loop over all detectors
+        conf_node = desc_node["configuration"]
+        for det_name, det_dict in conf_dict:
+            df_dict = {"descriptor_uid": uid}
+            df_dict.update(det_dict.get("data", {}))
+            df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
+            df = pd.DataFrame(df_dict, index=[0])
+            if det_name in conf_node.keys():
+                conf_node[det_name].append_partition(df, 0)
+            else:
+                conf_node.new(
+                    structure_family=StructureFamily.table,
+                    data_sources=[
+                        DataSource(
+                            structure_family=StructureFamily.table,
+                            structure=TableStructure.from_pandas(df),
+                            mimetype="text/csv",
+                        ),
+                    ],
+                    key=det_name,
+                )
+                conf_node[det_name].write_partition(df, 0)
+
         self._desc_nodes[uid] = desc_node
 
     def event(self, doc):
         descriptor_node = self._desc_nodes[doc["descriptor"]]
         parent_node = descriptor_node["internal"]
-        df_dict = {c: [v] for c, v in doc["data"].items()}
-        df_dict.update({f"ts_{c}": [v] for c, v in doc["timestamps"].items()})
-        df = pd.DataFrame(df_dict)
+        df_dict = {"seq_num": doc["seq_num"]}
+        df_dict.update(doc["data"])
+        df_dict.update({f"ts_{c}": v for c, v in doc["timestamps"].items()})
+        df = pd.DataFrame(df_dict, index=[0])
         if "events" in parent_node.keys():
             parent_node["events"].append_partition(df, 0)
         else:
