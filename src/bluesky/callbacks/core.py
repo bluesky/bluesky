@@ -329,8 +329,13 @@ class CollectLiveStream(CallbackBase):
         if data_key in self._data_key_to_sres_uid.keys():
             sres_uids = self._data_key_to_sres_uid[data_key]
             if len(sres_uids) > 0:
-                # NOTE: Returns adapter for only the last Stream if several Stream Resources have the same data_key
-                return self.stream_consolidators[sres_uids[-1]].get_adapter()
+                # NOTE: If several StreamResources have the same data_key, returns adapter for only the last Stream
+                print(f"{sres_uids=}\n{self.stream_consolidators=}")
+                # breakpoint()
+                if sres_uids[-1] in self.stream_consolidators.keys():
+                    handler = self.stream_consolidators[sres_uids[-1]]
+                    breakpoint()
+                    return handler.get_adapter()
         else:
             raise RuntimeError(f"No data received for {data_key}.")
 

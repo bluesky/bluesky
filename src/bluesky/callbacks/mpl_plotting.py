@@ -1,6 +1,7 @@
 import functools
 import logging
 import threading
+import time
 import warnings
 from collections import ChainMap
 
@@ -951,3 +952,42 @@ class LiveStreamPlot(QtAwareCallback):
                 f"LivePlot has different number of elements for x ({len(self.x_data)}) and y ({len(self.y_data)})"
             )  # noqa: UP032
         super().stop(doc)
+
+
+class DummyLiveStreamPlot(CallbackBase):
+    """
+    Build a function that updates a plot from StreamDatums and Events.
+
+    Note: If your figure blocks the main thread when you are trying to
+    scan with this callback, call `plt.ion()` in your IPython session.
+
+    """
+
+    def __init__(
+        self,
+        cl,
+        data_key,
+        **kwargs,
+    ):
+        self.cl = cl
+        self.data_key = data_key
+        self.axes_keys = []
+        self._monitored_sres_uids = []
+
+        super().__init__()
+
+    def stream_resource(self, doc):
+        if self.data_key == doc["data_key"]:
+            self._monitored_sres_uids.append(doc["uid"])
+
+    def stream_datum(self, doc):
+        if doc["stream_resource"] in self._monitored_sres_uids:
+            self.update()
+
+    def update(self):
+        print("Updating the plot")
+        time.sleep(1)
+        if adapter := self.cl.get_adapter(self.data_key):
+            # arr = adapter.read()
+            print(f"{adapter=}")
+            # print(f"{adapter.read().shape=}")
