@@ -851,7 +851,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
 
     Parameters
     ----------
-    flyers: An iterable sequnce of fly-able devices with 'kickoff', 'complete' and
+    flyers: An iterable sequence of fly-able devices with 'kickoff', 'complete' and
         'collect' methods.
     dets: An iterable sequence of collectable devices with 'describe_collect' method.
     flush_period: float, int
@@ -873,8 +873,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     :func:`bluesky.plan_stubs.collect`
     """
     group = short_uid(label="complete")
-    for flyer in flyers:
-        yield from complete(flyer, group=group, wait=False)
+    yield from complete_all(*flyers, group=group, wait=False)
     done = False
     while not done:
         done = yield from wait(group=group, timeout=flush_period, move_on=True)
