@@ -310,9 +310,9 @@ class _RunWriter(DocumentRouter):
         metadata = deep_update(dict(desc_node.metadata), var_fields)
         desc_node.update_metadata(metadata)
 
-        # Write the configuration data; loop over all detectors
+        # Write the configuration data: loop over all detectors
         conf_node = desc_node["configuration"]
-        for det_name, det_dict in conf_dict:
+        for det_name, det_dict in conf_dict.items():
             df_dict = {"descriptor_uid": uid}
             df_dict.update(det_dict.get("data", {}))
             df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
@@ -408,7 +408,7 @@ class _RunWriter(DocumentRouter):
         # NOTE: Assigning data_source.id in the object and passing it in http params is superflous, but it is currently required by Tiled.  # noqa
         sres_node.refresh()
         data_source = handler.get_data_source()
-        data_source.id = sres_node.data_sources()[0]["id"]  # ID of the exisiting DataSource record
+        data_source.id = sres_node.data_sources()[0].id  # ID of the exisiting DataSource record
         endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             sres_node.context.http_client.put(
