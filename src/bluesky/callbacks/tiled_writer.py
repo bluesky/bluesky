@@ -259,7 +259,7 @@ class _RunWriter(DocumentRouter):
         if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
             raise RuntimeError("StreamResource document is missing a mimetype or spec")
         else:
-            sres["mimetype"] = sres.get("mimetype", MIMETYPE_LOOKUP[sres["spec"]])
+            sres["mimetype"] = sres.get("mimetype", MIMETYPE_LOOKUP[sres.get("spec")])
         if "parameters" not in sres.keys():
             sres["parameters"] = sres.pop("resource_kwargs", {})
         if "uri" not in sres.keys():
