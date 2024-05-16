@@ -117,7 +117,7 @@ class CrossSection:
         # clean defaults
         if limit_func is None:
             # note - cannot import this in the defaults init
-            limit_func = percentile_limit_factory()
+            limit_func = percentile_limit_factory([0.0, 100.0])
         # stash the color map
         self._cmap = colormap
         # set the default norm if not passed
@@ -277,9 +277,13 @@ class CrossSection:
         """
         self._disconnect_callbacks()
         self._cursor = Cursor(self._image_axes, useblit=True, color="red", linewidth=2)
-        self._move_cid = self._figure.canvas.mpl_connect("motion_notify_event", self._move_cb)
+        self._move_cid = self._figure.canvas.mpl_connect(
+            "motion_notify_event", self._move_cb
+        )
 
-        self._click_cid = self._figure.canvas.mpl_connect("button_press_event", self._click_cb)
+        self._click_cid = self._figure.canvas.mpl_connect(
+            "button_press_event", self._click_cb
+        )
 
         self._clear_cid = self._figure.canvas.mpl_connect("draw_event", self._clear)
         self._figure.tight_layout()
@@ -345,7 +349,9 @@ class CrossSection:
             # adjust xy -> col, row
             col = int(x + 0.5)
             row = int(y + 0.5)
-            point_falls_inside_array: bool = col >= 0 and col < numcols and row >= 0 and row < numrows
+            point_falls_inside_array: bool = (
+                col >= 0 and col < numcols and row >= 0 and row < numrows
+            )
             if point_falls_inside_array and self._imdata is not None:
                 # if it does, grab the value
                 z = self._imdata[row, col]
@@ -377,7 +383,9 @@ class CrossSection:
         # cursor widget.  The problem is that the mpl widget
         # skips updating it's saved background if the widget is inactive
         if self._cursor:
-            self._cursor.background = self._cursor.canvas.copy_from_bbox(self._cursor.canvas.figure.bbox)
+            self._cursor.background = self._cursor.canvas.copy_from_bbox(
+                self._cursor.canvas.figure.bbox
+            )
 
     @property
     def interpolation(self):
@@ -554,7 +562,7 @@ def absolute_limit_factory(limit_args):
     return _absolute_limit
 
 
-def percentile_limit_factory(limit_args: Tuple[float]):
+def percentile_limit_factory(limit_args: Tuple[np.ndarray]):
     """
     Factory to return a percentile limit function
     """
