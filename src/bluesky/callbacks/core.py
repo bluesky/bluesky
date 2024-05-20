@@ -342,7 +342,7 @@ class CollectLiveStream(CallbackBase):
                 # breakpoint()
                 if sres_uids[-1] in self.stream_consolidators.keys():
                     handler = self.stream_consolidators[sres_uids[-1]]
-                    breakpoint()
+                    # breakpoint()
                     return handler.get_adapter()
         else:
             raise RuntimeError(f"No data received for {data_key}.")

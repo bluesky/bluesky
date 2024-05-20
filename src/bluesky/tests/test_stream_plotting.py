@@ -191,6 +191,7 @@ class JSONWriter:
 def test_hdf5_plotting(RE, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     cl = CollectLiveStream()
+    # pl = LiveStreamPlot(cl, data_key="det-sd2")
     pl = DummyLiveStreamPlot(cl, data_key="det-sd2")
     RE.subscribe(pl)
     RE(collect_plan(det, name="primary"), cl)
