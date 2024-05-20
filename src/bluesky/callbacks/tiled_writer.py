@@ -112,7 +112,7 @@ class _RunWriter(CallbackBase):
             desc_node = self.root_node.create_container(key=desc_name, metadata=metadata)
             desc_node.create_container(key="external")
             desc_node.create_container(key="internal")
-            desc_node.create_container(key="configuration")
+            desc_node.create_container(key="config")
         else:
             # Get existing descriptor node (with fixed and variable metadata saved before)
             desc_node = self.root_node[desc_name]
@@ -126,7 +126,7 @@ class _RunWriter(CallbackBase):
         self.data_keys_ext.update({k: v for k, v in metadata["data_keys"].items() if "external" in v.keys()})
 
         # Write the configuration data: loop over all detectors
-        conf_node = desc_node["configuration"]
+        conf_node = desc_node["config"]
         for det_name, det_dict in conf_dict[uid].items():
             print(det_name, det_dict)
             df_dict = {"descriptor_uid": uid}
