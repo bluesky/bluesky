@@ -1,9 +1,9 @@
 import copy
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import pandas as pd
 from event_model import RunRouter
-from event_model.documents import EventDescriptor, StreamDatum, StreamResource
+from event_model.documents import Datum, EventDescriptor, Resource, StreamDatum, StreamResource
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
@@ -42,34 +42,40 @@ class TiledWriter:
 
 
 class _RunWriter(CallbackBase):
-    "Write the document from one Bluesky Run into Tiled."
+    """Write documents from one Bluesky Run into Tiled.
+
+    Datum, Resource, and StreamResource documents are cached until Event or StreamDatum documents are received,
+    after which corresponding nodes are created in Tiled.
+    """
 
     def __init__(self, client: BaseClient):
         self.client = client
         self.root_node: Union[None, Container] = None
         self._desc_nodes: Dict[str, Container] = {}  # references to descriptor containers by their uid's
         self._sres_nodes: Dict[str, BaseClient] = {}
-        self._sres_cache: Dict[str, StreamResource] = {}
+        self._docs_cache: Dict[str, Union[Datum, Resource, StreamResource]] = {}
         self._handlers: Dict[str, ConsolidatorBase] = {}
+        self.data_keys_int: Dict[str, Dict[str, Any]] = {}
+        self.data_keys_ext: Dict[str, Dict[str, Any]] = {}
 
-    def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
+    def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
 
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
 
-        sres = copy.copy(sres)
-        if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
+        doc = copy.copy(doc)
+        if ("mimetype" not in doc.keys()) and ("spec" not in doc.keys()):
             raise RuntimeError("StreamResource document is missing a mimetype or spec")
         else:
-            sres["mimetype"] = sres.get("mimetype", MIMETYPE_LOOKUP[sres.get("spec")])
-        if "parameters" not in sres.keys():
-            sres["parameters"] = sres.pop("resource_kwargs", {})
-        if "uri" not in sres.keys():
-            file_path = sres.pop("root").strip("/") + "/" + sres.pop("resource_path").strip("/")
-            sres["uri"] = "file://localhost/" + file_path
+            doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[doc.get("spec")]
+        if "parameters" not in doc.keys():
+            doc["parameters"] = doc.pop("resource_kwargs", {})
+        if "uri" not in doc.keys():
+            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
+            doc["uri"] = "file://localhost/" + file_path
 
-        return sres
+        return doc
 
     def start(self, doc):
         self.root_node = self.client.create_container(
@@ -104,6 +110,7 @@ class _RunWriter(CallbackBase):
             desc_node = self.root_node.create_container(key=desc_name, metadata=metadata)
             desc_node.create_container(key="external")
             desc_node.create_container(key="internal")
+            desc_node.create_container(key="configuration")
         else:
             # Get existing descriptor node (with fixed and variable metadata saved before)
             desc_node = self.root_node[desc_name]
@@ -111,15 +118,49 @@ class _RunWriter(CallbackBase):
         # Update (add new values to) variable fields of the metadata
         metadata = deep_update(dict(desc_node.metadata), var_fields)
         desc_node.update_metadata(metadata)
+
+        # Keep specifications for external and internal data_keys for faster access
+        self.data_keys_int.update({k: v for k, v in metadata["data_keys"].items() if "external" not in v.keys()})
+        self.data_keys_ext.update({k: v for k, v in metadata["data_keys"].items() if "external" in v.keys()})
+
+        # Write the configuration data: loop over all detectors
+        conf_node = desc_node["configuration"]
+        for det_name, det_dict in conf_dict[uid].items():
+            print(det_name, det_dict)
+            df_dict = {"descriptor_uid": uid}
+            df_dict.update(det_dict.get("data", {}))
+            df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
+            df = pd.Series(df_dict).to_frame().T
+            if det_name in conf_node.keys():
+                conf_node[det_name].append_partition(df, 0)
+            else:
+                conf_node.new(
+                    structure_family=StructureFamily.table,
+                    data_sources=[
+                        DataSource(
+                            structure_family=StructureFamily.table,
+                            structure=TableStructure.from_pandas(df),
+                            mimetype="text/csv",
+                        ),
+                    ],
+                    key=det_name,
+                    metadata=det_dict["data_keys"],
+                )
+                conf_node[det_name].write_partition(df, 0)
+
         self._desc_nodes[uid] = desc_node
 
     def event(self, doc):
-        descriptor_node = self._desc_nodes[doc["descriptor"]]
-        parent_node = descriptor_node["internal"]
+        desc_node = self._desc_nodes[doc["descriptor"]]
+
+        # Process _internal_ data -- those without external flag or those that have been filled
+        data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
+        data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
+        parent_node = desc_node["internal"]
         df_dict = {"seq_num": doc["seq_num"]}
-        df_dict.update(doc["data"])
-        df_dict.update({f"ts_{c}": v for c, v in doc["timestamps"].items()})
-        df = pd.DataFrame(df_dict, index=[0])
+        df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
+        df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
+        df = pd.Series(df_dict).to_frame().T  # data_keys become column names in the df
         if "events" in parent_node.keys():
             parent_node["events"].append_partition(df, 0)
         else:
@@ -133,16 +174,41 @@ class _RunWriter(CallbackBase):
                     ),
                 ],
                 key="events",
+                metadata=data_keys_spec,
             )
             parent_node["events"].write_partition(df, 0)
 
+        # Process _external_ data: Loop over all referenced Datums
+        for data_key in self.data_keys_ext.keys():
+            if doc["filled"].get(data_key, False):
+                continue
+
+            if datum_id := doc["data"].get(data_key):
+                if datum_id in self._docs_cache.keys():
+                    # Convert the Datum document to the StreamDatum format
+                    datum_doc = self._docs_cache.pop(datum_id)
+                    datum_doc["uid"] = datum_doc.pop("datum_id")
+                    datum_doc["stream_resource"] = datum_doc.pop("resource")
+                    datum_doc["descriptor"] = doc["descriptor"]  # From Event document
+                    datum_doc["indices"] = {"start": doc["seq_num"] - 1, "stop": doc["seq_num"]}
+                    datum_doc["seq_nums"] = {"start": doc["seq_num"], "stop": doc["seq_num"] + 1}
+
+                    # Update the Resource document (add data_key as in StreamResource)
+                    if datum_doc["stream_resource"] in self._docs_cache.keys():
+                        self._docs_cache[datum_doc["stream_resource"]]["data_key"] = data_key
+
+                    self.stream_datum(datum_doc)
+                else:
+                    raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
+
+    def datum(self, doc):
+        self._docs_cache[doc["datum_id"]] = copy.copy(doc)
+
+    def resource(self, doc):
+        self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
+
     def stream_resource(self, doc: StreamResource):
-        """Process a StreamResource document
-
-        Only _cache_ the StreamResource for now; add the node when at least one StreamDatum is added
-        """
-
-        self._sres_cache[doc["uid"]] = self._ensure_sres_backcompat(doc)
+        self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
 
     def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> Tuple[BaseClient, ConsolidatorBase]:
         """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""
@@ -151,11 +217,11 @@ class _RunWriter(CallbackBase):
             sres_node = self._sres_nodes[sres_uid]
             handler = self._handlers[sres_uid]
 
-        elif sres_uid in self._sres_cache.keys():
+        elif sres_uid in self._docs_cache.keys():
             if not desc_uid:
                 raise RuntimeError("Descriptor uid must be specified to initialise a Stream Resource node")
 
-            sres_doc = self._sres_cache.pop(sres_uid)
+            sres_doc = self._docs_cache.pop(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
             # Initialise a bluesky handler (consolidator) for the StreamResource
@@ -185,7 +251,7 @@ class _RunWriter(CallbackBase):
         # NOTE: Assigning data_source.id in the object and passing it in http params is superflous, but it is currently required by Tiled.  # noqa
         sres_node.refresh()
         data_source = handler.get_data_source()
-        data_source.id = sres_node.data_sources()[0]["id"]  # ID of the exisiting DataSource record
+        data_source.id = sres_node.data_sources()[0].id  # ID of the exisiting DataSource record
         endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             sres_node.context.http_client.put(

@@ -193,8 +193,6 @@ class ConsolidatorBase:
         it does not matter here; it is just a callable.
         """
 
-        # NOTE: This could be a method on DataSource instead, which seems more appropriate.
-
         # User-provided adapters take precedence over defaults.
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_factory = all_adapters_by_mimetype[self.mimetype]
