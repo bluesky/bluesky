@@ -253,7 +253,10 @@ class _RunWriter(CallbackBase):
         # NOTE: Assigning data_source.id in the object and passing it in http params is superflous, but it is currently required by Tiled.  # noqa
         sres_node.refresh()
         data_source = handler.get_data_source()
-        data_source.id = sres_node.data_sources()[0].id  # ID of the exisiting DataSource record
+        try:
+            data_source.id = sres_node.data_sources()[0].id  # ID of the exisiting DataSource record
+        except AttributeError:
+            data_source.id = sres_node.data_sources()[0]["id"]  # TODO: Old format, to be removed.
         endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             sres_node.context.http_client.put(
