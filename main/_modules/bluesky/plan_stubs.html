@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.13.0a4.dev201+ga17729f0 documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.13.0a4.dev207+g27ca36cc documentation</title>
   
   
   
@@ -35,14 +35,14 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../../_static/documentation_options.js?v=60a141d7"></script>
+    <script src="../../_static/documentation_options.js?v=c61ec1fb"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/plan_stubs';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev201+ga17729f0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev207+g27ca36cc';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -583,6 +583,7 @@ document.write(`
     <span class="n">merge_cycler</span><span class="p">,</span>
     <span class="n">plan</span><span class="p">,</span>
     <span class="n">separate_devices</span><span class="p">,</span>
+    <span class="n">short_uid</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">short_uid</span> <span class="k">as</span> <span class="n">_short_uid</span><span class="p">,</span>
@@ -1111,7 +1112,7 @@ document.write(`
 <div class="viewcode-block" id="wait">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.wait.html#bluesky.plan_stubs.wait">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">move_on</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Wait for all statuses in a group to report being finished.</span>
 
@@ -1123,9 +1124,9 @@ document.write(`
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        Msg(&#39;wait&#39;, None, group=group)</span>
+<span class="sd">        Msg(&#39;wait&#39;, None, group=group, move_on=move_on, timeout=timeout)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">move_on</span><span class="o">=</span><span class="n">move_on</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">))</span></div>
 
 
 
@@ -1471,6 +1472,43 @@ document.write(`
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;collect&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span> <span class="n">return_payload</span><span class="o">=</span><span class="n">return_payload</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span></div>
 
+
+
+<span class="nd">@plan</span>
+<span class="k">def</span> <span class="nf">collect_while_completing</span><span class="p">(</span><span class="n">flyers</span><span class="p">,</span> <span class="n">dets</span><span class="p">,</span> <span class="n">flush_period</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Collect data from one or more fly-scanning devices and emit documents, then collect and emit</span>
+<span class="sd">    data from one or more Collectable detectors until all are done.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    flyers: An iterable sequence of fly-able devices with &#39;kickoff&#39;, &#39;complete&#39; and</span>
+<span class="sd">        &#39;collect&#39; methods.</span>
+<span class="sd">    dets: An iterable sequence of collectable devices with &#39;describe_collect&#39; method.</span>
+<span class="sd">    flush_period: float, int</span>
+<span class="sd">        Time period in seconds between each yield from collect while waiting for triggered</span>
+<span class="sd">        objects to be done</span>
+<span class="sd">    stream_name: str, optional</span>
+<span class="sd">        If not None, will collect for the named string specifically, else collect will be performed</span>
+<span class="sd">        on all streams.</span>
+
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        A &#39;complete&#39; message or &#39;collect&#39; message</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plan_stubs.complete`</span>
+<span class="sd">    :func:`bluesky.plan_stubs.collect`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">short_uid</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;complete&quot;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">complete_all</span><span class="p">(</span><span class="o">*</span><span class="n">flyers</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">flush_period</span><span class="p">,</span> <span class="n">move_on</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">collect</span><span class="p">(</span><span class="o">*</span><span class="n">dets</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="configure">
