@@ -8,9 +8,7 @@ from . import CallbackBase
 logger = logging.getLogger(__name__)
 
 TEMPLATES = {}
-TEMPLATES[
-    "long"
-] = """
+TEMPLATES["long"] = """
 {{- start.plan_name }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})
 
 Scan Plan
@@ -33,14 +31,10 @@ Metadata
 {% endif -%}
 {%- endfor -%}"""
 
-TEMPLATES[
-    "desc"
-] = """
+TEMPLATES["desc"] = """
 {{- start.plan_name }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})"""
 
-TEMPLATES[
-    "call"
-] = """RE({{ start.plan_name }}(
+TEMPLATES["call"] = """RE({{ start.plan_name }}(
 {%- for k, v in start.plan_args.items() %}{%- if not loop.first %}   {% endif %}{{ k }}={{ v }}
 {%- if not loop.last %},
 {% endif %}{% endfor %}))
@@ -106,12 +100,8 @@ def logbook_cb_factory(
     long_msg = env.from_string(long_template)
     desc_msg = env.from_string(desc_template)
 
-    desc_dispatch = defaultdict(
-        lambda: desc_msg, {k: env.from_string(v) for k, v in desc_dispatch.items()}
-    )
-    long_dispatch = defaultdict(
-        lambda: long_msg, {k: env.from_string(v) for k, v in long_dispatch.items()}
-    )
+    desc_dispatch = defaultdict(lambda: desc_msg, {k: env.from_string(v) for k, v in desc_dispatch.items()})
+    long_dispatch = defaultdict(lambda: long_msg, {k: env.from_string(v) for k, v in long_dispatch.items()})
 
     def lbcb(name, doc):
         # This only applies to 'start' Documents.
@@ -181,15 +171,14 @@ class OlogCallback(CallbackBase):
         from IPython import get_ipython
 
         commands = list(get_ipython().history_manager.get_range())
-        document_content = (
-            "{}: {}\n\nRunStart Document\n-----------------\n{}".format(  # noqa: UP031
-                doc["scan_id"],
-                commands[-1][2],
-                pformat(doc),
-            )
+        document_content = "{}: {}\n\nRunStart Document\n-----------------\n{}".format(  # noqa: UP031
+            doc["scan_id"],
+            commands[-1][2],
+            pformat(doc),
         )
         olog_status = self.client.log(document_content, logbooks=self.logbook)
         logger.debug(
-            "client.log returned  %s", olog_status
+            "client.log returned  %s",
+            olog_status,  # noqa: UP031
         )  # NOTE this is for logging calls efficiency
         super().start(doc)
