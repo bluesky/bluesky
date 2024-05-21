@@ -554,7 +554,7 @@ def absolute_limit_factory(limit_args):
     return _absolute_limit
 
 
-def percentile_limit_factory(limit_args: Tuple[np.ndarray]):
+def percentile_limit_factory(limit_args: Tuple[float]):
     """
     Factory to return a percentile limit function
     """
