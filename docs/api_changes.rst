@@ -2,6 +2,42 @@
  Release History
 =================
 
+v1.13.0a4 (2024-05-22)
+======================
+
+Added
+-----
+* Adopt DiamondLightSource Copier Template by @callumforrester in https://github.com/bluesky/bluesky/pull/1664
+* Alter ko and complete plan stubs to take multiple flyables by @abbiemery in https://github.com/bluesky/bluesky/pull/1663
+* (#1650) promotes warn_if_msg to a UserWarning by @CoePaul in https://github.com/bluesky/bluesky/pull/1705
+* [ENH] Add __main__.py and entrypoint for checking version info. by @jwlodek in https://github.com/bluesky/bluesky/pull/1699
+* Expose API to set title on LiveGrid plots by @GDYendell in https://github.com/bluesky/bluesky/pull/1702
+* Adopt pydata documentation theme by @AlexanderWells-diamond in https://github.com/bluesky/bluesky/pull/1706
+* update tutorial by @stan-dot in https://github.com/bluesky/bluesky/pull/1729
+* Callback to write documents to Tiled by @genematx in https://github.com/bluesky/bluesky/pull/1660
+* Added class and decorator to warn users if plan is not iterated over by @vshekar in https://github.com/bluesky/bluesky/pull/1709
+* Add collect_while_completing plan stub and test by @jsouter in https://github.com/bluesky/bluesky/pull/1720
+
+Fixed
+-----
+* Fix Ruff Formatting Strings by @callumforrester in https://github.com/bluesky/bluesky/pull/1675
+* Remove object_plans.py and associated test by @DominicOram in https://github.com/bluesky/bluesky/pull/1696
+* MNT: numpy 2.0 compatibility by @tacaswell in https://github.com/bluesky/bluesky/pull/1672
+* Fix for #1693 - tests failing in devcontainer by @gilesknap in https://github.com/bluesky/bluesky/pull/1700
+* (#1697) removes fuzz in toto by @CoePaul in https://github.com/bluesky/bluesky/pull/1710
+* Dont collect interactive tests by @gilesknap in https://github.com/bluesky/bluesky/pull/1703
+* Remove nose package from dev dependencies list by @Villtord in https://github.com/bluesky/bluesky/pull/1704
+* TST: relax timing as 2s is failing on CI on py311 only by @tacaswell in https://github.com/bluesky/bluesky/pull/1707
+* Pin Sphinx to <7.3 by @callumforrester in https://github.com/bluesky/bluesky/pull/1717
+* Include Python3.12 Classifier by @callumforrester in https://github.com/bluesky/bluesky/pull/1719
+* update pyproject by @stan-dot in https://github.com/bluesky/bluesky/pull/1722
+* Vendor a copy of Super State Machine by @genematx in https://github.com/bluesky/bluesky/pull/1708
+* Use tmp_path instead of tmpdir fixture by @jwlodek in https://github.com/bluesky/bluesky/pull/1730
+* MacOS fix for failing tests in the test_zmq.py  by @skarakuzu in https://github.com/bluesky/bluesky/pull/1725
+* MNT: (re)fix numpy2 compatibility by @tacaswell in https://github.com/bluesky/bluesky/pull/1732
+* (#1646) replaces KeyError handling logic by @CoePaul in https://github.com/bluesky/bluesky/pull/1718
+* FIX: TiledWriter bug by @genematx in https://github.com/bluesky/bluesky/pull/1744
+
 v1.13.0a3 (2024-03-25)
 ======================
 
