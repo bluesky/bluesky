@@ -36,7 +36,12 @@ class ExternalAssetDevice:
         self.detectors = detectors or ["det1", "det2", "det3"]
         self.compose_stream_resource = ComposeStreamResource()
         self.stream_resource_compose_datum_pairs = tuple(
-            self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
+            self.compose_stream_resource(
+                mimetype="application/x-hdf5",
+                uri=f"file://localhost/non_existent_{det}.hdf5",
+                data_key=det,
+                parameters={"path": "/data"}
+            ) for det in self.detectors
         )
         # Number of collect calls that will be made
         self.number_of_chunks = number_of_chunks
@@ -106,7 +111,13 @@ class ExternalAssetDevice:
         if self.current_chunk == int(self.number_of_chunks / 2):
             # New stream_resource half way through the run
             self.stream_resource_compose_datum_pairs = tuple(
-                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
+                self.compose_stream_resource(
+                    mimetype="application/x-hdf5",
+                    uri=f"file://localhost/non_existent_{det}.hdf5",
+                    data_key=det,
+                    parameters={"path": "/data"}
+                )
+                for det in self.detectors
             )
             yield from self.collect_resources()
 
