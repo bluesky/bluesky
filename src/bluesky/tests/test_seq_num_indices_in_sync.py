@@ -1,6 +1,8 @@
+import importlib.metadata
 from random import randint, sample
 from typing import Dict, Iterable, Iterator, List, Optional, Union
 
+import packaging.version
 import pytest
 from event_model import ComposeStreamResource, EventModelValueError
 from event_model.documents.event_descriptor import DataKey
@@ -21,6 +23,9 @@ from bluesky.protocols import (
 )
 from bluesky.run_engine import RunEngineInterrupted
 
+event_model_version = packaging.version.parse(importlib.metadata.version("event_model"))
+DRAFT_0_STREAM_RESOURCE = event_model_version < packaging.version.parse("1.21.0")
+
 
 class ExternalAssetDevice:
     sequence_counter_at_chunks: Optional[Union[range, List[int]]] = None
@@ -35,15 +40,20 @@ class ExternalAssetDevice:
     ):
         self.detectors = detectors or ["det1", "det2", "det3"]
         self.compose_stream_resource = ComposeStreamResource()
-        self.stream_resource_compose_datum_pairs = tuple(
-            self.compose_stream_resource(
-                mimetype="application/x-hdf5",
-                uri=f"file://localhost/non_existent_{det}.hdf5",
-                data_key=det,
-                parameters={"path": "/data"},
+        if DRAFT_0_STREAM_RESOURCE:
+            self.stream_resource_compose_datum_pairs = tuple(
+                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
             )
-            for det in self.detectors
-        )
+        else:
+            self.stream_resource_compose_datum_pairs = tuple(
+                self.compose_stream_resource(
+                    mimetype="application/x-hdf5",
+                    uri=f"file://localhost/non_existent_{det}.hdf5",
+                    data_key=det,
+                    parameters={"path": "/data"},
+                )
+                for det in self.detectors
+            )
         # Number of collect calls that will be made
         self.number_of_chunks = number_of_chunks
 
@@ -111,15 +121,21 @@ class ExternalAssetDevice:
     def collect_stream_datum_repeat_stream_resource(self) -> Iterator[StreamAsset]:
         if self.current_chunk == int(self.number_of_chunks / 2):
             # New stream_resource half way through the run
-            self.stream_resource_compose_datum_pairs = tuple(
-                self.compose_stream_resource(
-                    mimetype="application/x-hdf5",
-                    uri=f"file://localhost/non_existent_{det}.hdf5",
-                    data_key=det,
-                    parameters={"path": "/data"},
+            if DRAFT_0_STREAM_RESOURCE:
+                self.stream_resource_compose_datum_pairs = tuple(
+                    self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})
+                    for det in self.detectors
                 )
-                for det in self.detectors
-            )
+            else:
+                self.stream_resource_compose_datum_pairs = tuple(
+                    self.compose_stream_resource(
+                        mimetype="application/x-hdf5",
+                        uri=f"file://localhost/non_existent_{det}.hdf5",
+                        data_key=det,
+                        parameters={"path": "/data"},
+                    )
+                    for det in self.detectors
+                )
             yield from self.collect_resources()
 
         yield from self.collect_stream_datum()
