@@ -40,8 +40,9 @@ class ExternalAssetDevice:
                 mimetype="application/x-hdf5",
                 uri=f"file://localhost/non_existent_{det}.hdf5",
                 data_key=det,
-                parameters={"path": "/data"}
-            ) for det in self.detectors
+                parameters={"path": "/data"},
+            )
+            for det in self.detectors
         )
         # Number of collect calls that will be made
         self.number_of_chunks = number_of_chunks
@@ -115,7 +116,7 @@ class ExternalAssetDevice:
                     mimetype="application/x-hdf5",
                     uri=f"file://localhost/non_existent_{det}.hdf5",
                     data_key=det,
-                    parameters={"path": "/data"}
+                    parameters={"path": "/data"},
                 )
                 for det in self.detectors
             )
