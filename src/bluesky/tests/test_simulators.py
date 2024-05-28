@@ -224,6 +224,35 @@ def test_fire_callback(hw):
     assert calls[2].args == ("event", event_doc)
 
 
+def test_add_callback_handler_for_raises_valueerror_on_no_document(hw):
+    sim = RunEngineSimulator()
+
+    with pytest.raises(
+        ValueError,
+        match="No document sequence specified and document or document_name " "not specified",
+    ):
+        sim.add_callback_handler_for(
+            "open_run",
+            document_name="start",
+            msg_filter=lambda msg: msg.kwargs["plan_name"] == "count",
+        )
+
+
+def test_add_callback_handler_for_raises_valueerror_on_no_document_name(hw):
+    sim = RunEngineSimulator()
+
+    start_doc = {"plan_name": "count", "uid": uuid.uuid4()}
+    with pytest.raises(
+        ValueError,
+        match="No document sequence specified and document or document_name " "not specified",
+    ):
+        sim.add_callback_handler_for(
+            "open_run",
+            document=start_doc,
+            msg_filter=lambda msg: msg.kwargs["plan_name"] == "count",
+        )
+
+
 def test_assert_message_and_return_remaining(hw):
     def take_three_readings():
         yield from bp.count([hw.det], num=3)
