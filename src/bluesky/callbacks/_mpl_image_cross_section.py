@@ -277,9 +277,13 @@ class CrossSection:
         """
         self._disconnect_callbacks()
         self._cursor = Cursor(self._image_axes, useblit=True, color="red", linewidth=2)
-        self._move_cid = self._figure.canvas.mpl_connect("motion_notify_event", self._move_cb)
+        self._move_cid = self._figure.canvas.mpl_connect(
+            "motion_notify_event", self._move_cb
+        )
 
-        self._click_cid = self._figure.canvas.mpl_connect("button_press_event", self._click_cb)
+        self._click_cid = self._figure.canvas.mpl_connect(
+            "button_press_event", self._click_cb
+        )
 
         self._clear_cid = self._figure.canvas.mpl_connect("draw_event", self._clear)
         self._figure.tight_layout()
@@ -345,7 +349,9 @@ class CrossSection:
             # adjust xy -> col, row
             col = int(x + 0.5)
             row = int(y + 0.5)
-            point_falls_inside_array: bool = col >= 0 and col < numcols and row >= 0 and row < numrows
+            point_falls_inside_array: bool = (
+                col >= 0 and col < numcols and row >= 0 and row < numrows
+            )
             if point_falls_inside_array and self._imdata is not None:
                 # if it does, grab the value
                 z = self._imdata[row, col]
@@ -377,7 +383,9 @@ class CrossSection:
         # cursor widget.  The problem is that the mpl widget
         # skips updating it's saved background if the widget is inactive
         if self._cursor:
-            self._cursor.background = self._cursor.canvas.copy_from_bbox(self._cursor.canvas.figure.bbox)
+            self._cursor.background = self._cursor.canvas.copy_from_bbox(
+                self._cursor.canvas.figure.bbox
+            )
 
     @property
     def interpolation(self):
@@ -487,34 +495,24 @@ class CrossSection:
         self._figure.canvas.draw_idle()
 
 
-# for Python 3.12 - the type to all 3 of the functions could be
-# type LimitFactory = Callable[[Any | None], Callable[[Any], Tuple[np.ndarray]]]
-
-
-def fullrange_limit_factory(limit_args=None):
+def fullrange_limit_factory():
     """
-    Factory for returning full-range limit functions
-
-    limit_args is ignored.
+    Factory for returning full-range limit functions.
     """
 
-    def _full_range(im):
+    def _full_range(im: np.ndarray) -> Tuple[float, float]:
         """
-        Plot the entire range of the image
+        Plot the entire range of the image.
 
         Parameters
         ----------
         im : ndarray
-           image data, nominally 2D
-
-        limit_args : object
-           Ignored, here to match signature with other
-           limit functions
+           Image data, nominally 2D.
 
         Returns
         -------
-        climits : tuple
-           length 2 tuple to be passed to `im.clim(...)` to
+        climits : Tuple[float, float]
+           Length 2 tuple to be passed to `im.clim(...)` to
            set the color limits of a ColorMappable object.
         """
         return (np.nanmin(im), np.nanmax(im))
@@ -522,62 +520,64 @@ def fullrange_limit_factory(limit_args=None):
     return _full_range
 
 
-def absolute_limit_factory(limit_args):
+def absolute_limit_factory(limit_args: Tuple[float, float]):
     """
-    Factory for making absolute limit functions
+    Factory for making absolute limit functions.
+
+    Parameters
+    ----------
+    limit_args : Tuple[float, float]
+        Values to set the absolute limits of the image.
     """
 
-    def _absolute_limit(im):
+    def _absolute_limit(im: np.ndarray) -> Tuple[float, float]:
         """
-        Plot the image based on the min/max values in limit_args
-
-        This function is a no-op and just return the input limit_args.
+        Plot the image based on the min/max values in limit_args.
 
         Parameters
         ----------
         im : ndarray
-            image data.  Ignored in this method
-
-        limit_args : array
-           (min_value, max_value)  Values are in absolute units
-           of the image.
+            Image data. Ignored in this method.
 
         Returns
         -------
-        climits : tuple
-           length 2 tuple to be passed to `im.clim(...)` to
+        climits : Tuple[float, float]
+           Length 2 tuple to be passed to `im.clim(...)` to
            set the color limits of a ColorMappable object.
-
         """
         return limit_args
 
     return _absolute_limit
 
 
-def percentile_limit_factory(limit_args: Tuple[float]):
+def percentile_limit_factory(limit_args: Tuple[float, float]):
     """
-    Factory to return a percentile limit function
+    Factory to return a percentile limit function.
+
+    Parameters
+    ----------
+    limit_args : Tuple[float, float]
+        Upper and lower percentile values in [0, 100] to set the color limits.
     """
 
-    def _percentile_limit(image_data: np.ndarray):
+    def _percentile_limit(image_data: np.ndarray) -> Tuple[float, float]:
         """
         Sets limits based on percentile.
 
         Parameters
         ----------
-        im : ndarray
-            image data
-
-        limit_args : tuple of floats in [0, 100]
-            upper and lower percetile values
+        image_data : ndarray
+            Image data.
 
         Returns
         -------
-        climits : tuple
-           length 2 tuple to be passed to `im.clim(...)` to
+        climits : Tuple[float, float]
+           Length 2 tuple to be passed to `im.clim(...)` to
            set the color limits of a ColorMappable object.
-
         """
-        return np.percentile(image_data, limit_args)
+        return (
+            np.percentile(image_data, limit_args[0]),
+            np.percentile(image_data, limit_args[1]),
+        )
 
     return _percentile_limit
