@@ -1,3 +1,4 @@
+from itertools import dropwhile
 from time import time
 from typing import (
     Any,
@@ -17,7 +18,7 @@ from bluesky.preprocessors import print_summary_wrapper
 from bluesky.run_engine import call_in_bluesky_event_loop, in_bluesky_event_loop
 from bluesky.utils import Msg, maybe_await
 
-from .protocols import Checkable, Reading
+from .protocols import Checkable, Readable, Reading
 
 END = "end"
 
@@ -214,20 +215,12 @@ class RunEngineSimulator:
             ),
         )
 
-    def add_read_handler_for(self, obj_name: str, value: Any, dict_key: str = "values"):
+    def add_read_handler_for(self, obj: Readable, value: Optional[Any]):
         """
-        Convenience method to register a handler to return a result from a 'read' command.
-
-        Parameters
-        ----------
-        obj_name
-            Name of the object to intercept reads for
-        value
-            The value to return. If value is a dict then dict_key is ignored and the result of the read
-            command is the supplied value. Otherwise, the result of the read command is a dict of the form
-            { dict_key: { "value": value } }
-        dict_key
-            The key in the result dictionary to populate with the value, by default this is 'values'
+        Convenience method to register a handler to return a result from a
+        single-valued 'read' command.
+        The behaviour is equivalent to
+        add_read_handler_for_multiple(obj, **{obj.name: value})
 
         Examples
         --------
@@ -243,11 +236,43 @@ class RunEngineSimulator:
         >>> msgs = sim.simulate_plan(trigger_and_return_pin_tip())
         >>> assert sim.return_value == (8, 5)
         """
+        self.add_read_handler_for_multiple(obj, **{obj.name: value})
+
+    def add_read_handler_for_multiple(self, obj: Readable, **kwargs):
+        """
+        Convenience method to register a handler to return a result from a multi-valued
+        'read' command.
+
+        Parameters
+        ----------
+        obj
+           The object to intercept reads for
+        kwargs
+            The handler will return a dict with the corresponding key-value pairs.
+            If the value is a dict the result of the read command for the key is the supplied dict.
+            Otherwise, the value of the read command for the key is
+            a value of Reading(value=value, timestamp=time())
+
+        Examples
+        --------
+        In order to exercise a plan containing the following:
+
+        >>> def read_all_values():
+        >>>     data = yield from bps.read(hw.ab_det)
+        >>>     return data
+        >>> sim = RunEngineSimulator()
+        >>> sim.add_read_handler_for_multiple(hw.ab_det, a=11, b=12)
+        >>> sim.simulate_plan(read_all_values())
+        >>> assert sim.return_value["a"]["value"] == 11
+        >>> assert sim.return_value["b"]["value"] == 12
+        >>> assert isclose(sim.return_value["a"]["timestamp"], time(), abs_tol=1)
+        >>> assert sim.return_value["b"]["timestamp"] == 1717071719
+        """
 
         def handle_read(_):
-            return value if isinstance(value, dict) else {dict_key: Reading(value=value, timestamp=time())}
+            return {k: v if isinstance(v, dict) else Reading(value=v, timestamp=time()) for k, v in kwargs.items()}
 
-        self.add_handler("read", handle_read, obj_name)
+        self.add_handler("read", handle_read, obj.name)
 
     def add_wait_handler(self, handler: Callable[[Msg], None], group: str = GROUP_ANY) -> None:
         """Add a wait handler for a particular message.
@@ -285,17 +310,12 @@ class RunEngineSimulator:
     def add_callback_handler_for(
         self,
         command: str,
-        *,
-        document_name: Optional[str] = None,
-        document: Optional[dict] = None,
-        docs: Optional[Sequence[Sequence[Tuple[str, dict]]]] = None,
+        document_name: str,
+        document: dict,
         msg_filter: Optional[Callable[[Msg], bool]] = None,
     ):
-        """Add a handler to fire one or more callbacks in sequence when a matching command is encountered.
-
-        To fire a single callback just once, specify `document_name` and `document` parameters.
-        To fire a sequence of callbacks, across one or more message invocations, use the `docs` parameter.
-
+        """Add a handler to fire a callback when a matching command is encountered.
+        Equivalent to add_callback_for_multiple(command, [[(document_name, document)]], msg_filter)
         Parameters
         ----------
         command
@@ -304,15 +324,31 @@ class RunEngineSimulator:
             Name of the document to match when used in single shot mode.
         document
             The document to fire in single shot mode.
-        docs: Sequence of Sequence of document_name, document tuples
+        msg_filter
+            Optional predicate on the message which triggers the callback
+        """
+        self.add_callback_handler_for_multiple(command, [[(document_name, document)]], msg_filter)
+
+    def add_callback_handler_for_multiple(
+        self,
+        command: str,
+        docs: Sequence[Sequence[Tuple[str, dict]]],
+        msg_filter: Optional[Callable[[Msg], bool]] = None,
+    ):
+        """Add a handler to fire callbacks in sequence when a matching command is encountered.
+
+        Parameters
+        ----------
+        command
+            Name of the command to match.
+        docs
+            Sequence of Sequence of document_name, document tuples
             On each receipt of a matching message, the sequence contained in the next element of `docs`
             will be iterated over and each (document_name, document) pair will be fired to subscribed callbacks
             in order.
+        msg_filter
+            Optional predicate on the message which triggers the callback
         """
-        if not docs:
-            if not document_name or not document:
-                raise ValueError("No document sequence specified and document or document_name not specified")
-            docs = [[(document_name, document)]]
         it = iter(docs)
 
         def handle_command(_):
@@ -357,7 +393,7 @@ class RunEngineSimulator:
             while msg := gen.send(send_value):
                 send_value = None
                 messages.append(msg)
-                LOGGER.debug(f"<{msg}")
+                LOGGER.debug("<%s", msg)
                 if handler := next((h for h in self.message_handlers if h.predicate(msg)), None):
                     send_value = handler.runnable(msg)
 
@@ -385,14 +421,13 @@ def assert_message_and_return_remaining(
         All the remaining messages starting from the matched message which is included as a
         convenience to capture information that may be used in subsequent calls.
     """
-    indices = [
-        i
-        for i in range(len(messages))
-        if (not group or (messages[i].kwargs and messages[i].kwargs.get("group") == group))
-        and predicate(messages[i])
-    ]
-    assert indices, f"Nothing matched predicate {predicate}"
-    return messages[indices[0] :]
+
+    def not_matching(msg: Msg) -> bool:
+        return (group is not None and (msg.kwargs and msg.kwargs.get("group") != group)) or not predicate(msg)
+
+    matched = list(dropwhile(not_matching, messages))
+    assert matched, f"Nothing matched predicate {predicate}"
+    return matched
 
 
 class _MessageHandler:

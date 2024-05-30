@@ -1,5 +1,7 @@
 import uuid
 from functools import partial
+from math import isclose
+from time import time
 from typing import Any, Generator
 from unittest.mock import MagicMock
 
@@ -145,7 +147,7 @@ def test_simulator_add_read_handler_for(hw):
         return pos
 
     sim = RunEngineSimulator()
-    sim.add_read_handler_for("det_a", 5, "det_a")
+    sim.add_read_handler_for(hw.ab_det.a, 5)
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
     msgs = assert_message_and_return_remaining(
@@ -161,13 +163,27 @@ def test_simulator_add_read_handler_for_with_dict(hw):
         return pos
 
     sim = RunEngineSimulator()
-    sim.add_read_handler_for("det_a", {"det_a": {"value": 5}})
+    sim.add_read_handler_for(hw.ab_det.a, {"value": 5})
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "det"
     )
     assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
+
+
+def test_simulator_add_read_handler_for_multiple(hw):
+    def read_all_values():
+        data = yield from bps.read(hw.ab_det)
+        return data
+
+    sim = RunEngineSimulator()
+    sim.add_read_handler_for_multiple(hw.ab_det, a=11, b={"value": 12, "timestamp": 1717071719})
+    sim.simulate_plan(read_all_values())
+    assert sim.return_value["a"]["value"] == 11
+    assert sim.return_value["b"]["value"] == 12
+    assert isclose(sim.return_value["a"]["timestamp"], time(), abs_tol=1)
+    assert sim.return_value["b"]["timestamp"] == 1717071719
 
 
 def test_simulator_add_wait_handler(hw):
@@ -179,8 +195,8 @@ def test_simulator_add_wait_handler(hw):
         return pos
 
     sim = RunEngineSimulator()
-    sim.add_read_handler_for("det_a", 0, "det_a")
-    sim.add_wait_handler(lambda _: sim.add_read_handler_for("det_a", 5, "det_a"))
+    sim.add_read_handler_for(hw.ab_det.a, 0)
+    sim.add_wait_handler(lambda _: sim.add_read_handler_for(hw.ab_det.a, 5))
     msgs = sim.simulate_plan(trigger_and_return_position())
     assert sim.return_value == 5
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "read" and msg.obj.name == "det_a")
@@ -210,11 +226,11 @@ def test_fire_callback(hw):
 
     sim.add_callback_handler_for(
         "open_run",
-        document_name="start",
-        document=start_doc,
-        msg_filter=lambda msg: msg.kwargs["plan_name"] == "count",
+        "start",
+        start_doc,
+        lambda msg: msg.kwargs["plan_name"] == "count",
     )
-    sim.add_callback_handler_for("save", docs=[[("descriptor", descriptor_doc), ("event", event_doc)]])
+    sim.add_callback_handler_for_multiple("save", [[("descriptor", descriptor_doc), ("event", event_doc)]])
 
     sim.simulate_plan(take_a_reading())
     calls = callback.mock_calls
@@ -222,35 +238,6 @@ def test_fire_callback(hw):
     assert calls[0].args == ("start", start_doc)
     assert calls[1].args == ("descriptor", descriptor_doc)
     assert calls[2].args == ("event", event_doc)
-
-
-def test_add_callback_handler_for_raises_valueerror_on_no_document(hw):
-    sim = RunEngineSimulator()
-
-    with pytest.raises(
-        ValueError,
-        match="No document sequence specified and document or document_name " "not specified",
-    ):
-        sim.add_callback_handler_for(
-            "open_run",
-            document_name="start",
-            msg_filter=lambda msg: msg.kwargs["plan_name"] == "count",
-        )
-
-
-def test_add_callback_handler_for_raises_valueerror_on_no_document_name(hw):
-    sim = RunEngineSimulator()
-
-    start_doc = {"plan_name": "count", "uid": uuid.uuid4()}
-    with pytest.raises(
-        ValueError,
-        match="No document sequence specified and document or document_name " "not specified",
-    ):
-        sim.add_callback_handler_for(
-            "open_run",
-            document=start_doc,
-            msg_filter=lambda msg: msg.kwargs["plan_name"] == "count",
-        )
 
 
 def test_assert_message_and_return_remaining(hw):
