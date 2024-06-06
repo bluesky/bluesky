@@ -259,7 +259,7 @@ class _RunWriter(DocumentRouter):
         if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
             raise RuntimeError("StreamResource document is missing a mimetype or spec")
         else:
-            sres["mimetype"] = sres.get("mimetype", MIMETYPE_LOOKUP[sres["spec"]])
+            sres["mimetype"] = sres.get("mimetype") or MIMETYPE_LOOKUP[sres.get("spec")]
         if "parameters" not in sres.keys():
             sres["parameters"] = sres.pop("resource_kwargs", {})
         if "uri" not in sres.keys():
@@ -379,10 +379,11 @@ class _RunWriter(DocumentRouter):
         handler.consume_stream_datum(doc)
 
         # Update StreamResource node in Tiled
-        # NOTE: Assigning data_source.id in the object and passing it in http params is superflous, but it is currently required by Tiled.  # noqa
+        # NOTE: Assigning data_source.id in the object and passing it in http
+        # params is superfluous, but it is currently required by Tiled.
         sres_node.refresh()
         data_source = handler.get_data_source()
-        data_source.id = sres_node.data_sources()[0]["id"]  # ID of the exisiting DataSource record
+        data_source.id = sres_node.data_sources()[0].id  # ID of the existing DataSource record
         endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             sres_node.context.http_client.put(
