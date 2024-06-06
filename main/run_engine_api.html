@@ -14,34 +14,34 @@
   
   <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
-<link href="_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
 
   
-  <link href="_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
-  <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=3ee479438cf8b5e0d341"></script>
 
     <script src="_static/documentation_options.js?v=3728ec3a"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'run_engine_api';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.3';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev209+g63750adc';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
@@ -59,27 +59,23 @@
 
   
   
-  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
   
   <div id="pst-scroll-pixel-helper"></div>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
-    <i class="fa-solid fa-arrow-up"></i>
-    Back to top
-  </button>
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
   <input type="checkbox"
           class="sidebar-toggle"
-          name="__primary"
-          id="__primary"/>
-  <label class="overlay overlay-primary" for="__primary"></label>
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
   
   <input type="checkbox"
           class="sidebar-toggle"
-          name="__secondary"
-          id="__secondary"/>
-  <label class="overlay overlay-secondary" for="__secondary"></label>
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
   
   <div class="search-button__wrapper">
     <div class="search-button__overlay"></div>
@@ -101,12 +97,17 @@
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form></div>
   </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <label class="sidebar-toggle primary-toggle" for="__primary">
+  <button class="sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
-  </label>
+  </button>
   
   
   <div class="col-lg-3 navbar-header-items__start">
@@ -144,80 +145,80 @@
 <nav class="navbar-nav">
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="userindex.html">
-                        User Documentation
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="devindex.html">
-                        Developer Documentation
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
-                        bluesky
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
-                        ophyd
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
-                        databroker
-                      </a>
-                    </li>
-                
-            <li class="nav-item dropdown">
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown pst-header-nav-item">
                 <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
                     More
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
-                        amostra
-                      </a>
-                    </li>
-                
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
-                        datamuxer
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
-                        suitcase
-                      </a>
-                    </li>
-                
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
-                        NSLS-II Repositories
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
-                        Bug Reports
-                      </a>
-                    </li>
-                
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
                 </ul>
             </li>
             
@@ -328,9 +329,9 @@ document.write(`
   
 
   
-    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+    <button class="sidebar-toggle secondary-toggle" aria-label="On this page">
       <span class="fa-solid fa-outdent"></span>
-    </label>
+    </button>
   
 </div>
 
@@ -351,89 +352,84 @@ document.write(`
     
       <div class="sidebar-header-items__center">
         
-          <div class="navbar-item">
+          
+          
+            <div class="navbar-item">
 <nav class="navbar-nav">
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="userindex.html">
-                        User Documentation
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="devindex.html">
-                        Developer Documentation
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
-                        bluesky
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
-                        ophyd
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
-                        databroker
-                      </a>
-                    </li>
-                
-            <li class="nav-item dropdown">
-                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links-2">
-                    More
-                </button>
-                <ul id="pst-nav-more-links-2" class="dropdown-menu">
-                    
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
-                        amostra
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
-                        datamuxer
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
-                        suitcase
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
-                        NSLS-II Repositories
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
-                        Bug Reports
-                      </a>
-                    </li>
-                
-                </ul>
-            </li>
-            
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
   </ul>
 </nav></div>
+          
         
       </div>
     
@@ -548,13 +544,13 @@ document.write(`
 
       </div>
       
-      <main id="main-content" class="bd-main">
+      <main id="main-content" class="bd-main" role="main">
         
         
           <div class="bd-content">
             <div class="bd-article-container">
               
-              <div class="bd-header-article">
+              <div class="bd-header-article d-print-none">
 <div class="header-article-items header-article__inner">
   
     <div class="header-article-items__start">
@@ -563,7 +559,7 @@ document.write(`
 
 
 
-<nav aria-label="Breadcrumb">
+<nav aria-label="Breadcrumb" class="d-print-none">
   <ul class="bd-breadcrumbs">
     
     <li class="breadcrumb-item breadcrumb-home">
@@ -595,25 +591,27 @@ document.write(`
 <h1>RunEngine API Documentation<a class="headerlink" href="#runengine-api-documentation" title="Link to this heading">#</a></h1>
 <section id="the-runengine">
 <h2>The <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code><a class="headerlink" href="#the-runengine" title="Link to this heading">#</a></h2>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.html#bluesky.run_engine.RunEngine" title="bluesky.run_engine.RunEngine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine</span></code></a></p></td>
 <td><p>The Run Engine execute messages and emits Documents.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The main user entry point tho the RunEngine is <code class="docutils literal notranslate"><span class="pre">RE(my_plan(...))</span></code></p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.__call__.html#bluesky.run_engine.RunEngine.__call__" title="bluesky.run_engine.RunEngine.__call__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.__call__</span></code></a></p></td>
 <td><p>Execute a plan.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The RunEngine maintains a callback registry of functions that receive any
 <a class="reference internal" href="documents.html"><span class="doc">Documents</span></a> generated by plan execution. These methods add and remove
 functions from that registry.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.subscribe.html#bluesky.run_engine.RunEngine.subscribe" title="bluesky.run_engine.RunEngine.subscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.subscribe</span></code></a></p></td>
 <td><p>Register a callback function to consume documents.</p></td>
@@ -623,9 +621,10 @@ functions from that registry.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>When the RunEngine is in a paused state, it can be resumed or stopped in
 <a class="reference internal" href="state-machine.html#interactive-pause-summary"><span class="std std-ref">various ways</span></a> using these methods:</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.resume.html#bluesky.run_engine.RunEngine.resume" title="bluesky.run_engine.RunEngine.resume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.resume</span></code></a></p></td>
 <td><p>Resume a paused plan from the last checkpoint.</p></td>
@@ -641,9 +640,10 @@ functions from that registry.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The RunEngine can suspend and resume plan execution in response to external
 changes. See <a class="reference internal" href="state-machine.html#suspenders"><span class="std std-ref">Automated Suspension</span></a>.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.install_suspender.html#bluesky.run_engine.RunEngine.install_suspender" title="bluesky.run_engine.RunEngine.install_suspender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.install_suspender</span></code></a></p></td>
 <td><p>Install a 'suspender', which can suspend and resume execution.</p></td>
@@ -656,11 +656,12 @@ changes. See <a class="reference internal" href="state-machine.html#suspenders">
 </tr>
 </tbody>
 </table>
+</div>
 <p>These methods are used internally to pause or suspend the RunEngine.
 Typically the user accomplishes this with Ctrl+C or by installing
 suspenders, respectively. For special applicaitons, they can be called
 directly.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.request_pause.html#bluesky.run_engine.RunEngine.request_pause" title="bluesky.run_engine.RunEngine.request_pause"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.request_pause</span></code></a></p></td>
 <td><p>Command the Run Engine to pause.</p></td>
@@ -670,9 +671,10 @@ directly.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>These methods may be used to register custom commands to supplement or
 replace the built-in commands recognized by the RunEngine.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.register_command.html#bluesky.run_engine.RunEngine.register_command" title="bluesky.run_engine.RunEngine.register_command"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.register_command</span></code></a></p></td>
 <td><p>Register a new Message command.</p></td>
@@ -682,9 +684,10 @@ replace the built-in commands recognized by the RunEngine.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>These methods may be used to list the commands available, or print
 a summary as to what they do.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngine.print_command_registry.html#bluesky.run_engine.RunEngine.print_command_registry" title="bluesky.run_engine.RunEngine.print_command_registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngine.print_command_registry</span></code></a></p></td>
 <td><p>This conveniently prints the command registry of available commands.</p></td>
@@ -694,6 +697,7 @@ a summary as to what they do.</p>
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 <section id="the-runengineresult">
 <h2>The <code class="docutils literal notranslate"><span class="pre">RunEngineResult</span></code><a class="headerlink" href="#the-runengineresult" title="Link to this heading">#</a></h2>
@@ -704,13 +708,14 @@ to opt-out in the future.</p>
 <p>The <a class="reference internal" href="generated/bluesky.run_engine.RunEngineResult.html#bluesky.run_engine.RunEngineResult" title="bluesky.run_engine.RunEngineResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">RunEngineResult</span></code></a> class encapsulates useful information about
 the plan that was run, including the ultimate plan return value, run uids,
 exit status, and exceptions.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.RunEngineResult.html#bluesky.run_engine.RunEngineResult" title="bluesky.run_engine.RunEngineResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunEngineResult</span></code></a></p></td>
 <td><p>Information about the plan that was run</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 <section id="the-dispatcher">
 <h2>The <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code><a class="headerlink" href="#the-dispatcher" title="Link to this heading">#</a></h2>
@@ -718,7 +723,7 @@ exit status, and exceptions.</p>
 <a class="reference internal" href="documents.html"><span class="doc">Documents</span></a> generated by plan execution. The methods
 <a class="reference internal" href="generated/bluesky.run_engine.RunEngine.subscribe.html#bluesky.run_engine.RunEngine.subscribe" title="bluesky.run_engine.RunEngine.subscribe"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.subscribe()</span></code></a> and <a class="reference internal" href="generated/bluesky.run_engine.RunEngine.unsubscribe.html#bluesky.run_engine.RunEngine.unsubscribe" title="bluesky.run_engine.RunEngine.unsubscribe"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RunEngine.unsubscribe()</span></code></a>, documented
 above, are aliases to the corresponding methods on the RunEngine’s Dispatcher.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.run_engine.Dispatcher.html#bluesky.run_engine.Dispatcher" title="bluesky.run_engine.Dispatcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dispatcher</span></code></a></p></td>
 <td><p>Dispatch documents to user-defined consumers on the main thread.</p></td>
@@ -737,6 +742,7 @@ above, are aliases to the corresponding methods on the RunEngine’s Dispatcher.
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 <section id="the-runbundler">
 <h2>The <code class="docutils literal notranslate"><span class="pre">RunBundler</span></code><a class="headerlink" href="#the-runbundler" title="Link to this heading">#</a></h2>
@@ -744,15 +750,16 @@ above, are aliases to the corresponding methods on the RunEngine’s Dispatcher.
 logic and book keeping for generating events (and allow multiple runs
 to be open at once).  In general you should not be directly working with
 a <cite>RunBundler</cite>.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.html#bluesky.bundlers.RunBundler" title="bluesky.bundlers.RunBundler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The co-routines for opening and closing a run.</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.open_run.html#bluesky.bundlers.RunBundler.open_run" title="bluesky.bundlers.RunBundler.open_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.open_run</span></code></a></p></td>
 <td><p></p></td>
@@ -762,8 +769,9 @@ a <cite>RunBundler</cite>.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The co-routines for opening / filling / closing / dropping an Event</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.create.html#bluesky.bundlers.RunBundler.create" title="bluesky.bundlers.RunBundler.create"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.create</span></code></a></p></td>
 <td><p>Start bundling future obj.read() calls for an Event document.</p></td>
@@ -779,8 +787,9 @@ a <cite>RunBundler</cite>.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The co-routines for managing flyers</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.kickoff.html#bluesky.bundlers.RunBundler.kickoff" title="bluesky.bundlers.RunBundler.kickoff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.kickoff</span></code></a></p></td>
 <td><p>Start a flyscan object.</p></td>
@@ -793,18 +802,20 @@ a <cite>RunBundler</cite>.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>Note: There is a <code class="docutils literal notranslate"><span class="pre">complete</span></code> plan stub and run engine call, which should be used after
 kickoff whose logic does not reside in the RunBundler.</p>
 <p>The co-routines for changing a device configuration</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.configure.html#bluesky.bundlers.RunBundler.configure" title="bluesky.bundlers.RunBundler.configure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.configure</span></code></a></p></td>
 <td><p>Configure an object</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The co-routines for managing monitors</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.monitor.html#bluesky.bundlers.RunBundler.monitor" title="bluesky.bundlers.RunBundler.monitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.monitor</span></code></a></p></td>
 <td><p>Monitor a signal.</p></td>
@@ -823,8 +834,9 @@ kickoff whose logic does not reside in the RunBundler.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The co-routines for checkpoint management</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.clear_checkpoint.html#bluesky.bundlers.RunBundler.clear_checkpoint" title="bluesky.bundlers.RunBundler.clear_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.clear_checkpoint</span></code></a></p></td>
 <td><p></p></td>
@@ -840,14 +852,16 @@ kickoff whose logic does not reside in the RunBundler.</p>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The co-routines to record interruptions</p>
-<table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.bundlers.RunBundler.record_interruption.html#bluesky.bundlers.RunBundler.record_interruption" title="bluesky.bundlers.RunBundler.record_interruption"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunBundler.record_interruption</span></code></a></p></td>
 <td><p>Emit an event in the 'interruptions' event stream.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 </section>
 
@@ -858,7 +872,7 @@ kickoff whose logic does not reside in the RunBundler.</p>
               
               
               
-                <footer class="prev-next-footer">
+                <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
     <a class="left-prev"
@@ -946,8 +960,8 @@ kickoff whose logic does not reside in the RunBundler.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
-<script src="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+  <script src="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -980,7 +994,7 @@ kickoff whose logic does not reside in the RunBundler.</p>
       
         <div class="footer-item">
 <p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.3.
 </p></div>
       
     </div>

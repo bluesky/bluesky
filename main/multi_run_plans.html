@@ -14,34 +14,34 @@
   
   <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
-<link href="_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
 
   
-  <link href="_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
-  <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=3ee479438cf8b5e0d341"></script>
 
     <script src="_static/documentation_options.js?v=3728ec3a"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'multi_run_plans';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.3';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev209+g63750adc';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
@@ -59,27 +59,23 @@
 
   
   
-  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
   
   <div id="pst-scroll-pixel-helper"></div>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
-    <i class="fa-solid fa-arrow-up"></i>
-    Back to top
-  </button>
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
   <input type="checkbox"
           class="sidebar-toggle"
-          name="__primary"
-          id="__primary"/>
-  <label class="overlay overlay-primary" for="__primary"></label>
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
   
   <input type="checkbox"
           class="sidebar-toggle"
-          name="__secondary"
-          id="__secondary"/>
-  <label class="overlay overlay-secondary" for="__secondary"></label>
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
   
   <div class="search-button__wrapper">
     <div class="search-button__overlay"></div>
@@ -101,12 +97,17 @@
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form></div>
   </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <label class="sidebar-toggle primary-toggle" for="__primary">
+  <button class="sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
-  </label>
+  </button>
   
   
   <div class="col-lg-3 navbar-header-items__start">
@@ -144,80 +145,80 @@
 <nav class="navbar-nav">
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="userindex.html">
-                        User Documentation
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="devindex.html">
-                        Developer Documentation
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
-                        bluesky
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
-                        ophyd
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
-                        databroker
-                      </a>
-                    </li>
-                
-            <li class="nav-item dropdown">
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown pst-header-nav-item">
                 <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
                     More
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
-                        amostra
-                      </a>
-                    </li>
-                
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
-                        datamuxer
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
-                        suitcase
-                      </a>
-                    </li>
-                
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
-                        NSLS-II Repositories
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
-                        Bug Reports
-                      </a>
-                    </li>
-                
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
                 </ul>
             </li>
             
@@ -328,9 +329,9 @@ document.write(`
   
 
   
-    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+    <button class="sidebar-toggle secondary-toggle" aria-label="On this page">
       <span class="fa-solid fa-outdent"></span>
-    </label>
+    </button>
   
 </div>
 
@@ -351,89 +352,84 @@ document.write(`
     
       <div class="sidebar-header-items__center">
         
-          <div class="navbar-item">
+          
+          
+            <div class="navbar-item">
 <nav class="navbar-nav">
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="userindex.html">
-                        User Documentation
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="devindex.html">
-                        Developer Documentation
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
-                        bluesky
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
-                        ophyd
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
-                        databroker
-                      </a>
-                    </li>
-                
-            <li class="nav-item dropdown">
-                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links-2">
-                    More
-                </button>
-                <ul id="pst-nav-more-links-2" class="dropdown-menu">
-                    
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
-                        amostra
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
-                        datamuxer
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
-                        suitcase
-                      </a>
-                    </li>
-                
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
-                        NSLS-II Repositories
-                      </a>
-                    </li>
-                
 
-                    <li class="nav-item">
-                      <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
-                        Bug Reports
-                      </a>
-                    </li>
-                
-                </ul>
-            </li>
-            
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item pst-header-nav-item">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
   </ul>
 </nav></div>
+          
         
       </div>
     
@@ -548,13 +544,13 @@ document.write(`
 
       </div>
       
-      <main id="main-content" class="bd-main">
+      <main id="main-content" class="bd-main" role="main">
         
         
           <div class="bd-content">
             <div class="bd-article-container">
               
-              <div class="bd-header-article">
+              <div class="bd-header-article d-print-none">
 <div class="header-article-items header-article__inner">
   
     <div class="header-article-items__start">
@@ -563,7 +559,7 @@ document.write(`
 
 
 
-<nav aria-label="Breadcrumb">
+<nav aria-label="Breadcrumb" class="d-print-none">
   <ul class="bd-breadcrumbs">
     
     <li class="breadcrumb-item breadcrumb-home">
@@ -813,53 +809,53 @@ when the run opened.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="n">RE</span><span class="p">(</span><span class="n">plan_sequential_runs</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2024-05-23 19:24:38</span>
-<span class="go">Persistent Unique Scan ID: &#39;cebc42e9-7c96-4502-b70a-c117082590a2&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2024-06-06 11:07:27</span>
+<span class="go">Persistent Unique Scan ID: &#39;2d054e9f-e88c-4e89-be65-c3356b0190ba&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 19:24:38.7 |     -1.000 |      0.677 |</span>
-<span class="go">|         2 | 19:24:38.7 |     -0.778 |      1.491 |</span>
-<span class="go">|         3 | 19:24:38.8 |     -0.556 |      2.697 |</span>
-<span class="go">|         4 | 19:24:38.8 |     -0.333 |      4.004 |</span>
-<span class="go">|         5 | 19:24:38.9 |     -0.111 |      4.878 |</span>
-<span class="go">|         6 | 19:24:38.9 |      0.111 |      4.878 |</span>
-<span class="go">|         7 | 19:24:39.0 |      0.333 |      4.004 |</span>
-<span class="go">|         8 | 19:24:39.0 |      0.556 |      2.697 |</span>
-<span class="go">|         9 | 19:24:39.1 |      0.778 |      1.491 |</span>
-<span class="go">|        10 | 19:24:39.2 |      1.000 |      0.677 |</span>
+<span class="go">|         1 | 11:07:27.4 |     -1.000 |      0.677 |</span>
+<span class="go">|         2 | 11:07:27.5 |     -0.778 |      1.491 |</span>
+<span class="go">|         3 | 11:07:27.6 |     -0.556 |      2.697 |</span>
+<span class="go">|         4 | 11:07:27.7 |     -0.333 |      4.004 |</span>
+<span class="go">|         5 | 11:07:27.7 |     -0.111 |      4.878 |</span>
+<span class="go">|         6 | 11:07:27.8 |      0.111 |      4.878 |</span>
+<span class="go">|         7 | 11:07:27.8 |      0.333 |      4.004 |</span>
+<span class="go">|         8 | 11:07:27.9 |      0.556 |      2.697 |</span>
+<span class="go">|         9 | 11:07:27.9 |      0.778 |      1.491 |</span>
+<span class="go">|        10 | 11:07:28.0 |      1.000 |      0.677 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;cebc42e9&#39;] (scan num: 1)</span>
+<span class="go">generator scan [&#39;2d054e9f&#39;] (scan num: 1)</span>
 
 
 
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-05-23 19:24:39</span>
-<span class="go">Persistent Unique Scan ID: &#39;7d5a7793-6d6b-4345-aef6-7aeeb83103b1&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-06-06 11:07:28</span>
+<span class="go">Persistent Unique Scan ID: &#39;c9e94125-8ffd-4433-a7de-934697ed70df&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 19:24:39.4 |      0.000 |      5.000 |      1.765 |</span>
-<span class="go">|         2 | 19:24:39.6 |      0.222 |      4.530 |      1.765 |</span>
-<span class="go">|         3 | 19:24:39.9 |      0.444 |      3.368 |      1.765 |</span>
-<span class="go">|         4 | 19:24:40.1 |      0.667 |      2.056 |      1.765 |</span>
-<span class="go">|         5 | 19:24:40.3 |      0.889 |      1.030 |      1.765 |</span>
-<span class="go">|         6 | 19:24:40.6 |      1.111 |      0.423 |      1.765 |</span>
-<span class="go">|         7 | 19:24:40.8 |      1.333 |      0.143 |      1.765 |</span>
-<span class="go">|         8 | 19:24:41.0 |      1.556 |      0.040 |      1.765 |</span>
-<span class="go">|         9 | 19:24:41.3 |      1.778 |      0.009 |      1.765 |</span>
-<span class="go">|        10 | 19:24:41.5 |      2.000 |      0.002 |      1.765 |</span>
+<span class="go">|         1 | 11:07:28.2 |      0.000 |      5.000 |      1.765 |</span>
+<span class="go">|         2 | 11:07:28.4 |      0.222 |      4.530 |      1.765 |</span>
+<span class="go">|         3 | 11:07:28.7 |      0.444 |      3.368 |      1.765 |</span>
+<span class="go">|         4 | 11:07:28.9 |      0.667 |      2.056 |      1.765 |</span>
+<span class="go">|         5 | 11:07:29.2 |      0.889 |      1.030 |      1.765 |</span>
+<span class="go">|         6 | 11:07:29.4 |      1.111 |      0.423 |      1.765 |</span>
+<span class="go">|         7 | 11:07:29.6 |      1.333 |      0.143 |      1.765 |</span>
+<span class="go">|         8 | 11:07:29.8 |      1.556 |      0.040 |      1.765 |</span>
+<span class="go">|         9 | 11:07:30.1 |      1.778 |      0.009 |      1.765 |</span>
+<span class="go">|        10 | 11:07:30.3 |      2.000 |      0.002 |      1.765 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator rel_scan [&#39;7d5a7793&#39;] (scan num: 2)</span>
+<span class="go">generator rel_scan [&#39;c9e94125&#39;] (scan num: 2)</span>
 
 
 
 <span class="gh">Out[1]: </span>
-<span class="go">(&#39;cebc42e9-7c96-4502-b70a-c117082590a2&#39;,</span>
-<span class="go"> &#39;7d5a7793-6d6b-4345-aef6-7aeeb83103b1&#39;)</span>
+<span class="go">(&#39;2d054e9f-e88c-4e89-be65-c3356b0190ba&#39;,</span>
+<span class="go"> &#39;c9e94125-8ffd-4433-a7de-934697ed70df&#39;)</span>
 </pre></div>
 </div>
 </section>
@@ -937,8 +933,8 @@ the table for the ‘outer’ run.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [2]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_outer</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2024-05-23 19:24:42</span>
-<span class="go">Persistent Unique Scan ID: &#39;e254320a-2fec-4dc9-b71a-c1eb61a5683e&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2024-06-06 11:07:30</span>
+<span class="go">Persistent Unique Scan ID: &#39;7a672f29-a856-4b59-acf3-e6ff30e741ee&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |      motor |</span>
@@ -950,8 +946,8 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-05-23 19:24:43</span>
-<span class="go">Persistent Unique Scan ID: &#39;bf62d25e-c569-4267-8044-55b2bce1b655&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-06-06 11:07:32</span>
+<span class="go">Persistent Unique Scan ID: &#39;75b50d87-e92b-4e92-8458-a5f46086bf6e&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor2 |       det2 |     motor1 |</span>
@@ -968,7 +964,7 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;bf62d25e&#39;] (scan num: 2)</span>
+<span class="go">generator sim_plan_outer [&#39;75b50d87&#39;] (scan num: 2)</span>
 
 
 
@@ -978,13 +974,13 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;e254320a&#39;] (scan num: 1)</span>
+<span class="go">generator sim_plan_outer [&#39;7a672f29&#39;] (scan num: 1)</span>
 
 
 
 <span class="gh">Out[2]: </span>
-<span class="go">(&#39;e254320a-2fec-4dc9-b71a-c1eb61a5683e&#39;,</span>
-<span class="go"> &#39;bf62d25e-c569-4267-8044-55b2bce1b655&#39;)</span>
+<span class="go">(&#39;7a672f29-a856-4b59-acf3-e6ff30e741ee&#39;,</span>
+<span class="go"> &#39;75b50d87-e92b-4e92-8458-a5f46086bf6e&#39;)</span>
 </pre></div>
 </div>
 <p>The wrapper <cite>bpp.set_run_key_wrapper</cite> can be used instead of the decorator. For example
@@ -1091,7 +1087,7 @@ performs callback subscriptions.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+-----------------+------------+-----------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;2c0b8982&#39;] (scan num: 2)</span>
+<span class="go">generator sim_plan_outer [&#39;443d6e90&#39;] (scan num: 2)</span>
 
 
 <span class="go"> failed to format row </span>
@@ -1100,12 +1096,12 @@ performs callback subscriptions.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+-----------------+------------+</span>
-<span class="go">generator sim_plan_outer [&#39;bf28b104&#39;] (scan num: 1)</span>
+<span class="go">generator sim_plan_outer [&#39;6c96e71a&#39;] (scan num: 1)</span>
 
 
 <span class="gh">Out[3]: </span>
-<span class="go">(&#39;bf28b104-0ca5-4540-93ad-868e8abe21f6&#39;,</span>
-<span class="go"> &#39;2c0b8982-8850-4804-b1f7-edf68cef9da0&#39;)</span>
+<span class="go">(&#39;6c96e71a-4829-4dc4-bdbd-e2ba37cfca62&#39;,</span>
+<span class="go"> &#39;443d6e90-5dfc-4eca-b9fc-6a3fa4d196cc&#39;)</span>
 </pre></div>
 </div>
 <p>In some cases it may be necessary to implement a run that could be interrupted
@@ -1183,65 +1179,65 @@ before at each call.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_recursive</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2024-05-23 19:24:51</span>
-<span class="go">Persistent Unique Scan ID: &#39;e1047aec-b79c-4618-a342-78952ea807fd&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2024-06-06 11:07:40</span>
+<span class="go">Persistent Unique Scan ID: &#39;0c9d7b58-ff8c-45d8-8ea9-189674cbd07a&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-05-23 19:24:51</span>
-<span class="go">Persistent Unique Scan ID: &#39;ba2cbd2f-fd58-4051-b7cf-e5ce23dbf848&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-06-06 11:07:40</span>
+<span class="go">Persistent Unique Scan ID: &#39;8b4fd02f-1afd-4017-95f7-24559a84e80e&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 19:24:51.6 |      5.000 |      0.000 |</span>
-<span class="go">|         2 | 19:24:51.8 |      4.616 |      0.200 |</span>
-<span class="go">|         3 | 19:24:52.0 |      3.631 |      0.400 |</span>
+<span class="go">|         1 | 11:07:40.7 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 11:07:40.9 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 11:07:41.1 |      0.400 |      3.631 |</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2024-05-23 19:24:52</span>
-<span class="go">Persistent Unique Scan ID: &#39;d5655d83-1914-49dd-8e00-f1baaf03ba34&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2024-06-06 11:07:41</span>
+<span class="go">Persistent Unique Scan ID: &#39;2f25b02e-54c8-46ab-8b1e-66de9385abec&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 19:24:52.2 |      5.000 |      0.000 |</span>
-<span class="go">|         2 | 19:24:52.5 |      4.616 |      0.200 |</span>
-<span class="go">|         3 | 19:24:52.7 |      3.631 |      0.400 |</span>
-<span class="go">|         4 | 19:24:52.9 |      2.434 |      0.600 |</span>
-<span class="go">|         5 | 19:24:53.1 |      1.390 |      0.800 |</span>
-<span class="go">|         6 | 19:24:53.3 |      0.677 |      1.000 |</span>
-<span class="go">|         7 | 19:24:53.6 |      0.281 |      1.200 |</span>
-<span class="go">|         8 | 19:24:53.8 |      0.099 |      1.400 |</span>
+<span class="go">|         1 | 11:07:41.3 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 11:07:41.6 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 11:07:41.8 |      0.400 |      3.631 |</span>
+<span class="go">|         4 | 11:07:42.0 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 11:07:42.3 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 11:07:42.5 |      1.000 |      0.677 |</span>
+<span class="go">|         7 | 11:07:42.7 |      1.200 |      0.281 |</span>
+<span class="go">|         8 | 11:07:42.9 |      1.400 |      0.099 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive [&#39;d5655d83&#39;] (scan num: 3)</span>
+<span class="go">generator sim_plan_recursive [&#39;2f25b02e&#39;] (scan num: 3)</span>
 
 
 
-<span class="go">|         4 | 19:24:54.3 |      2.434 |      0.600 |</span>
-<span class="go">|         5 | 19:24:54.6 |      1.390 |      0.800 |</span>
-<span class="go">|         6 | 19:24:54.8 |      0.677 |      1.000 |</span>
+<span class="go">|         4 | 11:07:43.5 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 11:07:43.7 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 11:07:44.0 |      1.000 |      0.677 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive [&#39;ba2cbd2f&#39;] (scan num: 2)</span>
+<span class="go">generator sim_plan_recursive [&#39;8b4fd02f&#39;] (scan num: 2)</span>
 
 
 
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive [&#39;e1047aec&#39;] (scan num: 1)</span>
+<span class="go">generator sim_plan_recursive [&#39;0c9d7b58&#39;] (scan num: 1)</span>
 
 
 
 <span class="gh">Out[4]: </span>
-<span class="go">(&#39;e1047aec-b79c-4618-a342-78952ea807fd&#39;,</span>
-<span class="go"> &#39;ba2cbd2f-fd58-4051-b7cf-e5ce23dbf848&#39;,</span>
-<span class="go"> &#39;d5655d83-1914-49dd-8e00-f1baaf03ba34&#39;)</span>
+<span class="go">(&#39;0c9d7b58-ff8c-45d8-8ea9-189674cbd07a&#39;,</span>
+<span class="go"> &#39;8b4fd02f-1afd-4017-95f7-24559a84e80e&#39;,</span>
+<span class="go"> &#39;2f25b02e-54c8-46ab-8b1e-66de9385abec&#39;)</span>
 </pre></div>
 </div>
 <p>The identical result can be achieved by using <cite>bpp.set_run_key_wrapper()</cite>:</p>
@@ -1285,7 +1281,7 @@ before at each call.</p>
               
               
               
-                <footer class="prev-next-footer">
+                <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
     <a class="left-prev"
@@ -1370,8 +1366,8 @@ before at each call.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
-<script src="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+  <script src="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1404,7 +1400,7 @@ before at each call.</p>
       
         <div class="footer-item">
 <p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.3.
 </p></div>
       
     </div>
