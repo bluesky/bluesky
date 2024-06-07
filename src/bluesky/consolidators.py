@@ -3,13 +3,11 @@ import dataclasses
 import enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import h5py
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
 from tiled.adapters.hdf5 import HDF5Adapter2
 from tiled.mimetypes import DEFAULT_ADAPTERS_BY_MIMETYPE
 from tiled.structures.array import ArrayStructure, BuiltinDtype
-from tiled.utils import path_from_uri
 
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
@@ -244,8 +242,9 @@ class HDF5Consolidator(ConsolidatorBase):
         #     arr = np.array(f["/".join(self.adapter_parameters["path"])])
         # return ArrayAdapter.from_array(arr, shape=self.shape, chunks=self.chunks)
 
-        f = h5py.File(path_from_uri(self.uri), "r", swmr=True)
-        adapter = HDF5Adapter2.from_file(f)
+        # f = h5py.File(path_from_uri(self.uri), "r", swmr=True)
+        # adapter = HDF5Adapter2.from_file(f)
+        adapter = HDF5Adapter2.from_uri(self.uri, swmr=True)
 
         for segment in self.adapter_parameters["path"]:
             adapter = adapter.get(segment)  # type: ignore
