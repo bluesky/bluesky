@@ -13,7 +13,7 @@ from event_model.documents.stream_resource import StreamResource
 
 import bluesky.plan_stubs as bps
 from bluesky.callbacks.core import CollectLiveStream
-from bluesky.callbacks.mpl_plotting import DummyLiveStreamPlot
+from bluesky.callbacks.mpl_plotting import LiveStreamPlot
 from bluesky.protocols import (
     Collectable,
     HasName,
@@ -188,21 +188,21 @@ class JSONWriter:
 #     breakpoint()
 
 
-def test_hdf5_plotting(RE, tmp_path):
-    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
-    cl = CollectLiveStream()
-    # pl = LiveStreamPlot(cl, data_key="det-sd2")
-    pl = DummyLiveStreamPlot(cl, data_key="det-sd2")
-    RE.subscribe(pl)
-    RE(collect_plan(det, name="primary"), cl)
-
-
-# def test_tiff_plotting(RE, tmp_path):
+# def test_hdf5_plotting(RE, tmp_path):
 #     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
 #     cl = CollectLiveStream()
-#     pl = LiveStreamPlot(cl, data_key="det-sd3")
+#     # pl = LiveStreamPlot(cl, data_key="det-sd2")
+#     pl = DummyLiveStreamPlot(cl, data_key="det-sd2")
 #     RE.subscribe(pl)
 #     RE(collect_plan(det, name="primary"), cl)
+
+
+def test_tiff_plotting(RE, tmp_path):
+    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
+    cl = CollectLiveStream()
+    pl = LiveStreamPlot(cl, data_key="det-sd3")
+    RE.subscribe(pl)
+    RE(collect_plan(det, name="primary"), cl)
 
 
 def collect_plan(*objs, name="primary", num=5):
