@@ -1,18 +1,106 @@
 import functools
 from collections import defaultdict
+from time import time
+from typing import Dict
 
 import pytest
+from event_model.documents.event import PartialEvent
 from ophyd import Component as Cpt
 from ophyd import Device
-from ophyd.sim import NullStatus, TrivialFlyer
+from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
 
 from bluesky import Msg
-from bluesky.plan_stubs import close_run, complete, complete_all, kickoff, kickoff_all, open_run, wait
+from bluesky.plan_stubs import (
+    close_run,
+    collect_while_completing,
+    complete,
+    complete_all,
+    declare_stream,
+    kickoff,
+    kickoff_all,
+    open_run,
+    wait,
+)
 from bluesky.plans import count, fly
 from bluesky.protocols import Preparable
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
+
+
+def collect_while_completing_plan(flyers, dets, stream_name: str = "test_stream", pre_declare: bool = True):
+    yield from open_run()
+    if pre_declare:
+        yield from declare_stream(*dets, name=stream_name, collect=True)
+    yield from collect_while_completing(flyers, dets, flush_period=0.1, stream_name=stream_name)
+    yield from close_run()
+
+
+def test_collect_while_completing_plan_trivial_case(RE):
+    completed = []
+    collected = []
+
+    class StatusDoneAfterTenthCall(StatusBase):
+        times_called = 0
+
+        @property
+        def done(self):
+            self.times_called += 1
+            return self.times_called >= 10
+
+    class SlowFlyer:
+        name = "trivial-flyer"
+        custom_status = StatusDoneAfterTenthCall()
+
+        def kickoff(self):
+            return NullStatus()
+
+        def complete(self):
+            completed.append(self)
+            return self.custom_status
+
+    class TrivialDetector:
+        name = "trivial-detector"
+        times_collected = 0
+
+        def describe_collect(self):
+            collected.append(self)
+            return {
+                "times_collected": {
+                    "dims": [],
+                    "dtype": "number",
+                    "shape": [],
+                    "source": "times_collected",
+                }
+            }
+
+        def collect(self):
+            self.times_collected += 1
+            yield PartialEvent(
+                data={"times_collected": self.times_collected},
+                timestamps={"times_collected": time()},
+            )
+
+    det = TrivialDetector()
+    flyer = SlowFlyer()
+    docs = defaultdict(list)
+
+    def assert_emitted(docs: Dict[str, list], **numbers: int):
+        assert list(docs) == list(numbers)
+        assert {name: len(d) for name, d in docs.items()} == numbers
+
+    RE(collect_while_completing_plan([flyer], [det]), lambda name, doc: docs[name].append(doc))
+    for idx, event in enumerate(docs["event_page"]):
+        print(idx, event)
+        assert "times_collected" in event["data"] and event["data"]["times_collected"] == [idx + 1]
+    # The detector will be collected nine times as the flyer's done property is
+    # checked once during the initial complete call, then the detector collects
+    # every loop and checks if the flyer is done until it is checked for a tenth time
+    assert_emitted(docs, start=1, descriptor=1, event_page=9, stop=1)
+    # key should be removed from set when collection done
+    assert not RE._seen_wait_and_move_on_keys
+    assert det in collected
+    assert flyer in completed
 
 
 @requires_ophyd
