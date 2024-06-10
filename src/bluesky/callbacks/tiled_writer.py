@@ -248,7 +248,8 @@ class _RunWriter(CallbackBase):
         handler.consume_stream_datum(doc)
 
         # Update StreamResource node in Tiled
-        # NOTE: Assigning data_source.id in the object and passing it in http params is superflous, but it is currently required by Tiled.  # noqa
+        # NOTE: Assigning data_source.id in the object and passing it in http
+        # params is superfluous, but it is currently required by Tiled.
         sres_node.refresh()
         data_source = handler.get_data_source()
         try:

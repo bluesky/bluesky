@@ -502,6 +502,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of Events to wait for
         self._status_objs = defaultdict(set)  # status objects to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
+        self._seen_wait_and_move_on_keys = set()  # group ids that have been passed to _wait_and_move_on
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
@@ -2270,43 +2271,65 @@ class RunEngine:
 
         return ret
 
+    def _call_waiting_hook(self, *args, **kwargs):
+        if self.waiting_hook is not None:
+            self.waiting_hook(*args, **kwargs)
+
     async def _wait(self, msg):
         """Block progress until every object that was triggered or set
-        with the keyword argument `group=<GROUP>` is done.
+        with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
+        true when all triggered objects are done. When the keyword argument
+        `move_on=<MOVE_ON>` is true, this method can return before all objects are done
+        after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
 
         Expected message object is:
 
-            Msg('wait', group=<GROUP>)
+            Msg('wait', group=<GROUP>, move_on=<MOVE_ON>)
 
-        where ``<GROUP>`` is any hashable key.
+        where ``<GROUP>`` is any hashable key and ``<MOVE_ON>`` is a boolean.
         """
+        done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
+            move_on = False
         else:
             group = msg.kwargs["group"]
+            move_on = msg.kwargs.get("move_on", False)
         futs = list(self._groups.pop(group, []))
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
-                if self.waiting_hook is not None:
+                if move_on:
+                    if group not in self._seen_wait_and_move_on_keys:
+                        self._seen_wait_and_move_on_keys.add(group)
+                        self._call_waiting_hook(status_objs)
+                else:  # if move_on False
                     # Notify the waiting_hook function that the RunEngine is
                     # waiting for these status_objs to complete. Users can use
                     # the information these encapsulate to create a progress
                     # bar.
-                    self.waiting_hook(status_objs)
+                    self._call_waiting_hook(status_objs)
                 await self._wait_for(Msg("wait_for", None, futs, timeout=msg.kwargs.get("timeout", None)))
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
                 self._groups[group] = futs
                 self._status_objs[group] = status_objs
-                raise
+                if not move_on:
+                    raise
             finally:
-                if self.waiting_hook is not None:
+                if not move_on:
                     # Notify the waiting_hook function that we have moved on by
                     # sending it `None`. If all goes well, it could have
                     # inferred this from the status_obj, but there are edge
                     # cases.
-                    self.waiting_hook(None)
+                    self._call_waiting_hook(None)
+                    done = True
+                else:
+                    done = all(obj.done for obj in status_objs)
+                    if done:
+                        self._call_waiting_hook(None)
+                        self._seen_wait_and_move_on_keys.remove(group)
+            return done
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """
