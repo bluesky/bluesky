@@ -1829,7 +1829,8 @@ class RunEngine:
         the RunStart document
         """
         _span = tracer.start_span(f"{_SPAN_NAME_PREFIX} run")
-        _span.set_attribute("message", repr(msg))
+        _set_span_msg_attributes(_span, msg)
+
         self._run_tracing_spans.append(_span)
 
         # TODO extract this from the Msg
@@ -2187,6 +2188,7 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         obj = check_supports(msg.obj, Flyable)
@@ -2223,6 +2225,7 @@ class RunEngine:
             Msg('collect', flyer_object)
             Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
@@ -2257,7 +2260,7 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
-        trace.get_current_span().set_attribute("message", str(msg))
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         obj = check_supports(msg.obj, Movable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
@@ -2309,6 +2312,7 @@ class RunEngine:
 
         where ``<GROUP>`` is any hashable key.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         if msg.args:
             (group,) = msg.args
         else:
@@ -2783,6 +2787,12 @@ instead:
 
 http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
+
+def _set_span_msg_attributes(span, msg):
+    span.set_attribute("msg.command", msg.command)
+    span.set_attribute("msg.args", msg.args)
+    span.set_attribute("msg.kwargs", msg.kwargs)
+    span.set_attribute("msg.obj", msg.obj)
 
 
 def _default_md_validator(md):
