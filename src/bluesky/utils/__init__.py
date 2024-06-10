@@ -10,6 +10,7 @@ import signal
 import sys
 import threading
 import time
+import traceback
 import types
 import uuid
 import warnings
@@ -660,8 +661,8 @@ def snake_cyclers(cyclers, snake_booleans):
         lengths.append(len(c))
     total_length = np.prod(lengths)
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
-        num_tiles = np.product(lengths[:i])
-        num_repeats = np.product(lengths[i + 1 :])
+        num_tiles = np.prod(lengths[:i])
+        num_repeats = np.prod(lengths[i + 1 :])
         for k, v in c._transpose().items():
             if snake:
                 v = v + v[::-1]
@@ -913,17 +914,17 @@ def get_history():
     else:
         for path in SEARCH_PATH:
             if os.path.isfile(path):
-                print("Loading metadata history from %s" % path)
+                print(f"Loading metadata history from {path}")
                 return historydict.HistoryDict(path)
         # No existing file was found. Try creating one.
         path = SEARCH_PATH[0]
         try:
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            print("Storing metadata history in a new file at %s." % path)
+            print(f"Storing metadata history in a new file at {path}.")
             return historydict.HistoryDict(path)
         except OSError as exc:
             print(exc)
-            print("Failed to create metadata history file at %s" % path)
+            print(f"Failed to create metadata history file at {path}")
             print("Storing HistoryDict in memory; it will not persist when session is ended.")
             return historydict.HistoryDict(":memory:")
 
@@ -1766,7 +1767,7 @@ class DefaultDuringTask(DuringTask):
                         try:
                             os.read(int(rfd), 4096)
                         except OSError as inst:
-                            print("failed to read wakeup fd: %s\n" % inst)
+                            print(f"failed to read wakeup fd: {inst}\n")
 
                         wakeupsn.setEnabled(True)
 
@@ -1918,3 +1919,52 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
         # Mypy does not understand how to narrow type to non-awaitable in this
         # instance, see https://github.com/python/mypy/issues/15520
         return ret  # type: ignore
+
+
+class Plan:
+    def __init__(self, f, *args, **kwargs) -> None:
+        self._iter = f(*args, **kwargs)
+        self._stack = traceback.format_stack()
+        self._stack = self._stack[:-2]
+        self._stack += [
+            f"RuntimeWarning: plan `{f.__name__}` was never iterated" ", did you mean to use `yield from`?"
+        ]
+
+    def __iter__(self):
+        self._stack = None
+        return (yield from self._iter)
+
+    def __next__(self):
+        return next(self._iter)
+
+    def __del__(self):
+        if self._stack:
+            warning_message = "\n" + "".join(self._stack)
+            warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
+
+    def send(self, value):
+        return self._iter.send(value)
+
+    def throw(self, typ, val=None, tb=None):
+        return self._iter.throw(typ, val, tb)
+
+
+def plan(plan):
+    """Decorator that warns user if a `yield from` is not called
+
+    Parameters
+    ----------
+    plan : Generator
+        Generator coroutine usually a Bluesky plan
+
+    Returns
+    -------
+    Plan
+        Wrapped plans
+    """
+
+    @wraps(plan)
+    def wrapper(*args, **kwargs) -> Plan:
+        return Plan(plan, *args, **kwargs)
+
+    return wrapper

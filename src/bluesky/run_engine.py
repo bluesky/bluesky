@@ -510,6 +510,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of Events to wait for
         self._status_objs = defaultdict(set)  # status objects to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
+        self._seen_wait_and_move_on_keys = set()  # group ids that have been passed to _wait_and_move_on
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
@@ -915,7 +916,7 @@ class RunEngine:
 
         # If we are in the wrong state, raise.
         if not self._state.is_idle:
-            raise RuntimeError("The RunEngine is in a %s state" % self._state)
+            raise RuntimeError(f"The RunEngine is in a {self._state} state")
 
         futs = []
         tripped_justifications = []
@@ -1654,12 +1655,11 @@ class RunEngine:
                         self._msg_cache.append(msg)
 
                     # try to look up the coroutine to execute the command
-                    try:
-                        coro = self._command_registry[msg.command]
-                    # replace KeyError with a local sub-class and go
-                    # to top of the loop
-                    except KeyError:
-                        # TODO make this smarter
+                    if (
+                        coro := self._command_registry.get(msg.command, key_absence_sentinel := object())
+                    ) is key_absence_sentinel:
+                        # flag invalid command
+                        # and return to the top of the loop
                         new_response = InvalidCommand(msg.command)
                         continue
 
@@ -1886,12 +1886,11 @@ class RunEngine:
         """
         # TODO extract this from the Msg
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence(
-                "A 'close_run' message was not received before the 'open_run' message"
-            ) from ke
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object)
+        ) is key_absence_sentinel:
+            ims_msg = "A 'close_run' message was not received before the 'open_run' message"
+            raise IllegalMessageSequence(ims_msg)
         ret = await current_run.close_run(msg)
         del self._run_bundlers[run_key]
         self._close_run_trace(msg)
@@ -1924,14 +1923,15 @@ class RunEngine:
         Descriptor document.
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence(
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
+            ims_msg = (
                 "Cannot bundle readings without "
                 "an open run. That is, 'create' must "
                 "be preceded by 'open_run'."
-            ) from ke
+            )
+            raise IllegalMessageSequence(ims_msg)
         return await current_run.create(msg)
 
     async def _declare_stream(self, msg):
@@ -1951,14 +1951,15 @@ class RunEngine:
         on declare_stream, rather than `describe`.
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence(
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
+            ims_msg = (
                 "Cannot bundle readings without "
                 "an open run. That is, 'create' must "
                 "be preceded by 'open_run'."
-            ) from ke
+            )
+            raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
     async def _read(self, msg):
@@ -1981,11 +1982,9 @@ class RunEngine:
                 "`read` must return a dictionary."
             )
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError:
-            ...
-        else:
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is not key_absence_sentinel:
             await current_run.read(msg, ret)
 
         return ret
@@ -2029,11 +2028,13 @@ class RunEngine:
         """
 
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'monitor' message was sent but no run is open.") from ke
-        await current_run.monitor(msg)
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
+            ims_msg = "A 'monitor' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.monitor(msg)
         await self._reset_checkpoint_state_coro()
 
     async def _unmonitor(self, msg):
@@ -2045,11 +2046,13 @@ class RunEngine:
             Msg('unmonitor', obj)
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'unmonitor' message was sent but no run is open.") from ke
-        await current_run.unmonitor(msg)
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
+            ims_msg = "An 'unmonitor' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.unmonitor(msg)
         await self._reset_checkpoint_state_coro()
 
     async def _save(self, msg):
@@ -2060,14 +2063,15 @@ class RunEngine:
             Msg('save')
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
             # sanity check -- this should be caught by 'create' which makes
             # this code path impossible
-            raise IllegalMessageSequence("A 'save' message was sent but no run is open.") from ke
-
-        await current_run.save(msg)
+            ims_msg = "A 'save' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.save(msg)
 
     async def _drop(self, msg):
         """Drop the event that is currently being bundled
@@ -2077,11 +2081,13 @@ class RunEngine:
             Msg('drop')
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'drop' message was sent but no run is open.") from ke
-        await current_run.drop(msg)
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
+            ims_msg = "A 'drop' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
+        else:
+            await current_run.drop(msg)
 
     async def _prepare(self, msg):
         """Prepare a flyer for a flyscan
@@ -2137,10 +2143,11 @@ class RunEngine:
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'kickoff' message was sent but no run is open.") from ke
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
+            ims_msg = "A 'kickoff' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
 
         _, obj, args, kwargs, _ = msg
         obj = check_supports(obj, Flyable)
@@ -2227,10 +2234,12 @@ class RunEngine:
         """
         _set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'collect' message was sent but no run is open.") from ke
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
+            # TODO add test exercising this path
+            ims_msg = "A 'collect' message was sent but no run is open."
+            raise IllegalMessageSequence(ims_msg)
 
         return await current_run.collect(msg)
 
@@ -2301,22 +2310,32 @@ class RunEngine:
 
         return ret
 
+    def _call_waiting_hook(self, *args, **kwargs):
+        if self.waiting_hook is not None:
+            self.waiting_hook(*args, **kwargs)
+
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
     async def _wait(self, msg):
         """Block progress until every object that was triggered or set
-        with the keyword argument `group=<GROUP>` is done.
+        with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
+        true when all triggered objects are done. When the keyword argument
+        `move_on=<MOVE_ON>` is true, this method can return before all objects are done
+        after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
 
         Expected message object is:
 
-            Msg('wait', group=<GROUP>)
+            Msg('wait', group=<GROUP>, move_on=<MOVE_ON>)
 
-        where ``<GROUP>`` is any hashable key.
+        where ``<GROUP>`` is any hashable key and ``<MOVE_ON>`` is a boolean.
         """
         _set_span_msg_attributes(trace.get_current_span(), msg)
+        done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
+            move_on = False
         else:
             group = msg.kwargs["group"]
+            move_on = msg.kwargs.get("move_on", False)
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:
@@ -2325,25 +2344,37 @@ class RunEngine:
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
-                if self.waiting_hook is not None:
+                if move_on:
+                    if group not in self._seen_wait_and_move_on_keys:
+                        self._seen_wait_and_move_on_keys.add(group)
+                        self._call_waiting_hook(status_objs)
+                else:  # if move_on False
                     # Notify the waiting_hook function that the RunEngine is
                     # waiting for these status_objs to complete. Users can use
                     # the information these encapsulate to create a progress
                     # bar.
-                    self.waiting_hook(status_objs)
+                    self._call_waiting_hook(status_objs)
                 await self._wait_for(Msg("wait_for", None, futs, timeout=msg.kwargs.get("timeout", None)))
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
                 self._groups[group] = futs
                 self._status_objs[group] = status_objs
-                raise
+                if not move_on:
+                    raise
             finally:
-                if self.waiting_hook is not None:
+                if not move_on:
                     # Notify the waiting_hook function that we have moved on by
                     # sending it `None`. If all goes well, it could have
                     # inferred this from the status_obj, but there are edge
                     # cases.
-                    self.waiting_hook(None)
+                    self._call_waiting_hook(None)
+                    done = True
+                else:
+                    done = all(obj.done for obj in status_objs)
+                    if done:
+                        self._call_waiting_hook(None)
+                        self._seen_wait_and_move_on_keys.remove(group)
+            return done
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """
@@ -2484,13 +2515,13 @@ class RunEngine:
             object.configure(*args, **kwargs)
         """
         run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError:
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is key_absence_sentinel:
             current_run = None
-        else:
-            if current_run.bundling:
-                raise IllegalMessageSequence("Cannot configure after 'create' but before 'save' Aborting!")
+        elif current_run.bundling:
+            ims_msg = "Cannot configure after 'create' but before 'save' Aborting!"
+            raise IllegalMessageSequence(ims_msg)
         _, obj, args, kwargs, _ = msg
 
         old, new = obj.configure(*args, **kwargs)
@@ -2617,11 +2648,9 @@ class RunEngine:
         where ``TOKEN`` is the return value from ``RunEngine._subscribe()``
         """
         self.log.debug("Removing subscription %r", msg)
-        _, obj, args, kwargs, _ = msg
-        try:
-            token = kwargs["token"]
-        except KeyError:
-            (token,) = args
+        _, obj, arg, kwargs, _ = msg
+        if (token := kwargs.get("token", key_absence_sentinel := object())) is key_absence_sentinel:
+            (token,) = arg
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
         await self._reset_checkpoint_state_coro()
@@ -2787,6 +2816,7 @@ instead:
 
 http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
+
 
 def _set_span_msg_attributes(span, msg):
     span.set_attribute("msg.command", msg.command)

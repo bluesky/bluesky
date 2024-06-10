@@ -22,13 +22,16 @@ from .utils import (
     ensure_generator,
     get_hinted_fields,
     merge_cycler,
+    plan,
     separate_devices,
+    short_uid,
 )
 from .utils import (
     short_uid as _short_uid,
 )
 
 
+@plan
 def declare_stream(*objs, name: str, collect=False):
     """
     Bundle future readings into a new Event document.
@@ -53,6 +56,7 @@ def declare_stream(*objs, name: str, collect=False):
     return (yield Msg("declare_stream", None, *separate_devices(objs), name=name, collect=collect))
 
 
+@plan
 def create(name="primary"):
     """
     Bundle future readings into a new Event document.
@@ -75,6 +79,7 @@ def create(name="primary"):
     return (yield Msg("create", name=name))
 
 
+@plan
 def save():
     """
     Close a bundle of readings and emit a completed Event document.
@@ -91,6 +96,7 @@ def save():
     return (yield Msg("save"))
 
 
+@plan
 def drop():
     """
     Drop a bundle of readings without emitting a completed Event document.
@@ -108,6 +114,7 @@ def drop():
     return (yield Msg("drop"))
 
 
+@plan
 def read(obj):
     """
     Take a reading and add it to the current bundle of readings.
@@ -124,6 +131,7 @@ def read(obj):
     return (yield Msg("read", obj))
 
 
+@plan
 def monitor(obj, *, name=None, **kwargs):
     """
     Asynchronously monitor for new values and emit Event documents.
@@ -150,6 +158,7 @@ def monitor(obj, *, name=None, **kwargs):
     return (yield Msg("monitor", obj, name=name, **kwargs))
 
 
+@plan
 def unmonitor(obj):
     """
     Stop monitoring.
@@ -170,6 +179,7 @@ def unmonitor(obj):
     return (yield Msg("unmonitor", obj))
 
 
+@plan
 def null():
     """
     Yield a no-op Message. (Primarily for debugging and testing.)
@@ -182,6 +192,7 @@ def null():
     return (yield Msg("null"))
 
 
+@plan
 def abs_set(obj, *args, group=None, wait=False, **kwargs):
     """
     Set a value. Optionally, wait for it to complete before continuing.
@@ -217,6 +228,7 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     return ret
 
 
+@plan
 def rel_set(obj, *args, group=None, wait=False, **kwargs):
     """
     Set a value relative to current value. Optionally, wait before continuing.
@@ -248,6 +260,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
+@plan
 def mv(*args, group=None, **kwargs):
     """
     Move one or more devices to a setpoint. Wait for all to complete.
@@ -287,6 +300,7 @@ def mv(*args, group=None, **kwargs):
 mov = mv  # synonym
 
 
+@plan
 def mvr(*args, group=None, **kwargs):
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -327,6 +341,7 @@ def mvr(*args, group=None, **kwargs):
 movr = mvr  # synonym
 
 
+@plan
 def rd(obj, *, default_value=0):
     """Reads a single-value non-triggered object
 
@@ -429,6 +444,7 @@ def rd(obj, *, default_value=0):
         return data["value"]
 
 
+@plan
 def stop(obj):
     """
     Stop a device.
@@ -444,6 +460,7 @@ def stop(obj):
     return (yield Msg("stop", obj))
 
 
+@plan
 def trigger(obj, *, group=None, wait=False):
     """
     Trigger and acquisition. Optionally, wait for it to complete.
@@ -467,6 +484,7 @@ def trigger(obj, *, group=None, wait=False):
     return ret
 
 
+@plan
 def sleep(time):
     """
     Tell the RunEngine to sleep, while asynchronously doing other processing.
@@ -487,7 +505,8 @@ def sleep(time):
     return (yield Msg("sleep", None, time))
 
 
-def wait(group=None, *, timeout=None):
+@plan
+def wait(group=None, *, timeout=None, move_on=False):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -499,14 +518,15 @@ def wait(group=None, *, timeout=None):
     Yields
     ------
     msg : Msg
-        Msg('wait', None, group=group)
+        Msg('wait', None, group=group, move_on=move_on, timeout=timeout)
     """
-    return (yield Msg("wait", None, group=group, timeout=timeout))
+    return (yield Msg("wait", None, group=group, move_on=move_on, timeout=timeout))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
 
 
+@plan
 def checkpoint():
     """
     If interrupted, rewind to this point.
@@ -523,6 +543,7 @@ def checkpoint():
     return (yield Msg("checkpoint"))
 
 
+@plan
 def clear_checkpoint():
     """
     Designate that it is not safe to resume. If interrupted or paused, abort.
@@ -539,6 +560,7 @@ def clear_checkpoint():
     return (yield Msg("clear_checkpoint"))
 
 
+@plan
 def pause():
     """
     Pause and wait for the user to resume.
@@ -556,6 +578,7 @@ def pause():
     return (yield Msg("pause", None, defer=False))
 
 
+@plan
 def deferred_pause():
     """
     Pause at the next checkpoint.
@@ -573,6 +596,7 @@ def deferred_pause():
     return (yield Msg("pause", None, defer=True))
 
 
+@plan
 def input_plan(prompt=""):
     """
     Prompt the user for text input.
@@ -590,6 +614,7 @@ def input_plan(prompt=""):
     return (yield Msg("input", prompt=prompt))
 
 
+@plan
 def prepare(obj, *args, group=None, wait=False, **kwargs):
     """
     Prepare a device.
@@ -623,6 +648,7 @@ def prepare(obj, *args, group=None, wait=False, **kwargs):
     return ret
 
 
+@plan
 def kickoff(obj, *, group=None, wait=False, **kwargs):
     """
     Kickoff one fly-scanning device.
@@ -655,6 +681,7 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
+@plan
 def kickoff_all(*args, group=None, wait=True, **kwargs):
     """
     Kickoff one or more fly-scanning devices.
@@ -695,6 +722,7 @@ def kickoff_all(*args, group=None, wait=True, **kwargs):
     return tuple(statuses)
 
 
+@plan
 def complete(obj, *, group=None, wait=False, **kwargs):
     """
     Tell a flyable, 'stop collecting, whenever you are ready'.
@@ -734,6 +762,7 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
+@plan
 def complete_all(*args, group=None, wait=False, **kwargs):
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
@@ -780,6 +809,7 @@ def complete_all(*args, group=None, wait=False, **kwargs):
     return tuple(statuses)
 
 
+@plan
 def collect(obj, *args, stream=False, return_payload=True, name=None):
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
@@ -813,6 +843,44 @@ def collect(obj, *args, stream=False, return_payload=True, name=None):
     return (yield Msg("collect", obj, *args, stream=stream, return_payload=return_payload, name=name))
 
 
+@plan
+def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
+    """
+    Collect data from one or more fly-scanning devices and emit documents, then collect and emit
+    data from one or more Collectable detectors until all are done.
+
+    Parameters
+    ----------
+    flyers: An iterable sequence of fly-able devices with 'kickoff', 'complete' and
+        'collect' methods.
+    dets: An iterable sequence of collectable devices with 'describe_collect' method.
+    flush_period: float, int
+        Time period in seconds between each yield from collect while waiting for triggered
+        objects to be done
+    stream_name: str, optional
+        If not None, will collect for the named string specifically, else collect will be performed
+        on all streams.
+
+
+    Yields
+    ------
+    msg : Msg
+        A 'complete' message or 'collect' message
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.complete`
+    :func:`bluesky.plan_stubs.collect`
+    """
+    group = short_uid(label="complete")
+    yield from complete_all(*flyers, group=group, wait=False)
+    done = False
+    while not done:
+        done = yield from wait(group=group, timeout=flush_period, move_on=True)
+        yield from collect(*dets, name=stream_name)
+
+
+@plan
 def configure(obj, *args, **kwargs):
     """
     Change Device configuration and emit an updated Event Descriptor document.
@@ -833,6 +901,7 @@ def configure(obj, *args, **kwargs):
     return (yield Msg("configure", obj, *args, **kwargs))
 
 
+@plan
 def stage(obj, *, group=None, wait=None):
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
@@ -870,6 +939,7 @@ def stage(obj, *, group=None, wait=None):
     return ret
 
 
+@plan
 def stage_all(*args, group=None):
     """
     'Stage' one or more devices (i.e., prepare them for use, 'arm' them).
@@ -902,6 +972,7 @@ def stage_all(*args, group=None):
         yield Msg("wait", None, group=group)
 
 
+@plan
 def unstage(obj, *, group=None, wait=None):
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
@@ -939,6 +1010,7 @@ def unstage(obj, *, group=None, wait=None):
     return ret
 
 
+@plan
 def unstage_all(*args, group=None):
     """
     'Unstage' one or more devices (i.e., put them in standby, 'disarm' them).
@@ -971,6 +1043,7 @@ def unstage_all(*args, group=None):
         yield Msg("wait", None, group=group)
 
 
+@plan
 def subscribe(name, func):
     """
     Subscribe the stream of emitted documents.
@@ -994,6 +1067,7 @@ def subscribe(name, func):
     return (yield Msg("subscribe", None, func, name))
 
 
+@plan
 def unsubscribe(token):
     """
     Remove a subscription.
@@ -1015,6 +1089,7 @@ def unsubscribe(token):
     return (yield Msg("unsubscribe", token=token))
 
 
+@plan
 def install_suspender(suspender):
     """
     Install a suspender during a plan.
@@ -1036,6 +1111,7 @@ def install_suspender(suspender):
     return (yield Msg("install_suspender", None, suspender))
 
 
+@plan
 def remove_suspender(suspender):
     """
     Remove a suspender during a plan.
@@ -1057,6 +1133,7 @@ def remove_suspender(suspender):
     return (yield Msg("remove_suspender", None, suspender))
 
 
+@plan
 def open_run(md=None):
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
@@ -1078,6 +1155,7 @@ def open_run(md=None):
     return (yield Msg("open_run", **(md or {})))
 
 
+@plan
 def close_run(exit_status=None, reason=None):
     """
     Mark the end of the current 'run'. Emit a RunStop document.
@@ -1101,6 +1179,7 @@ def close_run(exit_status=None, reason=None):
     return (yield Msg("close_run", exit_status=exit_status, reason=reason))
 
 
+@plan
 def wait_for(futures, **kwargs):
     """
     Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
@@ -1124,6 +1203,7 @@ def wait_for(futures, **kwargs):
     return (yield Msg("wait_for", None, futures, **kwargs))
 
 
+@plan
 def trigger_and_read(devices, name="primary"):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
@@ -1184,6 +1264,7 @@ def trigger_and_read(devices, name="primary"):
     return (yield from rewindable_wrapper(inner_trigger_and_read(), rewindable))
 
 
+@plan
 def broadcast_msg(command, objs, *args, **kwargs):
     """
     Generate many copies of a message, applying it to a list of devices.
@@ -1209,6 +1290,7 @@ def broadcast_msg(command, objs, *args, **kwargs):
     return return_vals
 
 
+@plan
 def repeater(n, gen_func, *args, **kwargs):
     """
     Generate n chained copies of the messages from gen_func
@@ -1241,6 +1323,7 @@ def repeater(n, gen_func, *args, **kwargs):
         yield from gen_func(*args, **kwargs)
 
 
+@plan
 def caching_repeater(n, plan):
     """
     Generate n chained copies of the messages in a plan.
@@ -1273,6 +1356,7 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
+@plan
 def one_shot(detectors, take_reading=None):
     """Inner loop of a count.
 
@@ -1298,6 +1382,7 @@ def one_shot(detectors, take_reading=None):
     yield from take_reading(list(detectors))
 
 
+@plan
 def one_1d_step(detectors, motor, step, take_reading=None):
     """
     Inner loop of a 1D step scan
@@ -1334,6 +1419,7 @@ def one_1d_step(detectors, motor, step, take_reading=None):
     return (yield from take_reading(list(detectors) + [motor]))
 
 
+@plan
 def move_per_step(step, pos_cache):
     """
     Inner loop of an N-dimensional step scan without any readings
@@ -1358,6 +1444,7 @@ def move_per_step(step, pos_cache):
     yield Msg("wait", None, group=grp)
 
 
+@plan
 def one_nd_step(detectors, step, pos_cache, take_reading=None):
     """
     Inner loop of an N-dimensional step scan
@@ -1388,6 +1475,7 @@ def one_nd_step(detectors, step, pos_cache, take_reading=None):
     yield from take_reading(list(detectors) + list(motors))
 
 
+@plan
 def repeat(plan, num=1, delay=None):
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
