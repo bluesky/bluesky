@@ -249,7 +249,7 @@ class TIFFConsolidator(ConsolidatorBase):
         Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
         integer index, e.g. "{:05}.tif".
         """
-        return self.uri.strip("/") + "/" + self._sres_parameters["template"].format(indx)
+        return self.uri + self._sres_parameters["template"].format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
         indx = int(doc["uid"].split("/")[1])

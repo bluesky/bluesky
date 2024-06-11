@@ -128,11 +128,10 @@ class _RunWriter(CallbackBase):
         # Write the configuration data: loop over all detectors
         conf_node = desc_node["config"]
         for det_name, det_dict in conf_dict[uid].items():
-            print(det_name, det_dict)
             df_dict = {"descriptor_uid": uid}
             df_dict.update(det_dict.get("data", {}))
             df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
-            df = pd.Series(df_dict).to_frame().T
+            df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
             if det_name in conf_node.keys():
                 conf_node[det_name].append_partition(df, 0)
             else:
@@ -162,7 +161,7 @@ class _RunWriter(CallbackBase):
         df_dict = {"seq_num": doc["seq_num"]}
         df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
         df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
-        df = pd.Series(df_dict).to_frame().T  # data_keys become column names in the df
+        df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
         if "events" in parent_node.keys():
             parent_node["events"].append_partition(df, 0)
         else:
