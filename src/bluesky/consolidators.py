@@ -145,6 +145,8 @@ class ConsolidatorBase:
         These parameters are intended to provide any additional information required to read a data source of a
         specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF
         sequence.
+
+        This property is to be subclassed as necessary.
         """
         return {}
 
@@ -232,6 +234,11 @@ class HDF5Consolidator(ConsolidatorBase):
 
     @property
     def adapter_parameters(self) -> Dict:
+        """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
+
+        path: List[str] - file path represented as list split at `/`
+        swmr: bool -- True to enable the single writer / multiple readers regime
+        """
         return {"path": self._sres_parameters["path"].strip("/").split("/"), "swmr": self.swmr}
 
 

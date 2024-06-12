@@ -137,7 +137,7 @@ def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) ->
                 data_key=data_key,
                 root="/root",
                 resource_path="/path.h5",
-                spec="ADHDF5_SWMR_STREAM",
+                spec="AD_HDF5_SWMR_STREAM",
                 uid=uid,
             )
             yield "stream_resource", stream_resource

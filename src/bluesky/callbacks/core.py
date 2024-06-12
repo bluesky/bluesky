@@ -18,7 +18,7 @@ from ..utils import ensure_uid
 
 MIMETYPE_LOOKUP = {
     "hdf5": "application/x-hdf5",
-    "ADHDF5_SWMR_STREAM": "application/x-hdf5",
+    "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
     "AD_TIFF": "multipart/related;type=image/tiff",
     "AD_HDF5_GERM": "application/x-hdf5",

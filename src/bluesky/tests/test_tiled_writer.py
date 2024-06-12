@@ -79,7 +79,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 root=self.root,
                 resource_path="/dataset.h5",
                 uri="file://localhost" + file_path,
-                spec="ADHDF5_SWMR_STREAM",
+                spec="AD_HDF5_SWMR_STREAM",
                 mimetype="application/x-hdf5",
                 uid=uid,
             )
@@ -223,12 +223,13 @@ def test_stream_datum_collectable(RE, client, tmp_path):
     tw = TiledWriter(client)
     RE(collect_plan(det, name="primary"), tw)
     arrs = client.values().last()["primary"]["external"].values()
+
     assert arrs[0].read() is not None
     assert arrs[1].read() is not None
     assert arrs[2].read() is not None
 
 
-def test_stuff(RE, client, tmp_path):
+def test_handling_non_stream_resource(RE, client, tmp_path):
     det = SynSignalWithRegistry(
         func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
         dtype_str="uint8",
@@ -247,10 +248,10 @@ def test_stuff(RE, client, tmp_path):
 
     assert extr.shape == (3, 10, 15)
     assert extr.read() is not None
-    assert set(intr.columns) == set("seq_num", "ts_img")
+    assert set(intr.columns) == {"seq_num", "ts_img"}
     assert len(intr.read()) == 3
     assert (intr["seq_num"].read() == [1, 2, 3]).all()
-    assert set(conf.columns) == set("descriptor_uid", "img", "ts_img")
+    assert set(conf.columns) == {"descriptor_uid", "img", "ts_img"}
     assert len(conf.read()) == 1
 
 
