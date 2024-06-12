@@ -154,7 +154,7 @@ class ConsolidatorBase:
         """Process a new StreamDatum and update the internal data structure
 
         This will be called for every new StreamDatum received to account for the new added rows.
-        This method _may_need_ to be subclassed and expanded depending on a specific mimetype.
+        This method _may need_ to be subclassed and expanded depending on a specific mimetype.
         Actions:
           - Parse the fields in a new StreamDatum
           - Increment the number of rows (implemented by the Base class)
@@ -254,7 +254,7 @@ class TIFFConsolidator(ConsolidatorBase):
 
         This relies on the `template` parameter passed in the StreamResource, which is a string either in the "new"
         Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
-        integer index, e.g. "{:05}.tif".
+        integer index, e.g. "{:05d}.tif".
         """
         return self.uri + self._sres_parameters["template"].format(indx)
 

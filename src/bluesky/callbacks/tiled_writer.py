@@ -53,7 +53,7 @@ class TiledWriter:
 
 
 class _RunWriter(CallbackBase):
-    """Write documents from one Bluesky Run into Tile
+    """Write documents from one Bluesky Run into Tiled.
 
     Datum, Resource, and StreamResource documents are cached until Event or StreamDatum documents are received,
     after which corresponding nodes are created in Tiled.
@@ -262,7 +262,7 @@ class _RunWriter(CallbackBase):
         # params is superfluous, but it is currently required by Tiled.
         sres_node.refresh()
         data_source = handler.get_data_source()
-        data_source.id = sres_node.data_sources()[0].id  # ID of the exisiting DataSource record
+        data_source.id = sres_node.data_sources()[0].id  # ID of the existing DataSource record
         endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             sres_node.context.http_client.put(
