@@ -25,8 +25,6 @@ from tiled.utils import safe_json_dump
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
-DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
-
 
 class TiledWriter:
     "Write metadata and data from Bluesky documents into Tiled."
