@@ -70,7 +70,7 @@ class ConsolidatorBase:
         - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
 
     To implement new Consolidators for other mimetypes, subclass ConsolidatorBase, possibly expand the
-    `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
+    `consume_stream_datum` and `get_data_source` methods, and ensure that the returned `adapter_parameters`
     property matches the expected adapter signature. Declare a set of supported mimetypes to allow valiadtion and
     automated discovery of the subclassed Consolidator.
     """
