@@ -44,7 +44,7 @@ class TiledWriter:
 
 
 class _RunWriter(CallbackBase):
-    """Write documents from one Bluesky Run into Tile
+    """Write documents from one Bluesky Run into Tiled.
 
     Datum, Resource, and StreamResource documents are cached until Event or StreamDatum documents are received,
     after which corresponding nodes are created in Tiled.
