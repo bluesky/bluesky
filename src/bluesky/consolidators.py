@@ -71,7 +71,7 @@ class ConsolidatorBase:
 
     To implement new Consolidators for other mimetypes, subclass ConsolidatorBase, possibly expand the
     `consume_stream_datum` and `get_data_source` methods, and ensure that the returned `adapter_parameters`
-    property matches the expected adapter signature. Declare a set of supported mimetypes to allow valiadtion and
+    property matches the expected adapter signature. Declare a set of supported mimetypes to allow validation and
     automated discovery of the subclassed Consolidator.
     """
 
