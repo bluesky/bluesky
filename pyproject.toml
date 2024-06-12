@@ -21,6 +21,7 @@ dependencies = [
     "msgpack",
     "msgpack-numpy",
     "numpy",
+    "redis-json-dict",
     "toolz",
     "tqdm>=4.44",
     "typing-extensions>=4.0.0;python_version<'3.11'",
