@@ -63,7 +63,7 @@ class ConsolidatorBase:
     We put this code into consolidators so that additional, possibly very unusual, formats can be supported by
     users without getting a PR merged into Bluesky or Tiled.
 
-    The CONSOLIDATOR_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can be used
+    The CONSOLIDATOR_REGISTRY (see example below) and the Tiled catalog parameter adapters_by_mimetype can be used
     together to support:
         - Ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
           parameters (the consolidator's job);
