@@ -52,7 +52,7 @@ class DataSource:
 
 
 class ConsolidatorBase:
-    """Consolidator of StremDatums
+    """Consolidator of StreamDatums
 
     A Consolidator consumes documents from RE; it is similar to usual Bluesky Handlers but is designed to work
     with streaming data (received via StreamResource and StreamDatum documents). It composes details (DataSource
