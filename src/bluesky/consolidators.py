@@ -152,7 +152,7 @@ class ConsolidatorBase:
         """Process a new StreamDatum and update the internal data structure
 
         This will be called for every new StreamDatum received to account for the new added rows.
-        This method _may_need_ to be subclassed and expanded depending on a specific mimetype.
+        This method _may need_ to be subclassed and expanded depending on a specific mimetype.
         Actions:
           - Parse the fields in a new StreamDatum
           - Increment the number of rows (implemented by the Base class)
