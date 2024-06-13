@@ -5,7 +5,7 @@ from bluesky.consolidators import HDF5Consolidator
 
 @pytest.fixture
 def descriptor():
-    doc = {
+    return {
         "data_keys": {
             "test_img": {
                 "shape": [10, 15],
@@ -17,7 +17,6 @@ def descriptor():
         },
         "uid": "descriptor-uid",
     }
-    return doc
 
 
 @pytest.fixture
