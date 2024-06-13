@@ -243,7 +243,7 @@ class LiveImage(BrokerCallbackBase):
         self.cross_section = CrossSection(fig, cmap, norm, limit_func, auto_redraw, interpolation)
         # if window_title:
         # todo that causes error. what is the type of canvas?
-        # self.cross_section._figure.canvas.set_window_title(window_title)
+        self.cross_section._figure.canvas.set_window_title(window_title)
         self.cross_section._figure.show()
 
     def event(self, doc):

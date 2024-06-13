@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from matplotlib import colormaps
 from matplotlib.colors import (
     Colormap,
     Normalize,
@@ -22,13 +23,14 @@ def mock_matplotlib():
 def live_image(mock_matplotlib):
     return LiveImage(
         "test_field",
-        cmap=Colormap(),
+        cmap=Colormap(colormaps["magma"]),
         norm=Normalize(),
-        interpolation=InterpolationEnum.LINEAR,
+        interpolation=InterpolationEnum.NONE,
     )
 
 
 def test_initialization(live_image):
+    c = colormaps
     assert live_image.field == "test_field"
     # Add more assertions to validate initialization logic
 
