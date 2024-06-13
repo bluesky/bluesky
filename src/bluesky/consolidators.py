@@ -126,7 +126,7 @@ class ConsolidatorBase:
             if self._num_rows % self.chunk_size:
                 dim0_chunk.append(self._num_rows % self.chunk_size)
 
-        return tuple(dim0_chunk), *[(d,) for d in self.datum_shape]
+        return tuple(dim0_chunk or [0]), *[(d,) for d in self.datum_shape]
 
     @property
     def has_skips(self) -> bool:
