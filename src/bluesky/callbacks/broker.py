@@ -234,13 +234,18 @@ class LiveImage(BrokerCallbackBase):
         auto_redraw: bool = True,
         interpolation: InterpolationEnum = InterpolationEnum.NONE,
         window_title=None,
+        cross_section: Optional[CrossSection] = None,
     ):
         import matplotlib.pyplot as plt
 
         super().__init__((data_field_name,), db=db)
         fig = plt.figure()
         self.field = data_field_name
-        self.cross_section = CrossSection(fig, cmap, norm, limit_func, auto_redraw, interpolation)
+        self.cross_section = (
+            CrossSection(fig, cmap, norm, limit_func, auto_redraw, interpolation)
+            if cross_section is None
+            else cross_section
+        )
         # if window_title:
         # todo that causes error. what is the type of canvas?
         self.cross_section._figure.canvas.set_window_title(window_title)
