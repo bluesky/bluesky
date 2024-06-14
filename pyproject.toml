@@ -60,7 +60,7 @@ dev = [
     "pipdeptree",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyepics",
+    "pyepics==3.5.2",
     "pyqt5",
     "pytest",
     "pytest-cov",
