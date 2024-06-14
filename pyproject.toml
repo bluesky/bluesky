@@ -60,8 +60,8 @@ dev = [
     "pipdeptree",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    # Fixing the version of pyepics to pass CI/CD tests on py3.8; to be removed once we drop py3.8 support.
-    "pyepics==3.5.2",
+    "pyepics==3.5.2;python_version<'3.9'",    # Needed to pass CI/CD tests; To be removed once we drop support for py3.8
+    "pyepics;python_version>='3.9'",
     "pyqt5",
     "pytest",
     "pytest-cov",
