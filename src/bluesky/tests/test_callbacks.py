@@ -646,3 +646,29 @@ def test_in_plan_qt_callback(RE, hw):
         return (yield from plan)
 
     RE(my_plan())
+
+
+def test_create_axes_in_qt_callback(RE, hw):
+    import matplotlib.pyplot as plt
+
+    from bluesky.callbacks.mpl_plotting import _get_teleporter
+
+    _get_teleporter()
+
+    def my_plan():
+        motor = hw.motor
+        det = hw.det
+
+        motor.delay = 1
+
+        def get_ax():
+            return plt.figure("my plot").gca()
+
+        plan = bp.scan([det], motor, -5, 5, 25)
+        plan = subs_wrapper(bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name, ax=get_ax))
+        return (yield from plan)
+
+    RE(my_plan())
+    ax = plt.figure("my plot").gca()
+    assert len(ax.lines) > 0
+    plt.close(ax.figure)

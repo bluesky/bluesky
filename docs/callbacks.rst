@@ -289,7 +289,44 @@ To customize style, pass in any
     RE(scan([det], motor, -5, 5, 30),
        LivePlot('det', 'motor', marker='x', markersize=10, color='red'))
 
+
+If you want to create the `LivePlot` inside of a plan and control with Axes it is plotted to
+(rather than creating a new ``Figure`` every time) then you have to provide the ``Axes`` to
+plot to indirectly [#thread]_.  For example:
+
+
+.. plot::
+    :include-source: True
+
+    from bluesky import RunEngine
+    from bluesky.plans import scan
+    from ophyd.sim import det, motor
+    from bluesky.callbacks.mpl_plotting import LivePlot
+    import bluesky.callbacks
+    import bluesky.preprocessors as bpp
+
+    bluesky.callbacks.mpl_plotting.initialize_qt_teleporter()
+
+    RE = RunEngine({})
+    def my_plan():
+       def get_ax():
+           import matplotlib.pyplot as plt
+           return plt.figure('my plot').gca()
+
+       lt =  LivePlot('det', 'motor', marker='x', markersize=10, ax=get_ax)
+       return (yield from bpp.subs_wrapper(scan([det], motor, -5, 5, 30), lt))
+
+    RE(my_plan())
+
+
 .. autoclass:: bluesky.callbacks.mpl_plotting.LivePlot
+
+
+.. [#thread] This is because the asyncio event loop that is executing the plans
+              runs on a background thread and GUI objects may not be create on
+              background threads.  As an implementation details, the plotting callbacks shift
+              the execution from the background thread to the main thread and we can leverage this
+              to also move creating a new ``Figure`` in the plan back to the main thread.
 
 Live Image
 ++++++++++
