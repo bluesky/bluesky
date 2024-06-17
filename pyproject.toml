@@ -18,6 +18,7 @@ dependencies = [
     "cycler",
     "event-model>=1.19.8",
     "historydict",
+    "importlib-resources;python_version<'3.9'",
     "msgpack",
     "msgpack-numpy",
     "numpy<2.0.0",
