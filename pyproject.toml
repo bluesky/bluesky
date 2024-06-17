@@ -55,6 +55,7 @@ dev = [
     "networkx",
     "numpydoc",
     "ophyd",
+    "packaging",
     "pandas",
     "pickleshare",
     "pipdeptree",
