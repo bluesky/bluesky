@@ -20,7 +20,7 @@ dependencies = [
     "historydict",
     "msgpack",
     "msgpack-numpy",
-    "numpy",
+    "numpy<2.0.0",
     "opentelemetry-api",
     "toolz",
     "tqdm>=4.44",
