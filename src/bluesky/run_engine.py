@@ -2822,7 +2822,7 @@ http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 def _set_span_msg_attributes(span, msg):
     span.set_attribute("msg.command", msg.command)
     span.set_attribute("msg.args", msg.args)
-    span.set_attribute("msg.kwargs", json.dumps(msg.kwargs))
+    span.set_attribute("msg.kwargs", json.dumps(msg.kwargs, default=repr))
     span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
 
 

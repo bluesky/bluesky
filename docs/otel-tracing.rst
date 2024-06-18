@@ -1,11 +1,14 @@
 Tracing with Opentelemetry
 ==========================
 
-Bluesky is instrumented with [OpenTelemetry](https://opentelemetry.io/) tracing span hooks on runs, and on potentially long-running RunEngine methods such as `wait()` and `collect()`. This can allow you to analyze where your plans are spending a lot of time.
+.. role:: py(code)
+   :language: python
 
-By itself, this doesn't do anything. To collect tracing output you should configure an exporter in your application or plan, and a collector to send the data to. You can find an example of how to do that [here](https://opentelemetry.io/docs/languages/python/exporters/#usage). Since the `start_as_current_span` decorator from the opentelemetry library doesn't work for generators, we also provide a `trace_plan` decorator in `bluesky.tracing`
+Bluesky is instrumented with [OpenTelemetry](https://opentelemetry.io/) tracing span hooks on runs, and on potentially long-running RunEngine methods such as :py:`wait()` and :py:`collect()`. This can allow you to analyze where your plans are spending a lot of time.
 
-Tracing messages from the `RunEngine` are named `"Bluesky RunEngine <method name>"`, e.g. `"Bluesky RunEngine wait"`. Traces for runs are tagged with the `success`, `exit_status` as attributes, as well as the `reason` if one is available. Traces for methods are tagged with the content of the message (`msg.command`, `msg.args`, `msg.kwargs`, and `msg.obj`). Traces for `wait()` also log the `group` if one was given, or set `no_group_given` true if none was. Ophyd also has traces on `Status` objects to easily record how long they live for.
+By itself, this doesn't do anything. To collect tracing output you should configure an exporter in your application or plan, and a collector to send the data to. You can find an example of how to do that [here](https://opentelemetry.io/docs/languages/python/exporters/#usage). Since the :py:`@start_as_current_span` decorator from the opentelemetry library doesn't work for generators, we also provide a :py:`@trace_plan` decorator in :py:`bluesky.tracing`
+
+Tracing messages from the :py:`RunEngine` are named :py:`"Bluesky RunEngine <method name>"`, e.g. :py:`"Bluesky RunEngine wait"`. Traces for runs are tagged with the :py:`success`, :py:`exit_status` as attributes, as well as the :py:`reason` if one is available. Traces for methods are tagged with the content of the message (:py:`msg.command`, :py:`msg.args`, :py:`msg.kwargs`, and :py:`msg.obj`). Traces for :py:`wait()` also log the :py:`group` if one was given, or set :py:`no_group_given` true if none was. Ophyd also has traces on :py:`Status` objects to easily record how long they live for.
 
 Examples:
 ---------
@@ -15,10 +18,10 @@ Using the following script, which runs a simple scan and sends traces to the con
 .. literalinclude:: otel-tracing-demo.py
    :language: python
 
-We obtain the following trace data. Note that the innermost spans are closed first, and therefore printed to the console first.
+We obtain this trace data. Note that the innermost spans are closed first, and therefore printed to the console first. You can see that the :code:`"parent_id"` of the :code:`Status` span corresponds to the :code:`"span_id"` of the :code:`set()` span, and so on.
 
 .. code-block:: JSON
-   
+
    {
       "name": "Ophyd Status",
       "context": {
