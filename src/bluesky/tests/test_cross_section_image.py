@@ -36,7 +36,7 @@ def mock_cross_section():
 
 
 @pytest.fixture
-def live_image( mock_cross_section):
+def live_image(mock_cross_section):
     return LiveImage(
         "test_field",
         cmap=Colormap(colormaps["magma"]),
