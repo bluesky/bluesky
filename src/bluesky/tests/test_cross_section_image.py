@@ -51,48 +51,39 @@ def live_image(mock_cross_section):
     )
 
 
+@auto_redraw
+def some_function(obj, x, y):
+    return x + y
+
+
 class TestAutoRedrawDecorator(TestCase):
-    def setUp(self):
-        class TestClass:
-            def __init__(self):
-                self._fig = MagicMock()
-                self._auto_redraw = True
-
-            @auto_redraw
-            def some_function(self, x, y):
-                return x + y
-
-            def _update_artists(self):
-                pass
-
-            def _draw(self):
-                pass
-
-        self.obj = TestClass()
-
     def test_function_call_and_return_value(self):
-        result = self.obj.some_function(2, 3)
+        result = some_function(MagicMock(), 2, 3)
         self.assertEqual(result, 5, "The decorated function should return the sum of inputs")
 
-    def test_redraw_called_when_auto_redraw_true(self, mock_cross_section: CrossSection):
-        mock_cross_section.draw_idle()
-        self.obj.some_function(2, 3)
-        self.obj._fig.canvas.assert_not_called()
-        self.obj._update_artists.assert_called_once()
-        self.obj._draw.assert_called_once()
+    def test_redraw_called_when_auto_redraw_true(self):
+        mock_obj = MagicMock()
+        mock_obj._auto_redraw = True
+        some_function(mock_obj, 2, 3)
+        mock_obj._fig.canvas.assert_not_called()
+        mock_obj._update_artists.assert_called_once()
+        mock_obj._draw.assert_called_once()
 
+    # todo complete
     def test_redraw_not_called_when_auto_redraw_false(self):
         self.obj._auto_redraw = False
         self.obj.some_function(2, 3, force_redraw=False)
         self.obj._update_artists.assert_not_called()
         self.obj._draw.assert_not_called()
 
+    # todo complete
     def test_redraw_called_with_force_redraw_true(self):
         self.obj._auto_redraw = False  # Make sure _auto_redraw is false
         self.obj.some_function(2, 3, force_redraw=True)
         self.obj._update_artists.assert_called_once()
         self.obj._draw.assert_called_once()
 
+    # todo complete
     def test_no_canvas_no_redraw(self):
         # Simulate the absence of a canvas
         self.obj._fig.canvas = None
@@ -101,20 +92,23 @@ class TestAutoRedrawDecorator(TestCase):
         self.obj._draw.assert_not_called()
 
 
-class TestCrossSection(TestCase):
+class TestCrossSection2(TestCase):
     def setUp(self):
-        self.figure = MagicMock(spec=Figure)
+        patch_divider = MagicMock()
+        patch_divider.append_axes.return_value.plot.return_value = (0,)  # Patch for _ln_v and _ln_h
+        patch("bluesky.callbacks._mpl_image_cross_section.make_axes_locatable", return_value=patch_divider).start()
+        self.figure = MagicMock()
         self.cross_section = CrossSection(figure=self.figure, colormap="gray", auto_redraw=True)
         self.cross_section._imdata = MagicMock(shape=(100, 100))  # Dummy image data
         self.cross_section._cursor_position_cbs.append(MagicMock())  # Add mock callback
 
-    @patch("mpl_toolkits.axes_grid1.make_axes_locatable")
     def test_move_cb_outside_axes(self):
         event = MagicMock()
         event.inaxes = None
         self.cross_section._move_cb(event)
         self.cross_section._cursor_position_cbs[0].assert_not_called()
 
+    # todo complete
     def test_move_cb_valid_event(self):
         event = MagicMock()
         event.inaxes = self.cross_section._image_axes
@@ -125,6 +119,7 @@ class TestCrossSection(TestCase):
         self.assertTrue(self.cross_section._ln_v.get_visible())
         self.cross_section._cursor_position_cbs[0].assert_called_once_with(50, 50)
 
+    # todo complete
     def test_click_cb_ignore_outside_click(self):
         event = MagicMock()
         event.inaxes = None
@@ -132,6 +127,7 @@ class TestCrossSection(TestCase):
         # Ensure active state is not toggled
         self.assertTrue(self.cross_section._active)
 
+    # todo complete
     def test_click_cb_toggle_active(self):
         event = MagicMock()
         event.inaxes = self.cross_section._image_axes
@@ -158,6 +154,7 @@ class TestInitArtists(TestCase):
         self.cross_section._ln_h = self.mock_ln_h
         self.cross_section._figure.canvas = self.mock_canvas
 
+    # todo complete
     def test_init_artists(self):
         # Create a dummy image array
         dummy_image = np.random.rand(10, 15)
@@ -190,11 +187,13 @@ class TestInitArtists(TestCase):
         self.assertTrue(self.cross_section._dirty)
 
 
+# todo complete
 def test_initialization(live_image):
     assert live_image.field == "test_field"
     # Add more assertions to validate initialization logic
 
 
+# todo complete
 def test_event_handling(live_image):
     mock_doc = {"data": {"test_field": "image_data"}}
     with patch.object(live_image, "update") as mock_update:
@@ -202,41 +201,39 @@ def test_event_handling(live_image):
         mock_update.assert_called_once_with("image_data")
 
 
-def test_auto_redraw():
+# todo complete
+def test_click_callback(mock_cross_section):
+    mock_cross_section._click_cb()
     raise AssertionError("Test not implemented")
 
 
-def test_cross_section_init(mock_cross_section):
-    print(mock_cross_section)
-    raise AssertionError("Test not implemented")
+# todo complete
+def test_add_title(mock_cross_section):
+    mock_cross_section._figure.canvas.set_window_title("test_title")
+    mock_cross_section._figure.show()
 
 
-def test_move_callback():
-    raise AssertionError("Test not implemented")
-
-
-def test_click_callback():
-    raise AssertionError("Test not implemented")
-
-
+# todo complete
 def test_connect_callbacks():
     raise AssertionError("Test not implemented")
 
 
+# todo complete
 def test_disconnect_callbacks():
     raise AssertionError("Test not implemented")
 
 
+# todo complete
 def test_artists():
-    # todo init
-    # todo update
     raise AssertionError("Test not implemented")
 
 
+# todo complete
 def test_active():
     raise AssertionError("Test not implemented")
 
 
+# todo complete
 def test_update_color_map():
     raise AssertionError("Test not implemented")
 
