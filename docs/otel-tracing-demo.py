@@ -14,9 +14,7 @@ from ophyd.sim import det1
 # Service name is required for most backends,
 # and although it's not necessary for console export,
 # it's good to set service name anyways.
-resource = Resource(attributes={
-    SERVICE_NAME: "bluesky-docs-example"
-})
+resource = Resource(attributes={SERVICE_NAME: "bluesky-docs-example"})
 
 traceProvider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(ConsoleSpanExporter())
@@ -25,9 +23,11 @@ trace.set_tracer_provider(traceProvider)
 
 RE = RunEngine()
 
+
 @bpp.run_decorator()
 @trace_plan(tracer, "demo plan")
 def test_tracing_plan():
     yield from bps.abs_set(det1._motor, 5)
+
 
 RE(test_tracing_plan())
