@@ -36,7 +36,7 @@ def mock_cross_section():
 
 
 @pytest.fixture
-def live_image(mock_matplotlib, mock_cross_section):
+def live_image( mock_cross_section):
     return LiveImage(
         "test_field",
         cmap=Colormap(colormaps["magma"]),
@@ -69,7 +69,8 @@ class TestAutoRedrawDecorator(TestCase):
         result = self.obj.some_function(2, 3)
         self.assertEqual(result, 5, "The decorated function should return the sum of inputs")
 
-    def test_redraw_called_when_auto_redraw_true(self):
+    def test_redraw_called_when_auto_redraw_true(self, mock_cross_section: CrossSection):
+        mock_cross_section.draw_idle()
         self.obj.some_function(2, 3)
         self.obj._fig.canvas.assert_not_called()
         self.obj._update_artists.assert_called_once()
@@ -102,6 +103,7 @@ class TestCrossSection(TestCase):
         self.cross_section._imdata = MagicMock(shape=(100, 100))  # Dummy image data
         self.cross_section._cursor_position_cbs.append(MagicMock())  # Add mock callback
 
+    @patch("mpl_toolkits.axes_grid1.make_axes_locatable")
     def test_move_cb_outside_axes(self):
         event = MagicMock()
         event.inaxes = None
@@ -199,7 +201,8 @@ def test_auto_redraw():
     raise AssertionError("Test not implemented")
 
 
-def test_cross_section_init():
+def test_cross_section_init(mock_cross_section):
+    print(mock_cross_section)
     raise AssertionError("Test not implemented")
 
 

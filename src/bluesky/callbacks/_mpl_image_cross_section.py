@@ -32,7 +32,7 @@ class InterpolationEnum(Enum):
     LANCZOS = ("lanczos",)
 
 
-def auto_redraw(func):
+def auto_redraw(func: Callable[..., Any]):
     """
     decorator to automatically redraw the figure after a function call
     """
