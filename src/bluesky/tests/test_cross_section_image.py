@@ -1,8 +1,10 @@
+import warnings
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
+from ddt import data, ddt, unpack
 from matplotlib import colormaps
 from matplotlib import pyplot as plt
 from matplotlib.colors import (
@@ -14,7 +16,10 @@ from matplotlib.figure import Figure
 from bluesky.callbacks._mpl_image_cross_section import (
     CrossSection,
     InterpolationEnum,
+    absolute_limit_factory,
     auto_redraw,
+    fullrange_limit_factory,
+    percentile_limit_factory,
 )
 from bluesky.callbacks.broker import LiveImage
 
@@ -236,13 +241,59 @@ def test_update_color_map():
     raise AssertionError("Test not implemented")
 
 
-def test_fullrange_limit_factory():
-    raise AssertionError("Test not implemented")
+@ddt
+class TestColorLimitFactories(TestCase):
+    @data(
+        ((0.0, 1.0), np.array([[0.1, 0.5], [0.2, 0.8]]), (0.0, 1.0)),
+        ((-10.0, 10.0), np.array([[-5, 5], [-2, 2]]), (-10.0, 10.0)),
+    )
+    @unpack
+    def test_absolute_limits(self, limits, image_data, expected):
+        """Test the absolute_limit_factory with different limit arguments."""
+        absolute_limit = absolute_limit_factory(limits)
+        self.assertEqual(
+            absolute_limit(image_data), expected, "Absolute limits should match the provided arguments."
+        )
 
+    @data(
+        ((0, 100), np.array([[10, 20], [30, 40]]), (10, 40)),
+        ((25, 75), np.array([[10, 20], [30, 40]]), (17.5, 32.5)),
+        ((0, 100), np.array([[np.nan, np.nan], [np.nan, np.nan]]), (np.nan, np.nan)),
+    )
+    @unpack
+    def test_percentile_limits(self, percentiles, image_data, expected):
+        """Test the percentile_limit_factory with different percentile arguments."""
+        percentile_limit = percentile_limit_factory(percentiles)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = percentile_limit(image_data)
+            if all(np.isnan(x) for x in expected):
+                self.assertTrue(all(np.isnan(x) for x in result), "Should return (nan, nan) for all NaN values")
+                self.assertEqual(len(w), 0, "No warnings should be issued for nanpercentile with all NaN data")
+            else:
+                self.assertEqual(
+                    result, expected, "Percentile limits should be correctly calculated based on the data"
+                )
 
-def test_absolute_limit_factory():
-    raise AssertionError("Test not implemented")
-
-
-def test_percentile_limit_factory():
-    raise AssertionError("Test not implemented")
+    @data(
+        (np.array([[1, 2], [3, 4]]), (1, 4)),
+        (np.array([[np.nan, 2], [3, np.nan]]), (2, 3)),
+        (np.array([[np.nan, np.nan], [np.nan, np.nan]]), (np.nan, np.nan)),
+    )
+    @unpack
+    def test_full_range_limits(self, image_data, expected):
+        """Test the fullrange_limit_factory for different data scenarios."""
+        full_range = fullrange_limit_factory()
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")  # Trigger all warnings to be caught
+            result = full_range(image_data)
+            # Check if warning is raised correctly for all NaN values
+            if np.isnan(expected[0]) and np.isnan(expected[1]):
+                self.assertEqual(len(w), 2)  # Ensure one warning was raised
+                self.assertTrue(issubclass(w[-1].category, RuntimeWarning))  # Check warning type
+                self.assertTrue("All-NaN slice encountered" in str(w[-1].message))  # Check warning message
+                self.assertTrue(
+                    np.isnan(result[0]) and np.isnan(result[1]), "Should return (nan, nan) for all NaN values"
+                )
+            else:
+                self.assertEqual(result, expected, "Full range should correctly calculate min and max of the data")

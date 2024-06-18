@@ -39,6 +39,7 @@ dev = [
     "copier",
     "coverage",
     "databroker",
+    "ddt",
     "doct",
     "doctr",
     "flake8",
