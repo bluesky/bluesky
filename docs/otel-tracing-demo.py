@@ -1,15 +1,13 @@
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-
 from opentelemetry import trace
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-
-from bluesky.tracing import trace_plan, tracer
-from bluesky.run_engine import RunEngine
-import bluesky.plan_stubs as bps
-from bluesky.plans import count
-import bluesky.preprocessors as bpp
 from ophyd.sim import det1
+
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
+from bluesky.run_engine import RunEngine
+from bluesky.tracing import trace_plan, tracer
 
 # Service name is required for most backends,
 # and although it's not necessary for console export,
