@@ -1,217 +1,29 @@
 import copy
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
-import numpy as np
 import pandas as pd
-from event_model import DocumentRouter, RunRouter
-from event_model.documents import EventDescriptor, StreamDatum, StreamResource
+from event_model import RunRouter
+from event_model.documents import (
+    Datum,
+    Event,
+    EventDescriptor,
+    Resource,
+    RunStart,
+    RunStop,
+    StreamDatum,
+    StreamResource,
+)
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
 from tiled.client.container import Container
 from tiled.client.utils import handle_error
-from tiled.structures.array import ArrayStructure, BuiltinDtype
-from tiled.structures.core import Spec, StructureFamily
-from tiled.structures.data_source import Asset, DataSource, Management
+from tiled.structures.core import Spec
 from tiled.structures.table import TableStructure
 from tiled.utils import safe_json_dump
 
-MIMETYPE_LOOKUP = {
-    "hdf5": "application/x-hdf5",
-    "ADHDF5_SWMR_STREAM": "application/x-hdf5",
-    "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
-    "AD_TIFF": "multipart/related;type=image/tiff",
-}
-DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
-
-
-# TODO: Move Consolidator classes into external repo (probably area-detector-handlers) and use the existing
-# handler discovery mechanism.
-# GitHub Issue: https://github.com/bluesky/bluesky/issues/1740
-
-
-class ConsolidatorBase:
-    """
-    A Consolidator consumes documents from Bluesky; it is similar to usual Bluesky Handlers but is designed to work
-    with streaming data (received via StreamResource and StreamDatum documents). It composes details (DataSource
-    and its Assets) that will go into the Tiled database. Each Consolidator is instantiated per a Stream Resource.
-
-    Tiled Adapters will later use this to read the data, with good random access and bulk access support.
-
-    We put this code into consolidators so that additional, possibly very unusual, formats can be supported by
-    users without getting a PR merged into Bluesky or Tiled.
-
-    The CONSOLIDATOR_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can be used
-    together to support:
-        - Ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
-          parameters (the consolidator's job);
-        - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
-
-    To implement new Consolidators for other mimetypes, subclass ConsolidatorBase, possibly expand the
-    `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
-    property matches the expected adapter signature. Declare a set of supported mimetypes to allow valiadtion and
-    automated discovery of the subclassed Consolidator.
-    """
-
-    supported_mimetypes: Set[str] = set()
-
-    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        self.mimetype = self.get_supported_mimetype(stream_resource)
-
-        self.data_key = stream_resource["data_key"]
-        self.uri = stream_resource["uri"]
-        self.assets: List[Asset] = []
-        self._sres_parameters = stream_resource["parameters"]
-
-        # Find data shape and machine dtype; dtype_str takes precedence if specified
-        data_desc = descriptor["data_keys"][self.data_key]
-        self.datum_shape = tuple(data_desc["shape"])
-        self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
-        self.dtype = data_desc["dtype"]
-        self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
-        self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
-        self.chunk_size = self._sres_parameters.get("chunk_size", None)
-
-        self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
-        self._has_skips: bool = False
-        self._seqnums_to_indices_map: Dict[int, int] = {}
-
-    @classmethod
-    def get_supported_mimetype(cls, sres):
-        if sres["mimetype"] not in cls.supported_mimetypes:
-            raise ValueError(f"A data source of {sres['mimetype']} type can not be handled by {cls.__name__}.")
-        return sres["mimetype"]
-
-    @property
-    def shape(self) -> Tuple[int]:
-        """Native shape of the data stored in assets
-
-        This includes the leading (0-th) dimension corresponding to the number of rows, including skipped rows, if
-        any. The number of relevant usable data rows may be lower, which is determined by the `seq_nums` field of
-        StreamDatum documents."""
-        return self._num_rows, *self.datum_shape
-
-    @property
-    def chunks(self) -> Tuple[Tuple[int, ...], ...]:
-        """Chunking specification based on the Stream Resource parameter `chunk_size`:
-        None or 0 -- single chunk for all existing and new elements
-        int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
-        """
-        if not self.chunk_size:
-            dim0_chunk = [self._num_rows]
-        else:
-            dim0_chunk = [self.chunk_size] * int(self._num_rows / self.chunk_size)
-            if self._num_rows % self.chunk_size:
-                dim0_chunk.append(self._num_rows % self.chunk_size)
-
-        return tuple(dim0_chunk), *[(d,) for d in self.datum_shape]
-
-    @property
-    def has_skips(self) -> bool:
-        """Indicates whether any rows should be skipped when mapping their indices to frame numbers
-
-        This flag is intended to provide a shortcut for more efficient data access when there are no skips, and the
-        mapping between indices and seq_nums is straightforward. In other case, the _seqnums_to_indices_map needs
-        to be taken into account.
-        """
-        return self._num_rows > len(self._seqnums_to_indices_map)
-
-    @property
-    def adapter_parameters(self) -> Dict:
-        """A dictionary of parameters passed to an Adapter
-
-        These parameters are intended to provide any additional information required to read a data source of a
-        specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF
-        sequence.
-        """
-        return {}
-
-    def consume_stream_datum(self, doc: StreamDatum):
-        """Process a new StreamDatum and update the internal data structure
-
-        This will be called for every new StreamDatum received to account for the new added rows.
-        This method _may_need_ to be subclassed and expanded depending on a specific mimetype.
-        Actions:
-          - Parse the fields in a new StreamDatum
-          - Increment the number of rows (implemented by the Base class)
-          - Keep track of the correspondence between indices and seq_nums (implemented by the Base class)
-          - Update the list of assets, including their uris, if necessary
-          - Update shape and chunks
-        """
-        self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]
-        new_seqnums = range(doc["seq_nums"]["start"], doc["seq_nums"]["stop"])
-        new_indices = range(doc["indices"]["start"], doc["indices"]["stop"])
-        self._seqnums_to_indices_map.update(dict(zip(new_seqnums, new_indices)))
-
-    def get_data_source(self) -> DataSource:
-        """Return a DataSource object reflecting the current state of the streamed dataset.
-
-        The returned DataSource is conceptually similar (and can be an instance of) tiled.structures.DataSource. In
-        general, it describes associated Assets (filepaths, mimetype) along with their internal data structure
-        (array shape, chunks, additional parameters) and should contain all information necessary to read the file.
-        """
-        return DataSource(
-            mimetype=self.mimetype,
-            assets=self.assets,
-            structure_family=StructureFamily.array,
-            structure=ArrayStructure(
-                data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
-                shape=self.shape,
-                chunks=self.chunks,
-            ),
-            parameters=self.adapter_parameters,
-            management=Management.external,
-        )
-
-
-class HDF5Consolidator(ConsolidatorBase):
-    supported_mimetypes = {"application/x-hdf5"}
-
-    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__(stream_resource, descriptor)
-        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
-        self.swmr = self._sres_parameters.get("swmr", True)
-
-    @property
-    def adapter_parameters(self) -> Dict:
-        return {"path": self._sres_parameters["path"].strip("/").split("/")}
-
-
-class TIFFConsolidator(ConsolidatorBase):
-    supported_mimetypes = {"multipart/related;type=image/tiff"}
-
-    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__(stream_resource, descriptor)
-        self.data_uris: List[str] = []
-
-    def get_datum_uri(self, indx: int):
-        """Return a full uri for a datum (an individual TIFF file) based on its index in the sequence.
-
-        This relies on the `template` parameter passed in the StreamResource, which is a string either in the "new"
-        Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
-        integer index, e.g. "{:05}.tif".
-        """
-        return self.uri.strip("/") + "/" + self._sres_parameters["template"].format(indx)
-
-    def consume_stream_datum(self, doc: StreamDatum):
-        indx = int(doc["uid"].split("/")[1])
-        new_datum_uri = self.get_datum_uri(indx)
-        new_asset = Asset(
-            data_uri=new_datum_uri,
-            is_directory=False,
-            parameter="data_uris",
-            num=len(self.assets) + 1,
-        )
-        self.assets.append(new_asset)
-        self.data_uris.append(new_datum_uri)
-
-        super().consume_stream_datum(doc)
-
-
-CONSOLIDATOR_REGISTRY = {
-    "application/x-hdf5": HDF5Consolidator,
-    "multipart/related;type=image/tiff": TIFFConsolidator,
-}
+from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
+from .core import MIMETYPE_LOOKUP, CallbackBase
 
 
 class TiledWriter:
@@ -238,44 +50,50 @@ class TiledWriter:
         self._run_router(name, doc)
 
 
-class _RunWriter(DocumentRouter):
-    "Write the document from one Bluesky Run into Tiled."
+class _RunWriter(CallbackBase):
+    """Write documents from one Bluesky Run into Tiled.
+
+    Datum, Resource, and StreamResource documents are cached until Event or StreamDatum documents are received,
+    after which corresponding nodes are created in Tiled.
+    """
 
     def __init__(self, client: BaseClient):
         self.client = client
         self.root_node: Union[None, Container] = None
         self._desc_nodes: Dict[str, Container] = {}  # references to descriptor containers by their uid's
         self._sres_nodes: Dict[str, BaseClient] = {}
-        self._sres_cache: Dict[str, StreamResource] = {}
+        self._docs_cache: Dict[str, Union[Datum, Resource, StreamResource]] = {}
         self._handlers: Dict[str, ConsolidatorBase] = {}
+        self.data_keys_int: Dict[str, Dict[str, Any]] = {}
+        self.data_keys_ext: Dict[str, Dict[str, Any]] = {}
 
-    def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
+    def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
 
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
 
-        sres = copy.copy(sres)
-        if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
+        doc = copy.copy(doc)
+        if ("mimetype" not in doc.keys()) and ("spec" not in doc.keys()):
             raise RuntimeError("StreamResource document is missing a mimetype or spec")
         else:
-            sres["mimetype"] = sres.get("mimetype") or MIMETYPE_LOOKUP[sres.get("spec")]
-        if "parameters" not in sres.keys():
-            sres["parameters"] = sres.pop("resource_kwargs", {})
-        if "uri" not in sres.keys():
-            file_path = sres.pop("root").strip("/") + "/" + sres.pop("resource_path").strip("/")
-            sres["uri"] = "file://localhost/" + file_path
+            doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[doc.get("spec")]
+        if "parameters" not in doc.keys():
+            doc["parameters"] = doc.pop("resource_kwargs", {})
+        if "uri" not in doc.keys():
+            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
+            doc["uri"] = "file://localhost/" + file_path
 
-        return sres
+        return doc
 
-    def start(self, doc):
+    def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": doc},
             specs=[Spec("BlueskyRun", version="1.0")],
         )
 
-    def stop(self, doc):
+    def stop(self, doc: RunStop):
         if self.root_node is None:
             raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
 
@@ -301,6 +119,7 @@ class _RunWriter(DocumentRouter):
             desc_node = self.root_node.create_container(key=desc_name, metadata=metadata)
             desc_node.create_container(key="external")
             desc_node.create_container(key="internal")
+            desc_node.create_container(key="config")
         else:
             # Get existing descriptor node (with fixed and variable metadata saved before)
             desc_node = self.root_node[desc_name]
@@ -308,14 +127,48 @@ class _RunWriter(DocumentRouter):
         # Update (add new values to) variable fields of the metadata
         metadata = deep_update(dict(desc_node.metadata), var_fields)
         desc_node.update_metadata(metadata)
+
+        # Keep specifications for external and internal data_keys for faster access
+        self.data_keys_int.update({k: v for k, v in metadata["data_keys"].items() if "external" not in v.keys()})
+        self.data_keys_ext.update({k: v for k, v in metadata["data_keys"].items() if "external" in v.keys()})
+
+        # Write the configuration data: loop over all detectors
+        conf_node = desc_node["config"]
+        for det_name, det_dict in conf_dict[uid].items():
+            df_dict = {"descriptor_uid": uid}
+            df_dict.update(det_dict.get("data", {}))
+            df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
+            df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
+            if det_name in conf_node.keys():
+                conf_node[det_name].append_partition(df, 0)
+            else:
+                conf_node.new(
+                    structure_family=StructureFamily.table,
+                    data_sources=[
+                        DataSource(
+                            structure_family=StructureFamily.table,
+                            structure=TableStructure.from_pandas(df),
+                            mimetype="text/csv",
+                        ),
+                    ],
+                    key=det_name,
+                    metadata=det_dict["data_keys"],
+                )
+                conf_node[det_name].write_partition(df, 0)
+
         self._desc_nodes[uid] = desc_node
 
-    def event(self, doc):
-        descriptor_node = self._desc_nodes[doc["descriptor"]]
-        parent_node = descriptor_node["internal"]
-        df_dict = {c: [v] for c, v in doc["data"].items()}
-        df_dict.update({f"ts_{c}": [v] for c, v in doc["timestamps"].items()})
-        df = pd.DataFrame(df_dict)
+    def event(self, doc: Event):
+        desc_node = self._desc_nodes[doc["descriptor"]]
+
+        # Process _internal_ data -- those keys without 'external' flag or those that have been filled
+        data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
+        data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
+        parent_node = desc_node["internal"]
+        df_dict = {"seq_num": doc["seq_num"]}
+        df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
+        df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
+        df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
         if "events" in parent_node.keys():
             parent_node["events"].append_partition(df, 0)
         else:
@@ -329,16 +182,41 @@ class _RunWriter(DocumentRouter):
                     ),
                 ],
                 key="events",
+                metadata=data_keys_spec,
             )
             parent_node["events"].write_partition(df, 0)
 
+        # Process _external_ data: Loop over all referenced Datums
+        for data_key in self.data_keys_ext.keys():
+            if doc["filled"].get(data_key, False):
+                continue
+
+            if datum_id := doc["data"].get(data_key):
+                if datum_id in self._docs_cache.keys():
+                    # Convert the Datum document to the StreamDatum format
+                    datum_doc = self._docs_cache.pop(datum_id)
+                    datum_doc["uid"] = datum_doc.pop("datum_id")
+                    datum_doc["stream_resource"] = datum_doc.pop("resource")
+                    datum_doc["descriptor"] = doc["descriptor"]  # From Event document
+                    datum_doc["indices"] = {"start": doc["seq_num"] - 1, "stop": doc["seq_num"]}
+                    datum_doc["seq_nums"] = {"start": doc["seq_num"], "stop": doc["seq_num"] + 1}
+
+                    # Update the Resource document (add data_key as in StreamResource)
+                    if datum_doc["stream_resource"] in self._docs_cache.keys():
+                        self._docs_cache[datum_doc["stream_resource"]]["data_key"] = data_key
+
+                    self.stream_datum(datum_doc)
+                else:
+                    raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
+
+    def datum(self, doc: Datum):
+        self._docs_cache[doc["datum_id"]] = copy.copy(doc)
+
+    def resource(self, doc: Resource):
+        self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
+
     def stream_resource(self, doc: StreamResource):
-        """Process a StreamResource document
-
-        Only _cache_ the StreamResource for now; add the node when at least one StreamDatum is added
-        """
-
-        self._sres_cache[doc["uid"]] = self._ensure_sres_backcompat(doc)
+        self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
 
     def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> Tuple[BaseClient, ConsolidatorBase]:
         """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""
@@ -347,16 +225,15 @@ class _RunWriter(DocumentRouter):
             sres_node = self._sres_nodes[sres_uid]
             handler = self._handlers[sres_uid]
 
-        elif sres_uid in self._sres_cache.keys():
+        elif sres_uid in self._docs_cache.keys():
             if not desc_uid:
                 raise RuntimeError("Descriptor uid must be specified to initialise a Stream Resource node")
 
-            sres_doc = self._sres_cache.pop(sres_uid)
+            sres_doc = self._docs_cache.pop(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
             # Initialise a bluesky handler (consolidator) for the StreamResource
-            handler_class = CONSOLIDATOR_REGISTRY[sres_doc["mimetype"]]
-            handler = handler_class(sres_doc, dict(desc_node.metadata))
+            handler = consolidator_factory(sres_doc, dict(desc_node.metadata))
 
             sres_node = desc_node["external"].new(
                 key=handler.data_key,
