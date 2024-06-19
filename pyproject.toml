@@ -62,7 +62,7 @@ dev = [
     "pipdeptree",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyepics<=3.5.2;python_version<'3.9'", # Currently broken on py3.8 
+    "pyepics<=3.5.2;python_version<'3.9'",    # Needed to pass CI/CD tests; To be removed once we drop support for py3.8
     "pyepics;python_version>='3.9'",
     "pyqt5",
     "pytest",
