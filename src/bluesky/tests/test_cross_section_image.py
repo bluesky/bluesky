@@ -228,7 +228,12 @@ def test_artists():
 
 
 # todo complete
-def test_active():
+def test_active(mock_cross_section):
+    # mock_cross_section.active
+    # if not active, should be not clickable
+    # must first run
+    mock_cross_section._connect_callbacks()
+
     raise AssertionError("Test not implemented")
 
 
