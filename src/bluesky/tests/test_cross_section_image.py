@@ -11,7 +11,6 @@ from matplotlib.colors import (
     Colormap,
     Normalize,
 )
-from matplotlib.figure import Figure
 
 from bluesky.callbacks._mpl_image_cross_section import (
     CrossSection,
@@ -234,7 +233,16 @@ def test_active():
 
 
 # todo complete
-def test_update_color_map():
+def test_update_color_map(mock_cross_section):
+    mock_cross_section.update_cmap()
+    # mock_cross_section._im = self._image_axes.imshow(
+    #     [[]],
+    #     cmap=self._cmap,
+    #     norm=self._norm,
+    #     interpolation=str(self._interpolation.value),
+    #     aspect=aspect,
+    # )
+
     raise AssertionError("Test not implemented")
 
 

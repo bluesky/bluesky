@@ -169,7 +169,8 @@ class CrossSection:
             [[]],
             cmap=self._cmap,
             norm=self._norm,
-            interpolation=str(self._interpolation.value),
+            interpolation=self._interpolation[0],
+            # interpolation=str(self._interpolation.value),
             aspect=aspect,
         )
 
@@ -406,7 +407,6 @@ class CrossSection:
         """
         Set the color map used
         """
-        # TODO: this should stash new value, not apply it
         self._cmap = cmap
         self._dirty = True
 
