@@ -24,6 +24,7 @@ from typing import (
     AsyncIterator,
     Callable,
     Dict,
+    Generator,
     List,
     Optional,
     Tuple,
@@ -86,6 +87,9 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
             f"Msg({self.command!r}, obj={self.obj!r}, "
             f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
         )
+
+
+MsgGenerator = Generator[Msg, Any, None]
 
 
 class RunEngineControlException(Exception):

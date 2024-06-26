@@ -19,6 +19,7 @@ User Documentation
    run_engine_api
    utils
    magics
+   otel-tracing
    from-pyepics-to-bluesky
    comparison-with-spec
    hardware-interfaces
