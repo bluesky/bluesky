@@ -1196,6 +1196,11 @@ def wait_for(futures, **kwargs):
     msg : Msg
         ``Msg('wait_for', None, futures, **kwargs)``
 
+    Returns
+    -------
+    val : ``Set[asyncio.Task]``
+        a set of the asyncio tasks waited on.
+
     See Also
     --------
     :func:`bluesky.plan_stubs.wait`

@@ -263,6 +263,17 @@ Ex ::
     future.set_result(3)
     future.done() # will give True
 
+Returns a set of the tasks that were waited on.
+Ex ::
+
+    from asyncio.futures import Future
+    future = Future()
+    future.done() # will give false
+    def plan()
+        results = (yield Msg('wait_for', [lambda : future ,]))
+        for result in results:
+            # will give True if future raised an exception
+            result.exception()
 
 input
 +++++
