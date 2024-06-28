@@ -1957,37 +1957,41 @@ def test_wait_with_timeout(set_finished, RE):
             RE(plan())
 
 
-def test_wait_with_returns_status(RE):
-    async def passing_future():
-        await asyncio.sleep(0.01)
-        return 1080
-
-    async def failing_future():
-        raise RuntimeError
-
-    async def timeout_future():
-        await asyncio.sleep(0.2)
-
-    timeout_task = asyncio.Task(timeout_future())
-
+def test_wait_with_planstub(RE):
     def runtime_error_and_success_plan():
-        statuses = yield from wait_for([lambda: passing_future(), lambda: failing_future()], timeout=0.1)
-        assert isinstance(statuses, set) and len(statuses) == 2
-        passing_future_status = [x for x in statuses if x.get_coro().__name__ == "passing_future"][0]
-        failing_future_status = [x for x in statuses if x.get_coro().__name__ == "failing_future"][0]
-        assert passing_future_status.done() and not passing_future_status.exception()
-        assert passing_future_status.result() == 1080
-        assert failing_future_status.done() and failing_future_status.exception()
+        async def passing_coro():
+            await asyncio.sleep(0.001)
+            return 1080
 
+        passing_task = asyncio.create_task(passing_coro())
+
+        async def failing_coro():
+            await asyncio.sleep(0.001)
+            raise RuntimeError
+
+        failing_task = asyncio.create_task(failing_coro())
+
+        tasks = yield from wait_for([lambda: passing_task, lambda: failing_task])
+        assert tasks == {passing_task, failing_task}
+        assert passing_task.done() and passing_task.result() == 1080
+        assert failing_task.done() and isinstance(failing_task.exception(), RuntimeError)
+
+    RE(runtime_error_and_success_plan())
+
+
+def test_wait_with_planstub_timeout(RE):
     def timeout_plan():
+        async def timeout_coro():
+            await asyncio.sleep(1e9)
+
+        timeout_task = asyncio.create_task(timeout_coro())
         try:
             yield from wait_for([lambda: timeout_task], timeout=0.01)
         finally:
-            # Manually tear down the task, otherwise it can happen
+            # Manually tear down the tasks, otherwise it can happen
             # after the test succeeds/fails
             timeout_task.cancel()
 
-    RE(runtime_error_and_success_plan())
     with pytest.raises(WaitForTimeoutError, match="Plan failed to complete in the specified time"):
         RE(timeout_plan())
 
