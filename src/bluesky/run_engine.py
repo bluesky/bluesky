@@ -1781,7 +1781,7 @@ class RunEngine:
         return plan_return
 
     async def _wait_for(self, msg):
-        """Instruct the RunEngine to wait for futures
+        """Instruct the RunEngine to wait for futures and return the resulting tasks.
 
         Expected message object is:
 
@@ -1798,9 +1798,10 @@ class RunEngine:
 
         (futs,) = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        _, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        completed, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
+        return completed
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
