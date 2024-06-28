@@ -272,7 +272,7 @@ Ex ::
     def plan()
         results = (yield Msg('wait_for', [lambda : future ,]))
         for result in results:
-            # will give True if future raised an exception
+            # will give the exception raised
             result.exception()
 
 input
