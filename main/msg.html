@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Message Protocol &#8212; bluesky 1.13.0a4.dev252+g6116a09d documentation</title>
+    <title>Message Protocol &#8212; bluesky 1.13.0a4.dev258+gb844d49a documentation</title>
   
   
   
@@ -36,14 +36,14 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="_static/documentation_options.js?v=4eddbb0e"></script>
+    <script src="_static/documentation_options.js?v=eea667c4"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'msg';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev252+g6116a09d';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev258+gb844d49a';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -790,6 +790,18 @@ Ex</p>
 <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give True</span>
 </pre></div>
 </div>
+<p>Returns a set of the tasks that were waited on.
+Ex</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">asyncio.futures</span> <span class="kn">import</span> <span class="n">Future</span>
+<span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">()</span>
+<span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give false</span>
+<span class="k">def</span> <span class="nf">plan</span><span class="p">()</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;wait_for&#39;</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
+    <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="c1"># will give the exception raised</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+</pre></div>
+</div>
 </section>
 <section id="input">
 <h3>input<a class="headerlink" href="#input" title="Link to this heading">#</a></h3>
@@ -1134,7 +1146,7 @@ commands.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a4.dev252+g6116a09d/docs/msg.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a4.dev258+gb844d49a/docs/msg.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
