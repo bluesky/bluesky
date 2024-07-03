@@ -1801,7 +1801,7 @@ class RunEngine:
         completed, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
-        return completed
+        return futs
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"

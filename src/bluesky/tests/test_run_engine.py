@@ -1972,7 +1972,7 @@ def test_wait_with_planstub(RE):
         failing_task = asyncio.create_task(failing_coro())
 
         tasks = yield from wait_for([lambda: passing_task, lambda: failing_task])
-        assert tasks == {passing_task, failing_task}
+        assert passing_task is tasks[0] and failing_task is tasks[1]
         assert passing_task.done() and passing_task.result() == 1080
         assert failing_task.done() and isinstance(failing_task.exception(), RuntimeError)
 
