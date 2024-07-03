@@ -1957,22 +1957,40 @@ def test_wait_with_timeout(set_finished, RE):
             RE(plan())
 
 
-def test_wait_with_planstub(RE):
+async def passing_coroutine():
+    await asyncio.sleep(0.001)
+    return 1080
+
+
+async def failing_coroutine():
+    await asyncio.sleep(0.001)
+    raise RuntimeError("This is a runtime error")
+
+
+def test_wait_with_planstub_coroutine(RE):
     def runtime_error_and_success_plan():
-        async def passing_coro():
-            await asyncio.sleep(0.001)
-            return 1080
+        tasks = yield from wait_for([lambda: passing_coroutine(), lambda: failing_coroutine()])
+        passing_future, failing_future = tasks
+        assert isinstance(passing_future, asyncio.Task) and isinstance(failing_future, asyncio.Task)
+        assert passing_future.get_coro().__name__ == "passing_coroutine"
+        assert failing_future.get_coro().__name__ == "failing_coroutine"
+        assert passing_future.done() and passing_future.result() == 1080
+        assert failing_future.done() and isinstance(failing_future.exception(), RuntimeError)
 
-        passing_task = asyncio.create_task(passing_coro())
+        with pytest.raises(RuntimeError, match="This is a runtime error"):
+            raise failing_future.exception()  # the error is the same
 
-        async def failing_coro():
-            await asyncio.sleep(0.001)
-            raise RuntimeError
+    RE(runtime_error_and_success_plan())
 
-        failing_task = asyncio.create_task(failing_coro())
 
-        tasks = yield from wait_for([lambda: passing_task, lambda: failing_task])
-        assert passing_task is tasks[0] and failing_task is tasks[1]
+def test_wait_with_planstub_status(RE):
+    def runtime_error_and_success_plan():
+        passing_task = asyncio.create_task(passing_coroutine())
+
+        failing_task = asyncio.create_task(failing_coroutine())
+
+        futures = yield from wait_for([lambda: passing_task, lambda: failing_task])
+        assert passing_task is futures[0] and failing_task is futures[1]
         assert passing_task.done() and passing_task.result() == 1080
         assert failing_task.done() and isinstance(failing_task.exception(), RuntimeError)
 
