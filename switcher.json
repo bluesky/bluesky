@@ -2,5 +2,9 @@
   {
     "version": "main",
     "url": "https://bluesky.github.io/bluesky/main/"
+  },
+  {
+    "version": "v1.13.0a4",
+    "url": "https://bluesky.github.io/bluesky/v1.13.0a4/"
   }
 ]

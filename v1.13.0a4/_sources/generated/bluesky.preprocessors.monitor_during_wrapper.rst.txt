@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.monitor\_during\_wrapper
+==============================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: monitor_during_wrapper
