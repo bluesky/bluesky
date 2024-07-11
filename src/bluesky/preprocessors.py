@@ -1,3 +1,4 @@
+from typing import Generator, Any
 import uuid
 from collections import ChainMap, OrderedDict, deque
 from collections.abc import Iterable
@@ -491,6 +492,65 @@ def configure_count_time_wrapper(plan, time):
         return (yield from plan)
     else:
         return (yield from finalize_wrapper(plan_mutator(plan, insert_set), reset()))
+
+
+def configure_devices_wrapper(plan: Generator, configuration: dict[str: Any]) -> Generator:
+    """
+    Preprocessor that sets all devices according to configuration.
+
+    Logic for each device is as follows:
+        for each <component_name>, <component_value> pair from the `configuration` dictionary,
+        if the device has an attribute with given <component_name> and correct signature,
+        the attribute is set to given <component_value>.
+
+    The original settings are stashed and restored at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    configuration : dictionary
+        configuration dictionary of components settings
+        { <component_name> : <component_value> }
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'set' messages inserted
+
+    See Also
+    --------
+    :func:`configure_count_time_wrapper`
+    """
+    devices_seen = set()
+    original_settings = []
+
+    def insert_set(msg: Msg) -> ([None, tuple[Generator]], [None, tuple[Generator]]):
+        obj = msg.obj
+        if obj is not None and obj not in devices_seen:
+            devices_seen.add(obj)
+            new_settings = []
+            for component_name, component_value in configuration.items():
+                component = getattr(obj, component_name, None)
+                if component is not None and hasattr(component, 'get') and hasattr(component, 'set'):
+                    # TODO Do this with a 'read' Msg once reads can be
+                    #  marked as belonging to a different event stream (or no
+                    #  event stream.
+                    original_settings.extend([component, component.get()])
+                    new_settings.extend([component, component_value])
+            # TODO do this with configure
+            if new_settings:
+                return pchain(mv(*new_settings), single_gen(msg)), None
+        return None, None
+
+    def reset() -> Generator:
+        if original_settings:
+            yield from mv(*original_settings)
+
+    return (yield from finalize_wrapper(
+        plan_mutator(plan, insert_set),
+        reset())
+    )
 
 
 def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
