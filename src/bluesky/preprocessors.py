@@ -1300,6 +1300,7 @@ run_decorator = make_decorator(run_wrapper)
 contingency_decorator = make_decorator(contingency_wrapper)
 stub_decorator = make_decorator(stub_wrapper)
 configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
+configure_devices_decorator = make_decorator(configure_devices_wrapper)
 
 
 class SupplementalData:
