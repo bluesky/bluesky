@@ -1,4 +1,3 @@
-from typing import Generator, Any
 import uuid
 from collections import ChainMap, OrderedDict, deque
 from collections.abc import Iterable
@@ -494,7 +493,7 @@ def configure_count_time_wrapper(plan, time):
         return (yield from finalize_wrapper(plan_mutator(plan, insert_set), reset()))
 
 
-def configure_devices_wrapper(plan: Generator, configuration: dict[str: Any]) -> Generator:
+def configure_devices_wrapper(plan, configuration):
     """
     Preprocessor that sets all devices according to configuration.
 
@@ -525,7 +524,7 @@ def configure_devices_wrapper(plan: Generator, configuration: dict[str: Any]) ->
     devices_seen = set()
     original_settings = []
 
-    def insert_set(msg: Msg) -> ([None, tuple[Generator]], [None, tuple[Generator]]):
+    def insert_set(msg):
         obj = msg.obj
         if obj is not None and obj not in devices_seen:
             devices_seen.add(obj)
@@ -543,7 +542,7 @@ def configure_devices_wrapper(plan: Generator, configuration: dict[str: Any]) ->
                 return pchain(mv(*new_settings), single_gen(msg)), None
         return None, None
 
-    def reset() -> Generator:
+    def reset():
         if original_settings:
             yield from mv(*original_settings)
 
