@@ -24,12 +24,15 @@ from typing import (
     AsyncIterator,
     Callable,
     Dict,
+    Generator,
     List,
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
 )
+from typing import Iterable as TypingIterable
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -86,6 +89,19 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
             f"Msg({self.command!r}, obj={self.obj!r}, "
             f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
         )
+
+
+#: Return type of a plan, usually None. Always optional for dry-runs.
+P = TypeVar("P")
+
+#: Object usually returned from plan functions that is fed to the RunEngine
+MsgGenerator = Generator[Msg, Any, P]
+
+#: Metadata passed from a plan to the RunEngine for embedding in a start document
+CustomPlanMetadata = Dict[str, Any]
+
+#: Scalar or iterable of values, one to be applied to each point in a scan
+ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 
 
 class RunEngineControlException(Exception):

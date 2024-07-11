@@ -39,14 +39,14 @@ RE.subscribe(bec)
 RE.subscribe(db.insert)
 
 # move motor to a reproducible location
-RE(mov(motor1, 0))
-RE(mov(motor2, 0))
+RE(mov(motor1, 0))  # type: ignore
+RE(mov(motor2, 0))  # type: ignore
 RE(relative_outer_product_scan([det4], motor1, -1, 0, 10, motor2, -2, 0, 20, True))
 RE(outer_product_scan([det4], motor1, -1, 0, 10, motor2, -2, 0, 20, True))
 
 # move motor to a reproducible location
-RE(mov(motor1, 0))
-RE(mov(motor2, 0))
+RE(mov(motor1, 0))  # type: ignore
+RE(mov(motor2, 0))  # type: ignore
 RE(relative_inner_product_scan([det4], 10, motor1, -1, 0, motor2, -2, 0))
 RE(inner_product_scan([det4], 10, motor1, -1, 0, motor2, -2, 0))
 
