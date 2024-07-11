@@ -54,6 +54,7 @@ from bluesky.plan_stubs import (
 from bluesky.plans import count, inner_product_scan, rel_scan, scan
 from bluesky.preprocessors import (
     configure_count_time_wrapper,
+    configure_devices_wrapper,
     finalize_decorator,
     finalize_wrapper,
     fly_during_decorator,
@@ -629,6 +630,56 @@ def test_configure_count_time(RE, hw):
         Msg("wait"),
         Msg("read", det),
         Msg("set", det.count_time, 3),
+        Msg("wait"),
+    ]
+
+    for msg in msgs:
+        msg.kwargs.pop("group", None)
+
+    assert msgs == expected
+
+
+def test_configure_devices(RE, hw):
+    det_with_count_time = hw.det_with_count_time
+    det_with_sigma_1 = hw.det1
+    det_with_sigma_2 = hw.det2
+    det_with_count_time.count_time.put(3)
+    det_with_sigma_1.sigma.put(10)
+    det_with_sigma_2.sigma.put(20)
+
+    def plan():
+        yield from (m for m in [Msg("read", det) for det in [det_with_count_time, det_with_sigma_1, det_with_sigma_2]])
+
+    msgs = []
+
+    def accumulator(msg):
+        msgs.append(msg)
+
+    RE.msg_hook = accumulator
+
+    RE(configure_devices_wrapper(
+        plan(),
+        {
+            "count_time": 7,
+            "sigma": 5,
+            "prefix": "sim",  # an existing attribute, invalid signature
+            "invalid_identifier": "Mysterious Value"  # a non-exisiting attribute
+        }
+    ))
+
+    expected = [
+        Msg("set", det_with_count_time.count_time, 7),
+        Msg("wait"),
+        Msg("read", det_with_count_time),
+        Msg("set", det_with_sigma_1.sigma, 5),
+        Msg("wait"),
+        Msg("read", det_with_sigma_1),
+        Msg("set", det_with_sigma_2.sigma, 5),
+        Msg("wait"),
+        Msg("read", det_with_sigma_2),
+        Msg("set", det_with_count_time.count_time, 3),
+        Msg("set", det_with_sigma_1.sigma, 10),
+        Msg("set", det_with_sigma_2.sigma, 20),
         Msg("wait"),
     ]
 
