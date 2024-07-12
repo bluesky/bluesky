@@ -648,7 +648,9 @@ def test_configure_devices(RE, hw):
     det_with_sigma_2.sigma.put(20)
 
     def plan():
-        yield from (m for m in [Msg("read", det) for det in [det_with_count_time, det_with_sigma_1, det_with_sigma_2]])
+        yield from (m for m in [Msg("read", det) for det in [
+            det_with_count_time, det_with_sigma_1, det_with_sigma_2
+        ]])
 
     msgs = []
 
