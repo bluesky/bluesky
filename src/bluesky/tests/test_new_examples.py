@@ -648,9 +648,9 @@ def test_configure_devices(RE, hw):
     det_with_sigma_2.sigma.put(20)
 
     def plan():
-        yield from (m for m in [Msg("read", det) for det in [
-            det_with_count_time, det_with_sigma_1, det_with_sigma_2
-        ]])
+        yield from (
+            m for m in [Msg("read", det) for det in [det_with_count_time, det_with_sigma_1, det_with_sigma_2]]
+        )
 
     msgs = []
 
@@ -659,15 +659,17 @@ def test_configure_devices(RE, hw):
 
     RE.msg_hook = accumulator
 
-    RE(configure_devices_wrapper(
-        plan(),
-        {
-            "count_time": 7,
-            "sigma": 5,
-            "prefix": "sim",  # an existing attribute, invalid signature
-            "invalid_identifier": "Mysterious Value"  # a non-exisiting attribute
-        }
-    ))
+    RE(
+        configure_devices_wrapper(
+            plan(),
+            {
+                "count_time": 7,
+                "sigma": 5,
+                "prefix": "sim",  # an existing attribute, invalid signature
+                "invalid_identifier": "Mysterious Value",  # a non-exisiting attribute
+            },
+        )
+    )
 
     expected = [
         Msg("set", det_with_count_time.count_time, 7),

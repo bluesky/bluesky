@@ -531,7 +531,7 @@ def configure_devices_wrapper(plan, configuration):
             new_settings = []
             for component_name, component_value in configuration.items():
                 component = getattr(obj, component_name, None)
-                if component is not None and hasattr(component, 'get') and hasattr(component, 'set'):
+                if component is not None and hasattr(component, "get") and hasattr(component, "set"):
                     # TODO Do this with a 'read' Msg once reads can be
                     #  marked as belonging to a different event stream (or no
                     #  event stream.
@@ -546,10 +546,7 @@ def configure_devices_wrapper(plan, configuration):
         if original_settings:
             yield from mv(*original_settings)
 
-    return (yield from finalize_wrapper(
-        plan_mutator(plan, insert_set),
-        reset())
-    )
+    return (yield from finalize_wrapper(plan_mutator(plan, insert_set), reset()))
 
 
 def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
