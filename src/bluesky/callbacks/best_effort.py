@@ -134,7 +134,7 @@ class BestEffortCallback(QtAwareCallback):
         # for each dimension, choose one field only
         # the plan can supply a list of fields. It's assumed the first
         # of the list is always the one plotted against
-        default_field_name = 'time'
+        default_field_name = "time"
         self.dim_fields = [fields[0] if len(fields) else default_field_name for fields, stream_name in dimensions]
 
         # make distinction between flattened fields and plotted fields
