@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.13.0a4.dev261+g5bd9a415 documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.13.0a5.dev22+g2372be56 documentation</title>
   
   
   
@@ -35,14 +35,14 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../../_static/documentation_options.js?v=d551ed43"></script>
+    <script src="../../_static/documentation_options.js?v=5587a01c"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a4.dev261+g5bd9a415';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev22+g2372be56';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -560,6 +560,7 @@ document.write(`
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">functools</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">threading</span>
 <span class="kn">import</span> <span class="nn">typing</span>
@@ -574,6 +575,8 @@ document.write(`
 <span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
 
 <span class="kn">from</span> <span class="nn">event_model</span> <span class="kn">import</span> <span class="n">DocumentNames</span>
+<span class="kn">from</span> <span class="nn">opentelemetry</span> <span class="kn">import</span> <span class="n">trace</span>
+<span class="kn">from</span> <span class="nn">opentelemetry.trace</span> <span class="kn">import</span> <span class="n">Span</span>
 
 <span class="kn">from</span> <span class="nn">bluesky._vendor.super_state_machine.errors</span> <span class="kn">import</span> <span class="n">TransitionError</span>
 <span class="kn">from</span> <span class="nn">bluesky._vendor.super_state_machine.extras</span> <span class="kn">import</span> <span class="n">PropertyMachine</span>
@@ -591,9 +594,11 @@ document.write(`
     <span class="n">Stageable</span><span class="p">,</span>
     <span class="n">Status</span><span class="p">,</span>
     <span class="n">Stoppable</span><span class="p">,</span>
+    <span class="n">T</span><span class="p">,</span>
     <span class="n">Triggerable</span><span class="p">,</span>
     <span class="n">check_supports</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.tracing</span> <span class="kn">import</span> <span class="n">tracer</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">AsyncInput</span><span class="p">,</span>
     <span class="n">CallbackRegistry</span><span class="p">,</span>
@@ -614,6 +619,8 @@ document.write(`
     <span class="n">single_gen</span><span class="p">,</span>
     <span class="n">warn_if_msg_args_or_kwargs</span><span class="p">,</span>
 <span class="p">)</span>
+
+<span class="n">_SPAN_NAME_PREFIX</span> <span class="o">=</span> <span class="s2">&quot;Bluesky RunEngine&quot;</span>
 
 <span class="n">current_task</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractEventLoop</span><span class="p">]],</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="p">]]</span>
 <span class="k">try</span><span class="p">:</span>
@@ -990,6 +997,8 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">_loop_for_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c1"># When set, RunEngine.__call__ should stop blocking.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_blocking_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_tracing_spans</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Span</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="c1"># When cleared, RunEngine._run will pause until set.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_permit</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1920,6 +1929,7 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span> <span class="o">=</span> <span class="n">reason</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_exit_status</span> <span class="o">=</span> <span class="s2">&quot;abort&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_destroy_open_run_tracing_spans</span><span class="p">()</span>
 
         <span class="n">was_paused</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">==</span> <span class="s2">&quot;paused&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="s2">&quot;aborting&quot;</span>
@@ -2029,6 +2039,7 @@ document.write(`
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">is_idle</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">TransitionError</span><span class="p">(</span><span class="s2">&quot;RunEngine is already idle.&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Halting: skipping cleanup and marking exit_status as &#39;abort&#39;...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_destroy_open_run_tracing_spans</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">was_paused</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">==</span> <span class="s2">&quot;paused&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="s2">&quot;halting&quot;</span>
@@ -2056,6 +2067,12 @@ document.write(`
                     <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Failed to stop </span><span class="si">%r</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No &#39;stop&#39; method available on </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_destroy_open_run_tracing_spans</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_tracing_spans</span><span class="p">):</span>
+            <span class="n">_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_tracing_spans</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="s2">&quot;aborted&quot;</span><span class="p">)</span>
+            <span class="n">_span</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Pull messages from the plan, process them, send results back.</span>
@@ -2423,6 +2440,11 @@ document.write(`
 <span class="sd">        where **kwargs are any additional metadata that should go into</span>
 <span class="sd">        the RunStart document</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_span</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_SPAN_NAME_PREFIX</span><span class="si">}</span><span class="s2"> run&quot;</span><span class="p">)</span>
+        <span class="n">_set_span_msg_attributes</span><span class="p">(</span><span class="n">_span</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_tracing_spans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_span</span><span class="p">)</span>
+
         <span class="c1"># TODO extract this from the Msg</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
         <span class="k">if</span> <span class="n">run_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">:</span>
@@ -2483,7 +2505,19 @@ document.write(`
             <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">close_run</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">[</span><span class="n">run_key</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_run_trace</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">_close_run_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="n">exit_status</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">exit_status</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;exit_status&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exit_status</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">reason</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;reason&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_span</span><span class="p">:</span> <span class="n">Span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_tracing_spans</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="n">exit_status</span><span class="p">)</span>
+            <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+            <span class="n">_span</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No open traces left to close!&quot;</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Trigger the run engine to start bundling future obj.read() calls for</span>
@@ -2756,6 +2790,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">ret</span>
 
+    <span class="nd">@tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_SPAN_NAME_PREFIX</span><span class="si">}</span><span class="s2"> complete&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Tell a flyer, &#39;stop collecting, whenever you are ready&#39;.</span>
@@ -2772,6 +2807,7 @@ document.write(`
 
 <span class="sd">        where &lt;GROUP&gt; is a hashable identifier.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_set_span_msg_attributes</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">(),</span> <span class="n">msg</span><span class="p">)</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">group</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Flyable</span><span class="p">)</span>
@@ -2798,6 +2834,7 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_status_objs</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span>
 
+    <span class="nd">@tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_SPAN_NAME_PREFIX</span><span class="si">}</span><span class="s2"> collect&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Collect data cached by a flyer and emit documents</span>
@@ -2807,6 +2844,7 @@ document.write(`
 <span class="sd">            Msg(&#39;collect&#39;, flyer_object)</span>
 <span class="sd">            Msg(&#39;collect&#39;, flyer_object, stream=True, return_payload=False, name=&quot;a_name&quot;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_set_span_msg_attributes</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">(),</span> <span class="n">msg</span><span class="p">)</span>
         <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
@@ -2829,6 +2867,7 @@ document.write(`
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
+    <span class="nd">@tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_SPAN_NAME_PREFIX</span><span class="si">}</span><span class="s2"> set&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set a device and cache the returned status object.</span>
@@ -2842,6 +2881,7 @@ document.write(`
 
 <span class="sd">        where arguments are passed through to `obj.set(*args, **kwargs)`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_set_span_msg_attributes</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">(),</span> <span class="n">msg</span><span class="p">)</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Movable</span><span class="p">)</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">group</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -2886,6 +2926,7 @@ document.write(`
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">waiting_hook</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">waiting_hook</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
+    <span class="nd">@tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_SPAN_NAME_PREFIX</span><span class="si">}</span><span class="s2"> wait&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Block progress until every object that was triggered or set</span>
 <span class="sd">        with the keyword argument `group=&lt;GROUP&gt;` is done. Returns a boolean that is</span>
@@ -2899,6 +2940,7 @@ document.write(`
 
 <span class="sd">        where ``&lt;GROUP&gt;`` is any hashable key and ``&lt;MOVE_ON&gt;`` is a boolean.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_set_span_msg_attributes</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">(),</span> <span class="n">msg</span><span class="p">)</span>
         <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># boolean that tracks whether waiting is complete</span>
         <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
             <span class="p">(</span><span class="n">group</span><span class="p">,)</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span>
@@ -2906,6 +2948,10 @@ document.write(`
         <span class="k">else</span><span class="p">:</span>
             <span class="n">group</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;group&quot;</span><span class="p">]</span>
             <span class="n">move_on</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;move_on&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">group</span><span class="p">:</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">()</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">()</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;no_group_given&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
         <span class="n">futs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_groups</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="p">[]))</span>
         <span class="k">if</span> <span class="n">futs</span><span class="p">:</span>
             <span class="n">status_objs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status_objs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
@@ -3403,6 +3449,13 @@ document.write(`
 <span class="s2">&quot;&quot;&quot;</span>
 
 
+<span class="k">def</span> <span class="nf">_set_span_msg_attributes</span><span class="p">(</span><span class="n">span</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.command&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.args&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.kwargs&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">repr</span><span class="p">))</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.obj&quot;</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="k">else</span> <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.no_obj_given&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+
 <span class="k">def</span> <span class="nf">_default_md_validator</span><span class="p">(</span><span class="n">md</span><span class="p">):</span>
     <span class="k">if</span> <span class="s2">&quot;sample&quot;</span> <span class="ow">in</span> <span class="n">md</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;sample&quot;</span><span class="p">],</span> <span class="s2">&quot;keys&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;sample&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -3458,9 +3511,6 @@ document.write(`
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Check if running loop is bluesky event loop</span>
         <span class="k">return</span> <span class="n">loop</span> <span class="ow">is</span> <span class="n">_bluesky_event_loop</span>
-
-
-<span class="n">T</span> <span class="o">=</span> <span class="n">typing</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">call_in_bluesky_event_loop</span><span class="p">(</span><span class="n">coro</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Awaitable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
