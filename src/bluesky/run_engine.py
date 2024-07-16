@@ -3,6 +3,7 @@ import concurrent
 import copy
 import functools
 import inspect
+import json
 import sys
 import threading
 import typing
@@ -17,6 +18,8 @@ from itertools import count
 from warnings import warn
 
 from event_model import DocumentNames
+from opentelemetry import trace
+from opentelemetry.trace import Span
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky._vendor.super_state_machine.extras import PropertyMachine
@@ -34,9 +37,11 @@ from .protocols import (
     Stageable,
     Status,
     Stoppable,
+    T,
     Triggerable,
     check_supports,
 )
+from .tracing import tracer
 from .utils import (
     AsyncInput,
     CallbackRegistry,
@@ -57,6 +62,8 @@ from .utils import (
     single_gen,
     warn_if_msg_args_or_kwargs,
 )
+
+_SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
 current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
 try:
@@ -426,6 +433,8 @@ class RunEngine:
             self._loop_for_kwargs = {}
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
+
+        self._run_tracing_spans: list[Span] = []
 
         # When cleared, RunEngine._run will pause until set.
         self._run_permit = None
@@ -1316,6 +1325,7 @@ class RunEngine:
         self._reason = reason
 
         self._exit_status = "abort"
+        self._destroy_open_run_tracing_spans()
 
         was_paused = self._state == "paused"
         self._state = "aborting"
@@ -1419,6 +1429,7 @@ class RunEngine:
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Halting: skipping cleanup and marking exit_status as 'abort'...")
+        self._destroy_open_run_tracing_spans()
         self._interrupted = True
         was_paused = self._state == "paused"
         self._state = "halting"
@@ -1446,6 +1457,12 @@ class RunEngine:
                     self.log.exception("Failed to stop %r.", obj)
             else:
                 self.log.debug("No 'stop' method available on %r", obj)
+
+    def _destroy_open_run_tracing_spans(self):
+        while len(self._run_tracing_spans):
+            _span = self._run_tracing_spans.pop()
+            _span.set_attribute("exit_status", "aborted")
+            _span.end()
 
     async def _run(self):
         """Pull messages from the plan, process them, send results back.
@@ -1813,6 +1830,11 @@ class RunEngine:
         where **kwargs are any additional metadata that should go into
         the RunStart document
         """
+        _span = tracer.start_span(f"{_SPAN_NAME_PREFIX} run")
+        _set_span_msg_attributes(_span, msg)
+
+        self._run_tracing_spans.append(_span)
+
         # TODO extract this from the Msg
         run_key = msg.run
         if run_key in self._run_bundlers:
@@ -1873,7 +1895,19 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         ret = await current_run.close_run(msg)
         del self._run_bundlers[run_key]
+        self._close_run_trace(msg)
         return ret
+
+    def _close_run_trace(self, msg):
+        exit_status = msg.exit_status if hasattr(msg, "exit_status") else self._exit_status
+        reason = msg.reason if hasattr(msg, "reason") else self._reason
+        try:
+            _span: Span = self._run_tracing_spans.pop()
+            _span.set_attribute("exit_status", exit_status)
+            _span.set_attribute("reason", reason)
+            _span.end()
+        except IndexError:
+            logger.warning("No open traces left to close!")
 
     async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
@@ -2146,6 +2180,7 @@ class RunEngine:
 
         return ret
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} complete")
     async def _complete(self, msg):
         """
         Tell a flyer, 'stop collecting, whenever you are ready'.
@@ -2162,6 +2197,7 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         obj = check_supports(msg.obj, Flyable)
@@ -2188,6 +2224,7 @@ class RunEngine:
         self._status_objs[group].add(ret)
         return ret
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} collect")
     async def _collect(self, msg):
         """
         Collect data cached by a flyer and emit documents
@@ -2197,6 +2234,7 @@ class RunEngine:
             Msg('collect', flyer_object)
             Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
         if (
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
@@ -2219,6 +2257,7 @@ class RunEngine:
         """
         return type(self)
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
     async def _set(self, msg):
         """
         Set a device and cache the returned status object.
@@ -2232,6 +2271,7 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         obj = check_supports(msg.obj, Movable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
@@ -2276,6 +2316,7 @@ class RunEngine:
         if self.waiting_hook is not None:
             self.waiting_hook(*args, **kwargs)
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
     async def _wait(self, msg):
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
@@ -2289,6 +2330,7 @@ class RunEngine:
 
         where ``<GROUP>`` is any hashable key and ``<MOVE_ON>`` is a boolean.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
@@ -2296,6 +2338,10 @@ class RunEngine:
         else:
             group = msg.kwargs["group"]
             move_on = msg.kwargs.get("move_on", False)
+        if group:
+            trace.get_current_span().set_attribute("group", group)
+        else:
+            trace.get_current_span().set_attribute("no_group_given", True)
         futs = list(self._groups.pop(group, []))
         if futs:
             status_objs = self._status_objs.pop(group)
@@ -2774,6 +2820,13 @@ http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
 
 
+def _set_span_msg_attributes(span, msg):
+    span.set_attribute("msg.command", msg.command)
+    span.set_attribute("msg.args", msg.args)
+    span.set_attribute("msg.kwargs", json.dumps(msg.kwargs, default=repr))
+    span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
+
+
 def _default_md_validator(md):
     if "sample" in md and not (hasattr(md["sample"], "keys") or isinstance(md["sample"], str)):
         raise ValueError(
@@ -2829,9 +2882,6 @@ def in_bluesky_event_loop() -> bool:
     else:
         # Check if running loop is bluesky event loop
         return loop is _bluesky_event_loop
-
-
-T = typing.TypeVar("T")
 
 
 def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Optional[float] = None) -> T:

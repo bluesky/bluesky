@@ -30,6 +30,11 @@ from typing_extensions import TypedDict
 # Squashes warning
 Dtype = Dtype  # type: ignore
 
+try:
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec  # type: ignore
+
 
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
@@ -67,6 +72,7 @@ StreamAsset = Union[
 
 
 T = TypeVar("T")
+P = ParamSpec("P")
 SyncOrAsync = Union[T, Awaitable[T]]
 SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
 
