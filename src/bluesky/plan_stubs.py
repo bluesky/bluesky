@@ -15,7 +15,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Flyable, Locatable, Status, Triggerable, check_supports
+from .protocols import Flyable, Locatable, Location, Status, Triggerable, check_supports
 from .utils import (
     Msg,
     all_safe_rewind,
@@ -129,6 +129,26 @@ def read(obj):
         Msg('read', obj)
     """
     return (yield Msg("read", obj))
+
+
+@plan
+def locate(*obj, squeeze=True) -> List[Location]:
+    """
+    Locate some Movables and return their locations.
+
+    Parameters
+    ----------
+    obj : Device or Signal
+    sqeeze: bool
+        If True, return the result as a list
+        If False, always return a list of retults even with a single object.
+
+    Yields
+    ------
+     msg : Msg
+        Msg('locate', obj1, ..., objn, squeeze=True)
+    """
+    return Msg("locate", *obj, squeeze=squeeze)
 
 
 @plan
