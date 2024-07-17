@@ -132,7 +132,7 @@ def read(obj):
 
 
 @plan
-def locate(*obj, squeeze=True):
+def locate(*objs: Locatable, squeeze=True):
     """
     Locate some Movables and return their locations.
 
@@ -148,7 +148,7 @@ def locate(*obj, squeeze=True):
      msg : Msg
         ``Msg('locate', obj1, ..., objn, squeeze=True)``
     """
-    return Msg("locate", *obj, squeeze=squeeze)
+    return Msg("locate", *objs, squeeze=squeeze)
 
 
 @plan
