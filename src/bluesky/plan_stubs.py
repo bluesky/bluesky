@@ -15,7 +15,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Flyable, Locatable, Location, Status, Triggerable, check_supports
+from .protocols import Flyable, Locatable, Status, Triggerable, check_supports
 from .utils import (
     Msg,
     all_safe_rewind,
@@ -132,7 +132,7 @@ def read(obj):
 
 
 @plan
-def locate(*obj, squeeze=True) -> List[Location]:
+def locate(*obj, squeeze=True):
     """
     Locate some Movables and return their locations.
 
@@ -146,7 +146,7 @@ def locate(*obj, squeeze=True) -> List[Location]:
     Yields
     ------
      msg : Msg
-        Msg('locate', obj1, ..., objn, squeeze=True)
+        ``Msg('locate', obj1, ..., objn, squeeze=True)``
     """
     return Msg("locate", *obj, squeeze=squeeze)
 
