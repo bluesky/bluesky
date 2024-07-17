@@ -140,7 +140,7 @@ def locate(*obj, squeeze=True) -> List[Location]:
     ----------
     obj : Device or Signal
     sqeeze: bool
-        If True, return the result as a list
+        If True, return the result as a list.
         If False, always return a list of retults even with a single object.
 
     Yields
