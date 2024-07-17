@@ -132,7 +132,7 @@ def read(obj):
 
 
 @plan
-def locate(*objs, squeeze=True):
+def locate(*objs: Locatable, squeeze=True):
     """
     Locate some Movables and return their locations.
 
