@@ -3,17 +3,22 @@ import time
 from typing import Dict, Iterator, Optional, Tuple
 
 import h5py
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 import tifffile as tf
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
+from ophyd_async.sim.sim_pattern_generator import SimPatternDetector
+from tiled.catalog import in_memory
+from tiled.client import Context, from_context
+from tiled.server.app import build_app
 
 import bluesky.plan_stubs as bps
-from bluesky.callbacks.core import CollectLiveStream
-from bluesky.callbacks.mpl_plotting import LiveStreamPlot
+import bluesky.plans as bp
+from bluesky.callbacks.tiled_writer import TiledWriter
+
+# from bluesky.callbacks.mpl_plotting import LiveStreamPlot
 from bluesky.protocols import (
     Collectable,
     HasName,
@@ -23,8 +28,33 @@ from bluesky.protocols import (
     WritesStreamAssets,
 )
 
-matplotlib.use("QtAgg")
-plt.ion()
+
+@pytest.fixture
+def catalog(tmp_path):
+    catalog = in_memory(writable_storage=str(tmp_path))
+    yield catalog
+
+
+@pytest.fixture
+def app(catalog):
+    app = build_app(catalog)
+    yield app
+
+
+@pytest.fixture
+def context(app):
+    with Context.from_app(app) as context:
+        yield context
+
+
+@pytest.fixture
+def client(context):
+    client = from_context(context)
+    yield client
+
+
+# matplotlib.use("QtAgg")
+# plt.ion()
 
 
 class Named(HasName):
@@ -127,7 +157,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
             f"{self.name}-sd2": DataKey(source="file", dtype="array", shape=[10, 15], external="STREAM:"),
             f"{self.name}-sd3": DataKey(
-                source="file", dtype="array", dtype_str="uint8", shape=[5, 7, 4], external="STREAM:"
+                source="file", dtype="array", dtype_numpy="uint8", shape=[5, 7, 4], external="STREAM:"
             ),
         }
 
@@ -176,16 +206,27 @@ class JSONWriter:
             self.file.write(",\n")
 
 
-# def test_ophyd_async_collectable(RE, tmp_path):
-#     cl = CollectLiveStream()
-#     # pl = LiveStreamPlot(cl, data_key = 'det-sd2')
-#     wr = JSONWriter('../demo_stream_documents/documents_test.json')
-#     RE.subscribe(wr)
-#     # RE.subscribe(pl)
-#     sim_pattern_detector = SimPatternDetector(name="PATTERN1", path=tmp_path)
-#     RE(bp.count([sim_pattern_detector], num=5), cl)
+def test_ophyd_async_collectable(RE, tmp_path):
+    # cl = CollectLiveStream()
+    # pl = LiveStreamPlot(cl, data_key = 'det-sd2')
+    wr = JSONWriter("../demo_stream_documents/documents_test.json")
+    RE.subscribe(wr)
+    # RE.subscribe(pl)
+    sim_pattern_detector = SimPatternDetector(name="PATTERN1", path=tmp_path)
+    RE(bp.count([sim_pattern_detector], num=5))  # , cl
 
-#     breakpoint()
+
+def test_tiled_writer(RE, client, tmp_path):
+    det = SimPatternDetector(name="PATTERN1", path=tmp_path)
+    tw = TiledWriter(client)
+    RE.subscribe(tw)
+    wr = JSONWriter("../demo_stream_documents/documents_test.json")
+    RE.subscribe(wr)
+    RE(bp.count([det], num=5))
+    # breakpoint()
+    arrs = client.values().last()["primary"]["external"].values()
+
+    assert arrs[0].read() is not None
 
 
 # def test_hdf5_plotting(RE, tmp_path):
@@ -197,12 +238,12 @@ class JSONWriter:
 #     RE(collect_plan(det, name="primary"), cl)
 
 
-def test_tiff_plotting(RE, tmp_path):
-    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
-    cl = CollectLiveStream()
-    pl = LiveStreamPlot(cl, data_key="det-sd3")
-    RE.subscribe(pl)
-    RE(collect_plan(det, name="primary"), cl)
+# def test_tiff_plotting(RE, tmp_path):
+#     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
+#     cl = CollectLiveStream()
+#     pl = LiveStreamPlot(cl, data_key="det-sd3")
+#     RE.subscribe(pl)
+#     RE(collect_plan(det, name="primary"), cl)
 
 
 def collect_plan(*objs, name="primary", num=5):

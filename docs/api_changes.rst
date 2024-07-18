@@ -2,6 +2,55 @@
  Release History
 =================
 
+v1.13.0a4 (2024-07-08)
+======================
+
+Added
+-----
+
+* Adopt DiamondLightSource Copier Template by @callumforrester in https://github.com/bluesky/bluesky/pull/1664
+* Add `__main__.py` and entrypoint for checking version info by @jwlodek in https://github.com/bluesky/bluesky/pull/1699
+* Include Python3.12 Classifier by @callumforrester in https://github.com/bluesky/bluesky/pull/1719
+* Adopt pydata documentation theme by @AlexanderWells-diamond in https://github.com/bluesky/bluesky/pull/1706
+* Vendor a copy of Super State Machine by @genematx in https://github.com/bluesky/bluesky/pull/1708
+* Callback to write documents to Tiled by @genematx in https://github.com/bluesky/bluesky/pull/1660
+* Add class and decorator to warn users if plan is not iterated over by @vshekar in https://github.com/bluesky/bluesky/pull/1709
+* Add collect_while_completing plan stub and test by @jsouter in https://github.com/bluesky/bluesky/pull/1720
+* Create a simulated run engine for unit testing by @rtuck99 in https://github.com/bluesky/bluesky/pull/1714
+* Expand `TiledWriter` by @genematx in https://github.com/bluesky/bluesky/pull/1746
+
+Changed
+-------
+
+* Alter kickoff and complete plan stubs to take multiple flyables by @abbiemery in https://github.com/bluesky/bluesky/pull/1663
+* Remove `object_plans.py` and associated test by @DominicOram in https://github.com/bluesky/bluesky/pull/1696
+* Promotes `warn_if_msg` to a `UserWarning` by @CoePaul in https://github.com/bluesky/bluesky/pull/1705
+* Removes fuzz in toto by @CoePaul in https://github.com/bluesky/bluesky/pull/1710
+* Dont collect interactive tests by @gilesknap in https://github.com/bluesky/bluesky/pull/1703
+* Remove nose package from dev dependencies list by @Villtord in https://github.com/bluesky/bluesky/pull/1704
+* Pin `sphinx<7.3` by @callumforrester in https://github.com/bluesky/bluesky/pull/1717
+* Expose API to set title on `LiveGrid` plots by @GDYendell in https://github.com/bluesky/bluesky/pull/1702
+* Remove unused `pims` library @stan-dot in https://github.com/bluesky/bluesky/pull/1722
+* Include details on wrappers in tutorial docs by @stan-dot in https://github.com/bluesky/bluesky/pull/1729
+* Use `tmp_path` instead of `tmpdir` fixture by @jwlodek in https://github.com/bluesky/bluesky/pull/1730
+* Replace `KeyError` handling logic by @CoePaul in https://github.com/bluesky/bluesky/pull/1718
+* Update for Tiled API change. by @danielballan in https://github.com/bluesky/bluesky/pull/1748
+* Update test for revised `StreamResource`. by @danielballan in https://github.com/bluesky/bluesky/pull/1749
+* Return the results of `asyncio.wait` in `bps.wait_for` by @evalott100 in https://github.com/bluesky/bluesky/pull/1758
+
+Fixed
+-----
+
+* Fix ruff formatting of strings by @callumforrester in https://github.com/bluesky/bluesky/pull/1675
+* `numpy==2.0` compatibility by @tacaswell in https://github.com/bluesky/bluesky/pull/1672 and https://github.com/bluesky/bluesky/pull/1732
+* Fix tests failing in devcontainer by @gilesknap in https://github.com/bluesky/bluesky/pull/1700
+* Relax timing as 2s is failing on CI on py311 only by @tacaswell in https://github.com/bluesky/bluesky/pull/1707
+* MacOS fix for failing tests in the `test_zmq.py` by @skarakuzu in https://github.com/bluesky/bluesky/pull/1725
+* Fixed `TiledWriter` bug by @genematx in https://github.com/bluesky/bluesky/pull/1744
+
+**Full Changelog**: https://github.com/bluesky/bluesky/compare/v1.13.0a3...v1.13.0a4
+
+
 v1.13.0a3 (2024-03-25)
 ======================
 

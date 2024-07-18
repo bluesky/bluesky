@@ -3,7 +3,16 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import pandas as pd
 from event_model import RunRouter
-from event_model.documents import Datum, EventDescriptor, Resource, StreamDatum, StreamResource
+from event_model.documents import (
+    Datum,
+    Event,
+    EventDescriptor,
+    Resource,
+    RunStart,
+    RunStop,
+    StreamDatum,
+    StreamResource,
+)
 from pydantic.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
@@ -77,14 +86,14 @@ class _RunWriter(CallbackBase):
 
         return doc
 
-    def start(self, doc):
+    def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": doc},
             specs=[Spec("BlueskyRun", version="1.0")],
         )
 
-    def stop(self, doc):
+    def stop(self, doc: RunStop):
         if self.root_node is None:
             raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
 
@@ -126,11 +135,10 @@ class _RunWriter(CallbackBase):
         # Write the configuration data: loop over all detectors
         conf_node = desc_node["config"]
         for det_name, det_dict in conf_dict[uid].items():
-            print(det_name, det_dict)
             df_dict = {"descriptor_uid": uid}
             df_dict.update(det_dict.get("data", {}))
             df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
-            df = pd.Series(df_dict).to_frame().T
+            df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
             if det_name in conf_node.keys():
                 conf_node[det_name].append_partition(df, 0)
             else:
@@ -150,17 +158,17 @@ class _RunWriter(CallbackBase):
 
         self._desc_nodes[uid] = desc_node
 
-    def event(self, doc):
+    def event(self, doc: Event):
         desc_node = self._desc_nodes[doc["descriptor"]]
 
-        # Process _internal_ data -- those without external flag or those that have been filled
+        # Process _internal_ data -- those keys without 'external' flag or those that have been filled
         data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
         data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
         parent_node = desc_node["internal"]
         df_dict = {"seq_num": doc["seq_num"]}
         df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
         df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
-        df = pd.Series(df_dict).to_frame().T  # data_keys become column names in the df
+        df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
         if "events" in parent_node.keys():
             parent_node["events"].append_partition(df, 0)
         else:
@@ -201,10 +209,10 @@ class _RunWriter(CallbackBase):
                 else:
                     raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
 
-    def datum(self, doc):
+    def datum(self, doc: Datum):
         self._docs_cache[doc["datum_id"]] = copy.copy(doc)
 
-    def resource(self, doc):
+    def resource(self, doc: Resource):
         self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
 
     def stream_resource(self, doc: StreamResource):
@@ -252,10 +260,7 @@ class _RunWriter(CallbackBase):
         # params is superfluous, but it is currently required by Tiled.
         sres_node.refresh()
         data_source = handler.get_data_source()
-        try:
-            data_source.id = sres_node.data_sources()[0].id  # ID of the exisiting DataSource record
-        except AttributeError:
-            data_source.id = sres_node.data_sources()[0]["id"]  # TODO: Old format, to be removed.
+        data_source.id = sres_node.data_sources()[0].id  # ID of the existing DataSource record
         endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             sres_node.context.http_client.put(

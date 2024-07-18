@@ -1,7 +1,7 @@
 import collections
 import dataclasses
 import enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
@@ -53,7 +53,7 @@ class DataSource:
 
 
 class ConsolidatorBase:
-    """Consolidator of StremDatums
+    """Consolidator of StreamDatums
 
     A Consolidator consumes documents from RE; it is similar to usual Bluesky Handlers but is designed to work
     with streaming data (received via StreamResource and StreamDatum documents). It composes details (DataSource
@@ -64,15 +64,15 @@ class ConsolidatorBase:
     We put this code into consolidators so that additional, possibly very unusual, formats can be supported by
     users without getting a PR merged into Bluesky or Tiled.
 
-    The CONSOLIDATOR_REGISTRY (see example below) and the Tiled catalog paramter adapters_by_mimetype can be used
+    The CONSOLIDATOR_REGISTRY (see example below) and the Tiled catalog parameter adapters_by_mimetype can be used
     together to support:
         - Ingesting a new mimetype from Bluesky documents and generating DataSource and Asset with appropriate
           parameters (the consolidator's job);
         - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
 
     To implement new Consolidators for other mimetypes, subclass ConsolidatorBase, possibly expand the
-    `consume_stream_datum` and `get_data_source` methods, and ensure that the returned the `adapter_parameters`
-    property matches the expected adapter signature. Declare a set of supported mimetypes to allow valiadtion and
+    `consume_stream_datum` and `get_data_source` methods, and ensure that the returned `adapter_parameters`
+    property matches the expected adapter signature. Declare a set of supported mimetypes to allow validation and
     automated discovery of the subclassed Consolidator.
     """
 
@@ -86,18 +86,29 @@ class ConsolidatorBase:
         self.assets: List[Asset] = []
         self._sres_parameters = stream_resource["parameters"]
 
-        # Find data shape and machine dtype; dtype_str takes precedence if specified
+        # Find data shape and machine dtype; dtype_numpy/dtype_str takes precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
         self.dtype = data_desc["dtype"]
         self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
-        self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
-        self.chunk_size = self._sres_parameters.get("chunk_size", None)
+        self.dtype = np.dtype(data_desc.get("dtype_numpy") or data_desc.get("dtype_str", self.dtype))
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
         self._seqnums_to_indices_map: Dict[int, int] = {}
+
+        # Set the maximal chunk size; if not specified -- assume single chunk for the entire file
+        self.chunk_size: Sequence[int] = self._sres_parameters.get("chunk_size", self.shape)
+        if isinstance(self.chunk_size, int):
+            # Only the left-most dimension (rows) is chunked; other dimensions are in a single chunk
+            self.chunk_size = (self.chunk_size, *self.datum_shape)
+        else:
+            # Chunk size is specified for each dimension separately as a list or a tuple
+            if len(self.chunk_size) == len(self.datum_shape):
+                self.chunk_size = (0, self.chunk_size)  # Assume the leading dimension is not chunked
+            elif len(self.chunk_size) != len(self.shape):
+                raise RuntimeError(f"Dimensions of chunks {self.chunk_size} do not match the data {self.shape}.")
 
     @classmethod
     def get_supported_mimetype(cls, sres):
@@ -116,18 +127,18 @@ class ConsolidatorBase:
 
     @property
     def chunks(self) -> Tuple[Tuple[int, ...], ...]:
-        """Chunking specification based on the Stream Resource parameter `chunk_size`:
-        None or 0 -- single chunk for all existing and new elements
-        int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
-        """
-        if not self.chunk_size:
-            dim0_chunk = [self._num_rows]
-        else:
-            dim0_chunk = [self.chunk_size] * int(self._num_rows / self.chunk_size)
-            if self._num_rows % self.chunk_size:
-                dim0_chunk.append(self._num_rows % self.chunk_size)
+        """Chunking specification based on the Stream Resource parameter `chunk_size` and the current data shape"""
+        _chunks = [[] for _ in self.shape]
+        for spec, c, s in zip(_chunks, self.chunk_size, self.shape):
+            if s == 0:
+                spec.append(0)
+                continue
+            c = c or s  # If chunk_size c is 0 (or c is None) -- assume the dimension is not chunked, i.e. c == s
+            spec.extend([c] * int(s / c))
+            if s % c:
+                spec.append(s % c)  # Add the incomplete last chunk
 
-        return tuple(dim0_chunk), *[(d,) for d in self.datum_shape]
+        return tuple(tuple(s) for s in _chunks)
 
     @property
     def has_skips(self) -> bool:
@@ -146,6 +157,8 @@ class ConsolidatorBase:
         These parameters are intended to provide any additional information required to read a data source of a
         specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF
         sequence.
+
+        This property is to be subclassed as necessary.
         """
         return {}
 
@@ -153,7 +166,7 @@ class ConsolidatorBase:
         """Process a new StreamDatum and update the internal data structure
 
         This will be called for every new StreamDatum received to account for the new added rows.
-        This method _may_need_ to be subclassed and expanded depending on a specific mimetype.
+        This method _may need_ to be subclassed and expanded depending on a specific mimetype.
         Actions:
           - Parse the fields in a new StreamDatum
           - Increment the number of rows (implemented by the Base class)
@@ -233,7 +246,13 @@ class HDF5Consolidator(ConsolidatorBase):
 
     @property
     def adapter_parameters(self) -> Dict:
-        return {"path": self._sres_parameters["path"].strip("/").split("/"), "swmr": self.swmr}
+        """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
+
+        path: List[str] - file path represented as list split at `/`
+        swmr: bool -- True to enable the single writer / multiple readers regime
+        """
+        ds_path = self._sres_parameters.get("path") or self._sres_parameters.get("dataset")
+        return {"path": ds_path.strip("/").split("/"), "swmr": self.swmr}
 
     def get_adapter(self):
         # fpath = path_from_uri(self.uri)
@@ -264,9 +283,9 @@ class TIFFConsolidator(ConsolidatorBase):
 
         This relies on the `template` parameter passed in the StreamResource, which is a string either in the "new"
         Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
-        integer index, e.g. "{:05}.tif".
+        integer index, e.g. "{:05d}.tif".
         """
-        return self.uri.strip("/") + "/" + self._sres_parameters["template"].format(indx)
+        return self.uri + self._sres_parameters["template"].format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
         indx = int(doc["uid"].split("/")[1])

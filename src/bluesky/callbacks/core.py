@@ -23,20 +23,13 @@ from ..utils import ensure_uid
 
 MIMETYPE_LOOKUP = {
     "hdf5": "application/x-hdf5",
-    "ADHDF5_SWMR_STREAM": "application/x-hdf5",
+    "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
     "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
     "AD_TIFF": "multipart/related;type=image/tiff",
     "AD_HDF5_GERM": "application/x-hdf5",
 }
 
 logger = logging.getLogger(__name__)
-
-MIMETYPE_LOOKUP = {
-    "hdf5": "application/x-hdf5",
-    "ADHDF5_SWMR_STREAM": "application/x-hdf5",
-    "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
-    "AD_TIFF": "multipart/related;type=image/tiff",
-}
 
 
 def make_callback_safe(func=None, *, logger=None):
@@ -263,24 +256,24 @@ class CollectLiveStream(CallbackBase):
         self.events = deque()
         self.stream_consolidators: Dict[str, ConsolidatorBase] = {}  # Keyed by Stream Resource uid
 
-    def _ensure_sres_backcompat(self, sres: StreamResource) -> StreamResource:
+    def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
 
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
 
-        sres = copy.copy(sres)
-        if ("mimetype" not in sres.keys()) and ("spec" not in sres.keys()):
+        doc = copy.copy(doc)
+        if ("mimetype" not in doc.keys()) and ("spec" not in doc.keys()):
             raise RuntimeError("StreamResource document is missing a mimetype or spec")
         else:
-            sres["mimetype"] = sres.get("mimetype", MIMETYPE_LOOKUP[sres["spec"]])
-        if "parameters" not in sres.keys():
-            sres["parameters"] = sres.pop("resource_kwargs", {})
-        if "uri" not in sres.keys():
-            file_path = sres.pop("root").strip("/") + "/" + sres.pop("resource_path").strip("/")
-            sres["uri"] = "file://localhost/" + file_path
+            doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[doc.get("spec")]
+        if "parameters" not in doc.keys():
+            doc["parameters"] = doc.pop("resource_kwargs", {})
+        if "uri" not in doc.keys():
+            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
+            doc["uri"] = "file://localhost/" + file_path
 
-        return sres
+        return doc
 
     def start(self, doc):
         self._start_doc = doc
@@ -300,7 +293,7 @@ class CollectLiveStream(CallbackBase):
         super().event(doc)
 
     def stream_resource(self, doc: StreamResource):
-        self._sres_docs[doc["uid"]] = self._ensure_sres_backcompat(doc)
+        self._sres_docs[doc["uid"]] = self._ensure_resource_backcompat(doc)
         self._data_key_to_sres_uid[doc["data_key"]].append(doc["uid"])  # Multiple Streams Resources per data_key
 
     def _get_or_create_handler(self, sres_uid: str, desc_uid: Optional[str] = None):
