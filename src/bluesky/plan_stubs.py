@@ -133,10 +133,11 @@ def read(obj):
 
 
 @typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...
+def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
 @typing.overload
 def locate(*objs: Locatable, squeeze: bool = True) -> List[Location]: ...
-def locate(*objs: Locatable, squeeze=True):
+@plan
+def locate(*objs, squeeze=True):
     """
     Locate some Movables and return their locations.
 
@@ -152,7 +153,7 @@ def locate(*objs: Locatable, squeeze=True):
      msg : Msg
         ``Msg('locate', obj1, ..., objn, squeeze=True)``
     """
-    return Msg("locate", *objs, squeeze=squeeze)
+    return (yield Msg("locate", *objs, squeeze=squeeze))
 
 
 @plan
