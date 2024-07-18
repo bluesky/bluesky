@@ -1,11 +1,12 @@
 import itertools
 import operator
 import time
+import typing
 import uuid
 import warnings
 from collections.abc import Iterable
 from functools import reduce
-from typing import List
+from typing import List, Literal
 
 from cycler import cycler
 
@@ -15,7 +16,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Flyable, Locatable, Status, Triggerable, check_supports
+from .protocols import Flyable, Locatable, Location, Status, Triggerable, check_supports
 from .utils import (
     Msg,
     all_safe_rewind,
@@ -131,8 +132,11 @@ def read(obj):
     return (yield Msg("read", obj))
 
 
-@plan
-def locate(*objs, squeeze=True):
+@typing.overload
+def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...
+@typing.overload
+def locate(*objs: Locatable, squeeze: bool = True) -> List[Location]: ...
+def locate(*objs: Locatable, squeeze=True):
     """
     Locate some Movables and return their locations.
 
