@@ -81,7 +81,16 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         (save, (), {}, [Msg("save")]),
         (drop, (), {}, [Msg("drop")]),
         (read, ("det",), {}, [Msg("read", "det")]),
-        (locate, (), {}, [Msg("locate", squeeze=True)]),
+        (locate, ("foo",), {}, [Msg("locate", "foo", squeeze=True)]),
+        (
+            locate,
+            (
+                "foo",
+                "foo",
+            ),
+            {"squeeze": False},
+            [Msg("locate", "foo", "foo", squeeze=False)],
+        ),
         (monitor, ("foo",), {}, [Msg("monitor", "foo", name=None)]),
         (monitor, ("foo",), {"name": "c"}, [Msg("monitor", "foo", name="c")]),
         (unmonitor, ("foo",), {}, [Msg("unmonitor", "foo")]),
