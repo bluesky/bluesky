@@ -1,11 +1,12 @@
 import itertools
 import operator
 import time
+import typing
 import uuid
 import warnings
 from collections.abc import Iterable
 from functools import reduce
-from typing import List
+from typing import List, Literal
 
 from cycler import cycler
 
@@ -15,7 +16,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Flyable, Locatable, Status, Triggerable, check_supports
+from .protocols import Flyable, Locatable, Location, Status, Triggerable, check_supports
 from .utils import (
     Msg,
     all_safe_rewind,
@@ -129,6 +130,30 @@ def read(obj):
         Msg('read', obj)
     """
     return (yield Msg("read", obj))
+
+
+@typing.overload
+def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+@typing.overload
+def locate(*objs: Locatable, squeeze: bool = True) -> List[Location]: ...
+@plan
+def locate(*objs, squeeze=True):
+    """
+    Locate some Movables and return their locations.
+
+    Parameters
+    ----------
+    obj : Device or Signal
+    sqeeze: bool
+        If True, return the result as a list.
+        If False, always return a list of retults even with a single object.
+
+    Yields
+    ------
+     msg : Msg
+        ``Msg('locate', obj1, ..., objn, squeeze=True)``
+    """
+    return (yield Msg("locate", *objs, squeeze=squeeze))
 
 
 @plan
