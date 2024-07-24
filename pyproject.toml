@@ -54,7 +54,7 @@ dev = [
     "mypy",
     "myst-parser",
     "networkx",
-    "numpydoc",
+    "numpydoc>=1.8.0rc1",
     "ophyd",
     "packaging",
     "pandas",
