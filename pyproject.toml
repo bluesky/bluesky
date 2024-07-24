@@ -180,6 +180,10 @@ lint.select = [
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
+lint.ignore = [
+    "C408",  # dict(...) is fine to use
+    "C409",  # tuple(...) is fine to use
+]
 exclude = [
     "docs/source/conf.py",
     "docs/source/examples",
