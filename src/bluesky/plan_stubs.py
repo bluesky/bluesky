@@ -35,6 +35,7 @@ from .protocols import (
     Configurable,
     Flyable,
     Locatable,
+    Location,
     Movable,
     Readable,
     Reading,
@@ -68,7 +69,7 @@ from event_model.documents import EventDescriptor
 TakeReading = Callable[[List[Readable]], MsgGenerator[Mapping[str, Reading]]]
 
 
-@plan()
+@plan
 def declare_stream(
     *objs: Readable, name: str, collect: bool = False
 ) -> MsgGenerator[Tuple[EventDescriptor, ComposeEvent]]:
@@ -104,7 +105,7 @@ def declare_stream(
     )
 
 
-@plan()
+@plan
 def create(name: str = "primary") -> MsgGenerator:
     """
     Bundle future readings into a new Event document.
