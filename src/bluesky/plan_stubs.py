@@ -32,6 +32,7 @@ except ImportError:
     from toolz import partition
 
 from .protocols import (
+    check_supports,
     Configurable,
     Flyable,
     Locatable,
@@ -640,7 +641,12 @@ def sleep(time: float) -> MsgGenerator:
 
 
 @plan
-def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None):
+def wait(
+    group: Optional[Hashable] = None,
+    *,
+    timeout: Optional[float] = None,
+    move_on: bool = False,
+):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -986,9 +992,10 @@ def complete_all(*args, group=None, wait=False, **kwargs):
 @plan
 def collect(
     obj: Flyable,
-    *,
+    *args,
     stream: bool = False,
     return_payload: bool = True,
+    name: Optional[str] = None
 ) -> MsgGenerator[List[PartialEvent]]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
@@ -1019,7 +1026,7 @@ def collect(
     :func:`bluesky.plan_stubs.complete`
     :func:`bluesky.plan_stubs.wait`
     """
-    return (yield Msg("collect", obj, stream=stream, return_payload=return_payload))
+    return (yield Msg("collect", obj, *args, stream=stream, return_payload=return_payload, name=name))
 
 
 @plan
