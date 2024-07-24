@@ -70,7 +70,7 @@ TakeReading = Callable[[List[Readable]], MsgGenerator[Mapping[str, Reading]]]
 
 @plan()
 def declare_stream(
-    *objs: Readable, name: str, collect:bool =False
+    *objs: Readable, name: str, collect: bool = False
 ) -> MsgGenerator[Tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
@@ -97,7 +97,11 @@ def declare_stream(
     --------
     :func:`bluesky.plan_stubs.save`
     """
-    return (yield Msg("declare_stream", None, *separate_devices(objs), name=name, collect=collect))
+    return (
+        yield Msg(
+            "declare_stream", None, *separate_devices(objs), name=name, collect=collect
+        )
+    )
 
 
 @plan()
@@ -354,7 +358,11 @@ def rel_set(
     """
     from .preprocessors import relative_set_wrapper
 
-    return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
+    return (
+        yield from relative_set_wrapper(
+            abs_set(obj, *args, group=group, wait=wait, **kwargs)
+        )
+    )
 
 
 @plan
@@ -745,14 +753,12 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 
 @plan
 def prepare(
-        obj: Flyable,
-        *args,
+    obj: Flyable,
+    *args,
     group: Optional[Hashable] = None,
     wait: bool = False,
-        group=None,
-        wait=False,
-        **kwargs
-): -> MsgGenerator[Status]:
+    **kwargs,
+) -> MsgGenerator[Status]:
     """
     Prepare a device.
 
