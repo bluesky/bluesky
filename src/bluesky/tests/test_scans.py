@@ -282,7 +282,7 @@ def test_list_grid_scan_snake_list(RE, hw):
                 }
             )
 
-    scan = bp.list_grid_scan([hw.det], hw.motor1, [6, 7, 8], hw.motor2, [18, 28, 38], snake_axes=[hw.motor2])
+    scan = bp.list_grid_scan([hw.det], hw.motor1, [6, 7, 8], hw.motor2, [18, 28, 38], snake_axes=True)
     multi_traj_checker(RE, scan, expected_data)
 
 
@@ -350,7 +350,7 @@ def test_rel_list_grid_scan_snake_list(RE, hw):
 
     hw.motor1.set(5)
     hw.motor2.set(8)
-    scan = bp.rel_list_grid_scan([hw.det], hw.motor1, [1, 2, 3], hw.motor2, [10, 20, 30], snake_axes=[hw.motor2])
+    scan = bp.rel_list_grid_scan([hw.det], hw.motor1, [1, 2, 3], hw.motor2, [10, 20, 30], snake_axes=True)
     multi_traj_checker(RE, scan, expected_data)
 
 
