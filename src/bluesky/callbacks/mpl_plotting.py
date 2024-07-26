@@ -1,7 +1,6 @@
 import functools
 import logging
 import threading
-import time
 import warnings
 from collections import ChainMap
 
@@ -986,8 +985,7 @@ class DummyLiveStreamPlot(CallbackBase):
 
     def update(self):
         print("Updating the plot")
-        time.sleep(1)
         if adapter := self.cl.get_adapter(self.data_key):
             # arr = adapter.read()
             print(f"{adapter=}")
-            # print(f"{adapter.read().shape=}")
+            print(f"{adapter.read().shape=}")
