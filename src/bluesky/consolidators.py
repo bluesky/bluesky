@@ -1,12 +1,15 @@
 import collections
 import dataclasses
 import enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
+import h5py
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
+from tiled.adapters.hdf5 import HDF5Adapter
 from tiled.mimetypes import DEFAULT_ADAPTERS_BY_MIMETYPE
 from tiled.structures.array import ArrayStructure, BuiltinDtype
+from tiled.utils import path_from_uri
 
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
@@ -85,18 +88,29 @@ class ConsolidatorBase:
         self.assets: List[Asset] = []
         self._sres_parameters = stream_resource["parameters"]
 
-        # Find data shape and machine dtype; dtype_str takes precedence if specified
+        # Find data shape and machine dtype; dtype_numpy/dtype_str takes precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
         self.dtype = data_desc["dtype"]
         self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
-        self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
-        self.chunk_size = self._sres_parameters.get("chunk_size", None)
+        self.dtype = np.dtype(data_desc.get("dtype_numpy") or data_desc.get("dtype_str", self.dtype))
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
         self._seqnums_to_indices_map: Dict[int, int] = {}
+
+        # Set the maximal chunk size; if not specified -- assume single chunk for the entire file
+        self.chunk_size: Sequence[int] = self._sres_parameters.get("chunk_size", self.shape)
+        if isinstance(self.chunk_size, int):
+            # Only the left-most dimension (rows) is chunked; other dimensions are in a single chunk
+            self.chunk_size = (self.chunk_size, *self.datum_shape)
+        else:
+            # Chunk size is specified for each dimension separately as a list or a tuple
+            if len(self.chunk_size) == len(self.datum_shape):
+                self.chunk_size = (0, self.chunk_size)  # Assume the leading dimension is not chunked
+            elif len(self.chunk_size) != len(self.shape):
+                raise RuntimeError(f"Dimensions of chunks {self.chunk_size} do not match the data {self.shape}.")
 
     @classmethod
     def get_supported_mimetype(cls, sres):
@@ -115,18 +129,18 @@ class ConsolidatorBase:
 
     @property
     def chunks(self) -> Tuple[Tuple[int, ...], ...]:
-        """Chunking specification based on the Stream Resource parameter `chunk_size`:
-        None or 0 -- single chunk for all existing and new elements
-        int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
-        """
-        if not self.chunk_size:
-            dim0_chunk = [self._num_rows]
-        else:
-            dim0_chunk = [self.chunk_size] * int(self._num_rows / self.chunk_size)
-            if self._num_rows % self.chunk_size:
-                dim0_chunk.append(self._num_rows % self.chunk_size)
+        """Chunking specification based on the Stream Resource parameter `chunk_size` and the current data shape"""
+        _chunks = [[] for _ in self.shape]
+        for spec, c, s in zip(_chunks, self.chunk_size, self.shape):
+            if s == 0:
+                spec.append(0)
+                continue
+            c = c or s  # If chunk_size c is 0 (or c is None) -- assume the dimension is not chunked, i.e. c == s
+            spec.extend([c] * int(s / c))
+            if s % c:
+                spec.append(s % c)  # Add the incomplete last chunk
 
-        return tuple(dim0_chunk or [0]), *[(d,) for d in self.datum_shape]
+        return tuple(tuple(s) for s in _chunks)
 
     @property
     def has_skips(self) -> bool:
@@ -239,7 +253,19 @@ class HDF5Consolidator(ConsolidatorBase):
         path: List[str] - file path represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"path": self._sres_parameters["path"].strip("/").split("/"), "swmr": self.swmr}
+        ds_path = self._sres_parameters.get("path") or self._sres_parameters.get("dataset")
+        return {"path": ds_path.strip("/").split("/"), "swmr": self.swmr}
+
+    def get_adapter(self):
+        fpath = path_from_uri(self.uri)
+        f = h5py.File(fpath, "r", swmr=True)
+        adapter = HDF5Adapter.from_file(f)
+        # adapter = HDF5Adapter.from_uri(self.uri, swmr=True)   # <- Does not work if the file is opened by reader!
+
+        for segment in self.adapter_parameters["path"]:
+            adapter = adapter.get(segment)
+
+        return adapter
 
 
 class TIFFConsolidator(ConsolidatorBase):

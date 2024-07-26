@@ -1,13 +1,15 @@
+import json
+import time
 from typing import Dict, Iterator, Optional, Tuple
 
 import h5py
 import numpy as np
-import ophyd.sim
 import pytest
 import tifffile as tf
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
+from ophyd_async.sim.sim_pattern_generator import SimPatternDetector
 from tiled.catalog import in_memory
 from tiled.client import Context, from_context
 from tiled.server.app import build_app
@@ -15,6 +17,8 @@ from tiled.server.app import build_app
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from bluesky.callbacks.tiled_writer import TiledWriter
+
+# from bluesky.callbacks.mpl_plotting import LiveStreamPlot
 from bluesky.protocols import (
     Collectable,
     HasName,
@@ -49,6 +53,10 @@ def client(context):
     yield client
 
 
+# matplotlib.use("QtAgg")
+# plt.ion()
+
+
 class Named(HasName):
     name: str = ""
     root: str = "/root"
@@ -74,17 +82,17 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         stream_resource = None
         if self.counter == 0:
             stream_resource = StreamResource(
-                parameters={"path": hdf5_path, "chunk_size": False},
+                parameters={"path": hdf5_path, "chunk_size": False, "swmr": True},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
                 uri="file://localhost" + file_path,
-                spec="AD_HDF5_SWMR_STREAM",
+                spec="ADHDF5_SWMR_STREAM",
                 mimetype="application/x-hdf5",
                 uid=uid,
             )
             # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
-            with h5py.File(file_path, "a") as f:
+            with h5py.File(file_path, "a", swmr=True) as f:
                 dset = f.require_dataset(
                     hdf5_path,
                     (0, *data_shape),
@@ -103,7 +111,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         )
 
         # Write (append to) the hdf5 dataset
-        with h5py.File(file_path, "a") as f:
+        with h5py.File(file_path, "a", swmr=True) as f:
             dset = f[hdf5_path]
             dset.resize([indx_max, *data_shape])
             dset[indx_min:indx_max, ...] = np.random.randn(indx_max - indx_min, *data_shape)
@@ -122,7 +130,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                     parameters={"chunk_size": 1, "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
-                    uri="file://localhost" + self.root + "/",
+                    uri="file://localhost" + self.root,
                     spec="AD_TIFF",
                     mimetype="multipart/related;type=image/tiff",
                     uid=uid,
@@ -182,81 +190,66 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         return {}
 
 
-class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
-    """A readable image detector that writes a sequence of files and generates relevant Bluesky documents.
+class JSONWriter:
+    """Writer for a JSON array"""
 
-    Subclassed from ophyd.sim to match the updated schema of Resource documents.
-    """
+    def __init__(self, filepath):
+        self.file = open(filepath, "w")
+        self.file.write("[\n")
 
-    def __init__(self, *args, dtype_numpy="uint8", **kwargs):
-        self.dtype_numpy = dtype_numpy
-        super().__init__(*args, **kwargs)
-
-    def stage(self):
-        super().stage()
-        parameters = {"chunk_size": 1, "template": "_{:d}." + self.save_ext}
-        self._asset_docs_cache[-1][1]["resource_kwargs"].update(parameters)
-
-    def describe(self):
-        res = super().describe()
-        for key in res:
-            res[key]["external"] = "FILESTORE"
-            res[key]["dtype_numpy"] = self.dtype_numpy
-        return res
+    def __call__(self, name, doc):
+        json.dump({"name": name, "doc": doc}, self.file)
+        if name == "stop":
+            self.file.write("\n]")
+            self.file.close()
+        else:
+            self.file.write(",\n")
 
 
-def test_stream_datum_readable_counts(RE, client, tmp_path):
+def test_ophyd_async_collectable(RE, tmp_path):
+    # cl = CollectLiveStream()
+    # pl = LiveStreamPlot(cl, data_key = 'det-sd2')
+    wr = JSONWriter("../demo_stream_documents/documents_test.json")
+    RE.subscribe(wr)
+    # RE.subscribe(pl)
+    sim_pattern_detector = SimPatternDetector(name="PATTERN1", path=tmp_path)
+    RE(bp.count([sim_pattern_detector], num=5))  # , cl
+
+
+def test_tiled_writer(RE, client, tmp_path):
+    det = SimPatternDetector(name="PATTERN1", path=tmp_path)
     tw = TiledWriter(client)
-    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
-    RE(bp.count([det], 3), tw)
-    arrs = client.values().last()["primary"]["external"].values()
-    assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (3, 10, 15)
-    assert arrs[2].shape == (3, 5, 7, 4)
-    assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
-
-
-def test_stream_datum_collectable(RE, client, tmp_path):
-    det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
-    tw = TiledWriter(client)
-    RE(collect_plan(det, name="primary"), tw)
+    RE.subscribe(tw)
+    wr = JSONWriter("../demo_stream_documents/documents_test.json")
+    RE.subscribe(wr)
+    RE(bp.count([det], num=5))
+    # breakpoint()
     arrs = client.values().last()["primary"]["external"].values()
 
     assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
 
 
-def test_handling_non_stream_resource(RE, client, tmp_path):
-    det = SynSignalWithRegistry(
-        func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
-        dtype_numpy="uint8",
-        name="img",
-        labels={"detectors"},
-        save_func=tf.imwrite,
-        save_path=str(tmp_path),
-        save_spec="AD_TIFF",
-        save_ext="tif",
-    )
-    tw = TiledWriter(client)
-    RE(bp.count([det], 3), tw)
-    extr = client.values().last()["primary"]["external"]["img"]
-    intr = client.values().last()["primary"]["internal"]["events"]
-    conf = client.values().last()["primary"]["config"]["img"]
-
-    assert extr.shape == (3, 10, 15)
-    assert extr.read() is not None
-    assert set(intr.columns) == {"seq_num", "ts_img"}
-    assert len(intr.read()) == 3
-    assert (intr["seq_num"].read() == [1, 2, 3]).all()
-    assert set(conf.columns) == {"descriptor_uid", "img", "ts_img"}
-    assert len(conf.read()) == 1
+# def test_hdf5_plotting(RE, tmp_path):
+#     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
+#     cl = CollectLiveStream()
+#     # pl = LiveStreamPlot(cl, data_key="det-sd2")
+#     pl = DummyLiveStreamPlot(cl, data_key="det-sd2")
+#     RE.subscribe(pl)
+#     RE(collect_plan(det, name="primary"), cl)
 
 
-def collect_plan(*objs, name="primary"):
+# def test_tiff_plotting(RE, tmp_path):
+#     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
+#     cl = CollectLiveStream()
+#     pl = LiveStreamPlot(cl, data_key="det-sd3")
+#     RE.subscribe(pl)
+#     RE(collect_plan(det, name="primary"), cl)
+
+
+def collect_plan(*objs, name="primary", num=5):
     yield from bps.open_run()
     yield from bps.declare_stream(*objs, collect=True, name=name)
-    yield from bps.collect(*objs, return_payload=False, name=name)
+    for _ in range(num):
+        time.sleep(1)
+        yield from bps.collect(*objs, return_payload=False, name=name)
     yield from bps.close_run()

@@ -2,6 +2,8 @@
 Useful callbacks for the Run Engine
 """
 
+import collections
+import copy
 import logging
 import os
 import time as ttime
@@ -11,9 +13,12 @@ from datetime import datetime
 from functools import partial as _partial
 from functools import wraps as _wraps
 from itertools import count
+from typing import Dict, List, Optional
 
 from event_model import DocumentRouter
+from event_model.documents import Event, EventDescriptor, StreamDatum, StreamResource
 
+from ..consolidators import ConsolidatorBase, consolidator_factory
 from ..utils import ensure_uid
 
 MIMETYPE_LOOKUP = {
@@ -238,6 +243,104 @@ class CollectThenCompute(CallbackBase):
 
     def compute(self):
         raise NotImplementedError("This method must be defined by a subclass.")
+
+
+class CollectLiveStream(CallbackBase):
+    def __init__(self):
+        self._start_doc = None
+        self._stop_doc = None
+        self._event_docs: Dict[str, Event] = {}  # Keyed by Event uid
+        self._desc_docs: Dict[str, EventDescriptor] = {}  # Keyed by Descriptor uid
+        self._sres_docs: Dict[str, StreamResource] = {}  # Keyed by Stream Resource uid
+        self._data_key_to_sres_uid: Dict[str, List[str]] = collections.defaultdict(list)
+        self.events = deque()
+        self.stream_consolidators: Dict[str, ConsolidatorBase] = {}  # Keyed by Stream Resource uid
+
+    def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
+        """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+
+        Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
+        """
+
+        doc = copy.copy(doc)
+        if ("mimetype" not in doc.keys()) and ("spec" not in doc.keys()):
+            raise RuntimeError("StreamResource document is missing a mimetype or spec")
+        else:
+            doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[doc.get("spec")]
+        if "parameters" not in doc.keys():
+            doc["parameters"] = doc.pop("resource_kwargs", {})
+        if "uri" not in doc.keys():
+            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
+            doc["uri"] = "file://localhost/" + file_path
+
+        return doc
+
+    def start(self, doc):
+        self._start_doc = doc
+        super().start(doc)
+
+    def descriptor(self, doc: EventDescriptor):
+        self._desc_docs[doc["uid"]] = doc
+        super().descriptor(doc)
+
+    def event(self, doc):
+        # self._event_docs.append(doc)
+        event_dict = {"seq_num": doc["seq_num"], "descriptor": doc["descriptor"]}
+        event_dict.update(doc["data"])
+        event_dict.update({f"ts_{c}": v for c, v in doc["timestamps"].items()})
+        self.events.append(event_dict)
+
+        super().event(doc)
+
+    def stream_resource(self, doc: StreamResource):
+        self._sres_docs[doc["uid"]] = self._ensure_resource_backcompat(doc)
+        self._data_key_to_sres_uid[doc["data_key"]].append(doc["uid"])  # Multiple Streams Resources per data_key
+
+    def _get_or_create_handler(self, sres_uid: str, desc_uid: Optional[str] = None):
+        """Get a Handler / Stream Consolidator, if it already exists, or register it from a SR document"""
+
+        if sres_uid in self.stream_consolidators.keys():
+            handler = self.stream_consolidators[sres_uid]
+
+        elif sres_uid in self._sres_docs.keys():
+            if not desc_uid:
+                raise RuntimeError("Descriptor uid must be specified to initialise a Stream Consolidator")
+
+            # Initialise a Bluesky Consolidator for the StreamResource
+            sres_doc = self._sres_docs[sres_uid]
+            desc_doc = self._desc_docs[desc_uid]
+            handler = consolidator_factory(sres_doc, desc_doc)
+
+            self.stream_consolidators[sres_uid] = handler
+        else:
+            raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being declared.")
+
+        return handler
+
+    def stream_datum(self, doc: StreamDatum):
+        """Get the Stream Resource node and the associated handler (consolidator)"""
+        handler = self._get_or_create_handler(doc["stream_resource"], desc_uid=doc["descriptor"])
+        handler.consume_stream_datum(doc)
+
+    def stop(self, doc):
+        self._stop_doc = doc
+        super().stop(doc)
+
+    def get_adapter(self, data_key):
+        if data_key in self._data_key_to_sres_uid.keys():
+            sres_uids = self._data_key_to_sres_uid[data_key]
+            if len(sres_uids) > 0:
+                # NOTE: If several StreamResources have the same data_key, returns adapter for only the last Stream
+                print(f"{sres_uids=}\n{self.stream_consolidators=}")
+                # breakpoint()
+                if sres_uids[-1] in self.stream_consolidators.keys():
+                    handler = self.stream_consolidators[sres_uids[-1]]
+                    # breakpoint()
+                    return handler.get_adapter()
+        else:
+            raise RuntimeError(f"No data received for {data_key}.")
+
+        return None
 
 
 @make_class_safe(logger=logger)
