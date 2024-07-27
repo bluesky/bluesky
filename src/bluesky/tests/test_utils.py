@@ -1,6 +1,8 @@
 import operator
+import threading
 import warnings
 from functools import reduce
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -9,6 +11,7 @@ from cycler import cycler
 from bluesky import RunEngine
 from bluesky.utils import (
     CallbackRegistry,
+    DuringTask,
     Msg,
     ensure_generator,
     is_movable,
@@ -536,3 +539,25 @@ def test_warning_behavior(gen_func, iterated):
     else:
         with pytest.warns(RuntimeWarning, match=r".*was never iterated.*"):
             RE(gen_func())
+
+
+def test_during_task_block_uses_timeout_on_windows():
+    during_task = DuringTask()
+
+    event = MagicMock(spec=threading.Event)
+    # On first call block times out, on second call event gets set.
+    event.wait.side_effect = [False, True]
+
+    with patch("bluesky.utils.os.name", "nt"):
+        during_task.block(event)
+        assert event.wait.mock_calls == [call(0.1), call(0.1)]
+
+
+def test_during_task_block_does_not_use_timeout_on_linux():
+    during_task = DuringTask()
+
+    event = MagicMock(spec=threading.Event)
+
+    with patch("bluesky.utils.os.name", "posix"):
+        during_task.block(event)
+        assert event.wait.mock_calls == [call()]
