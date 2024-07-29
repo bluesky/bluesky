@@ -206,7 +206,19 @@ _call_sig = Signature(
 
 
 def default_scan_id_source(md):
-    return md.get("scan_id", 0) + 1
+    """
+    Default implementation of a scan_id_source.
+
+    .. warning ::
+
+        This mutates the dictionary passed in to ensure that the key "scan_id"
+        exists and increments it by 1
+
+
+    """
+    md.setdefault("scan_id", 0)
+    md["scan_id"] += 1
+    return md["scan_id"]
 
 
 def _state_locked(func):
@@ -272,8 +284,18 @@ class RunEngine:
         a function that will be used to calculate scan_id. Default is to
         increment scan_id by 1 each time. However you could pass in a
         customized function to get a scan_id from any source.
-        Expected signature: f(md)
-        Expected return: updated scan_id value
+
+        If an integer is returned than it is added to the metadata with
+        higher priority that ``RE.md``, but lower than keyword arguments
+        carried by the ``'open_run'`` message.
+
+        If `None` is returned than no key is added, but if `scan_id` exists
+        in any other metadata source it will be left unchanged.
+
+        Expected signature ::
+
+            def source(md: Dict[str, Any]) -> int | None: ...
+
 
     during_task : reference to an object of class DuringTask, optional
         Class methods: ``block()`` to be run to block
@@ -1841,7 +1863,9 @@ class RunEngine:
             raise IllegalMessageSequence("A 'close_run' message was not received before the 'open_run' message")
 
         # Run scan_id calculation method
-        self.md["scan_id"] = self.scan_id_source(self.md)
+        next_scan_id = self.scan_id_source(self.md)
+        if next_scan_id is not None:
+            scan_id_md = {"scan_id": next_scan_id}
 
         # For metadata below, info about plan passed to self.__call__ for.
         plan_type = type(self._plan).__name__
@@ -1855,6 +1879,7 @@ class RunEngine:
                 "plan_type": plan_type,  # computed from self._plan
                 "plan_name": plan_name,
             },
+            scan_id_md,
             self.md,
         )  # stateful, persistent metadata
         # The metadata is final. Validate it now, at the last moment.
