@@ -722,3 +722,30 @@ def test_input_plan(RE):
 
     with patch("bluesky.utils.sys.stdin.readline", return_value="answer\n"):
         RE(plan())
+
+
+def test_reset_user_position(RE):
+    from ophyd.sim import SynAxis as _SynAxis
+
+    class SynAxis(_SynAxis):
+        def set_current_position(self, pos):
+            self.sim_state["setpoint"] = pos
+            self.sim_state["readback"] = pos
+
+    ax = SynAxis(name="test")
+
+    def test_plan(obj):
+        ret = yield from bps.read(obj)
+        if ret is not None:
+            assert ret[obj.readback.name]["value"] == 0
+            assert ret[obj.setpoint.name]["value"] == 0
+
+        ret = yield from bps.reset_user_position(obj, 15)
+        assert ret == (0, 15)
+
+        ret = yield from bps.read(obj)
+        if ret is not None:
+            assert ret[obj.readback.name]["value"] == 15
+            assert ret[obj.setpoint.name]["value"] == 15
+
+    RE(test_plan(ax))
