@@ -2,6 +2,7 @@ import uuid
 from collections import ChainMap, OrderedDict, deque
 from collections.abc import Iterable
 from functools import wraps
+from os import environ
 
 from bluesky.protocols import Locatable
 
@@ -493,7 +494,7 @@ def configure_count_time_wrapper(plan, time):
         return (yield from finalize_wrapper(plan_mutator(plan, insert_set), reset()))
 
 
-def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
+def finalize_wrapper(plan, final_plan, *, pause_for_debug=None):
     """try...finally helper
 
     Run the first plan and then the second.  If any of the messages
@@ -527,37 +528,12 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     """
     # If final_plan is a generator *function* (as opposed to a generator
     # *instance*), call it.
-    if callable(final_plan):
-        final_plan_instance = final_plan()
-    else:
-        final_plan_instance = final_plan
-    cleanup = True
-    try:
-        ret = yield from plan
-    except GeneratorExit:
-        cleanup = False
-        raise
-    except BaseException:
-        if pause_for_debug:
-            yield from pause()
-        raise
-    finally:
-        # if the exception raised in `GeneratorExit` that means
-        # someone called `gen.close()` on this generator.  In those
-        # cases generators must either re-raise the GeneratorExit or
-        # raise a different exception.  Trying to yield any values
-        # results in a RuntimeError being raised where `close` is
-        # called.  Thus, we catch, the GeneratorExit, disable cleanup
-        # and then re-raise
 
-        # https://docs.python.org/3/reference/expressions.html?#generator.close
-        if cleanup:
-            yield from ensure_generator(final_plan_instance)
-    return ret
+    return (yield from contingency_wrapper(plan, final_plan=final_plan, pause_for_debug=pause_for_debug))
 
 
 def contingency_wrapper(
-    plan, *, except_plan=None, else_plan=None, final_plan=None, pause_for_debug=False, auto_raise=True
+    plan, *, except_plan=None, else_plan=None, final_plan=None, pause_for_debug=None, auto_raise=True
 ):
     """try...except...else...finally helper
 
@@ -579,7 +555,7 @@ def contingency_wrapper(
         This will be called with no arguments if plan completes without raising
     final_plan : generator function, optional
         a generator, list, or similar containing `Msg` objects or a callable
-        that reurns one; attempted to be run no matter what happens in the
+        that returns one; attempted to be run no matter what happens in the
         first plan
     pause_for_debug : bool, optional
         If the plan should pause before running the clean final_plan in
@@ -600,6 +576,16 @@ def contingency_wrapper(
     :func:`finalize_wrapper`
     """
     cleanup = True
+    if pause_for_debug is None:
+        pause_for_debug = environ.get("BLUESKY_PAUSE_ON_PLAN_EXCEPTION", "NO").upper().startswith("Y")
+
+    # If final_plan is a generator *function* (as opposed to a generator
+    # *instance*), call it.
+    if callable(final_plan):
+        final_plan_instance = final_plan()
+    else:
+        final_plan_instance = final_plan
+
     try:
         ret = yield from plan
     except GeneratorExit:
@@ -631,8 +617,8 @@ def contingency_wrapper(
         # and then re-raise
 
         # https://docs.python.org/3/reference/expressions.html?#generator.close
-        if cleanup and final_plan:
-            yield from final_plan()
+        if cleanup and final_plan_instance is not None:
+            yield from ensure_generator(final_plan_instance)
     return ret
 
 
