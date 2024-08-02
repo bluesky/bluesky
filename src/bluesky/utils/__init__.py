@@ -39,7 +39,7 @@ import msgpack
 import msgpack_numpy
 import numpy as np
 import zict
-from cycler import cycler
+from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
@@ -645,14 +645,14 @@ class Subs:
         self.data[instance] = normalize_subs_input(value)
 
 
-def snake_cyclers(cyclers: List[cycler.Cycler], snake_booleans: List[bool]):
+def snake_cyclers(cyclers: List[Cycler], snake_booleans: List[bool]) -> List[Cycler]:
     """
     Combine cyclers with a 'snaking' back-and-forth order.
     If none of the cyclers are "snaked" this is equivalent to taking the product of all the cyclers
 
     Parameters
     ----------
-    cyclers : List[cycler.Cycler]
+    cyclers : List[Cycler]
         A list of cycles to be "snaked".
     snake_booleans : List[bool]
         a list of the same length as cyclers indicating whether each cycler

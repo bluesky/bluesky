@@ -7,6 +7,7 @@ from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from cycler import Cycler
@@ -167,7 +168,7 @@ def list_scan(
 
     # set some variables and check that all lists are the same length
     lengths = {}
-    motors = []
+    motors: List[Any] = []
     pos_lists = []
     length = None
     for motor, pos_list in partition(2, args):
@@ -189,11 +190,12 @@ def list_scan(
     md_args = list(chain(*((repr(motor), pos_list) for motor, pos_list in partition(2, args))))
     motor_names = list(lengths.keys())
 
+    num_intervals = length - 1
     _md = {
         "detectors": [det.name for det in detectors],
         "motors": motor_names,
         "num_points": length,
-        "num_intervals": length - 1,  # type: ignore
+        "num_intervals": num_intervals,
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
         "plan_name": "list_scan",
         "plan_pattern": "inner_list_product",
@@ -203,11 +205,12 @@ def list_scan(
     }
     _md.update(md or {})
 
-    x_fields = []
-    for motor in motors:
-        x_fields.extend(get_hinted_fields(motor))
+    def derive_default_hints(motors: List[Any]):
+        x_fields: List[str] = []
+        for motor in motors:
+            x_fields.extend(get_hinted_fields(motor))
 
-    default_dimensions = [(x_fields, "primary")]
+        default_dimensions: List[Tuple[List[str], str]] = [(x_fields, "primary")]
 
     default_hints: Dict[str, Sequence] = {}
     if len(x_fields) > 0:
@@ -348,7 +351,8 @@ def list_grid_scan(
     }
     _md.update(md or {})  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])  # type: ignore
+        motor_hints = [(m.hints["fields"], "primary") for m in motors]
+        _md["hints"].setdefault("dimensions", motor_hints)
     except (AttributeError, KeyError):
         ...
 
