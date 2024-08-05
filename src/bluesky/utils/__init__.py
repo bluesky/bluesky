@@ -2,6 +2,7 @@ import abc
 import asyncio
 import collections.abc
 import datetime
+import functools
 import inspect
 import itertools
 import operator
@@ -1949,12 +1950,12 @@ class Plan:
         return self._iter.throw(typ, val, tb)
 
 
-def plan(plan):
+def plan(bs_plan):
     """Decorator that warns user if a `yield from` is not called
 
     Parameters
     ----------
-    plan : Generator
+    bs_plan : Generator
         Generator coroutine usually a Bluesky plan
 
     Returns
@@ -1963,8 +1964,43 @@ def plan(plan):
         Wrapped plans
     """
 
-    @wraps(plan)
+    @wraps_plan(bs_plan, plan)
     def wrapper(*args, **kwargs) -> Plan:
-        return Plan(plan, *args, **kwargs)
+        return Plan(bs_plan, *args, **kwargs)
 
     return wrapper
+
+
+def mark_as_plan(wrapper, wrapped, decorator, **kwargs):
+    """Function that adds attr if plan decorator is applied"""
+
+    wrapper = functools.update_wrapper(wrapper, wrapped, **kwargs)
+    if decorator is plan:
+        wrapper.__is_plan__ = True
+    return wrapper
+
+
+def wraps_plan(wrapped, decorator, **kwargs):
+    """Modified wraps that marks decorated function as bs plan"""
+
+    return functools.partial(mark_as_plan, wrapped=wrapped, decorator=decorator, **kwargs)
+
+
+def is_plan(bs_plan):
+    """Function that checks if function is a generator, or has been marked as plan
+
+    Parameters
+    ----------
+    bs_plan : Function
+        Typically generator coroutine function / Bluesky plan
+
+    Returns
+    -------
+    boolean
+        True if bs_plan arg is a generator, or the __is_plan__ attribute exists and is True.
+    """
+
+    if inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "__is_plan__", False):
+        return True
+    else:
+        return False
