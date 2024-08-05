@@ -427,6 +427,11 @@ class RunBundler:
                     f"{readable_obj} has async read() method and the callback "
                     "passed to subscribe() was not called with Dict[str, Reading]"
                 )
+            now = ttime.time()
+            acceptable_delay = 0.1
+            if any(t - now < acceptable_delay for t in readings.values()):
+                print("WARNING: The timestamps in the readings are too old.")
+                return
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
