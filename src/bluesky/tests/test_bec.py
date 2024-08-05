@@ -333,3 +333,21 @@ def test_many_motors(RE, hw):
     assert not bec._live_grids
     assert not bec._live_scatters
     assert bec._table is not None
+
+
+def test_format_labels(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+    bec.format_labels("{attr}: {val:.3f}")
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+    bec.format_labels("{attr}: {val:.2e}")
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+    bec.format_labels(None)
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+    with pytest.raises(AssertionError):
+        bec.format_labels("{} {}")
+        RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
