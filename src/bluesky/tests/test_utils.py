@@ -7,11 +7,13 @@ import pytest
 from cycler import cycler
 
 from bluesky import RunEngine
+from bluesky.plan_stubs import complete_all, mv
 from bluesky.utils import (
     CallbackRegistry,
     Msg,
     ensure_generator,
     is_movable,
+    is_plan,
     merge_cycler,
     plan,
     warn_if_msg_args_or_kwargs,
@@ -536,3 +538,17 @@ def test_warning_behavior(gen_func, iterated):
     else:
         with pytest.warns(RuntimeWarning, match=r".*was never iterated.*"):
             RE(gen_func())
+
+
+@pytest.mark.parametrize(
+    "func, is_plan_result",
+    [
+        (print, False),
+        (mv, True),
+        (complete_all, True),
+        (iterating_plan, True),
+        (sample_plan, True),
+    ],
+)
+def test_check_if_func_is_plan(func, is_plan_result):
+    assert is_plan(func) == is_plan_result
