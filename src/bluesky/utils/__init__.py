@@ -2,7 +2,6 @@ import abc
 import asyncio
 import collections.abc
 import datetime
-import functools
 import inspect
 import itertools
 import operator
@@ -1964,26 +1963,13 @@ def plan(bs_plan):
         Wrapped plans
     """
 
-    @wraps_plan(bs_plan, plan)
+    @wraps(bs_plan)
     def wrapper(*args, **kwargs) -> Plan:
         return Plan(bs_plan, *args, **kwargs)
 
+    wrapper.__is_plan__ = True
+
     return wrapper
-
-
-def mark_as_plan(wrapper, wrapped, decorator, **kwargs):
-    """Function that adds attr if plan decorator is applied"""
-
-    wrapper = functools.update_wrapper(wrapper, wrapped, **kwargs)
-    if decorator is plan:
-        wrapper.__is_plan__ = True
-    return wrapper
-
-
-def wraps_plan(wrapped, decorator, **kwargs):
-    """Modified wraps that marks decorated function as bs plan"""
-
-    return functools.partial(mark_as_plan, wrapped=wrapped, decorator=decorator, **kwargs)
 
 
 def is_plan(bs_plan):
