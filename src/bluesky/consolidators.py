@@ -236,7 +236,7 @@ class HDF5Consolidator(ConsolidatorBase):
     def adapter_parameters(self) -> Dict:
         """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
 
-        dataset: List[str] - file dataset represented as list split at `/`
+        dataset: List[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
         return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
