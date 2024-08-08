@@ -236,10 +236,10 @@ class HDF5Consolidator(ConsolidatorBase):
     def adapter_parameters(self) -> Dict:
         """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
 
-        path: List[str] - file path represented as list split at `/`
+        dataset: List[str] - file dataset represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"path": self._sres_parameters["path"].strip("/").split("/"), "swmr": self.swmr}
+        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
 
 
 class TIFFConsolidator(ConsolidatorBase):
