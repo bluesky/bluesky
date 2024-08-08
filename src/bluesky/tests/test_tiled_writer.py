@@ -69,12 +69,12 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
         data_shape = tuple(data_desc["shape"])
         data_shape = data_shape if data_shape != (1,) else ()
-        hdf5_path = f"/{data_key}/VALUE"
+        hdf5_dataset = f"/{data_key}/VALUE"
 
         stream_resource = None
         if self.counter == 0:
             stream_resource = StreamResource(
-                parameters={"path": hdf5_path, "chunk_size": False},
+                parameters={"dataset": hdf5_dataset, "chunk_size": False},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
@@ -86,7 +86,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
             with h5py.File(file_path, "a") as f:
                 dset = f.require_dataset(
-                    hdf5_path,
+                    hdf5_dataset,
                     (0, *data_shape),
                     maxshape=(None, *data_shape),
                     dtype=np.dtype("double"),
@@ -104,7 +104,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         # Write (append to) the hdf5 dataset
         with h5py.File(file_path, "a") as f:
-            dset = f[hdf5_path]
+            dset = f[hdf5_dataset]
             dset.resize([indx_max, *data_shape])
             dset[indx_min:indx_max, ...] = np.random.randn(indx_max - indx_min, *data_shape)
 
