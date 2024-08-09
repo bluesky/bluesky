@@ -2323,9 +2323,8 @@ class RunEngine:
         true when all triggered objects are done. When the keyword argument
         `move_on=<MOVE_ON>` is true, this method can return before all objects are done
         after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
-        
         Optionally, the `group` keyword argument can be a list of status objects passed
-        in the same way. A temporary group is created for them and the function is 
+        in the same way. A temporary group is created for them and the function is
         processed as normal.
 
         Expected message objects are:
