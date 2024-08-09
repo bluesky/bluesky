@@ -2344,13 +2344,13 @@ class RunEngine:
         else:
             group = msg.kwargs["group"]
             move_on = msg.kwargs.get("move_on", False)
-            
+
         if isinstance(group, list):
             status_objs = group
             group = "__status_group__"
             for status in status_objs:
                 self._add_status_to_group(obj=None, status_object=status, group=group, action="wait")
-                
+
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:
