@@ -10,7 +10,7 @@ from bluesky.callbacks.fitting import center_of_mass
         # example from the source code
         [[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 1, 1, 0]], None, None, (2.0, 1.5)],
         # signal is all zero, does not raise ZeroDivisionError or other
-        [[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], None, None, (0.0, 0.0)],
+        [[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], None, None, None],
         # multiple objects in an image
         # # FIXME: TypeError: Field elements must be 2- or 3-tuples, got '1'
         # [
