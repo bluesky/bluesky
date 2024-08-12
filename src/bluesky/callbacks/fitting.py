@@ -132,6 +132,7 @@ class LiveFit(CallbackBase):
 def center_of_mass(input, labels=None, index=None):
     """
     Calculate the center of mass of the values of an array at labels.
+
     Parameters
     ----------
     input : ndarray
@@ -142,10 +143,13 @@ def center_of_mass(input, labels=None, index=None):
     index : int or sequence of ints, optional
         Labels for which to calculate centers-of-mass. If not specified,
         all labels greater than zero are used.  Only used with `labels`.
+
     Returns
     -------
     center_of_mass : tuple, or list of tuples
         Coordinates of centers-of-mass.
+    None when sum of signal is zero.
+
     Examples
     --------
     >>> a = np.array(([0,0,0,0],
@@ -167,7 +171,7 @@ def center_of_mass(input, labels=None, index=None):
     """
     normalizer = np.sum(input, labels, index)
     if normalizer == 0:
-        normalizer  = 1  # special case to avoid ZeroDivisionError
+        return None
     grids = np.ogrid[[slice(0, i) for i in input.shape]]
 
     results = [np.sum(input * grids[dir].astype(float), labels, index) / normalizer for dir in range(input.ndim)]
