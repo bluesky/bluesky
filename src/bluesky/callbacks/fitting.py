@@ -166,6 +166,8 @@ def center_of_mass(input, labels=None, index=None):
     [(0.33333333333333331, 1.3333333333333333), (3.5, 2.5)]
     """
     normalizer = np.sum(input, labels, index)
+    if normalizer == 0:
+        normalizer  = 1  # special case to avoid ZeroDivisionError
     grids = np.ogrid[[slice(0, i) for i in input.shape]]
 
     results = [np.sum(input * grids[dir].astype(float), labels, index) / normalizer for dir in range(input.ndim)]
