@@ -381,6 +381,9 @@ Suspender-related Methods
 .. automethod:: bluesky.run_engine.RunEngine.clear_suspenders
     :noindex:
 
+.. automethod:: bluesky.suspenders.IgnoreSuspendersContext
+    :noindex:
+
 The RunEngine also has a ``suspenders`` property, a collection of the
 currently-installed suspenders.
 

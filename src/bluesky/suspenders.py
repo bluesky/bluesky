@@ -686,20 +686,20 @@ class SuspendWhenChanged(SuspenderBase):
 
 
 class IgnoreSuspendersContext:
+    """Using as a context manager, temporarily remove specific suspenders from the RunEngine.
+    This operates at the RE process level.
+    Similar functionality can be achieved at the plan/msg level using the
+    bluesky.preprocessors.ignore_suspenders_wrapper and bluesky.preprocessors.ignore_suspenders_decorator.
+
+    >>> with IgnoreSuspenders(suspender1, suspender2):
+    >>>     RE(plan)
+
+    Parameters
+    ----------
+    *suspenders : SuspenderBase
+    """
+
     def __init__(self, *suspenders):
-        """Using as a context manager, temporarily remove specific suspenders from the RunEngine.
-        This operates at the RE process level.
-        Similar functionality can be achieved at the plan/msg level using the
-        bluesky.preprocessors.ignore_suspenders_wrapper and bluesky.preprocessors.ignore_suspenders_decorator.
-
-        >>> with IgnoreSuspenders(suspender1, suspender2):
-        >>>     RE(plan)
-        >>> # or
-
-        Parameters
-        ----------
-        *suspenders : SuspenderBase
-        """
         self._suspenders = suspenders
         self._run_engines = []
 
