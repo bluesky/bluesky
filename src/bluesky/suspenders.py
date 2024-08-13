@@ -2,12 +2,9 @@ import asyncio
 import operator
 import threading
 from abc import ABCMeta, abstractmethod, abstractproperty
-from contextlib import ContextDecorator
 from datetime import datetime, timedelta
 from functools import partial
 from warnings import warn
-
-import bluesky
 
 
 class SuspenderBase(metaclass=ABCMeta):
@@ -688,16 +685,31 @@ class SuspendWhenChanged(SuspenderBase):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class IgnoreSuspenders(ContextDecorator):
-    def __init__(self, re: bluesky.RunEngine, *suspenders):
+class IgnoreSuspendersContext:
+    def __init__(self, *suspenders):
+        """Using as a context manager, temporarily remove specific suspenders from the RunEngine.
+        This operates at the RE process level.
+        Similar functionality can be achieved at the plan/msg level using the
+        bluesky.preprocessors.ignore_suspenders_wrapper and bluesky.preprocessors.ignore_suspenders_decorator.
+
+        >>> with IgnoreSuspenders(suspender1, suspender2):
+        >>>     RE(plan)
+        >>> # or
+
+        Parameters
+        ----------
+        *suspenders : SuspenderBase
+        """
         self._suspenders = suspenders
-        self._re = re
+        self._run_engines = []
 
     def __enter__(self):
         for suspender in self._suspenders:
-            self._re.remove_suspender(suspender)
+            self._run_engines.append(suspender.RE)
+            suspender.RE.remove_suspender(suspender)
         return self._suspenders
 
-    def __exit__(self):
-        for suspender in self._suspenders:
-            self._re.install_suspender(suspender)
+    def __exit__(self, *exc):
+        for RE, suspender in zip(self._run_engines, self._suspenders):
+            RE.install_suspender(suspender)
+        self._run_engines.clear()
