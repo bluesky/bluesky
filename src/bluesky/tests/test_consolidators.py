@@ -10,7 +10,7 @@ def descriptor():
             "test_img": {
                 "shape": [10, 15],
                 "dtype": "array",
-                "dtype_str": "<f8",
+                "dtype_numpy": "<f8",
                 "external": "STREAM:",
                 "object_name": "test_object",
             },

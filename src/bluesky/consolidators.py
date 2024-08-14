@@ -85,13 +85,14 @@ class ConsolidatorBase:
         self.assets: List[Asset] = []
         self._sres_parameters = stream_resource["parameters"]
 
-        # Find data shape and machine dtype; dtype_str takes precedence if specified
+        # Find data shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
         self.dtype = data_desc["dtype"]
         self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
         self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
+        self.dtype = np.dtype(data_desc.get("dtype_numpy", self.dtype))
         self.chunk_size = self._sres_parameters.get("chunk_size", None)
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
