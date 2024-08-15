@@ -689,3 +689,9 @@ def test_predeclare_env(hw, monkeypatch, predeclare):
             assert "declare_stream" in cmds
         else:
             assert "declare_stream" not in cmds
+
+
+@pytest.mark.filterwarnings("error")
+def test_no_warning(hw):
+    # this should not warn
+    list(bps.rel_set(hw.motor, 2))
