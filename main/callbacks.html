@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Live Visualization and Processing &#8212; bluesky 1.13.0a5.dev23+g997eb228 documentation</title>
+    <title>Live Visualization and Processing &#8212; bluesky 1.13.0a5.dev27+g3114fb32 documentation</title>
   
   
   
@@ -36,14 +36,14 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="_static/documentation_options.js?v=e111e5b1"></script>
+    <script src="_static/documentation_options.js?v=bbe1e783"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'callbacks';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev23+g997eb228';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev27+g3114fb32';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -768,16 +768,16 @@ row is added to the table. Demo:</p>
 <span class="go">+-----------+------------+------------+----------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor | motor_setpoint |        det |</span>
 <span class="go">+-----------+------------+------------+----------------+------------+</span>
-<span class="go">|         1 | 09:45:16.7 |      1.000 |          1.000 |      0.607 |</span>
-<span class="go">|         2 | 09:45:16.7 |      2.000 |          2.000 |      0.135 |</span>
-<span class="go">|         3 | 09:45:16.7 |      3.000 |          3.000 |      0.011 |</span>
-<span class="go">|         4 | 09:45:16.7 |      4.000 |          4.000 |      0.000 |</span>
-<span class="go">|         5 | 09:45:16.7 |      5.000 |          5.000 |      0.000 |</span>
+<span class="go">|         1 | 22:39:58.3 |      1.000 |          1.000 |      0.607 |</span>
+<span class="go">|         2 | 22:39:58.3 |      2.000 |          2.000 |      0.135 |</span>
+<span class="go">|         3 | 22:39:58.3 |      3.000 |          3.000 |      0.011 |</span>
+<span class="go">|         4 | 22:39:58.3 |      4.000 |          4.000 |      0.000 |</span>
+<span class="go">|         5 | 22:39:58.3 |      5.000 |          5.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+----------------+------------+</span>
-<span class="go">generator scan [&#39;5263be0f&#39;] (scan num: 1)</span>
+<span class="go">generator scan [&#39;6b555f60&#39;] (scan num: 1)</span>
 
 
-<span class="gh">Out[4]: </span><span class="go">(&#39;5263be0f-869b-4271-a4f3-a0514ee5c9d4&#39;,)</span>
+<span class="gh">Out[4]: </span><span class="go">(&#39;6b555f60-d36c-4ba0-8db1-7130b5af0af4&#39;,)</span>
 </pre></div>
 </div>
 <p>Pass an empty list of columns to show simply ‘time’ and ‘seq_num’ (sequence
@@ -1058,9 +1058,9 @@ pixel to fill in.</p>
 </dd>
 <dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x and y axis</p>
 </dd>
-<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.9.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.9.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
-<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.9.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.9.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
 <dt><strong>ax</strong><span class="classifier">Axes, optional</span></dt><dd><p>matplotib Axes; if none specified, new figure and axes are made.</p>
 </dd>
@@ -1367,13 +1367,8 @@ for quick and dirty background subtraction.</p>
 </dd>
 </dl>
 </dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>It is assumed that the two fields, x and y, are recorded in the same
-Event stream.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Attributes<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
 <dt><strong>com</strong><span class="classifier">center of mass</span></dt><dd></dd>
 <dt><strong>cen</strong><span class="classifier">mid-point between half-max points on each side of the peak</span></dt><dd></dd>
 <dt><strong>max</strong><span class="classifier">x location of y maximum</span></dt><dd></dd>
@@ -1387,6 +1382,9 @@ be the fwhm.</p>
 </dl>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>It is assumed that the two fields, x and y, are recorded in the same
+Event stream.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1437,23 +1435,23 @@ plans in <code class="xref py py-mod docutils literal notranslate"><span class="
 <span class="gp">In [9]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>  <span class="c1"># automatically prints table, shows plot</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-07-23 09:45:40</span>
-<span class="go">Persistent Unique Scan ID: &#39;3567f841-3330-4289-a5aa-18c16d53369f&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-08-15 22:40:20</span>
+<span class="go">Persistent Unique Scan ID: &#39;212d0b16-b2ff-46e9-8320-df82f5b70de6&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 09:45:40.7 |      1.000 |      0.000 |      0.271 |</span>
-<span class="go">|         2 | 09:45:41.0 |      2.000 |      0.000 |      0.271 |</span>
-<span class="go">|         3 | 09:45:41.2 |      3.000 |      0.000 |      0.271 |</span>
-<span class="go">|         4 | 09:45:41.5 |      4.000 |      0.000 |      0.271 |</span>
-<span class="go">|         5 | 09:45:41.7 |      5.000 |      0.000 |      0.271 |</span>
+<span class="go">|         1 | 22:40:20.3 |      1.000 |      0.000 |      0.271 |</span>
+<span class="go">|         2 | 22:40:20.6 |      2.000 |      0.000 |      0.271 |</span>
+<span class="go">|         3 | 22:40:20.8 |      3.000 |      0.000 |      0.271 |</span>
+<span class="go">|         4 | 22:40:21.0 |      4.000 |      0.000 |      0.271 |</span>
+<span class="go">|         5 | 22:40:21.3 |      5.000 |      0.000 |      0.271 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;3567f841&#39;] (scan num: 2)</span>
+<span class="go">generator scan [&#39;212d0b16&#39;] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">(&#39;3567f841-3330-4289-a5aa-18c16d53369f&#39;,)</span>
+<span class="gh">Out[9]: </span><span class="go">(&#39;212d0b16-b2ff-46e9-8320-df82f5b70de6&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1911,20 +1909,20 @@ We are setting up a <em>subscription</em>.</p>
 <span class="gp">In [13]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="p">{</span><span class="s1">&#39;event&#39;</span><span class="p">:</span> <span class="n">print_data</span><span class="p">})</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2024-07-23 09:45:43</span>
-<span class="go">Persistent Unique Scan ID: &#39;db544a01-1307-486d-8a72-763be0eeb0d0&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2024-08-15 22:40:22</span>
+<span class="go">Persistent Unique Scan ID: &#39;1cdd576b-3f16-464b-ac6c-0bd458659eca&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 09:45:43.2 |      0.000 |</span>
+<span class="go">|         1 | 22:40:22.6 |      0.000 |</span>
 <span class="go">Measured: {&#39;det&#39;: 3.726653172078671e-06}</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;db544a01&#39;] (scan num: 3)</span>
+<span class="go">generator count [&#39;1cdd576b&#39;] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[13]: </span><span class="go">(&#39;db544a01-1307-486d-8a72-763be0eeb0d0&#39;,)</span>
+<span class="gh">Out[13]: </span><span class="go">(&#39;1cdd576b-3f16-464b-ac6c-0bd458659eca&#39;,)</span>
 </pre></div>
 </div>
 <p>Each time the RunEngine generates a new Event Document (i.e., data point)
@@ -2107,6 +2105,17 @@ mocking its interface is accepted.</p>
 </dd>
 </dl>
 </dd>
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>in_port</strong><span class="classifier">int</span></dt><dd><p>Port that RunEngines should broadcast to.</p>
+</dd>
+<dt><strong>out_port</strong><span class="classifier">int</span></dt><dd><p>Port that subscribers should subscribe to.</p>
+</dd>
+<dt><strong>closed</strong><span class="classifier">boolean</span></dt><dd><p>True if the Proxy has already been started and subsequently
+interrupted and is therefore unusable.</p>
+</dd>
+</dl>
+</dd>
 </dl>
 <p class="rubric">Examples</p>
 <p>Run on specific ports.</p>
@@ -2127,19 +2136,6 @@ mocking its interface is accepted.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">proxy</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>  <span class="c1"># runs until interrupted</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Attributes<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>in_port</strong><span class="classifier">int</span></dt><dd><p>Port that RunEngines should broadcast to.</p>
-</dd>
-<dt><strong>out_port</strong><span class="classifier">int</span></dt><dd><p>Port that subscribers should subscribe to.</p>
-</dd>
-<dt><strong>closed</strong><span class="classifier">boolean</span></dt><dd><p>True if the Proxy has already been started and subsequently
-interrupted and is therefore unusable.</p>
-</dd>
-</dl>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -2558,7 +2554,7 @@ anywhere.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a5.dev23+g997eb228/docs/callbacks.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a5.dev27+g3114fb32/docs/callbacks.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
