@@ -1922,6 +1922,8 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
 
 
 class Plan:
+    __slots__ = ('_iter', '_stack')
+
     def __init__(self, f, *args, **kwargs) -> None:
         self._iter = f(*args, **kwargs)
         self._stack = traceback.format_stack()
