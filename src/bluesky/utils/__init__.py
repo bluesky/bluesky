@@ -1935,6 +1935,7 @@ class Plan:
         return (yield from self._iter)
 
     def __next__(self):
+        self._stack = None
         return next(self._iter)
 
     def __del__(self):
@@ -1943,9 +1944,11 @@ class Plan:
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
     def send(self, value):
+        self._stack = None
         return self._iter.send(value)
 
     def throw(self, typ, val=None, tb=None):
+        self._stack = None
         return self._iter.throw(typ, val, tb)
 
 
