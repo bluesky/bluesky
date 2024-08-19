@@ -116,7 +116,7 @@ def count(
     def inner_count() -> MsgGenerator[str]:
         if predeclare:
             yield from bps.declare_stream(*detectors, name="primary")
-        return (yield from bps.repeat(partial(per_shot, detectors), num=num, delay=delay))
+        return (yield from bps.repeat(partial(per_shot, detectors), num=num, delay=delay))  # type: ignore
 
     return (yield from inner_count())
 
