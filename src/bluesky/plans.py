@@ -108,15 +108,14 @@ def count(
 
     # per_shot might define a different stream, so do not predeclare primary
     predeclare = per_shot is None and os.environ.get("BLUESKY_PREDECLARE", False)
-    if per_shot is None:
-        per_shot = bps.one_shot
+    msg_per_step: PerShot = per_shot if per_shot else bps.one_shot
 
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
     def inner_count() -> MsgGenerator[str]:
         if predeclare:
             yield from bps.declare_stream(*detectors, name="primary")
-        return (yield from bps.repeat(partial(per_shot, detectors), num=num, delay=delay))  # type: ignore
+        return (yield from bps.repeat(partial(msg_per_step, detectors), num=num, delay=delay))
 
     return (yield from inner_count())
 
