@@ -591,6 +591,14 @@ def test_grid_scans_failing(RE, hw, plan):
             args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9)
             RE(plan([hw.det], *args, snake_axes=snake_axes))
 
+    # Argument detectors is a generator
+    generator = (detector for detector in [hw.det1, hw.det2])
+    with pytest.raises(
+        TypeError, match="The input argument must be either as a list or a tuple of Readable objects."
+    ):
+        args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, True, hw.motor2, 7, 8, 9, False)
+        RE(plan(generator, *args))
+
 
 def test_describe_failure(RE):
     ophyd = pytest.importorskip("ophyd")
@@ -689,6 +697,15 @@ def test_predeclare_env(hw, monkeypatch, predeclare):
             assert "declare_stream" in cmds
         else:
             assert "declare_stream" not in cmds
+
+
+def test_count_failure(RE, hw):
+    detector_generator = (det for det in [hw.det1, hw.det2])
+    with pytest.raises(TypeError):
+        RE(bp.count(detector_generator))
+
+    with pytest.raises(TypeError):
+        RE(bp.count(hw.det))
 
 
 @pytest.mark.filterwarnings("error")
