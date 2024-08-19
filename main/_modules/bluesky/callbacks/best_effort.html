@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.callbacks.best_effort &#8212; bluesky 1.13.0a5.dev27+g3114fb32 documentation</title>
+    <title>bluesky.callbacks.best_effort &#8212; bluesky 1.13.0a5.dev28+gaee197c0 documentation</title>
   
   
   
@@ -35,14 +35,14 @@
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../../../_static/documentation_options.js?v=bbe1e783"></script>
+    <script src="../../../_static/documentation_options.js?v=591c8481"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/callbacks/best_effort';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev27+g3114fb32';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev28+gaee197c0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -720,7 +720,8 @@ document.write(`
         <span class="c1"># for each dimension, choose one field only</span>
         <span class="c1"># the plan can supply a list of fields. It&#39;s assumed the first</span>
         <span class="c1"># of the list is always the one plotted against</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dim_fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">fields</span><span class="p">,</span> <span class="n">stream_name</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">]</span>
+        <span class="n">default_field_name</span> <span class="o">=</span> <span class="s2">&quot;time&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="k">else</span> <span class="n">default_field_name</span> <span class="k">for</span> <span class="n">fields</span><span class="p">,</span> <span class="n">stream_name</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">]</span>
 
         <span class="c1"># make distinction between flattened fields and plotted fields</span>
         <span class="c1"># motivation for this is that when plotting, we find dependent variable</span>
