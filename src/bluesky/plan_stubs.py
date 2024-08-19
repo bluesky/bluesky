@@ -1736,7 +1736,7 @@ def one_nd_step(
 
 @plan
 def repeat(
-    plan: Callable[[], MsgGenerator],
+    plan: Callable[[MsgGenerator]],
     num: Optional[int] = 1,
     delay: ScalarOrIterableFloat = 0.0,
 ) -> MsgGenerator[Any]:
