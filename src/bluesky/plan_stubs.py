@@ -1,6 +1,7 @@
 import itertools
 import operator
 import time
+import typing
 import uuid
 import warnings
 from functools import reduce
@@ -12,6 +13,7 @@ from typing import (
     Hashable,
     Iterable,
     List,
+    Literal,
     Mapping,
     Optional,
     Sequence,
@@ -36,6 +38,7 @@ from .protocols import (
     Configurable,
     Flyable,
     Locatable,
+    Location,
     Movable,
     NamedMovable,
     PartialEvent,
@@ -177,6 +180,30 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
         Reading object representing information recorded
     """
     return (yield Msg("read", obj))
+
+
+@typing.overload
+def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+@typing.overload
+def locate(*objs: Locatable, squeeze: bool = True) -> List[Location]: ...
+@plan
+def locate(*objs, squeeze=True):
+    """
+    Locate some Movables and return their locations.
+
+    Parameters
+    ----------
+    obj : Device or Signal
+    sqeeze: bool
+        If True, return the result as a list.
+        If False, always return a list of retults even with a single object.
+
+    Yields
+    ------
+     msg : Msg
+        ``Msg('locate', obj1, ..., objn, squeeze=True)``
+    """
+    return (yield Msg("locate", *objs, squeeze=squeeze))
 
 
 @plan

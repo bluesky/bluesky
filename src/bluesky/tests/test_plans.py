@@ -706,3 +706,9 @@ def test_count_failure(RE, hw):
 
     with pytest.raises(TypeError):
         RE(bp.count(hw.det))
+
+
+@pytest.mark.filterwarnings("error")
+def test_no_warning(hw):
+    # this should not warn
+    list(bps.rel_set(hw.motor, 2))
