@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>bluesky.plans.ramp_plan &#8212; bluesky 1.13.0a5.dev28+gaee197c0 documentation</title>
+    <title>bluesky.plans.ramp_plan &#8212; bluesky 1.13.0a5.dev76+gf25df0b2 documentation</title>
   
   
   
@@ -36,14 +36,14 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=591c8481"></script>
+    <script src="../_static/documentation_options.js?v=268c024e"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/bluesky.plans.ramp_plan';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev28+gaee197c0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev76+gf25df0b2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -597,7 +597,7 @@ document.write(`
 <h1>bluesky.plans.ramp_plan<a class="headerlink" href="#bluesky-plans-ramp-plan" title="Link to this heading">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="bluesky.plans.ramp_plan">
-<span class="sig-prename descclassname"><span class="pre">bluesky.plans.</span></span><span class="sig-name descname"><span class="pre">ramp_plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">go_plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monitor_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_plan_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">take_pre_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/plans.html#ramp_plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.plans.ramp_plan" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bluesky.plans.</span></span><span class="sig-name descname"><span class="pre">ramp_plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">go_plan</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generator" title="(in Python v3.12)"><span class="pre">Generator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="bluesky.utils.Msg.html#bluesky.utils.Msg" title="bluesky.utils.Msg"><span class="pre">Msg</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">P</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monitor_sig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../hardware.html#bluesky.protocols.Readable" title="bluesky.protocols.Readable"><span class="pre">Readable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_plan_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generator" title="(in Python v3.12)"><span class="pre">Generator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="bluesky.utils.Msg.html#bluesky.utils.Msg" title="bluesky.utils.Msg"><span class="pre">Msg</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">P</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">take_pre_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generator" title="(in Python v3.12)"><span class="pre">Generator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="bluesky.utils.Msg.html#bluesky.utils.Msg" title="bluesky.utils.Msg"><span class="pre">Msg</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/bluesky/plans.html#ramp_plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.plans.ramp_plan" title="Link to this definition">#</a></dt>
 <dd><p>Take data while ramping one or more positioners.</p>
 <p>The pseudo code for this plan is</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sts</span> <span class="o">=</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">go_plan</span><span class="p">)</span>
@@ -618,14 +618,16 @@ document.write(`
 run.</p>
 <p>This plan must return a <cite>ophyd.StatusBase</cite> object.</p>
 </dd>
+<dt><strong>monitor_sig</strong><span class="classifier">readable</span></dt><dd><p>signal to be monitored</p>
+</dd>
 <dt><strong>inner_plan_func</strong><span class="classifier">generator function</span></dt><dd><p>generator which takes no input</p>
 <p>This will be called for every data point.  This should create
 one or more events.</p>
 </dd>
+<dt><strong>take_pre_data: Bool, optional</strong></dt><dd><p>If True, add a pre data at beginning</p>
+</dd>
 <dt><strong>timeout</strong><span class="classifier">float, optional</span></dt><dd><p>If not None, the maximum time the ramp can run.</p>
 <p>In seconds</p>
-</dd>
-<dt><strong>take_pre_data: Bool, optional</strong></dt><dd><p>If True, add a pre data at beginning</p>
 </dd>
 <dt><strong>period</strong><span class="classifier">float, optional</span></dt><dd><p>If not None, take data no faster than this.  If None, take
 data as fast as possible</p>
@@ -694,7 +696,7 @@ data with no dead time.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a5.dev28+gaee197c0/docs/generated/bluesky.plans.ramp_plan.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a5.dev76+gf25df0b2/docs/generated/bluesky.plans.ramp_plan.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
