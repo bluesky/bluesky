@@ -674,6 +674,8 @@ a generator instance. The corresponding functions named
     subs_wrapper
     suspend_decorator
     suspend_wrapper
+    ignore_suspenders_decorator
+    ignore_suspenders_wrapper
 
 Custom Preprocessors
 --------------------
