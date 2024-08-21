@@ -1,4 +1,5 @@
 import asyncio
+import collections.abc
 import concurrent
 import copy
 import functools
@@ -2344,7 +2345,7 @@ class RunEngine:
             group = msg.kwargs["group"]
             move_on = msg.kwargs.get("move_on", False)
 
-        if isinstance(group, list):
+        if isinstance(group, collections.abc.Iterable):
             status_objs = group
             group = "__status_group__"
             for status in status_objs:
