@@ -2345,7 +2345,7 @@ class RunEngine:
             group = msg.kwargs["group"]
             move_on = msg.kwargs.get("move_on", False)
 
-        if isinstance(group, collections.abc.Iterable):
+        if isinstance(group, collections.abc.Iterable) and not isinstance(group, str):
             status_objs = group
             group = "__status_group__"
             for status in status_objs:
