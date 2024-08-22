@@ -2347,7 +2347,7 @@ class RunEngine:
 
         if isinstance(group, collections.abc.Iterable) and not isinstance(group, str):
             status_objs = group
-            group = "__status_group__"
+            group = str(hash(tuple(sorted(id(s) for s in group))))
             for status in status_objs:
                 self._add_status_to_group(obj=None, status_object=status, group=group, action="wait")
 
