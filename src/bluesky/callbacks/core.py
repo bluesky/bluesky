@@ -309,8 +309,8 @@ class CollectLiveStream(CallbackBase):
             sres_doc = self._sres_docs[sres_uid]
             if not desc_uid:
                 warnings.warn(
-                    textwrap.dedent("""Initialising a new Stream Consolidator without specified Descriptor uid.
-                    Attempting to find the matching Descriptor document by the data_key."""),
+                    textwrap.dedent(f"""Initialising a new Stream Consolidator without specified Descriptor uid.
+                    Attempting to find a matching Descriptor document by the data_key: {sres_doc["data_key"]}."""),
                     stacklevel=2,
                 )
                 desc_found = False
@@ -324,8 +324,8 @@ class CollectLiveStream(CallbackBase):
                     )
             else:
                 desc_doc = self._desc_docs[desc_uid]
-            handler = consolidator_factory(sres_doc, desc_doc)
 
+            handler = consolidator_factory(sres_doc, desc_doc)
             self.stream_consolidators[sres_uid] = handler
         else:
             raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being declared.")
