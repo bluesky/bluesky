@@ -6,6 +6,7 @@ import collections
 import copy
 import logging
 import os
+import textwrap
 import time as ttime
 import warnings
 from collections import OrderedDict, deque, namedtuple
@@ -295,6 +296,7 @@ class CollectLiveStream(CallbackBase):
     def stream_resource(self, doc: StreamResource):
         self._sres_docs[doc["uid"]] = self._ensure_resource_backcompat(doc)
         self._data_key_to_sres_uid[doc["data_key"]].append(doc["uid"])  # Multiple Streams Resources per data_key
+        self._get_or_create_handler(doc["uid"])
 
     def _get_or_create_handler(self, sres_uid: str, desc_uid: Optional[str] = None):
         """Get a Handler / Stream Consolidator, if it already exists, or register it from a SR document"""
@@ -303,12 +305,25 @@ class CollectLiveStream(CallbackBase):
             handler = self.stream_consolidators[sres_uid]
 
         elif sres_uid in self._sres_docs.keys():
-            if not desc_uid:
-                raise RuntimeError("Descriptor uid must be specified to initialise a Stream Consolidator")
-
-            # Initialise a Bluesky Consolidator for the StreamResource
+            # Initialise a new Bluesky Consolidator for the StreamResource
             sres_doc = self._sres_docs[sres_uid]
-            desc_doc = self._desc_docs[desc_uid]
+            if not desc_uid:
+                warnings.warn(
+                    textwrap.dedent("""Initialising a new Stream Consolidator without specified Descriptor uid.
+                    Attempting to find the matching Descriptor document by the data_key."""),
+                    stacklevel=2,
+                )
+                desc_found = False
+                for desc_doc in self._desc_docs.values():
+                    if sres_doc["data_key"] in desc_doc["data_keys"].keys():
+                        desc_found = True
+                        break
+                if not desc_found:
+                    raise RuntimeError(
+                        "Unable to initialise a new Stream Consolidator without specified Descriptor uid."
+                    )
+            else:
+                desc_doc = self._desc_docs[desc_uid]
             handler = consolidator_factory(sres_doc, desc_doc)
 
             self.stream_consolidators[sres_uid] = handler
