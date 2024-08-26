@@ -6,8 +6,10 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from cycler import Cycler
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -18,16 +20,54 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .utils import Msg, get_hinted_fields
+from .protocols import Flyable, Movable, NamedMovable, Readable
+from .utils import (
+    CustomPlanMetadata,
+    Msg,
+    MsgGenerator,
+    ScalarOrIterableFloat,
+    get_hinted_fields,
+)
+
+#: Plan function that can be used for each shot in a detector acquisition involving no actuation
+PerShot = Callable[[Sequence[Readable], Optional[bps.TakeReading]], MsgGenerator]
+
+#: Plan function that can be used for each step in a scan
+PerStep1D = Callable[
+    [Sequence[Readable], Movable, Any, Optional[bps.TakeReading]],
+    MsgGenerator,
+]
+PerStepND = Callable[
+    [
+        Sequence[Readable],
+        Mapping[Movable, Any],
+        Dict[Movable, Any],
+        Optional[bps.TakeReading],
+    ],
+    MsgGenerator,
+]
+PerStep = Union[PerStep1D, PerStepND]
 
 
-def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
+def _check_detectors_type_input(detectors):
+    if not isinstance(detectors, Sequence):
+        raise TypeError("The input argument must be either as a list or a tuple of Readable objects.")
+
+
+def count(
+    detectors: Sequence[Readable],
+    num: Optional[int] = 1,
+    delay: ScalarOrIterableFloat = 0.0,
+    *,
+    per_shot: Optional[PerShot] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     num : integer, optional
         number of readings to take; default is 1
@@ -50,6 +90,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """
+    _check_detectors_type_input(detectors)
     if num is None:
         num_intervals = None
     else:
@@ -63,30 +104,34 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
         "hints": {},
     }
     _md.update(md or {})
-    _md["hints"].setdefault("dimensions", [(("time",), "primary")])
+    _md["hints"].setdefault("dimensions", [(("time",), "primary")])  # type: ignore
 
     # per_shot might define a different stream, so do not predeclare primary
     predeclare = per_shot is None and os.environ.get("BLUESKY_PREDECLARE", False)
-    if per_shot is None:
-        per_shot = bps.one_shot
+    msg_per_step: PerShot = per_shot if per_shot else bps.one_shot
 
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
-    def inner_count():
+    def inner_count() -> MsgGenerator[str]:
         if predeclare:
             yield from bps.declare_stream(*detectors, name="primary")
-        return (yield from bps.repeat(partial(per_shot, detectors), num=num, delay=delay))
+        return (yield from bps.repeat(partial(msg_per_step, detectors), num=num, delay=delay))
 
     return (yield from inner_count())
 
 
-def list_scan(detectors, *args, per_step=None, md=None):
+def list_scan(
+    detectors: Sequence[Readable],
+    *args: Tuple[Union[Movable, Any], List[Any]],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one or more variables in steps simultaneously (inner product).
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     *args :
         For one dimension, ``motor, [point1, point2, ....]``.
@@ -114,6 +159,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.list_grid_scan`
     :func:`bluesky.plans.rel_list_grid_scan`
     """
+    _check_detectors_type_input(detectors)
     if len(args) % 2 != 0:
         raise ValueError("The list of arguments must contain a list of points for each defined motor")
 
@@ -147,7 +193,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
         "detectors": [det.name for det in detectors],
         "motors": motor_names,
         "num_points": length,
-        "num_intervals": length - 1,
+        "num_intervals": length - 1,  # type: ignore
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
         "plan_name": "list_scan",
         "plan_pattern": "inner_list_product",
@@ -163,21 +209,26 @@ def list_scan(detectors, *args, per_step=None, md=None):
 
     default_dimensions = [(x_fields, "primary")]
 
-    default_hints = {}
+    default_hints: Dict[str, Sequence] = {}
     if len(x_fields) > 0:
         default_hints.update(dimensions=default_dimensions)
 
     # now add default_hints and override any hints from the original md (if
     # exists)
     _md["hints"] = default_hints
-    _md["hints"].update(md.get("hints", {}) or {})
+    _md["hints"].update(md.get("hints", {}) or {})  # type: ignore
 
     full_cycler = plan_patterns.inner_list_product(args)
 
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_list_scan(detectors, *args, per_step=None, md=None):
+def rel_list_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in steps relative to current position.
 
@@ -229,13 +280,19 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
     return (yield from inner_relative_list_scan())
 
 
-def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+def list_grid_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    snake_axes: bool = False,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
     Parameters
     ----------
-    detectors: list
+    detectors: list or tuple
         list of 'readable' objects
     args: list
         patterned like (``motor1, position_list1,``
@@ -289,23 +346,29 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
         "motors": tuple(motor_names),
         "hints": {},
     }
-    _md.update(md or {})
+    _md.update(md or {})  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])
+        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])  # type: ignore
     except (AttributeError, KeyError):
         ...
 
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+def rel_list_grid_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    snake_axes: bool = False,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory. Each point is
     relative to the current position.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
 
     args
@@ -340,6 +403,7 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=Non
     :func:`bluesky.plans.list_scan`
     :func:`bluesky.plans.rel_list_scan`
     """
+    _check_detectors_type_input(detectors)
     _md = {"plan_name": "rel_list_grid_scan"}
     _md.update(md or {})
 
@@ -353,13 +417,22 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=Non
     return (yield from inner_relative_list_grid_scan())
 
 
-def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def _scan_1d(
+    detectors: Sequence[Readable],
+    motor: NamedMovable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -379,7 +452,8 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.rel_scan`
     """
-    _md = {
+    _check_detectors_type_input(detectors)
+    _md: CustomPlanMetadata = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name],
         "num_points": num,
@@ -404,7 +478,7 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     if per_step is None:
         per_step = bps.one_1d_step
@@ -420,13 +494,22 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def _rel_scan_1d(
+    detectors: Sequence[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps relative to current positon.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -458,13 +541,22 @@ def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_relative_scan())
 
 
-def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def log_scan(
+    detectors: Sequence[Readable],
+    motor: NamedMovable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step=None,
+    md=None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -484,7 +576,8 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.rel_log_scan`
     """
-    _md = {
+    _check_detectors_type_input(detectors)
+    _md: CustomPlanMetadata = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name],
         "num_points": num,
@@ -510,7 +603,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
     if per_step is None:
@@ -529,13 +622,22 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_log_scan())
 
 
-def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def rel_log_scan(
+    detectors: Sequence[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps relative to current position.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     motor : object
         any 'settable' object (motor, temp controller, etc.)
@@ -568,25 +670,25 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
 
 def adaptive_scan(
-    detectors,
-    target_field,
-    motor,
-    start,
-    stop,
-    min_step,
-    max_step,
-    target_delta,
-    backstep,
-    threshold=0.8,
+    detectors: Sequence[Readable],
+    target_field: str,
+    motor: NamedMovable,
+    start: float,
+    stop: float,
+    min_step: float,
+    max_step: float,
+    target_delta: float,
+    backstep: bool,
+    threshold: Optional[float] = 0.8,
     *,
-    md=None,
-):
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable with adaptively tuned step size.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     target_field : string
         data field whose output is the focus of the adaptive tuning
@@ -613,6 +715,7 @@ def adaptive_scan(
     --------
     :func:`bluesky.plans.rel_adaptive_scan`
     """
+    _check_detectors_type_input(detectors)
     if not 0 < min_step < max_step:
         raise ValueError("min_step and max_step must meet condition of max_step > min_step > 0")
 
@@ -639,7 +742,7 @@ def adaptive_scan(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
@@ -696,25 +799,25 @@ def adaptive_scan(
 
 
 def rel_adaptive_scan(
-    detectors,
-    target_field,
-    motor,
-    start,
-    stop,
-    min_step,
-    max_step,
-    target_delta,
-    backstep,
-    threshold=0.8,
+    detectors: Sequence[Readable],
+    target_field: str,
+    motor: Movable,
+    start: float,
+    stop: float,
+    min_step: float,
+    max_step: float,
+    target_delta: float,
+    backstep: bool,
+    threshold: Optional[float] = 0.8,
     *,
-    md=None,
-):
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Relative scan over one variable with adaptively tuned step size.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     target_field : string
         data field whose output is the focus of the adaptive tuning
@@ -767,8 +870,18 @@ def rel_adaptive_scan(
 
 
 def tune_centroid(
-    detectors, signal, motor, start, stop, min_step, num=10, step_factor=3.0, snake=False, *, md=None
-):
+    detectors: Sequence[Readable],
+    signal: str,
+    motor: NamedMovable,
+    start: float,
+    stop: float,
+    min_step: float,
+    num: int = 10,
+    step_factor: float = 3.0,
+    snake: bool = False,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
 
@@ -794,7 +907,7 @@ def tune_centroid(
 
     Parameters
     ----------
-    detectors : Signal
+    detectors : list or tuple
         list of 'readable' objects
     signal : string
         detector field whose output is to maximize
@@ -827,6 +940,7 @@ def tune_centroid(
     ...                center=-1.3, Imax=1e5, sigma=0.05)
     >>> RE(tune_centroid([det], "det", motor, -1.5, -0.5, 0.01, 10))
     """
+    _check_detectors_type_input(detectors)
     if min_step <= 0:
         raise ValueError("min_step must be positive")
     if step_factor <= 1.0:
@@ -855,14 +969,14 @@ def tune_centroid(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     low_limit = min(start, stop)
     high_limit = max(start, stop)
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
-    def _tune_core(start, stop, num, signal):
+    def _tune_core(start: float, stop: float, num: int, signal: str):
         next_pos = start
         step = (stop - start) / (num - 1)
         peak_position = None
@@ -870,11 +984,11 @@ def tune_centroid(
         sum_I = 0  # for peak centroid calculation, I(x)
         sum_xI = 0
         if os.environ.get("BLUESKY_PREDECLARE", False):
-            yield from bps.declare_stream(motor, *detectors, name="primary")
+            yield from bps.declare_stream(motor, *detectors, name="primary")  # type: ignore
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
-            yield from bps.mv(motor, next_pos)
-            ret = yield from bps.trigger_and_read(detectors + [motor])
+            yield from bps.mv(motor, next_pos)  # type: ignore      # Movable
+            ret = yield from bps.trigger_and_read(list(detectors) + [motor])  # type: ignore
             cur_I = ret[signal]["value"]
             sum_I += cur_I
             position = ret[motor_name]["value"]
@@ -903,18 +1017,24 @@ def tune_centroid(
         if peak_position is not None:
             # improvement: report final peak_position
             # print("final position = {}".format(peak_position))
-            yield from bps.mv(motor, peak_position)
+            yield from bps.mv(motor, peak_position)  # type: ignore      # Movable
 
     return (yield from _tune_core(start, stop, num, signal))
 
 
-def scan_nd(detectors, cycler, *, per_step=None, md=None):
+def scan_nd(
+    detectors: Sequence[Readable],
+    cycler: Cycler,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over an arbitrary N-dimensional trajectory.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
     cycler : Cycler
         cycler.Cycler object mapping movable interfaces to positions
     per_step : callable, optional
@@ -935,12 +1055,17 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     >>> cy = cycler(motor1, [1, 2, 3]) * cycler(motor2, [4, 5, 6])
     >>> scan_nd([sensor], cy)
     """
+    _check_detectors_type_input(detectors)
     _md = {
         "detectors": [det.name for det in detectors],
         "motors": [motor.name for motor in cycler.keys],
         "num_points": len(cycler),
         "num_intervals": len(cycler) - 1,
-        "plan_args": {"detectors": list(map(repr, detectors)), "cycler": repr(cycler), "per_step": repr(per_step)},
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "cycler": repr(cycler),
+            "per_step": repr(per_step),
+        },
         "plan_name": "scan_nd",
         "hints": {},
     }
@@ -956,7 +1081,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         #  - the user did not pass it in and we got the default {}
         # If the user supplied hints includes a dimension entry, do not
         # change it, else set it to the one generated above
-        _md["hints"].setdefault("dimensions", dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
     predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
     if per_step is None:
@@ -1019,7 +1144,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                 (step,) = step.values()
                 return (yield from user_per_step(detectors, motor, step))
 
-            per_step = adapter
+            per_step = adapter  # type: ignore
         else:
             raise TypeError(
                 "per_step must be a callable with the signature \n "
@@ -1027,7 +1152,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                 "<Signature (detectors, motor, step)>. \n"
                 f"per_step signature received: {sig}"
             )
-    pos_cache = defaultdict(lambda: None)  # where last position is stashed
+    pos_cache: Dict = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
 
@@ -1042,7 +1167,13 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     return (yield from inner_scan_nd())
 
 
-def inner_product_scan(detectors, num, *args, per_step=None, md=None):
+def inner_product_scan(
+    detectors: Sequence[Readable],
+    num: int,
+    *args: Union[Movable, Any],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[None]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
@@ -1050,13 +1181,19 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     yield from scan(detectors, *args, num, per_step=None, md=md)
 
 
-def scan(detectors, *args, num=None, per_step=None, md=None):
+def scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    num: Optional[int] = None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory.
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
     *args :
         For one dimension, ``motor, start, stop``.
@@ -1085,6 +1222,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
     :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
+    _check_detectors_type_input(detectors)
     # For back-compat reasons, we accept 'num' as the last positional argument:
     # scan(detectors, motor, -1, 1, 3)
     # or by keyword:
@@ -1097,16 +1235,15 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
                 "as the last positional argument or as keyword "
                 "argument 'num'."
             )
-        num = args[-1]
+        num = args[-1]  # type: ignore
         args = args[:-1]
 
-    if not (float(num).is_integer() and num > 0.0):
+    elif not (float(num).is_integer() and num > 0.0):
         raise ValueError(
             f"The parameter `num` is expected to be a number of "
             f"steps (not step size!) It must therefore be a "
             f"whole number. The given value was {num}."
         )
-    num = int(num)
 
     md_args = list(chain(*((repr(motor), start, stop) for motor, start, stop in partition(3, args))))
     motor_names = tuple(motor.name for motor, start, stop in partition(3, args))
@@ -1139,27 +1276,33 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
 
     default_dimensions = [(x_fields, "primary")]
 
-    default_hints = {}
+    default_hints: Dict[str, Sequence] = {}
     if len(x_fields) > 0:
         default_hints.update(dimensions=default_dimensions)
 
     # now add default_hints and override any hints from the original md (if
     # exists)
     _md["hints"] = default_hints
-    _md["hints"].update(md.get("hints", {}) or {})
+    _md["hints"].update(md.get("hints", {}) or {})  # type: ignore
 
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+def grid_scan(
+    detectors: Sequence[Readable],
+    *args,
+    snake_axes: Optional[Union[Iterable, bool]] = None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
     Parameters
     ----------
-    detectors: list
+    detectors: list or tuple
         list of 'readable' objects
     ``*args``
         patterned like (``motor1, start1, stop1, num1,``
@@ -1206,6 +1349,7 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     #   supplied, but if `snake_axes` is not `None` (the default value), it overrides
     #   any values of `snakeX` in `args`.
 
+    _check_detectors_type_input(detectors)
     args_pattern = plan_patterns.classify_outer_product_args_pattern(args)
     if (snake_axes is not None) and (args_pattern == plan_patterns.OuterProductArgsPattern.PATTERN_2):
         raise ValueError(
@@ -1314,16 +1458,22 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
         "hints": {},
     }
     _md.update(md or {})
-    _md["hints"].setdefault("gridding", "rectilinear")
+    _md["hints"].setdefault("gridding", "rectilinear")  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])
+        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])  # type: ignore
     except (AttributeError, KeyError):
         ...
 
     return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+def rel_grid_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    snake_axes: Optional[Union[Iterable, bool]] = None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh relative to current position.
 
@@ -1376,7 +1526,13 @@ def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     return (yield from inner_rel_grid_scan())
 
 
-def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
+def relative_inner_product_scan(  # type: ignore
+    detectors: Sequence[Readable],
+    num: int,
+    *args: Union[Movable, Any],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
@@ -1384,7 +1540,13 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
 
 
-def rel_scan(detectors, *args, num=None, per_step=None, md=None):
+def rel_scan(
+    detectors: Sequence[Readable],
+    *args: Union[Movable, Any],
+    num=None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory relative to current position.
 
@@ -1419,6 +1581,7 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
+    _check_detectors_type_input(detectors)
     _md = {"plan_name": "rel_scan"}
     md = md or {}
     _md.update(md)
@@ -1432,7 +1595,14 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     return (yield from inner_rel_scan())
 
 
-def tweak(detector, target_field, motor, step, *, md=None):
+def tweak(
+    detector: Readable,
+    target_field: str,
+    motor: NamedMovable,
+    step: float,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Move and motor and read a detector with an interactive prompt.
 
@@ -1466,7 +1636,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].update({"dimensions": dimensions})
+        _md["hints"].update({"dimensions": dimensions})  # type: ignore
     _md.update(md or {})
     d = detector
     try:
@@ -1512,21 +1682,21 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
 
 def spiral_fermat(
-    detectors,
-    x_motor,
-    y_motor,
-    x_start,
-    y_start,
-    x_range,
-    y_range,
-    dr,
-    factor,
+    detectors: Sequence[Readable],
+    x_motor: NamedMovable,
+    y_motor: NamedMovable,
+    x_start: float,
+    y_start: float,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    factor: float,
     *,
-    dr_y=None,
-    tilt=0.0,
-    per_step=None,
-    md=None,
-):
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -1611,15 +1781,26 @@ def spiral_fermat(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].update({"dimensions": dimensions})
+        _md["hints"].update({"dimensions": dimensions})  # type: ignore
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
 def rel_spiral_fermat(
-    detectors, x_motor, y_motor, x_range, y_range, dr, factor, *, dr_y=None, tilt=0.0, per_step=None, md=None
-):
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    factor: float,
+    *,
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Relative fermat spiral scan
 
     Parameters
@@ -1684,21 +1865,21 @@ def rel_spiral_fermat(
 
 
 def spiral(
-    detectors,
-    x_motor,
-    y_motor,
-    x_start,
-    y_start,
-    x_range,
-    y_range,
-    dr,
-    nth,
+    detectors: Sequence[Readable],
+    x_motor: NamedMovable,
+    y_motor: NamedMovable,
+    x_start: float,
+    y_start: float,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    nth: float,
     *,
-    dr_y=None,
-    tilt=0.0,
-    per_step=None,
-    md=None,
-):
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -1781,15 +1962,26 @@ def spiral(
     except (AttributeError, KeyError):
         pass
     else:
-        _md["hints"].update({"dimensions": dimensions})
-    _md.update(md or {})
+        _md["hints"].update({"dimensions": dimensions})  # type: ignore
+    _md.update(md or {})  # type: ignore
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
 def rel_spiral(
-    detectors, x_motor, y_motor, x_range, y_range, dr, nth, *, dr_y=None, tilt=0.0, per_step=None, md=None
-):
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    nth: float,
+    *,
+    dr_y: Optional[float] = None,
+    tilt: float = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Relative spiral scan
 
     Parameters
@@ -1851,8 +2043,19 @@ def rel_spiral(
 
 
 def spiral_square(
-    detectors, x_motor, y_motor, x_center, y_center, x_range, y_range, x_num, y_num, *, per_step=None, md=None
-):
+    detectors: Sequence[Readable],
+    x_motor: NamedMovable,
+    y_motor: NamedMovable,
+    x_center: float,
+    y_center: float,
+    x_range: float,
+    y_range: float,
+    x_num: float,
+    y_num: float,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Absolute square spiral scan, centered around (x_center, y_center)
 
     Parameters
@@ -1928,16 +2131,27 @@ def spiral_square(
         "hints": {},
     }
     _md.update(md or {})
-    _md["hints"].setdefault("gridding", "rectilinear_nonsequential")
+    _md["hints"].setdefault("gridding", "rectilinear_nonsequential")  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in [y_motor, x_motor]])
+        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in [y_motor, x_motor]])  # type: ignore
     except (AttributeError, KeyError):
         ...
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range, x_num, y_num, *, per_step=None, md=None):
+def rel_spiral_square(
+    detectors: Sequence[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    x_num: float,
+    y_num: float,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Relative square spiral scan, centered around current (x, y) position.
 
     Parameters
@@ -1979,14 +2193,32 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range, x_num, y_nu
     def inner_relative_spiral():
         return (
             yield from spiral_square(
-                detectors, x_motor, y_motor, 0, 0, x_range, y_range, x_num, y_num, per_step=per_step, md=_md
+                detectors,
+                x_motor,
+                y_motor,
+                0,
+                0,
+                x_range,
+                y_range,
+                x_num,
+                y_num,
+                per_step=per_step,
+                md=_md,
             )
         )
 
     return (yield from inner_relative_spiral())
 
 
-def ramp_plan(go_plan, monitor_sig, inner_plan_func, take_pre_data=True, timeout=None, period=None, md=None):
+def ramp_plan(
+    go_plan: MsgGenerator,
+    monitor_sig: Readable,
+    inner_plan_func: Callable[[], MsgGenerator],
+    take_pre_data: bool = True,
+    timeout: Optional[float] = None,
+    period: Optional[float] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """Take data while ramping one or more positioners.
 
     The pseudo code for this plan is ::
@@ -2009,19 +2241,22 @@ def ramp_plan(go_plan, monitor_sig, inner_plan_func, take_pre_data=True, timeout
 
         This plan must return a `ophyd.StatusBase` object.
 
+    monitor_sig : readable
+        signal to be monitored
+
     inner_plan_func : generator function
         generator which takes no input
 
         This will be called for every data point.  This should create
         one or more events.
 
+    take_pre_data: Bool, optional
+        If True, add a pre data at beginning
+
     timeout : float, optional
         If not None, the maximum time the ramp can run.
 
         In seconds
-
-    take_pre_data: Bool, optional
-        If True, add a pre data at beginning
 
     period : float, optional
         If not None, take data no faster than this.  If None, take
@@ -2066,7 +2301,11 @@ def ramp_plan(go_plan, monitor_sig, inner_plan_func, take_pre_data=True, timeout
     return (yield from polling_plan())
 
 
-def fly(flyers, *, md=None):
+def fly(
+    flyers: List[Flyable],
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
 
@@ -2098,7 +2337,17 @@ def fly(flyers, *, md=None):
     return uid
 
 
-def x2x_scan(detectors, motor1, motor2, start, stop, num, *, per_step=None, md=None):
+def x2x_scan(
+    detectors: Sequence[Readable],
+    motor1: NamedMovable,
+    motor2: NamedMovable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio
 
@@ -2106,7 +2355,7 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *, per_step=None, md=N
 
     Parameters
     ----------
-    detectors : list
+    detectors : list or tuple
         list of 'readable' objects
 
     motor1, motor2 : Positioner
@@ -2115,6 +2364,9 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *, per_step=None, md=N
     start, stop : float
         The relative limits of the first motor.  The second motor
         will move between ``start / 2`` and ``stop / 2``
+
+    num : int
+        number of steps in the scan
 
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step).

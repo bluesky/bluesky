@@ -24,12 +24,15 @@ from typing import (
     AsyncIterator,
     Callable,
     Dict,
+    Generator,
     List,
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
 )
+from typing import Iterable as TypingIterable
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -86,6 +89,19 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
             f"Msg({self.command!r}, obj={self.obj!r}, "
             f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
         )
+
+
+#: Return type of a plan, usually None. Always optional for dry-runs.
+P = TypeVar("P")
+
+#: Object usually returned from plan functions that is fed to the RunEngine
+MsgGenerator = Generator[Msg, Any, P]
+
+#: Metadata passed from a plan to the RunEngine for embedding in a start document
+CustomPlanMetadata = Dict[str, Any]
+
+#: Scalar or iterable of values, one to be applied to each point in a scan
+ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 
 
 class RunEngineControlException(Exception):
@@ -1918,6 +1934,8 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
 
 
 class Plan:
+    __slots__ = ("_iter", "_stack")
+
     def __init__(self, f, *args, **kwargs) -> None:
         self._iter = f(*args, **kwargs)
         self._stack = traceback.format_stack()
@@ -1931,6 +1949,7 @@ class Plan:
         return (yield from self._iter)
 
     def __next__(self):
+        self._stack = None
         return next(self._iter)
 
     def __del__(self):
@@ -1939,9 +1958,11 @@ class Plan:
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
     def send(self, value):
+        self._stack = None
         return self._iter.send(value)
 
     def throw(self, typ, val=None, tb=None):
+        self._stack = None
         return self._iter.throw(typ, val, tb)
 
 
