@@ -739,12 +739,44 @@ def plot_peak_stats(peak_stats, ax=None):
 
 @make_class_safe(logger=logger)
 class LiveStreamPlot(QtAwareCallback):
-    """
-    Build a function that updates a plot from StreamDatums and Events.
+    """Produce an updatable plot from StreamDatums.
+
+    Parameters
+    ----------
+    cl : CollectLiveStream
+        Bluesky callback that stitches together StreamDatums and Events and
+        allows for fast random and bulk access to them via Consolidator objects.
+    data_key : str
+        The identifier of a dataset to plot
+
+    y : str
+        the name of a data field in an Event
+    x : str, optional
+        the name of a data field in an Event, or 'seq_num' or 'time'
+        If None, use the Event's sequence number.
+        Special case: If the Event's data includes a key named 'seq_num' or
+        'time', that takes precedence over the standard 'seq_num' and 'time'
+        recorded in every Event.
+    legend_keys : list, optional
+        The list of keys to extract from the RunStart document and format
+        in the legend of the plot. The legend will always show the
+        scan_id followed by a colon ("1: ").  Each
+    xlim : tuple, optional
+        passed to Axes.set_xlim
+    ylim : tuple, optional
+        passed to Axes.set_ylim
+    clim : tuple, optional
+        min and max values for colormap normalization
+    ax : Axes, optional
+        matplotib Axes; if none specified, new figure and axes are made.
+    epoch : {'run', 'unix'}, optional
+        If 'run' t=0 is the time recorded in the RunStart document. If 'unix',
+        t=0 is 1 Jan 1970 ("the UNIX epoch"). Default is 'run'.
+    All additional keyword arguments are passed through to ``Axes.plot``.
+
 
     Note: If your figure blocks the main thread when you are trying to
     scan with this callback, call `plt.ion()` in your IPython session.
-
     """
 
     def __init__(
@@ -754,11 +786,48 @@ class LiveStreamPlot(QtAwareCallback):
         y=None,
         x=None,
         *,
-        legend_keys=None,
-        xlim=None,
-        ylim=None,
         ax=None,
-        epoch="run",
+        **kwargs,
+    ):
+        super().__init__(use_teleporter=kwargs.pop("use_teleporter", None))
+        self.__setup_lock = threading.Lock()
+        self.__setup_event = threading.Event()
+
+        self.cl = cl
+        self.data_key = data_key
+        self.axes_keys = []
+        self._monitored_sres_uids = []
+        self._init_kwargs = kwargs
+
+        self.ax = ax
+        self._plot_type = None
+
+    def start(self, doc):
+        self._start_doc = doc
+
+        with self.__setup_lock:
+            if self.__setup_event.is_set():
+                return
+            self.__setup_event.set()
+
+        import matplotlib.pyplot as plt
+
+        if self.ax is None:
+            fig, self.ax = plt.subplots()
+        self.ax.cla()
+
+        if len(self.ax.get_images()) > 0:
+            raise RuntimeError("Can not re-use LiveGrid")
+
+        super().start(doc)
+
+    def setup_line_plot(self, ax, xlim=None, ylim=None, **kwargs):
+        self.ax.plot([], [])  # Initialize the line
+
+    def setup_grid_plot(
+        self,
+        ax,
+        datum_shape,
         clim=None,
         cmap="viridis",
         xlabel="x",
@@ -770,222 +839,93 @@ class LiveStreamPlot(QtAwareCallback):
         title=None,
         **kwargs,
     ):
-        super().__init__(use_teleporter=kwargs.pop("use_teleporter", None))
-        self.__setup_lock = threading.Lock()
-        self.__setup_event = threading.Event()
+        import matplotlib.colors as mcolors
 
-        self.cl = cl
-        self.data_key = data_key
-        self.axes_keys = []
-        self._monitored_sres_uids = []
+        # Set Up axes
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_aspect(aspect)
 
-        # def setup_line_plot():
-        #     # Run this code in start() so that it runs on the correct thread.
-        #     nonlocal y, x, legend_keys, xlim, ylim, ax, epoch, kwargs
-        #     import matplotlib.pyplot as plt
+        self._data = np.empty(datum_shape)
+        self._norm = mcolors.Normalize()
+        if clim is not None:
+            self._norm.vmin, self._norm.vmax = clim
 
-        #     with self.__setup_lock:
-        #         if self.__setup_event.is_set():
-        #             return
-        #         self.__setup_event.set()
-        #     if ax is None:
-        #         fig, ax = plt.subplots()
-        #     self.ax = ax
-
-        #     if legend_keys is None:
-        #         legend_keys = []
-        #     self.legend_keys = ["scan_id"] + legend_keys
-        #     if x is not None:
-        #         self.x, *others = get_obj_fields([x])
-        #     else:
-        #         self.x = "seq_num"
-        #     self.y, *others = get_obj_fields([y])
-        #     self.ax.set_ylabel(y)
-        #     self.ax.set_xlabel(x or "sequence #")
-        #     if xlim is not None:
-        #         self.ax.set_xlim(*xlim)
-        #     if ylim is not None:
-        #         self.ax.set_ylim(*ylim)
-        #     self.ax.margins(0.1)
-        #     self.kwargs = kwargs
-        #     self.lines = []
-        #     self.legend = None
-        #     self.legend_title = " :: ".join([name for name in self.legend_keys])  # noqa: C416
-        #     self._epoch_offset = None  # used if x == 'time'
-        #     self._epoch = epoch
-
-        raster_shape = (10, 15)
-        img = np.empty(raster_shape)
-
-        def setup_grid_plot():
-            # Run this code in start() so that it runs on the correct thread.
-            nonlocal raster_shape, img, clim, cmap, xlabel, ylabel, extent  # noqa: E741
-            nonlocal aspect, ax, x_positive, y_positive, title, kwargs
-            with self.__setup_lock:
-                if self.__setup_event.is_set():
-                    return
-                self.__setup_event.set()
-            import matplotlib.colors as mcolors
-            import matplotlib.pyplot as plt
-
-            if ax is None:
-                fig, ax = plt.subplots()
-            ax.cla()
-            self.I = img  # noqa: E741
-            ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylabel)
-            ax.set_aspect(aspect)
-            self.ax = ax
-            self._Idata = np.ones(raster_shape) * np.nan
-            self._norm = mcolors.Normalize()
-            if clim is not None:
-                self._norm.vmin, self._norm.vmax = clim
-            self.clim = clim
-            self.cmap = cmap
-            self.raster_shape = raster_shape
-            self.im = None
-            self.extent = extent
-            self.aspect = aspect
-            self.x_positive = x_positive
-            self.y_positive = y_positive
-            self.title = title
-
-        self.__setup = setup_grid_plot
-
-    # def start(self, doc):
-    #     self.__setup()
-    #     super().start(doc)
-
-    def start(self, doc):
-        self.__setup()
-        if self.im is not None:
-            raise RuntimeError("Can not re-use LiveGrid")
-        self._Idata = np.ones(self.raster_shape) * np.nan
-        # The user can control origin by specific 'extent'.
-        extent = self.extent
-        # origin must be 'lower' for the plot to fill in correctly
-        # (the first voxel filled must be closest to what mpl thinks
-        # is the 'lower left' of the image)
         im = self.ax.imshow(
-            self._Idata,
+            self._data,
             norm=self._norm,
-            cmap=self.cmap,
+            cmap=cmap,
             interpolation="none",
             extent=extent,
-            aspect=self.aspect,
+            aspect=aspect,
             origin="lower",
         )
+        self.ax.figure.colorbar(im, ax=self.ax)
 
-        # make sure the 'positive direction' of the axes matches what
-        # is defined in axes_positive
-        xmin, xmax = self.ax.get_xlim()
-        if (xmin > xmax and self.x_positive == "right") or (xmax > xmin and self.x_positive == "left"):
-            self.ax.set_xlim(xmax, xmin)
-        elif (xmax >= xmin and self.x_positive == "right") or (xmin >= xmax and self.x_positive == "left"):
-            self.ax.set_xlim(xmin, xmax)
+        # make sure the 'positive direction' of the axes matches what is defined in axes_positive
+        xmin, xmax = ax.get_xlim()
+        if (xmin > xmax and x_positive == "right") or (xmax > xmin and x_positive == "left"):
+            ax.set_xlim(xmax, xmin)
+        elif (xmax >= xmin and x_positive == "right") or (xmin >= xmax and x_positive == "left"):
+            ax.set_xlim(xmin, xmax)
         else:
             raise ValueError('x_positive must be either "right" or "left"')
 
-        ymin, ymax = self.ax.get_ylim()
-        if (ymin > ymax and self.y_positive == "up") or (ymax > ymin and self.y_positive == "down"):
-            self.ax.set_ylim(ymax, ymin)
-        elif (ymax >= ymin and self.y_positive == "up") or (ymin >= ymax and self.y_positive == "down"):
-            self.ax.set_ylim(ymin, ymax)
+        ymin, ymax = ax.get_ylim()
+        if (ymin > ymax and y_positive == "up") or (ymax > ymin and y_positive == "down"):
+            ax.set_ylim(ymax, ymin)
+        elif (ymax >= ymin and y_positive == "up") or (ymin >= ymax and y_positive == "down"):
+            ax.set_ylim(ymin, ymax)
         else:
             raise ValueError('y_positive must be either "up" or "down"')
 
-        self.im = im
         self.ax.set_title(
-            self.title
-            if self.title is not None
-            else "scan {uid} [{sid}]".format(sid=doc["scan_id"], uid=doc["uid"][:6])
+            title
+            if title is not None
+            else "scan {uid} [{sid}]".format(sid=self._start_doc["scan_id"], uid=self._start_doc["uid"][:6])
         )
 
-        self.ax.figure.colorbar(im, ax=self.ax)
-        # cb.set_label(self.I)
-        super().start(doc)
+    def descriptor(self, doc):
+        if (self._plot_type is None) and (self.data_key in doc["data_keys"].keys()):
+            datum_shape = tuple(doc["data_keys"][self.data_key]["shape"])
+            if len(datum_shape) < 2:
+                self._plot_type = "line_plot"
+                self.setup_line_plot(self.ax, datum_shape, **self._init_kwargs)
+            elif len(datum_shape) == 2:
+                self._plot_type = "grid_plot"
+                self.setup_grid_plot(self.ax, datum_shape, **self._init_kwargs)
+
+    def stream_resource(self, doc):
+        """Register the uid of StreamResource if it relates to the data_key"""
+        if self.data_key == doc["data_key"]:
+            self._monitored_sres_uids.append(doc["uid"])
+
+    def stream_datum(self, doc):
+        if doc["stream_resource"] in self._monitored_sres_uids:
+            self._update()
 
     def event(self, doc):
         super().event(doc)
 
-    def stream_resource(self, doc):
-        if self.data_key == doc["data_key"]:
-            self._monitored_sres_uids.append(doc["uid"])
-
-    def stream_datum(self, doc):
-        if doc["stream_resource"] in self._monitored_sres_uids:
-            self.update()
-
-    def update(self):
-        print("Updating the plot")
+    def _update(self):
         adapter = self.cl.get_adapter(self.data_key)
         arr = adapter.read()
-        print(f"{adapter.read().shape=}")
-        self.update_grid_plot(arr[-1, ...])
 
-    def update_caches(self, x, y):
-        self.y_data.append(y)
-        self.x_data.append(x)
+        if self._plot_type == "line_plot":
+            ln = self.ax.get_lines()[0]
+            self._data = arr
+            ln.set_data(range(0, len(self._data)), self._data)
+            # Rescale
+            self.ax.relim(visible_only=True)
+            self.ax.autoscale_view(tight=True)
 
-    def update_line_plot(self):
-        self.current_line.set_data(self.x_data, self.y_data)
-        # Rescale and redraw.
-        self.ax.relim(visible_only=True)
-        self.ax.autoscale_view(tight=True)
-        self.ax.figure.canvas.draw_idle()
+        elif self._plot_type == "grid_plot":
+            self._data = arr[-1, ...]
+            im = self.ax.get_images()[0]
+            im.set_array(self._data)
 
-    def update_grid_plot(self, img):
-        self._Idata = img
-        if self.clim is None:
-            self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
-        self.im.set_array(self._Idata)
+        # Redraw
         self.ax.figure.canvas.draw_idle()
 
     def stop(self, doc):
-        if not self.x_data:
-            print("LivePlot did not get any data that corresponds to the " f"x axis. {self.x}")
-        if not self.y_data:
-            print("LivePlot did not get any data that corresponds to the " f"y axis. {self.y}")
-        if len(self.y_data) != len(self.x_data):
-            print(
-                f"LivePlot has different number of elements for x ({len(self.x_data)}) and y ({len(self.y_data)})"
-            )  # noqa: UP032
         super().stop(doc)
-
-
-class DummyLiveStreamPlot(CallbackBase):
-    """
-    Build a function that updates a plot from StreamDatums and Events.
-
-    Note: If your figure blocks the main thread when you are trying to
-    scan with this callback, call `plt.ion()` in your IPython session.
-
-    """
-
-    def __init__(
-        self,
-        cl,
-        data_key,
-        **kwargs,
-    ):
-        self.cl = cl
-        self.data_key = data_key
-        self.axes_keys = []
-        self._monitored_sres_uids = []
-
-        super().__init__()
-
-    def stream_resource(self, doc):
-        if self.data_key == doc["data_key"]:
-            self._monitored_sres_uids.append(doc["uid"])
-
-    def stream_datum(self, doc):
-        if doc["stream_resource"] in self._monitored_sres_uids:
-            self.update()
-
-    def update(self):
-        print("Updating the plot")
-        if adapter := self.cl.get_adapter(self.data_key):
-            # arr = adapter.read()
-            print(f"{adapter=}")
-            print(f"{adapter.read().shape=}")

@@ -296,7 +296,6 @@ class CollectLiveStream(CallbackBase):
     def stream_resource(self, doc: StreamResource):
         self._sres_docs[doc["uid"]] = self._ensure_resource_backcompat(doc)
         self._data_key_to_sres_uid[doc["data_key"]].append(doc["uid"])  # Multiple Streams Resources per data_key
-        self._get_or_create_handler(doc["uid"])
 
     def _get_or_create_handler(self, sres_uid: str, desc_uid: Optional[str] = None):
         """Get a Handler / Stream Consolidator, if it already exists, or register it from a SR document"""
