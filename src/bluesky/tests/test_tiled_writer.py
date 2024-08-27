@@ -149,7 +149,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
             f"{self.name}-sd2": DataKey(source="file", dtype="array", shape=[10, 15], external="STREAM:"),
             f"{self.name}-sd3": DataKey(
-                source="file", dtype="array", dtype_str="uint8", shape=[5, 7, 4], external="STREAM:"
+                source="file", dtype="array", dtype_numpy="uint8", shape=[5, 7, 4], external="STREAM:"
             ),
         }
 
@@ -188,8 +188,8 @@ class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
     Subclassed from ophyd.sim to match the updated schema of Resource documents.
     """
 
-    def __init__(self, *args, dtype_str="uint8", **kwargs):
-        self.dtype_str = dtype_str
+    def __init__(self, *args, dtype_numpy="uint8", **kwargs):
+        self.dtype_numpy = dtype_numpy
         super().__init__(*args, **kwargs)
 
     def stage(self):
@@ -201,7 +201,7 @@ class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
         res = super().describe()
         for key in res:
             res[key]["external"] = "FILESTORE"
-            res[key]["dtype_str"] = self.dtype_str
+            res[key]["dtype_numpy"] = self.dtype_numpy
         return res
 
 
@@ -232,7 +232,7 @@ def test_stream_datum_collectable(RE, client, tmp_path):
 def test_handling_non_stream_resource(RE, client, tmp_path):
     det = SynSignalWithRegistry(
         func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
-        dtype_str="uint8",
+        dtype_numpy="uint8",
         name="img",
         labels={"detectors"},
         save_func=tf.imwrite,
