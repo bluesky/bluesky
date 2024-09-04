@@ -1967,7 +1967,7 @@ def plan(bs_plan):
     def wrapper(*args, **kwargs) -> Plan:
         return Plan(bs_plan, *args, **kwargs)
 
-    wrapper.__is_plan__ = True
+    wrapper._is_plan_ = True
 
     return wrapper
 
@@ -1986,7 +1986,7 @@ def is_plan(bs_plan):
         True if bs_plan arg is a generator, or the __is_plan__ attribute exists and is True.
     """
 
-    if inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "__is_plan__", False):
+    if inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False):
         return True
     else:
         return False
