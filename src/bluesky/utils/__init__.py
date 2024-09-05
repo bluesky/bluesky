@@ -1986,7 +1986,4 @@ def is_plan(bs_plan):
         True if bs_plan arg is a generator, or the __is_plan__ attribute exists and is True.
     """
 
-    if inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False):
-        return True
-    else:
-        return False
+    return inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False)
