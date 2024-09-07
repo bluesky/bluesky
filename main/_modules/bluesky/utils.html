@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.utils &#8212; bluesky 1.13.0a5.dev83+g978995b6 documentation</title>
+    <title>bluesky.utils &#8212; bluesky 1.13.0a5.dev88+gace1a96d documentation</title>
   
   
   
@@ -35,14 +35,14 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../../_static/documentation_options.js?v=c3d281e6"></script>
+    <script src="../../_static/documentation_options.js?v=2bf4a866"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/utils';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev83+g978995b6';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev88+gace1a96d';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -2604,12 +2604,12 @@ document.write(`
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">typ</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">tb</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="n">bs_plan</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator that warns user if a `yield from` is not called</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    plan : Generator</span>
+<span class="sd">    bs_plan : Generator</span>
 <span class="sd">        Generator coroutine usually a Bluesky plan</span>
 
 <span class="sd">    Returns</span>
@@ -2618,11 +2618,30 @@ document.write(`
 <span class="sd">        Wrapped plans</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="nd">@wraps</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">bs_plan</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">Plan</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Plan</span><span class="p">(</span><span class="n">bs_plan</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">wrapper</span><span class="o">.</span><span class="n">_is_plan_</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">return</span> <span class="n">wrapper</span>
+
+
+<span class="k">def</span> <span class="nf">is_plan</span><span class="p">(</span><span class="n">bs_plan</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function that checks if function is a generator, or has been marked as plan</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bs_plan : Function</span>
+<span class="sd">        Typically generator coroutine function / Bluesky plan</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    boolean</span>
+<span class="sd">        True if bs_plan arg is a generator, or the __is_plan__ attribute exists and is True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isgeneratorfunction</span><span class="p">(</span><span class="n">bs_plan</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">bs_plan</span><span class="p">,</span> <span class="s2">&quot;_is_plan_&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 </pre></div>
 
                 </article>
