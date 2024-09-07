@@ -1966,12 +1966,12 @@ class Plan:
         return self._iter.throw(typ, val, tb)
 
 
-def plan(plan):
+def plan(bs_plan):
     """Decorator that warns user if a `yield from` is not called
 
     Parameters
     ----------
-    plan : Generator
+    bs_plan : Generator
         Generator coroutine usually a Bluesky plan
 
     Returns
@@ -1980,8 +1980,27 @@ def plan(plan):
         Wrapped plans
     """
 
-    @wraps(plan)
+    @wraps(bs_plan)
     def wrapper(*args, **kwargs) -> Plan:
-        return Plan(plan, *args, **kwargs)
+        return Plan(bs_plan, *args, **kwargs)
+
+    wrapper._is_plan_ = True
 
     return wrapper
+
+
+def is_plan(bs_plan):
+    """Function that checks if function is a generator, or has been marked as plan
+
+    Parameters
+    ----------
+    bs_plan : Function
+        Typically generator coroutine function / Bluesky plan
+
+    Returns
+    -------
+    boolean
+        True if bs_plan arg is a generator, or the __is_plan__ attribute exists and is True.
+    """
+
+    return inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False)
