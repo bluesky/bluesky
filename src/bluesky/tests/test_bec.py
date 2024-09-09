@@ -267,6 +267,17 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned
 
 
+def test_bec_peaks_flat_signal(RE, hw):
+    from ophyd import Signal
+
+    flat = Signal(name="flat", value=0)
+    bec = BestEffortCallback(calc_derivative_and_stats=True)
+    RE.subscribe(bec)
+    RE(scan([flat], hw.motor, 1, 5, 5))
+    assert "flat" in bec.peaks.com
+    assert bec.peaks.com["flat"] is None
+
+
 def test_bec_peak_stats_derivative_and_stats(RE, hw):
     bec = BestEffortCallback(calc_derivative_and_stats=True)
     RE.subscribe(bec)
