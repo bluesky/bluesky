@@ -88,13 +88,25 @@ class ConsolidatorBase:
         self.assets: List[Asset] = []
         self._sres_parameters = stream_resource["parameters"]
 
-        # Find data shape and machine dtype; dtype_numpy/dtype_str takes precedence if specified
+        # Find data shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
-        self.dtype = data_desc["dtype"]
-        self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
-        self.dtype = np.dtype(data_desc.get("dtype_numpy") or data_desc.get("dtype_str", self.dtype))
+        # Get data type. From highest precedent to lowest:
+        # 1. Try 'dtype_numpy', optional in the document schema.
+        # 2. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
+        # 3. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
+        #    and make a best effort to convert it to a numpy spec like '<u8'.
+        # 4. If unable to do any of the above, pass through whatever string is in 'dtype'.
+        self.dtype = np.dtype(
+            data_desc.get("dtype_numpy")  # standard location
+            or data_desc.get(
+                "dtype_str",  # legacy location
+                # try to guess numpy dtype from JSON type
+                DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
+            )
+        )
+        self.chunk_size = self._sres_parameters.get("chunk_size", None)
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
@@ -250,11 +262,10 @@ class HDF5Consolidator(ConsolidatorBase):
     def adapter_parameters(self) -> Dict:
         """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
 
-        path: List[str] - file path represented as list split at `/`
+        dataset: List[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        ds_path = self._sres_parameters.get("path") or self._sres_parameters.get("dataset")
-        return {"path": ds_path.strip("/").split("/"), "swmr": self.swmr}
+        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
 
     def get_adapter(self):
         fpath = path_from_uri(self.uri)
