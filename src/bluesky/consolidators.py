@@ -95,17 +95,15 @@ class ConsolidatorBase:
         # 3. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
         #    and make a best effort to convert it to a numpy spec like '<u8'.
         # 4. If unable to do any of the above, pass through whatever string is in 'dtype'.
-        self.dtype = (
-            np.dtype(
-                data_desc.get("dtype_numpy")  # standard location
-                or data_desc.get(
-                    "dtype_str",  # legacy location
-                    # try to guess numpy dtype from JSON type
-                    DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"])
-                )
+        self.dtype = np.dtype(
+            data_desc.get("dtype_numpy")  # standard location
+            or data_desc.get(
+                "dtype_str",  # legacy location
+                # try to guess numpy dtype from JSON type
+                DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
             )
         )
-        self.chunk_size = self._sres_parameters.get("chunk_size", ())
+        self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
@@ -128,17 +126,21 @@ class ConsolidatorBase:
 
     @property
     def chunks(self) -> Tuple[Tuple[int, ...], ...]:
-        """Chunking specification based on the Stream Resource parameter `chunk_size`:
-        Empty tuple -- single chunk for all existing and new elements
-        tuple -- fixed-sized chunks with at most `chunk_size[0]` elements, last chunk can be smaller
+        """Explicit (dask-style) specification of chunk sizes
+
+        The produced chunk specification is a tuple of tuples of int that specify the sizes of each chunk in each
+        dimension; it is based on the StreamResource parameter `chunk_shape`. If `chunk_shape` is an empty tuple --
+        assume the dataset is stored as a single chunk for all existing and new elements. Usually, however,
+        `chunk_shape` is a tuple of int, in which case, we assume fixed-sized chunks with at most `chunk_shape[0]`
+        elements (i.e. `_num_rows`); last chunk can be smaller.
         """
 
-        if len(self.chunk_size) == 0:
+        if len(self.chunk_shape) == 0:
             dim0_chunk = [self._num_rows]
         else:
-            dim0_chunk = [self.chunk_size[0]] * int(self._num_rows / self.chunk_size[0])
-            if self._num_rows % self.chunk_size[0]:
-                dim0_chunk.append(self._num_rows % self.chunk_size[0])
+            dim0_chunk = [self.chunk_shape[0]] * int(self._num_rows / self.chunk_shape[0])
+            if self._num_rows % self.chunk_shape[0]:
+                dim0_chunk.append(self._num_rows % self.chunk_shape[0])
 
         return tuple(dim0_chunk or [0]), *[(d,) for d in self.datum_shape]
 
