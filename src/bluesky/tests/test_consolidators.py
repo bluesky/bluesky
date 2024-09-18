@@ -66,6 +66,7 @@ chunk_shape_testdata = [
     ((2,), ((2, 2, 1), (10,), (15,))),
     ((5, 10, 15), ((5,), (10,), (15,))),
     ((10, 10, 15), ((5,), (10,), (15,))),
+    ((3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
 ]
 
 
@@ -73,9 +74,8 @@ chunk_shape_testdata = [
 def test_consolidator_chunks(descriptor, stream_resource_factory, stream_datum_factory, chunk_shape, expected):
     stream_resource = stream_resource_factory(chunk_shape=chunk_shape)
     cons = HDF5Consolidator(stream_resource, descriptor)
-    assert cons.chunks == ((0,), (10,), (15,))
+    assert cons.chunks == ((0,), expected[1], expected[2])
     for i in range(5):
         doc = stream_datum_factory(i)
         cons.consume_stream_datum(doc)
     assert cons.chunks == expected
-    assert True

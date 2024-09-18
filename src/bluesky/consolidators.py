@@ -129,20 +129,31 @@ class ConsolidatorBase:
         """Explicit (dask-style) specification of chunk sizes
 
         The produced chunk specification is a tuple of tuples of int that specify the sizes of each chunk in each
-        dimension; it is based on the StreamResource parameter `chunk_shape`. If `chunk_shape` is an empty tuple --
-        assume the dataset is stored as a single chunk for all existing and new elements. Usually, however,
-        `chunk_shape` is a tuple of int, in which case, we assume fixed-sized chunks with at most `chunk_shape[0]`
-        elements (i.e. `_num_rows`); last chunk can be smaller.
+        dimension; it is based on the StreamResource parameter `chunk_shape`.
+
+        If `chunk_shape` is an empty tuple -- assume the dataset is stored as a single chunk for all existing and
+        new elements. Usually, however, `chunk_shape` is a tuple of int, in which case, we assume fixed-sized
+        chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
+        is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
         """
 
-        if len(self.chunk_shape) == 0:
-            dim0_chunk = [self._num_rows]
-        else:
-            dim0_chunk = [self.chunk_shape[0]] * int(self._num_rows / self.chunk_shape[0])
-            if self._num_rows % self.chunk_shape[0]:
-                dim0_chunk.append(self._num_rows % self.chunk_shape[0])
+        def list_summands(A, b):
+            # Generate a list with repeated b summing up to A; append the remainder if necessary
+            return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) or (0,)
 
-        return tuple(dim0_chunk or [0]), *[(d,) for d in self.datum_shape]
+        if len(self.chunk_shape) == 0:
+            return (self._num_rows,), *[(d,) for d in self.datum_shape]
+
+        elif len(self.chunk_shape) == 1:
+            return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+
+        elif len(self.chunk_shape) == len(self.shape):
+            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
+
+        else:
+            raise ValueError(
+                f"The shape of chunks, {self.chunk_shape}, is not consistent with the shape of data, {self.shape}."
+            )
 
     @property
     def has_skips(self) -> bool:
