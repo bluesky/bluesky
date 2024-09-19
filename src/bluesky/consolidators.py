@@ -104,6 +104,8 @@ class ConsolidatorBase:
             )
         )
         self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
+        if 0 in self.chunk_shape:
+            raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
