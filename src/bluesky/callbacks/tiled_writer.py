@@ -13,7 +13,7 @@ from event_model.documents import (
     StreamDatum,
     StreamResource,
 )
-from pydantic.utils import deep_update
+from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
 from tiled.client.container import Container
