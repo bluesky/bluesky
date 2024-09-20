@@ -1,9 +1,18 @@
+import pytest
+from bluesky.callbacks.mpl_plotting import LivePlot
+from bluesky import (Msg, IllegalMessageSequence,
+                     RunEngineInterrupted, FailedStatus)
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import os
 import signal
 import threading
 import time
 import time as ttime
 from functools import partial
+
+from bluesky.utils import FailedPause, UncleanPause
+from .utils import _fabricate_asycio_event
 
 import pytest
 
@@ -352,6 +361,130 @@ def test_pause_resume(RE):
     time.sleep(3)
     assert mid - start > 1
     assert stop - start > 2
+
+
+def test_caught_pause_in_flyer(RE):
+    from ophyd.status import Status
+
+    class MyFlyer:
+        name = "flyer"
+        _unclean_pause = True
+
+        def prepare(self, start_from):
+            status = Status()
+            self.start_from = start_from
+            status.set_finished()
+            return status
+
+        def kickoff(self):
+            self._unclean_pause = True
+            status = Status()
+            status.set_finished()
+            return status
+
+        def complete(self):
+            self.complete_status = Status()
+            return self.complete_status
+
+        def pause(self):
+            if self._unclean_pause:
+                self._unclean_pause = False
+                raise UncleanPause()
+
+        def resume(self):
+            pass
+
+    flyers = [MyFlyer(), MyFlyer()]
+    msgs = []
+    RE.msg_hook = msgs.append
+
+    def do_scan(start_from: int):
+        for flyer in flyers:
+            yield from bps.prepare(flyer, start_from, group="prepare", wait=False)
+        yield from bps.wait(group="prepare")
+        for flyer in flyers:
+            yield from bps.kickoff(flyer, group="kickoff", wait=False)
+        yield from bps.wait(group="kickoff")
+        for flyer in flyers:
+            yield from bps.complete(flyer, group="complete", wait=False)
+        yield from bps.wait(group="complete")
+
+        # Just to check we got to the end
+        yield from bps.null()
+
+    @bpp.run_decorator()
+    def pausing_plan():
+        done = False
+        start_from = 1
+        while not done:
+            try:
+                yield from do_scan(start_from)
+            except FailedPause:
+                yield from bps.checkpoint()
+
+                # In a real run, this is where we would inspect the
+                # counter values, and work out where to start from
+                start_from += 1
+
+                # The second pause now the flyers are ready
+                yield from bps.pause()
+            else:
+                done = True
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+
+    def complete_flyers():
+        for flyer in flyers:
+            flyer.complete_status.set_finished()
+
+    threading.Timer(1, sim_kill).start()  # deferred pause
+    threading.Timer(1.5, sim_kill).start()  # actual pause
+    RE(pausing_plan())
+
+    assert [flyer.start_from for flyer in flyers] == [1, 1]
+
+    assert msgs == [
+        Msg('open_run'),
+        Msg('prepare', flyers[0], 1, group='prepare'),
+        Msg('prepare', flyers[1], 1, group='prepare'),
+        Msg('wait', group='prepare', timeout=None),
+        Msg('kickoff', flyers[0], group='kickoff'),
+        Msg('kickoff', flyers[1], group='kickoff'),
+        Msg('wait', group='kickoff', timeout=None),
+        Msg('complete', flyers[0], group='complete'),
+        Msg('complete', flyers[1], group='complete'),
+        Msg('wait', group='complete', timeout=None),
+        Msg('checkpoint'),
+
+        # The real message adds these because the run fails on trying to
+        # resume when the state isn't paused
+        # Msg('pause', obj=None, args=(), kwargs={'defer': False}, run=None),
+        # Msg('close_run', obj=None, args=(), kwargs={'exit_status': 'fail', 'reason': ''}, run=None),
+
+    ]
+
+    msgs.clear()
+    threading.Timer(1, complete_flyers).start()  # let it complete after we've resumed
+    RE.resume()
+
+    assert [flyer.start_from for flyer in flyers] == [2, 2]
+
+    assert msgs == [
+        Msg('prepare', flyers[0], 2, group='prepare'),
+        Msg('prepare', flyers[1], 2, group='prepare'),
+        Msg('wait', group='prepare', timeout=None),
+        Msg('kickoff', flyers[0], group='kickoff'),
+        Msg('kickoff', flyers[1], group='kickoff'),
+        Msg('wait', group='kickoff', timeout=None),
+        Msg('complete', flyers[0], group='complete'),
+        Msg('complete', flyers[1], group='complete'),
+        Msg('wait', group='complete', timeout=None),
+        Msg('null'),
+        Msg('close_run', exit_status=None, reason=None),
+    ]
 
 
 def test_pause_abort(RE):
