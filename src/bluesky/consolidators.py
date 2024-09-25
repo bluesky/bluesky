@@ -169,7 +169,7 @@ class ConsolidatorBase:
         """A dictionary of parameters passed to an Adapter
 
         These parameters are intended to provide any additional information required to read a data source of a
-        specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF
+        specific mimetype, e.g. "dataset" the path into an HDF5 file or "template" the filename pattern of a TIFF
         sequence.
 
         This property is to be subclassed as necessary.
@@ -273,7 +273,7 @@ class HDF5Consolidator(ConsolidatorBase):
         adapter = HDF5Adapter.from_file(f)
         # adapter = HDF5Adapter.from_uri(self.uri, swmr=True)   # <- Does not work if the file is opened by reader!
 
-        for segment in self.adapter_parameters["path"]:
+        for segment in self.adapter_parameters["dataset"]:
             adapter = adapter.get(segment)
 
         return adapter
