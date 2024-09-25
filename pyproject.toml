@@ -27,7 +27,7 @@ dependencies = [
     "tqdm>=4.44",
     "typing-extensions>=4.0.0;python_version<'3.11'",
     "dataclasses;python_version<'3.7'",
-    "zict<3.0.0",
+    "zict",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
