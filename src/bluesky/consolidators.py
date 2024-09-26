@@ -95,14 +95,12 @@ class ConsolidatorBase:
         # 3. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
         #    and make a best effort to convert it to a numpy spec like '<u8'.
         # 4. If unable to do any of the above, pass through whatever string is in 'dtype'.
-        self.dtype = (
-            np.dtype(
-                data_desc.get("dtype_numpy")  # standard location
-                or data_desc.get(
-                    "dtype_str",  # legacy location
-                    # try to guess numpy dtype from JSON type
-                    DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"])
-                )
+        self.dtype = np.dtype(
+            data_desc.get("dtype_numpy")  # standard location
+            or data_desc.get(
+                "dtype_str",  # legacy location
+                # try to guess numpy dtype from JSON type
+                DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
             )
         )
         self.chunk_size = self._sres_parameters.get("chunk_size", None)
