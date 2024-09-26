@@ -50,11 +50,15 @@ class ReadingOptional(TypedDict, total=False):
     message: str
 
 
-class Reading(ReadingOptional):
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+class Reading(Generic[T], ReadingOptional):
     """A dictionary containing the value and timestamp of a piece of scan data"""
 
     #: The current value, as a JSON encodable type or numpy array
-    value: Any
+    value: T
     #: Timestamp in seconds since the UNIX epoch
     timestamp: float
 
@@ -71,8 +75,6 @@ StreamAsset = Union[
 ]
 
 
-T = TypeVar("T")
-P = ParamSpec("P")
 SyncOrAsync = Union[T, Awaitable[T]]
 SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
 
