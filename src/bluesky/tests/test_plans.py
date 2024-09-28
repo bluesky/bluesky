@@ -2,6 +2,7 @@ import collections
 import inspect
 import random
 import re
+from unittest.mock import patch
 
 import numpy as np
 import numpy.testing as npt
@@ -712,3 +713,12 @@ def test_count_failure(RE, hw):
 def test_no_warning(hw):
     # this should not warn
     list(bps.rel_set(hw.motor, 2))
+
+
+def test_input_plan(RE):
+    def plan():
+        result = yield from bps.input_plan("prompt: ")
+        assert result == "answer"
+
+    with patch("bluesky.utils.sys.stdin.readline", return_value="answer\n"):
+        RE(plan())
