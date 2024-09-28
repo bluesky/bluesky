@@ -1151,25 +1151,12 @@ def register_transform(RE, *, prefix="<", ip=None):
 
 
 class AsyncInput:
-    """a input prompt that allows event loop to run in the background
-
-    adapted from http://stackoverflow.com/a/35514777/1221924
-    """
-
     def __init__(self, loop=None):
         self.loop = loop or asyncio.get_event_loop()
-        if sys.version_info < (3, 10):
-            self.q = asyncio.Queue(loop=self.loop)
-        else:
-            self.q = asyncio.Queue()
-        self.loop.add_reader(sys.stdin, self.got_input)
-
-    def got_input(self):
-        asyncio.ensure_future(self.q.put(sys.stdin.readline()), loop=self.loop)
 
     async def __call__(self, prompt, end="\n", flush=False):
         print(prompt, end=end, flush=flush)
-        return (await self.q.get()).rstrip("\n")
+        return (await self.loop.run_in_executor(None, sys.stdin.readline)).rstrip("\n")
 
 
 def new_uid():
