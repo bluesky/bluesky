@@ -246,7 +246,23 @@ class CollectThenCompute(CallbackBase):
         raise NotImplementedError("This method must be defined by a subclass.")
 
 
+@make_class_safe(logger=logger)
 class CollectLiveStream(CallbackBase):
+    """A callback to handle (consolidate) data received in StreamDocuments
+
+    It uses the following logic of handling a stream of Bluesky documents:
+
+    1. Recieve a Descriptor document and cache it in the `_desc_docs` dictionary under the `descriptor_uid` key
+    2. Receive a StreamResource document and cache it in the `_sres_docs` under the `stream_resource_uid` key.
+       Determine the `data_key` to which this StreamResource corresponds and record it in the
+       `_data_key_to_sres_uid` dictionary.
+    3. When the first StreamDatum for a certain data_key is received, create a Consolidator object for it, keep
+       it in the `stream_consolidators` dictionary under the corresponding `stream_resource_uid` key, and use
+       the consolidators methods to consume the StreamDatum.
+    4. For any subsequent StreamDatums, retrieve an existing Consolidator from `stream_consolidators`.
+
+    """
+
     def __init__(self):
         self._start_doc = None
         self._stop_doc = None
