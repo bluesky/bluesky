@@ -814,15 +814,19 @@ class LiveStreamPlot(QtAwareCallback):
 
         if self.ax is None:
             fig, self.ax = plt.subplots()
-        self.ax.cla()
 
-        if len(self.ax.get_images()) > 0:
-            raise RuntimeError("Can not re-use LiveGrid")
+        # Clean the axis and remove any exisiting colorbars
+        if self.ax.images and self.ax.images[-1].colorbar:
+            self.ax.images[-1].colorbar.remove()
+        self.ax.cla()
 
         super().start(doc)
 
-    def setup_line_plot(self, ax, xlim=None, ylim=None, **kwargs):
+    def setup_line_plot(self, ax, xlim=None, ylim=None, title=None, xlabel=None, ylabel=None, **kwargs):
         self.ax.plot([], [])  # Initialize the line
+        ax.set_xlabel(xlabel or "scan no.")
+        ax.set_ylabel(ylabel or "value")
+        self.ax.set_title(title or self.data_key)
 
     def setup_grid_plot(
         self,
@@ -840,11 +844,16 @@ class LiveStreamPlot(QtAwareCallback):
         **kwargs,
     ):
         import matplotlib.colors as mcolors
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
 
         # Set Up axes
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         ax.set_aspect(aspect)
+        self.ax.set_title(
+            title or "scan {uid} [{sid}]".format(sid=self._start_doc["scan_id"], uid=self._start_doc["uid"][:6])
+        )
 
         self._data = np.empty(datum_shape)
         self._norm = mcolors.Normalize()
@@ -860,7 +869,8 @@ class LiveStreamPlot(QtAwareCallback):
             aspect=aspect,
             origin="lower",
         )
-        self.ax.figure.colorbar(im, ax=self.ax)
+        cax = make_axes_locatable(self.ax).append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, cax=cax)
 
         # make sure the 'positive direction' of the axes matches what is defined in axes_positive
         xmin, xmax = ax.get_xlim()
@@ -878,12 +888,6 @@ class LiveStreamPlot(QtAwareCallback):
             ax.set_ylim(ymin, ymax)
         else:
             raise ValueError('y_positive must be either "up" or "down"')
-
-        self.ax.set_title(
-            title
-            if title is not None
-            else "scan {uid} [{sid}]".format(sid=self._start_doc["scan_id"], uid=self._start_doc["uid"][:6])
-        )
 
     def descriptor(self, doc):
         if (self._plot_type is None) and (self.data_key in doc["data_keys"].keys()):
@@ -915,7 +919,8 @@ class LiveStreamPlot(QtAwareCallback):
             ln = self.ax.get_lines()[0]
             self._data = arr
             ln.set_data(range(0, len(self._data)), self._data)
-            # Rescale
+
+            # Rescale the plot
             self.ax.relim(visible_only=True)
             self.ax.autoscale_view(tight=True)
 
