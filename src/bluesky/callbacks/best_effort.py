@@ -30,9 +30,11 @@ from .mpl_plotting import LiveGrid, LivePlot, LiveScatter, QtAwareCallback
 logger = logging.getLogger(__name__)
 
 
-def validate_label_format(label_format):
+def validate_label_format(label_format: str | None):
     """Validate label format for a legend in LivePlot"""
     default_label_format = "{attr}={val:.3f}"
+    if label_format is None:
+        return default_label_format
     assert (label_format is None) or ("attr" in label_format and "val" in label_format), (
         'Label format string must either be "None" or \n'
         f'contain named placeholders "attr" and "val", e.g. "{default_label_format}"'
@@ -110,7 +112,7 @@ class BestEffortCallback(QtAwareCallback):
         "Do not plot anything."
         self._plots_enabled = False
 
-    def format_labels(self, format):
+    def format_labels(self, format: str):
         self.__label_format = validate_label_format(format)
 
     def __call__(self, name, doc, *args, **kwargs):
@@ -634,14 +636,14 @@ class LivePlotPlusPeaks(LivePlot):
         # Vertical and horizontal lines:
         styles = iter(cycler("color", "krbm"))
         lines = []
-        for style, attr, meth, ind in zip(
+        for style, attr, numerical_method, ind in zip(
             styles, ["cen", "com", "min", "max"], ["axvline", "axvline", "axhline", "axhline"], [None, None, 1, 1]
         ):
             val = self.peak_results[attr][self.y]
             if ind is not None:
                 val = val[ind]
             label = self.label_format.format(attr=attr, val=val)
-            lines.append(getattr(self.ax, meth)(val, label=label, **style))
+            lines.append(getattr(self.ax, numerical_method)(val, label=label, **style))
 
         # Arrows (e.g., FWHM):
         attr = "fwhm"
@@ -651,7 +653,7 @@ class LivePlotPlusPeaks(LivePlot):
         self.__labeled[self.ax] = None
         self.__arts = lines + arrows
 
-    def _get_arrows(self, lines, attr, val):
+    def _get_arrows(self, lines: list, attr: str, val):
         arrows = []
         if val:
             max_crds = self.peak_results["max"][self.y]
