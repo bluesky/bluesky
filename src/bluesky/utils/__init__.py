@@ -687,7 +687,7 @@ def snake_cyclers(cyclers: List[Cycler], snake_booleans: List[bool]) -> Cycler:
                 v_ndarray = np.concatenate([v_ndarray, v_ndarray[::-1]])  # Snake back-and-forth
 
             # Use np.tile and np.repeat
-            v2 = np.tile(np.repeat(v_ndarray, num_repeats), num_tiles)
+            v2 = np.tile(np.repeat(v_ndarray, num_repeats), int(num_tiles))
             expanded = v2[:total_length]
             new_cyclers.append(cycler(k, expanded))
 
