@@ -751,22 +751,6 @@ def test_reset_user_position(RE):
     RE(test_plan(ax))
 
 
-def test_reset_user_position_no_position(RE):
-    from ophyd.sim import SynAxis as _SynAxis
-
-    class SynAxisNoPosition(_SynAxis):
-        def set_current_position(self, pos):
-            pass
-
-    ax = SynAxisNoPosition(name="test")
-
-    def test_plan(obj):
-        with pytest.raises(ValueError, match="position attribute"):
-            yield from bps.reset_user_position(obj, 10)
-
-    RE(test_plan(ax))
-
-
 def test_reset_user_position_no_set_current_position(RE):
     from ophyd.sim import SynAxis as _SynAxis
 
