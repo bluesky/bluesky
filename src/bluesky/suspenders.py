@@ -54,7 +54,7 @@ class SuspenderBase(metaclass=ABCMeta):
             self._tripped_message,
         )
 
-    def install(self, RE, *, event_type=None):
+    def install(self, RE, **kwargs):
         """Install callback on signal
 
         This (re)installs the required callbacks at the pyepics level
@@ -70,7 +70,7 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         with self._lock:
             self.RE = RE
-        self._sig.subscribe(self, event_type=event_type, run=True)
+        self._sig.subscribe(self, run=True, **kwargs)
 
     def remove(self):
         """Disable the suspender
@@ -132,14 +132,17 @@ class SuspenderBase(metaclass=ABCMeta):
             if self.RE is None:
                 return
             loop = self.RE._loop
-            self._last_value = value
+            if isinstance(value, dict) and len(value) == 1:
+                # handle dict[str, Reading] provided by ophyd-async
+                (reading,) = value.values()
+                value = reading["value"]
             if self._should_suspend(value):
                 self._tripped = True
                 # this does dirty things with internal state
                 if self._ev is None and self.RE is not None:
                     self.__make_event()
                     if self._ev is None:
-                        raise RuntimeError("Could not create the ")
+                        raise RuntimeError("Could not create the event")
                     cb = partial(
                         self.RE.request_suspend,
                         self._ev.wait,
