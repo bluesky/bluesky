@@ -55,6 +55,14 @@ def _check_detectors_type_input(detectors):
         raise TypeError("The input argument must be either as a list or a tuple of Readable objects.")
 
 
+def derive_default_hints(motors: List[Any]) -> Dict[str, Sequence]:
+    x_fields = [field for motor in motors for field in get_hinted_fields(motor)]
+
+    default_dimensions = [(x_fields, "primary")] if x_fields else []
+
+    return {"dimensions": default_dimensions} if default_dimensions else {}
+
+
 def count(
     detectors: Sequence[Readable],
     num: Optional[int] = 1,
@@ -205,21 +213,10 @@ def list_scan(
     }
     _md.update(md or {})
 
-    def derive_default_hints(motors: List[Any]):
-        x_fields: List[str] = []
-        for motor in motors:
-            x_fields.extend(get_hinted_fields(motor))
-
-        default_dimensions: List[Tuple[List[str], str]] = [(x_fields, "primary")]
-
-    default_hints: Dict[str, Sequence] = {}
-    if len(x_fields) > 0:
-        default_hints.update(dimensions=default_dimensions)
-
-    # now add default_hints and override any hints from the original md (if
-    # exists)
-    _md["hints"] = default_hints
-    _md["hints"].update(md.get("hints", {}) or {})  # type: ignore
+    # add the motor-based hints
+    _md["hints"] = derive_default_hints(motors)
+    # override any hints from the original md (if  exists)
+    _md["hints"].update(md.get("hints", {}))
 
     full_cycler = plan_patterns.inner_list_product(args)
 
