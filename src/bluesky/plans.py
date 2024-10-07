@@ -7,7 +7,6 @@ from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
-from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from cycler import Cycler
