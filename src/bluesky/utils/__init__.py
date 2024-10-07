@@ -645,44 +645,53 @@ class Subs:
         self.data[instance] = normalize_subs_input(value)
 
 
-def snake_cyclers(cyclers: List[Cycler], snake_booleans: List[bool]) -> List[Cycler]:
+def snake_cyclers(cyclers: List[Cycler], snake_booleans: List[bool]) -> Cycler:
     """
     Combine cyclers with a 'snaking' back-and-forth order.
-    If none of the cyclers are "snaked" this is equivalent to taking the product of all the cyclers
+    If none of the cyclers are "snaked" this is equivalent to taking the product of all the cyclers.
 
     Parameters
     ----------
     cyclers : List[Cycler]
         A list of cycles to be "snaked".
     snake_booleans : List[bool]
-        a list of the same length as cyclers indicating whether each cycler
+        A list of the same length as cyclers indicating whether each cycler
         should 'snake' (True) or not (False). Note that the first boolean
         does not make a difference because the first (slowest) dimension
         does not repeat.
 
     Returns
     -------
-    result : cycler
-
+    result : Cycler
     """
     if len(cyclers) != len(snake_booleans):
         raise ValueError("number of cyclers does not match number of booleans")
+
+    # If no 'snaking', return the product of all cyclers
     if not any(snake_booleans[1:]):
         return reduce(operator.mul, cyclers)
-    lengths = []
-    new_cyclers = []
-    for c in cyclers:
-        lengths.append(len(c))
+
+    lengths = [len(c) for c in cyclers]
     total_length = np.prod(lengths)
+    new_cyclers = []
+
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
         num_tiles = np.prod(lengths[:i])
         num_repeats = np.prod(lengths[i + 1 :])
+
         for k, v in c._transpose().items():
+            # Ensure the value is a NumPy array before using np.tile
+            v = np.array(v)
+
             if snake:
-                v = v + v[::-1]
+                v = np.concatenate([v, v[::-1]])  # Snake back-and-forth
+
+            # Use np.tile and np.repeat
             v2 = np.tile(np.repeat(v, num_repeats), num_tiles)
             expanded = v2[:total_length]
             new_cyclers.append(cycler(k, expanded))
+
+    # Reduce by adding all the new cyclers
     return reduce(operator.add, new_cyclers)
 
 
