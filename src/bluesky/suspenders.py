@@ -42,6 +42,7 @@ class SuspenderBase(metaclass=ABCMeta):
         self._sig = signal
         self._pre_plan = pre_plan
         self._post_plan = post_plan
+        self._last_value = None
 
     def __repr__(self):
         return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
@@ -131,7 +132,7 @@ class SuspenderBase(metaclass=ABCMeta):
             if self.RE is None:
                 return
             loop = self.RE._loop
-
+            self._last_value = value
             if self._should_suspend(value):
                 self._tripped = True
                 # this does dirty things with internal state
@@ -370,7 +371,7 @@ class SuspendFloor(_Threshold):
             return ""
 
         just = (
-            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            f"Signal {self._sig.name} = {self._last_value!r} "
             + f"fell below {self._suspend_thresh} "
             + f"and has not yet crossed above {self._resume_thresh}."
         )
@@ -425,7 +426,7 @@ class SuspendCeil(_Threshold):
             return ""
 
         just = (
-            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            f"Signal {self._sig.name} = {self._last_value!r} "
             + f"went above {self._suspend_thresh} "
             + f"and has not yet crossed below {self._resume_thresh}."
         )
@@ -486,7 +487,7 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
             return ""
 
         just = "Signal {} = {!r} is outside of the range ({}, {})".format(  # noqa: UP032
-            self._sig.name, self._sig.get(), self._bot, self._top
+            self._sig.name, self._last_value, self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
@@ -543,7 +544,7 @@ class SuspendOutBand(_SuspendBandBase):
             return ""
 
         just = "Signal {} = {!r} is inside of the range ({}, {})".format(  # noqa: UP032
-            self._sig.name, self._sig.get(), self._bot, self._top
+            self._sig.name, self._last_value, self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
@@ -679,7 +680,7 @@ class SuspendWhenChanged(SuspenderBase):
         if not self.tripped:
             return ""
 
-        just = f'Signal {self._sig.name}, got "{self._sig.get()}", expected "{self.expected_value}"'
+        just = f'Signal {self._sig.name}, got "{self._last_value}", expected "{self.expected_value}"'
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
         return ": ".join(s for s in (just, self._tripped_message) if s)
