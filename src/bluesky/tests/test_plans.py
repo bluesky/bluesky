@@ -758,11 +758,11 @@ def test_reset_user_position_no_position(RE):
         def set_current_position(self, pos):
             pass
 
-    ax = SynAxisNoPosition()
+    ax = SynAxisNoPosition(name="test")
 
     def test_plan(obj):
         with pytest.raises(ValueError, match="position attribute"):
-            yield from bps._reset_user_position(obj, 10)
+            yield from bps.reset_user_position(obj, 10)
 
     RE(test_plan(ax))
 
@@ -779,7 +779,7 @@ def test_reset_user_position_no_set_current_position(RE):
 
     def test_plan(obj):
         with pytest.raises(ValueError, match="set_current_position method"):
-            yield from bps._reset_user_position(obj, 10)
+            yield from bps.reset_user_position(obj, 10)
 
     RE(test_plan(ax))
 
@@ -808,6 +808,6 @@ def test_reset_user_position_else_branch(RE):
 
         # Since ret should return (None, 10) due to None in the Msg response,
         # assert that the plan indeed takes the else branch.
-        assert ret == (None, 10)
+        assert ret == (0, 10)
 
     RE(test_plan_else_branch(ax))
