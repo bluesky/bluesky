@@ -749,3 +749,65 @@ def test_reset_user_position(RE):
             assert ret[obj.setpoint.name]["value"] == 15
 
     RE(test_plan(ax))
+
+
+def test_reset_user_position_no_position(RE):
+    from ophyd.sim import SynAxis as _SynAxis
+
+    class SynAxisNoPosition(_SynAxis):
+        def set_current_position(self, pos):
+            pass
+
+    ax = SynAxisNoPosition()
+
+    def test_plan(obj):
+        with pytest.raises(ValueError, match="position attribute"):
+            yield from bps._reset_user_position(obj, 10)
+
+    RE(test_plan(ax))
+
+
+def test_reset_user_position_no_set_current_position(RE):
+    from ophyd.sim import SynAxis as _SynAxis
+
+    class SynAxisNoSetCurrentPosition(_SynAxis):
+        @property
+        def position(self):
+            return 10
+
+    ax = SynAxisNoSetCurrentPosition(name="test")
+
+    def test_plan(obj):
+        with pytest.raises(ValueError, match="set_current_position method"):
+            yield from bps._reset_user_position(obj, 10)
+
+    RE(test_plan(ax))
+
+
+def test_reset_user_position_else_branch(RE):
+    from ophyd.sim import SynAxis as _SynAxis
+
+    class SynAxisNoReset(_SynAxis):
+        def set_current_position(self, pos):
+            self.sim_state["setpoint"] = pos
+            self.sim_state["readback"] = pos
+
+    ax = SynAxisNoReset(name="test")
+
+    def mock_reset_user_position(msg):
+        # Simulate returning None to trigger the 'else' branch
+        if msg.command == "reset_user_position":
+            return None
+        return (0, 15)
+
+    def test_plan_else_branch(obj):
+        # Patch the message handler in RE to return None to hit the else branch
+        RE.msg_hook = mock_reset_user_position
+
+        ret = yield from bps.reset_user_position(obj, 10, verbose=True)
+
+        # Since ret should return (None, 10) due to None in the Msg response,
+        # assert that the plan indeed takes the else branch.
+        assert ret == (None, 10)
+
+    RE(test_plan_else_branch(ax))
