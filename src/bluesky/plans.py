@@ -197,7 +197,7 @@ def list_scan(
     md_args = list(chain(*((repr(motor), pos_list) for motor, pos_list in partition(2, args))))
     motor_names = list(lengths.keys())
 
-    num_intervals = length - 1
+    num_intervals: int = (length or 1) - 1
     _md = {
         "detectors": [det.name for det in detectors],
         "motors": motor_names,
@@ -214,6 +214,7 @@ def list_scan(
 
     # add the motor-based hints
     _md["hints"] = derive_default_hints(motors)
+    assert isinstance(_md["hints"], dict), "Hints must be a dictionary"
     # override any hints from the original md (if  exists)
     _md["hints"].update(md.get("hints", {}))
 
@@ -348,6 +349,7 @@ def list_grid_scan(
     _md.update(md or {})  # type: ignore
     try:
         motor_hints = [(m.hints["fields"], "primary") for m in motors]
+        assert isinstance(_md["hints"], dict), "Hints must be a dictionary"
         _md["hints"].setdefault("dimensions", motor_hints)
     except (AttributeError, KeyError):
         ...
