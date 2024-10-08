@@ -21,48 +21,51 @@ def test_ramp(RE):
 
     RE.msg_hook = bsu.ts_msg_hook
 
-    tt = SoftPositioner(name="mot")
-    tt.set(0)
-    dd = SynGauss("det", tt, "mot", 0, 3)
+    # setup devices
+    motor = SoftPositioner(name="mot")
+    motor.set(0)
+    simulated_detector = SynGauss("det", motor, "mot", 0, 3)
 
-    st = StatusBase()
+    status = StatusBase()
 
+    # define plan functions nested setup
     def kickoff():
         yield Msg("null")
         for j, v in enumerate(np.linspace(-5, 5, 10)):
-            RE.loop.call_later(0.1 * j, lambda v=v: tt.set(v))
-        RE.loop.call_later(1.2, st._finished)
+            RE.loop.call_later(0.1 * j, lambda v=v: motor.set(v))
+        RE.loop.call_later(1.2, status._finished)
         print("YOLO")
-        return st
+        return status
 
     first = True
 
     def inner_plan():
         nonlocal first
         if first:
-            yield from declare_stream(dd, name="primary")
+            yield from declare_stream(simulated_detector, name="primary")
             first = False
 
-        yield from trigger_and_read([dd])
+        yield from trigger_and_read([simulated_detector])
 
-    g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
-    db = DocCollector()
-    RE.subscribe(db.insert)
-    rs = RE(g)
-    if RE.call_returns_result:
-        uid = rs.run_start_uids[0]
-    else:
-        uid = rs[0]
-    assert db.start[0]["uid"] == uid
-    assert len(db.descriptor[uid]) == 2
-    descs = {d["name"]: d for d in db.descriptor[uid]}
+    ramp_plan_generator = ramp_plan(kickoff(), motor, inner_plan, period=0.08)
+    document_collector = DocCollector()
+
+    # work subscription logic
+    RE.subscribe(document_collector.insert)
+    rs = RE(ramp_plan_generator)
+    uid = rs.run_start_uids[0] if RE.call_returns_result else rs[0]
+
+    assert document_collector.start[0]["uid"] == uid
+    descriptors = document_collector.descriptor[uid]
+    assert len(descriptors) == 2
+    descs = {d["name"]: d for d in descriptors}
 
     assert set(descs) == set(["primary", "mot_monitor"])  # noqa: C405
 
-    primary_events = db.event[descs["primary"]["uid"]]
+    primary_events = document_collector.event[descs["primary"]["uid"]]
     assert len(primary_events) > 11
 
-    monitor_events = db.event[descs["mot_monitor"]["uid"]]
+    monitor_events = document_collector.event[descs["mot_monitor"]["uid"]]
     # the 10 from the updates, 1 from 'run at subscription time'
     assert len(monitor_events) == 11
 
