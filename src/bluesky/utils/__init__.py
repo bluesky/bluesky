@@ -39,7 +39,7 @@ import msgpack
 import msgpack_numpy
 import numpy as np
 import zict
-from cycler import cycler
+from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
@@ -645,42 +645,53 @@ class Subs:
         self.data[instance] = normalize_subs_input(value)
 
 
-def snake_cyclers(cyclers, snake_booleans):
+def snake_cyclers(cyclers: List[Cycler], snake_booleans: List[bool]) -> Cycler:
     """
     Combine cyclers with a 'snaking' back-and-forth order.
+    If none of the cyclers are "snaked" this is equivalent to taking the product of all the cyclers.
 
     Parameters
     ----------
-    cyclers : cycler.Cycler
-        or any iterable that yields dictionaries of lists
-    snake_booleans : list
-        a list of the same length as cyclers indicating whether each cycler
+    cyclers : List[Cycler]
+        A list of cycles to be "snaked".
+    snake_booleans : List[bool]
+        A list of the same length as cyclers indicating whether each cycler
         should 'snake' (True) or not (False). Note that the first boolean
         does not make a difference because the first (slowest) dimension
         does not repeat.
 
     Returns
     -------
-    result : cycler
+    result : Cycler
     """
     if len(cyclers) != len(snake_booleans):
         raise ValueError("number of cyclers does not match number of booleans")
+
+    # If no 'snaking', return the product of all cyclers
     if not any(snake_booleans[1:]):
         return reduce(operator.mul, cyclers)
-    lengths = []
-    new_cyclers = []
-    for c in cyclers:
-        lengths.append(len(c))
+
+    lengths = [len(c) for c in cyclers]
     total_length = np.prod(lengths)
+    new_cyclers = []
+
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
         num_tiles = np.prod(lengths[:i])
         num_repeats = np.prod(lengths[i + 1 :])
+
         for k, v in c._transpose().items():
+            # Ensure the value is a NumPy array before using np.tile
+            v_ndarray = np.array(v)
+
             if snake:
-                v = v + v[::-1]
-            v2 = np.tile(np.repeat(v, num_repeats), num_tiles)
+                v_ndarray = np.concatenate([v_ndarray, v_ndarray[::-1]])  # Snake back-and-forth
+
+            # Use np.tile and np.repeat
+            v2 = np.tile(np.repeat(v_ndarray, num_repeats), int(num_tiles))
             expanded = v2[:total_length]
             new_cyclers.append(cycler(k, expanded))
+
+    # Reduce by adding all the new cyclers
     return reduce(operator.add, new_cyclers)
 
 
@@ -1296,13 +1307,13 @@ class ProgressBarBase(abc.ABC):  # noqa: B024
 class TerminalProgressBar(ProgressBarBase):
     def __init__(self, status_objs, delay_draw=0.2):
         """
-        Represent status objects with a progress bars.
+        Represent status objects with text-based progress bars in a terminal.
 
         Parameters
         ----------
-        status_objs : list
+        status_objs: list
             Status objects
-        delay_draw : float, optional
+        delay_draw: float, optional
             To avoid flashing progress bars that will complete quickly after
             they are displayed, delay drawing until the progress bar has been
             around for awhile. Default is 0.2 seconds.
@@ -1348,6 +1359,9 @@ class TerminalProgressBar(ProgressBarBase):
         time_elapsed=None,
         time_remaining=None,
     ):
+        """
+        This method is registered with Status.watch() to receive updates.
+        """
         if all(x is not None for x in (current, initial, target)):
             # Display a proper progress bar.
             total = round(_L2norm(target, initial), precision or 3)
@@ -1384,6 +1398,9 @@ class TerminalProgressBar(ProgressBarBase):
         self.draw()
 
     def draw(self):
+        """
+        Clear the display
+        """
         with self.lock:
             if (time.time() - self.creation_time) < self.delay_draw:
                 return
@@ -1448,6 +1465,7 @@ class ProgressBarManager:
         """
         Updates the manager with a new set of status, creates a new progress bar and
         cleans up the old one if needed.
+        This is registered with RunEngine.waiting_hook.
 
         Parameters
         ----------
