@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.utils &#8212; bluesky 1.13.0a5.dev92+gf4650248 documentation</title>
+    <title>bluesky.utils &#8212; bluesky 1.13.0a5.dev93+g7c2a44f0 documentation</title>
   
   
   
@@ -35,14 +35,14 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../../_static/documentation_options.js?v=46fca041"></script>
+    <script src="../../_static/documentation_options.js?v=ac0d3008"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/utils';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev92+gf4650248';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev93+g7c2a44f0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -596,7 +596,7 @@ document.write(`
 <span class="kn">import</span> <span class="nn">msgpack_numpy</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">zict</span>
-<span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
+<span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">Cycler</span><span class="p">,</span> <span class="n">cycler</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span> <span class="nn">tqdm.utils</span> <span class="kn">import</span> <span class="n">_screen_shape_wrapper</span><span class="p">,</span> <span class="n">_term_move_up</span><span class="p">,</span> <span class="n">_unicode</span>
 
@@ -1241,42 +1241,53 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">instance</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalize_subs_input</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">snake_cyclers</span><span class="p">(</span><span class="n">cyclers</span><span class="p">,</span> <span class="n">snake_booleans</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">snake_cyclers</span><span class="p">(</span><span class="n">cyclers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Cycler</span><span class="p">],</span> <span class="n">snake_booleans</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Cycler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Combine cyclers with a &#39;snaking&#39; back-and-forth order.</span>
+<span class="sd">    If none of the cyclers are &quot;snaked&quot; this is equivalent to taking the product of all the cyclers.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    cyclers : cycler.Cycler</span>
-<span class="sd">        or any iterable that yields dictionaries of lists</span>
-<span class="sd">    snake_booleans : list</span>
-<span class="sd">        a list of the same length as cyclers indicating whether each cycler</span>
+<span class="sd">    cyclers : List[Cycler]</span>
+<span class="sd">        A list of cycles to be &quot;snaked&quot;.</span>
+<span class="sd">    snake_booleans : List[bool]</span>
+<span class="sd">        A list of the same length as cyclers indicating whether each cycler</span>
 <span class="sd">        should &#39;snake&#39; (True) or not (False). Note that the first boolean</span>
 <span class="sd">        does not make a difference because the first (slowest) dimension</span>
 <span class="sd">        does not repeat.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    result : cycler</span>
+<span class="sd">    result : Cycler</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cyclers</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">snake_booleans</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;number of cyclers does not match number of booleans&quot;</span><span class="p">)</span>
+
+    <span class="c1"># If no &#39;snaking&#39;, return the product of all cyclers</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">snake_booleans</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
         <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span> <span class="n">cyclers</span><span class="p">)</span>
-    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">new_cyclers</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cyclers</span><span class="p">:</span>
-        <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cyclers</span><span class="p">]</span>
     <span class="n">total_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span>
+    <span class="n">new_cyclers</span> <span class="o">=</span> <span class="p">[]</span>
+
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">snake</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">cyclers</span><span class="p">,</span> <span class="n">snake_booleans</span><span class="p">)):</span>
         <span class="n">num_tiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">lengths</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
         <span class="n">num_repeats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">lengths</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:])</span>
+
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">_transpose</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Ensure the value is a NumPy array before using np.tile</span>
+            <span class="n">v_ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">snake</span><span class="p">:</span>
-                <span class="n">v</span> <span class="o">=</span> <span class="n">v</span> <span class="o">+</span> <span class="n">v</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">v2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">num_repeats</span><span class="p">),</span> <span class="n">num_tiles</span><span class="p">)</span>
+                <span class="n">v_ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">v_ndarray</span><span class="p">,</span> <span class="n">v_ndarray</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>  <span class="c1"># Snake back-and-forth</span>
+
+            <span class="c1"># Use np.tile and np.repeat</span>
+            <span class="n">v2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">v_ndarray</span><span class="p">,</span> <span class="n">num_repeats</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_tiles</span><span class="p">))</span>
             <span class="n">expanded</span> <span class="o">=</span> <span class="n">v2</span><span class="p">[:</span><span class="n">total_length</span><span class="p">]</span>
             <span class="n">new_cyclers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cycler</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">expanded</span><span class="p">))</span>
+
+    <span class="c1"># Reduce by adding all the new cyclers</span>
     <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">,</span> <span class="n">new_cyclers</span><span class="p">)</span>
 
 
@@ -1910,13 +1921,13 @@ document.write(`
 <span class="k">class</span> <span class="nc">TerminalProgressBar</span><span class="p">(</span><span class="n">ProgressBarBase</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status_objs</span><span class="p">,</span> <span class="n">delay_draw</span><span class="o">=</span><span class="mf">0.2</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Represent status objects with a progress bars.</span>
+<span class="sd">        Represent status objects with text-based progress bars in a terminal.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        status_objs : list</span>
+<span class="sd">        status_objs: list</span>
 <span class="sd">            Status objects</span>
-<span class="sd">        delay_draw : float, optional</span>
+<span class="sd">        delay_draw: float, optional</span>
 <span class="sd">            To avoid flashing progress bars that will complete quickly after</span>
 <span class="sd">            they are displayed, delay drawing until the progress bar has been</span>
 <span class="sd">            around for awhile. Default is 0.2 seconds.</span>
@@ -1962,6 +1973,9 @@ document.write(`
         <span class="n">time_elapsed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">time_remaining</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is registered with Status.watch() to receive updates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">target</span><span class="p">)):</span>
             <span class="c1"># Display a proper progress bar.</span>
             <span class="n">total</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">_L2norm</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">initial</span><span class="p">),</span> <span class="n">precision</span> <span class="ow">or</span> <span class="mi">3</span><span class="p">)</span>
@@ -1998,6 +2012,9 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clear the display</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">creation_time</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">delay_draw</span><span class="p">:</span>
                 <span class="k">return</span>
@@ -2029,7 +2046,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="ProgressBar">
-<a class="viewcode-back" href="../../generated/bluesky.utils.ProgressBar.html#bluesky.utils.ProgressBar">[docs]</a>
+<a class="viewcode-back" href="../../progress-bar.html#bluesky.utils.ProgressBar">[docs]</a>
 <span class="k">class</span> <span class="nc">ProgressBar</span><span class="p">(</span><span class="n">TerminalProgressBar</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Alias for backwards compatibility</span>
@@ -2044,13 +2061,11 @@ document.write(`
 
 
 <div class="viewcode-block" id="ProgressBarManager">
-<a class="viewcode-back" href="../../generated/bluesky.utils.ProgressBarManager.html#bluesky.utils.ProgressBarManager">[docs]</a>
+<a class="viewcode-back" href="../../progress-bar.html#bluesky.utils.ProgressBarManager">[docs]</a>
 <span class="k">class</span> <span class="nc">ProgressBarManager</span><span class="p">:</span>
     <span class="n">pbar_factory</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">ProgressBarBase</span><span class="p">]</span>
     <span class="n">pbar</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProgressBarBase</span><span class="p">]</span>
 
-<div class="viewcode-block" id="ProgressBarManager.__init__">
-<a class="viewcode-back" href="../../generated/bluesky.utils.ProgressBarManager.html#bluesky.utils.ProgressBarManager.__init__">[docs]</a>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pbar_factory</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">ProgressBarBase</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_progress_bar</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Manages creation and tearing down of progress bars.</span>
@@ -2063,13 +2078,13 @@ document.write(`
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pbar_factory</span> <span class="o">=</span> <span class="n">pbar_factory</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pbar</span> <span class="o">=</span> <span class="kc">None</span></div>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">pbar</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status_objs_or_none</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Updates the manager with a new set of status, creates a new progress bar and</span>
 <span class="sd">        cleans up the old one if needed.</span>
+<span class="sd">        This is registered with RunEngine.waiting_hook.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>

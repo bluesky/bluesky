@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Debugging and Logging &#8212; bluesky 1.13.0a5.dev92+gf4650248 documentation</title>
+    <title>Debugging and Logging &#8212; bluesky 1.13.0a5.dev93+g7c2a44f0 documentation</title>
   
   
   
@@ -36,14 +36,14 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="_static/documentation_options.js?v=46fca041"></script>
+    <script src="_static/documentation_options.js?v=ac0d3008"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'debugging';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev92+gf4650248';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.0a5.dev93+g7c2a44f0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -687,7 +687,7 @@ doc_name, doc_uid) when present.</p></li>
 <h3>Global Handler<a class="headerlink" href="#global-handler" title="Link to this heading">#</a></h3>
 <p>Following Python’s recommendation, bluesky does not install any handlers at
 import time, but it provides a function to set up a basic useful configuration
-in one line, similar to Python’s <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.basicConfig" title="(in Python v3.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">logging.basicConfig()</span></code></a> but with some
+in one line, similar to Python’s <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.basicConfig" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">logging.basicConfig()</span></code></a> but with some
 additional options—and scoped to the <code class="docutils literal notranslate"><span class="pre">'bluesky'</span></code> logger with bluesky’s
 <a class="reference internal" href="#bluesky.log.LogFormatter" title="bluesky.log.LogFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">bluesky.log.LogFormatter</span></code></a>. It streamlines common use cases without
 interfering with more sophisticated use cases.</p>
@@ -791,7 +791,7 @@ its level is not set</p>
 </pre></div>
 </div>
 <p>and so it inherits the level of Python’s default
-“handler of last resort,” <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.lastResort" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logging.lastResort</span></code></a>, which is <code class="docutils literal notranslate"><span class="pre">'WARNING'</span></code>.</p>
+“handler of last resort,” <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.lastResort" title="(in Python v3.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logging.lastResort</span></code></a>, which is <code class="docutils literal notranslate"><span class="pre">'WARNING'</span></code>.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="n">logging</span><span class="o">.</span><span class="n">getLevelName</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">())</span>
 
 <span class="gp">In [4]: </span><span class="s1">&#39;WARNING&#39;</span>
@@ -806,7 +806,7 @@ of the handler we have added.</p>
 handler, set to <code class="docutils literal notranslate"><span class="pre">'INFO'</span></code>, will filter out DEBUG-level records.</p>
 <p>To globally disable the generation of any log records at or below a certain
 verbosity, which may be helpful for optimizing performance, Python provides
-<a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.disable" title="(in Python v3.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">logging.disable()</span></code></a>.</p>
+<a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.disable" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">logging.disable()</span></code></a>.</p>
 </section>
 </section>
 
@@ -883,7 +883,7 @@ verbosity, which may be helpful for optimizing performance, Python provides
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a5.dev92+gf4650248/docs/debugging.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.0a5.dev93+g7c2a44f0/docs/debugging.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
