@@ -675,9 +675,9 @@ class LivePlotPlusPeaks(LivePlot):
             crossings = self.peak_results["crossings"][self.y]
             style = {"color": "g"}
             arrow_y_pos = (max_crds[1] + min_crds[1]) / 2
-            label = self.label_format.format(attr=attr, val=val)
+            # label = self.label_format.format(attr=attr, val=val)
             # Fake line for the legend:
-            lines += self.ax.plot([], [], label=label, **style)
+            # lines += self.ax.plot([], [], label=label, **style)
             arrows.append(
                 self.ax.annotate(
                     "",
