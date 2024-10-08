@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.create
+==========================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: create

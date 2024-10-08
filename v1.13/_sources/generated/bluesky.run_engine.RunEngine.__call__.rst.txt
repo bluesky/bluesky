@@ -1,0 +1,6 @@
+﻿bluesky.run\_engine.RunEngine.\_\_call\_\_
+==========================================
+
+.. currentmodule:: bluesky.run_engine
+
+.. automethod:: RunEngine.__call__

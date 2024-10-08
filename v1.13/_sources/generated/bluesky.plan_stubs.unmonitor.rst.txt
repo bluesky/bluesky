@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.unmonitor
+=============================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: unmonitor
