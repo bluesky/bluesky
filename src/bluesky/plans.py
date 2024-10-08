@@ -54,6 +54,14 @@ def _check_detectors_type_input(detectors):
         raise TypeError("The input argument must be either as a list or a tuple of Readable objects.")
 
 
+def derive_default_hints(motors: List[Any]) -> Dict[str, Sequence]:
+    x_fields = [field for motor in motors for field in get_hinted_fields(motor)]
+
+    default_dimensions = [(x_fields, "primary")] if x_fields else []
+
+    return {"dimensions": default_dimensions} if default_dimensions else {}
+
+
 def count(
     detectors: Sequence[Readable],
     num: Optional[int] = 1,
@@ -167,7 +175,7 @@ def list_scan(
 
     # set some variables and check that all lists are the same length
     lengths = {}
-    motors = []
+    motors: List[Any] = []
     pos_lists = []
     length = None
     for motor, pos_list in partition(2, args):
@@ -189,11 +197,12 @@ def list_scan(
     md_args = list(chain(*((repr(motor), pos_list) for motor, pos_list in partition(2, args))))
     motor_names = list(lengths.keys())
 
+    num_intervals: int = (length or 1) - 1
     _md = {
         "detectors": [det.name for det in detectors],
         "motors": motor_names,
         "num_points": length,
-        "num_intervals": length - 1,  # type: ignore
+        "num_intervals": num_intervals,
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
         "plan_name": "list_scan",
         "plan_pattern": "inner_list_product",
@@ -203,20 +212,11 @@ def list_scan(
     }
     _md.update(md or {})
 
-    x_fields = []
-    for motor in motors:
-        x_fields.extend(get_hinted_fields(motor))
-
-    default_dimensions = [(x_fields, "primary")]
-
-    default_hints: Dict[str, Sequence] = {}
-    if len(x_fields) > 0:
-        default_hints.update(dimensions=default_dimensions)
-
-    # now add default_hints and override any hints from the original md (if
-    # exists)
-    _md["hints"] = default_hints
-    _md["hints"].update(md.get("hints", {}) or {})  # type: ignore
+    # add the motor-based hints
+    _md["hints"] = derive_default_hints(motors)
+    assert isinstance(_md["hints"], dict), "Hints must be a dictionary"
+    # override any hints from the original md (if  exists)
+    _md["hints"].update(md.get("hints", {}))
 
     full_cycler = plan_patterns.inner_list_product(args)
 
@@ -348,7 +348,9 @@ def list_grid_scan(
     }
     _md.update(md or {})  # type: ignore
     try:
-        _md["hints"].setdefault("dimensions", [(m.hints["fields"], "primary") for m in motors])  # type: ignore
+        motor_hints = [(m.hints["fields"], "primary") for m in motors]
+        assert isinstance(_md["hints"], dict), "Hints must be a dictionary"
+        _md["hints"].setdefault("dimensions", motor_hints)
     except (AttributeError, KeyError):
         ...
 
