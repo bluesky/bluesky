@@ -16,6 +16,7 @@ from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
+from typing import Any
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -29,10 +30,11 @@ from .mpl_plotting import LiveGrid, LivePlot, LiveScatter, QtAwareCallback
 
 logger = logging.getLogger(__name__)
 
+default_label_format = "{attr}={val:.3f}"
 
-def validate_label_format(label_format: str | None):
+
+def validate_label_format(label_format: str | None) -> str:
     """Validate label format for a legend in LivePlot"""
-    default_label_format = "{attr}={val:.3f}"
     if label_format is None:
         return default_label_format
     assert (label_format is None) or ("attr" in label_format and "val" in label_format), (
@@ -46,7 +48,15 @@ def validate_label_format(label_format: str | None):
 
 @make_class_safe(logger=logger)
 class BestEffortCallback(QtAwareCallback):
-    def __init__(self, *, fig_factory=None, table_enabled=True, calc_derivative_and_stats=False, **kwargs):
+    def __init__(
+        self,
+        *,
+        fig_factory: Any | None = None,
+        table_enabled=True,
+        label_format: str | None = None,
+        calc_derivative_and_stats=False,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         # internal state
         self._start_doc = None
@@ -57,13 +67,13 @@ class BestEffortCallback(QtAwareCallback):
         self._baseline_enabled = True
         self._plots_enabled = True
         # axes supplied from outside
-        self._fig_factory = fig_factory if fig_factory is not None else partial(plt.figure, layout="constrained")
+        self._fig_factory = fig_factory or partial(plt.figure, layout="constrained")
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
         self._live_scatters = {}
         self._peak_stats = {}  # same structure as live_plots
-        self._label_format = {}
+        self._label_format = label_format or default_label_format
         self._calc_derivative_and_stats = calc_derivative_and_stats
         self._cleanup_motor_heuristic = False
         self._stream_names_seen = set()
@@ -112,8 +122,8 @@ class BestEffortCallback(QtAwareCallback):
         "Do not plot anything."
         self._plots_enabled = False
 
-    def format_labels(self, format: str):
-        self.__label_format = validate_label_format(format)
+    def change_label_format(self, format: str):
+        self._label_format = validate_label_format(format)
 
     def __call__(self, name, doc, *args, **kwargs):
         if not (self._table_enabled or self._baseline_enabled or self._plots_enabled):
@@ -273,7 +283,11 @@ class BestEffortCallback(QtAwareCallback):
                         continue
                     # Create an instance of LivePlot and an instance of PeakStats.
                     live_plot = LivePlotPlusPeaks(
-                        y=y_key, x=x_key, ax=ax, peak_results=self.peaks, label_format=self.__label_format
+                        y=y_key,
+                        x=x_key,
+                        ax=ax,
+                        peak_results=self.peaks,
+                        label_format=self._label_format or default_label_format,
                     )
                     live_plot("start", self._start_doc)
                     live_plot("descriptor", doc)
