@@ -5,9 +5,10 @@ import uuid
 import warnings
 from collections.abc import Iterable
 from functools import reduce
-from typing import List
+from typing import Any, List
 
 from cycler import cycler
+from typing_extensions import Unpack
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -15,7 +16,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Flyable, Locatable, Status, Triggerable, check_supports
+from .protocols import Flyable, Locatable, Movable, Status, Triggerable, check_supports
 from .utils import (
     Msg,
     all_safe_rewind,
@@ -248,7 +249,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
-def mv(*args, group=None, **kwargs):
+def mv(*args: Unpack[tuple[Movable, Any]], group=None, **kwargs):
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
