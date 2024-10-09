@@ -1,6 +1,8 @@
+from math import ceil
+
 import pytest
 
-from bluesky.consolidators import HDF5Consolidator
+from bluesky.consolidators import HDF5Consolidator, TIFFConsolidator
 
 
 @pytest.fixture
@@ -41,7 +43,7 @@ def descriptor():
 
 
 @pytest.fixture
-def stream_resource_factory():
+def hdf5_stream_resource_factory():
     return lambda data_key, chunk_shape: {
         "data_key": data_key,
         "mimetype": "application/x-hdf5",
@@ -57,13 +59,24 @@ def stream_resource_factory():
 
 
 @pytest.fixture
+def tiff_stream_resource_factory():
+    return lambda data_key, chunk_shape: {
+        "data_key": data_key,
+        "mimetype": "multipart/related;type=image/tiff",
+        "uri": "file://localhost/test/file/path",
+        "parameters": {"chunk_shape": chunk_shape, "template": "img_{:06d}.tiff"},
+        "uid": f"stream-resource-uid-{data_key}",
+    }
+
+
+@pytest.fixture
 def stream_datum_factory():
-    return lambda data_key, i: {
-        "seq_nums": {"start": i + 1, "stop": i + 2},
-        "indices": {"start": i, "stop": i + 1},
+    return lambda data_key, indx, i_start, i_stop: {
+        "seq_nums": {"start": i_start + 1, "stop": i_stop + 1},
+        "indices": {"start": i_start, "stop": i_stop},
         "descriptor": "descriptor-uid",
         "stream_resource": f"stream-resource-uid-{data_key}",
-        "uid": f"stream-datum-uid-{data_key}/{i}",
+        "uid": f"stream-datum-uid-{data_key}/{indx}",
     }
 
 
@@ -76,14 +89,29 @@ shape_testdata = [
 
 
 @pytest.mark.parametrize("data_key, expected", shape_testdata)
-def test_shape(descriptor, stream_resource_factory, stream_datum_factory, data_key, expected):
-    stream_resource = stream_resource_factory(data_key=data_key, chunk_shape=None)
+def test_hdf5_shape(descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, expected):
+    stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=())
     cons = HDF5Consolidator(stream_resource, descriptor)
     assert cons.shape == (0, *expected[1:])
     for i in range(5):
-        doc = stream_datum_factory(data_key, i)
+        doc = stream_datum_factory(data_key, i, i, i + 1)
         cons.consume_stream_datum(doc)
     assert cons.shape == expected
+
+
+@pytest.mark.parametrize("data_key, expected", shape_testdata)
+@pytest.mark.parametrize("frames_per_chunk", [1, 2, 3])
+def test_tiff_shape(
+    descriptor, tiff_stream_resource_factory, stream_datum_factory, data_key, expected, frames_per_chunk
+):
+    stream_resource = tiff_stream_resource_factory(data_key=data_key, chunk_shape=(frames_per_chunk,))
+    cons = TIFFConsolidator(stream_resource, descriptor)
+    assert cons.shape == (0, *expected[1:])
+    for i in range(ceil(5 / frames_per_chunk)):
+        doc = stream_datum_factory(data_key, i, i * frames_per_chunk, min((i + 1) * frames_per_chunk, 5))
+        cons.consume_stream_datum(doc)
+    assert cons.shape == expected
+    assert len(cons.assets) == ceil(5 / frames_per_chunk)
 
 
 chunk_testdata = [
@@ -102,11 +130,11 @@ chunk_testdata = [
 
 
 @pytest.mark.parametrize("data_key, chunk_shape, expected", chunk_testdata)
-def test_chunks(descriptor, stream_resource_factory, stream_datum_factory, data_key, chunk_shape, expected):
-    stream_resource = stream_resource_factory(data_key=data_key, chunk_shape=chunk_shape)
+def test_chunks(descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, chunk_shape, expected):
+    stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=chunk_shape)
     cons = HDF5Consolidator(stream_resource, descriptor)
     assert cons.chunks == ((0,), *expected[1:])
     for i in range(5):
-        doc = stream_datum_factory(data_key, i)
+        doc = stream_datum_factory(data_key, i, i, i + 1)
         cons.consume_stream_datum(doc)
     assert cons.chunks == expected
