@@ -100,18 +100,20 @@ def test_hdf5_shape(descriptor, hdf5_stream_resource_factory, stream_datum_facto
 
 
 @pytest.mark.parametrize("data_key, expected", shape_testdata)
-@pytest.mark.parametrize("frames_per_chunk", [1, 2, 3])
+@pytest.mark.parametrize("files_per_stream_datum", [1, 2, 3, 5])
 def test_tiff_shape(
-    descriptor, tiff_stream_resource_factory, stream_datum_factory, data_key, expected, frames_per_chunk
+    descriptor, tiff_stream_resource_factory, stream_datum_factory, data_key, expected, files_per_stream_datum
 ):
-    stream_resource = tiff_stream_resource_factory(data_key=data_key, chunk_shape=(frames_per_chunk,))
+    stream_resource = tiff_stream_resource_factory(data_key=data_key, chunk_shape=(1,))
     cons = TIFFConsolidator(stream_resource, descriptor)
     assert cons.shape == (0, *expected[1:])
-    for i in range(ceil(5 / frames_per_chunk)):
-        doc = stream_datum_factory(data_key, i, i * frames_per_chunk, min((i + 1) * frames_per_chunk, 5))
+    for i in range(ceil(5 / files_per_stream_datum)):
+        doc = stream_datum_factory(
+            data_key, i, i * files_per_stream_datum, min((i + 1) * files_per_stream_datum, 5)
+        )
         cons.consume_stream_datum(doc)
     assert cons.shape == expected
-    assert len(cons.assets) == ceil(5 / frames_per_chunk)
+    assert len(cons.assets) == 5
 
 
 chunk_testdata = [
