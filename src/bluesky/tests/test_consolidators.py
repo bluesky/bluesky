@@ -77,7 +77,7 @@ shape_testdata = [
 
 @pytest.mark.parametrize("data_key, expected", shape_testdata)
 def test_shape(descriptor, stream_resource_factory, stream_datum_factory, data_key, expected):
-    stream_resource = stream_resource_factory(data_key=data_key, chunk_shape=None)
+    stream_resource = stream_resource_factory(data_key=data_key, chunk_shape=())
     cons = HDF5Consolidator(stream_resource, descriptor)
     assert cons.shape == (0, *expected[1:])
     for i in range(5):
