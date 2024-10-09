@@ -3,6 +3,7 @@ import concurrent
 import copy
 import functools
 import inspect
+import json
 import sys
 import threading
 import typing
@@ -17,6 +18,8 @@ from itertools import count
 from warnings import warn
 
 from event_model import DocumentNames
+from opentelemetry import trace
+from opentelemetry.trace import Span
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky._vendor.super_state_machine.extras import PropertyMachine
@@ -34,9 +37,11 @@ from .protocols import (
     Stageable,
     Status,
     Stoppable,
+    T,
     Triggerable,
     check_supports,
 )
+from .tracing import tracer
 from .utils import (
     AsyncInput,
     CallbackRegistry,
@@ -57,6 +62,8 @@ from .utils import (
     single_gen,
     warn_if_msg_args_or_kwargs,
 )
+
+_SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
 current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
 try:
@@ -427,6 +434,8 @@ class RunEngine:
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
 
+        self._run_tracing_spans: list[Span] = []
+
         # When cleared, RunEngine._run will pause until set.
         self._run_permit = None
 
@@ -502,6 +511,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of Events to wait for
         self._status_objs = defaultdict(set)  # status objects to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
+        self._seen_wait_and_move_on_keys = set()  # group ids that have been passed to _wait_and_move_on
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
@@ -907,7 +917,7 @@ class RunEngine:
 
         # If we are in the wrong state, raise.
         if not self._state.is_idle:
-            raise RuntimeError("The RunEngine is in a %s state" % self._state)
+            raise RuntimeError(f"The RunEngine is in a {self._state} state")
 
         futs = []
         tripped_justifications = []
@@ -1315,6 +1325,7 @@ class RunEngine:
         self._reason = reason
 
         self._exit_status = "abort"
+        self._destroy_open_run_tracing_spans()
 
         was_paused = self._state == "paused"
         self._state = "aborting"
@@ -1418,6 +1429,7 @@ class RunEngine:
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Halting: skipping cleanup and marking exit_status as 'abort'...")
+        self._destroy_open_run_tracing_spans()
         self._interrupted = True
         was_paused = self._state == "paused"
         self._state = "halting"
@@ -1445,6 +1457,12 @@ class RunEngine:
                     self.log.exception("Failed to stop %r.", obj)
             else:
                 self.log.debug("No 'stop' method available on %r", obj)
+
+    def _destroy_open_run_tracing_spans(self):
+        while len(self._run_tracing_spans):
+            _span = self._run_tracing_spans.pop()
+            _span.set_attribute("exit_status", "aborted")
+            _span.end()
 
     async def _run(self):
         """Pull messages from the plan, process them, send results back.
@@ -1780,7 +1798,7 @@ class RunEngine:
         return plan_return
 
     async def _wait_for(self, msg):
-        """Instruct the RunEngine to wait for futures
+        """Instruct the RunEngine to wait for futures and return the resulting tasks.
 
         Expected message object is:
 
@@ -1797,9 +1815,10 @@ class RunEngine:
 
         (futs,) = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        _, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        completed, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
+        return futs
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
@@ -1811,6 +1830,11 @@ class RunEngine:
         where **kwargs are any additional metadata that should go into
         the RunStart document
         """
+        _span = tracer.start_span(f"{_SPAN_NAME_PREFIX} run")
+        _set_span_msg_attributes(_span, msg)
+
+        self._run_tracing_spans.append(_span)
+
         # TODO extract this from the Msg
         run_key = msg.run
         if run_key in self._run_bundlers:
@@ -1871,7 +1895,19 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         ret = await current_run.close_run(msg)
         del self._run_bundlers[run_key]
+        self._close_run_trace(msg)
         return ret
+
+    def _close_run_trace(self, msg):
+        exit_status = msg.exit_status if hasattr(msg, "exit_status") else self._exit_status
+        reason = msg.reason if hasattr(msg, "reason") else self._reason
+        try:
+            _span: Span = self._run_tracing_spans.pop()
+            _span.set_attribute("exit_status", exit_status)
+            _span.set_attribute("reason", reason)
+            _span.end()
+        except IndexError:
+            logger.warning("No open traces left to close!")
 
     async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
@@ -2144,6 +2180,7 @@ class RunEngine:
 
         return ret
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} complete")
     async def _complete(self, msg):
         """
         Tell a flyer, 'stop collecting, whenever you are ready'.
@@ -2160,6 +2197,7 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         obj = check_supports(msg.obj, Flyable)
@@ -2186,6 +2224,7 @@ class RunEngine:
         self._status_objs[group].add(ret)
         return ret
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} collect")
     async def _collect(self, msg):
         """
         Collect data cached by a flyer and emit documents
@@ -2195,6 +2234,7 @@ class RunEngine:
             Msg('collect', flyer_object)
             Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
         if (
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
@@ -2217,6 +2257,7 @@ class RunEngine:
         """
         return type(self)
 
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
     async def _set(self, msg):
         """
         Set a device and cache the returned status object.
@@ -2230,6 +2271,7 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
         obj = check_supports(msg.obj, Movable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
@@ -2270,43 +2312,71 @@ class RunEngine:
 
         return ret
 
+    def _call_waiting_hook(self, *args, **kwargs):
+        if self.waiting_hook is not None:
+            self.waiting_hook(*args, **kwargs)
+
+    @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
     async def _wait(self, msg):
         """Block progress until every object that was triggered or set
-        with the keyword argument `group=<GROUP>` is done.
+        with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
+        true when all triggered objects are done. When the keyword argument
+        `move_on=<MOVE_ON>` is true, this method can return before all objects are done
+        after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
 
         Expected message object is:
 
-            Msg('wait', group=<GROUP>)
+            Msg('wait', group=<GROUP>, move_on=<MOVE_ON>)
 
-        where ``<GROUP>`` is any hashable key.
+        where ``<GROUP>`` is any hashable key and ``<MOVE_ON>`` is a boolean.
         """
+        _set_span_msg_attributes(trace.get_current_span(), msg)
+        done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
+            move_on = False
         else:
             group = msg.kwargs["group"]
+            move_on = msg.kwargs.get("move_on", False)
+        if group:
+            trace.get_current_span().set_attribute("group", group)
+        else:
+            trace.get_current_span().set_attribute("no_group_given", True)
         futs = list(self._groups.pop(group, []))
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
-                if self.waiting_hook is not None:
+                if move_on:
+                    if group not in self._seen_wait_and_move_on_keys:
+                        self._seen_wait_and_move_on_keys.add(group)
+                        self._call_waiting_hook(status_objs)
+                else:  # if move_on False
                     # Notify the waiting_hook function that the RunEngine is
                     # waiting for these status_objs to complete. Users can use
                     # the information these encapsulate to create a progress
                     # bar.
-                    self.waiting_hook(status_objs)
+                    self._call_waiting_hook(status_objs)
                 await self._wait_for(Msg("wait_for", None, futs, timeout=msg.kwargs.get("timeout", None)))
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
                 self._groups[group] = futs
                 self._status_objs[group] = status_objs
-                raise
+                if not move_on:
+                    raise
             finally:
-                if self.waiting_hook is not None:
+                if not move_on:
                     # Notify the waiting_hook function that we have moved on by
                     # sending it `None`. If all goes well, it could have
                     # inferred this from the status_obj, but there are edge
                     # cases.
-                    self.waiting_hook(None)
+                    self._call_waiting_hook(None)
+                    done = True
+                else:
+                    done = all(obj.done for obj in status_objs)
+                    if done:
+                        self._call_waiting_hook(None)
+                        self._seen_wait_and_move_on_keys.remove(group)
+            return done
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """
@@ -2750,6 +2820,13 @@ http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
 
 
+def _set_span_msg_attributes(span, msg):
+    span.set_attribute("msg.command", msg.command)
+    span.set_attribute("msg.args", msg.args)
+    span.set_attribute("msg.kwargs", json.dumps(msg.kwargs, default=repr))
+    span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
+
+
 def _default_md_validator(md):
     if "sample" in md and not (hasattr(md["sample"], "keys") or isinstance(md["sample"], str)):
         raise ValueError(
@@ -2805,9 +2882,6 @@ def in_bluesky_event_loop() -> bool:
     else:
         # Check if running loop is bluesky event loop
         return loop is _bluesky_event_loop
-
-
-T = typing.TypeVar("T")
 
 
 def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Optional[float] = None) -> T:

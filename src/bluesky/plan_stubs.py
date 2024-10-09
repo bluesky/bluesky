@@ -1,14 +1,30 @@
 import itertools
 import operator
 import time
+import typing
 import uuid
 import warnings
-from collections.abc import Iterable
 from functools import reduce
-from typing import Any, List
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Hashable,
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from cycler import cycler
 from typing_extensions import Unpack
+
+from bluesky.suspenders import SuspenderBase
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -16,28 +32,61 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Flyable, Locatable, Movable, Status, Triggerable, check_supports
+from event_model import ComposeEvent
+from event_model.documents import EventDescriptor
+
+from .protocols import (
+    Configurable,
+    Flyable,
+    Locatable,
+    Location,
+    Movable,
+    NamedMovable,
+    PartialEvent,
+    Preparable,
+    Readable,
+    Reading,
+    Stageable,
+    Status,
+    Stoppable,
+    Triggerable,
+    check_supports,
+)
 from .utils import (
+    CustomPlanMetadata,
     Msg,
+    MsgGenerator,
+    ScalarOrIterableFloat,
     all_safe_rewind,
     ensure_generator,
     get_hinted_fields,
     merge_cycler,
+    plan,
     separate_devices,
+    short_uid,
 )
 from .utils import (
     short_uid as _short_uid,
 )
 
+#: Any plan function that takes a reading given a list of Readables
+TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
 
-def declare_stream(*objs, name: str, collect=False):
+
+@plan
+def declare_stream(
+    *objs: Readable, name: str, collect: bool = False
+) -> MsgGenerator[Tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
 
     Parameters
     ----------
-    name : string
-        name given to event stream, used to convenient identification
+    objs :
+        objects whose readings will be present in the stream
+    name : string, optional
+        name given to event stream, used for convenient identification
+        default is 'primary'
     collect : bool, optional
         collect as well as describe when declaring the stream
         default is `False`
@@ -54,14 +103,15 @@ def declare_stream(*objs, name: str, collect=False):
     return (yield Msg("declare_stream", None, *separate_devices(objs), name=name, collect=collect))
 
 
-def create(name="primary"):
+@plan
+def create(name: str = "primary") -> MsgGenerator:
     """
     Bundle future readings into a new Event document.
 
     Parameters
     ----------
     name : string, optional
-        name given to event stream, used to convenient identification
+        name given to event stream, used for convenient identification
         default is 'primary'
 
     Yields
@@ -76,7 +126,8 @@ def create(name="primary"):
     return (yield Msg("create", name=name))
 
 
-def save():
+@plan
+def save() -> MsgGenerator:
     """
     Close a bundle of readings and emit a completed Event document.
 
@@ -92,7 +143,8 @@ def save():
     return (yield Msg("save"))
 
 
-def drop():
+@plan
+def drop() -> MsgGenerator:
     """
     Drop a bundle of readings without emitting a completed Event document.
 
@@ -109,7 +161,8 @@ def drop():
     return (yield Msg("drop"))
 
 
-def read(obj):
+@plan
+def read(obj: Readable) -> MsgGenerator[Reading]:
     """
     Take a reading and add it to the current bundle of readings.
 
@@ -121,17 +174,47 @@ def read(obj):
     ------
     msg : Msg
         Msg('read', obj)
+
+    Returns
+    -------
+    reading :
+        Reading object representing information recorded
     """
     return (yield Msg("read", obj))
 
 
-def monitor(obj, *, name=None, **kwargs):
+@typing.overload
+def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+@typing.overload
+def locate(*objs: Locatable, squeeze: bool = True) -> List[Location]: ...
+@plan
+def locate(*objs, squeeze=True):
+    """
+    Locate some Movables and return their locations.
+
+    Parameters
+    ----------
+    obj : Device or Signal
+    sqeeze: bool
+        If True, return the result as a list.
+        If False, always return a list of retults even with a single object.
+
+    Yields
+    ------
+     msg : Msg
+        ``Msg('locate', obj1, ..., objn, squeeze=True)``
+    """
+    return (yield Msg("locate", *objs, squeeze=squeeze))
+
+
+@plan
+def monitor(obj: Readable, *, name: Optional[str] = None, **kwargs) -> MsgGenerator:
     """
     Asynchronously monitor for new values and emit Event documents.
 
     Parameters
     ----------
-    obj : Signal
+    obj : Device or Signal
     args :
         passed through to ``obj.subscribe()``
     name : string, optional
@@ -151,13 +234,14 @@ def monitor(obj, *, name=None, **kwargs):
     return (yield Msg("monitor", obj, name=name, **kwargs))
 
 
-def unmonitor(obj):
+@plan
+def unmonitor(obj: Readable) -> MsgGenerator:
     """
     Stop monitoring.
 
     Parameters
     ----------
-    obj : Signal
+    obj : Device or Signal
 
     Yields
     ------
@@ -171,7 +255,8 @@ def unmonitor(obj):
     return (yield Msg("unmonitor", obj))
 
 
-def null():
+@plan
+def null() -> MsgGenerator:
     """
     Yield a no-op Message. (Primarily for debugging and testing.)
 
@@ -183,26 +268,39 @@ def null():
     return (yield Msg("null"))
 
 
-def abs_set(obj, *args, group=None, wait=False, **kwargs):
+@plan
+def abs_set(
+    obj: Movable,
+    *args,
+    group: Optional[Hashable] = None,
+    wait: bool = False,
+    **kwargs,
+) -> MsgGenerator[Status]:
     """
     Set a value. Optionally, wait for it to complete before continuing.
 
     Parameters
     ----------
     obj : Device
+    args :
+        passed to obj.set()
     group : string (or any hashable object), optional
         identifier used by 'wait'
     wait : boolean, optional
         If True, wait for completion before processing any more messages.
         False by default.
-    args :
-        passed to obj.set()
     kwargs :
         passed to obj.set()
 
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    status :
+        Status that completes when the value is set. If `wait` is True,
+        this will always be complete by the time it is returned.
 
     See Also
     --------
@@ -218,26 +316,39 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     return ret
 
 
-def rel_set(obj, *args, group=None, wait=False, **kwargs):
+@plan
+def rel_set(
+    obj: Movable,
+    *args,
+    group: Optional[Hashable] = None,
+    wait: bool = False,
+    **kwargs,
+) -> MsgGenerator[Status]:
     """
     Set a value relative to current value. Optionally, wait before continuing.
 
     Parameters
     ----------
     obj : Device
+    args :
+        passed to obj.set()
     group : string (or any hashable object), optional
         identifier used by 'wait'; None by default
     wait : boolean, optional
         If True, wait for completion before processing any more messages.
         False by default.
-    args :
-        passed to obj.set()
     kwargs :
         passed to obj.set()
 
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    status :
+        Status that completes when the value is set. If `wait` is True,
+        this will always be complete by the time it is returned.
 
     See Also
     --------
@@ -249,7 +360,11 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
-def mv(*args: Unpack[tuple[Movable, Any]], group=None, **kwargs):
+def mv(
+    *args: Unpack[tuple[Movable, Any]],
+    group: Optional[Hashable] = None,
+    **kwargs,
+) -> MsgGenerator[Tuple[Status, ...]]:
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -267,6 +382,11 @@ def mv(*args: Unpack[tuple[Movable, Any]], group=None, **kwargs):
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    statuses :
+        Tuple of n statuses, one for each move operation
 
     See Also
     --------
@@ -288,7 +408,10 @@ def mv(*args: Unpack[tuple[Movable, Any]], group=None, **kwargs):
 mov = mv  # synonym
 
 
-def mvr(*args, group=None, **kwargs):
+@plan
+def mvr(
+    *args: Tuple[Union[Movable, NamedMovable, Any], ...], group: Optional[Hashable] = None, **kwargs
+) -> MsgGenerator[Tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
@@ -306,6 +429,11 @@ def mvr(*args, group=None, **kwargs):
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    statuses :
+        Tuple of n statuses, one for each move operation
 
     See Also
     --------
@@ -328,7 +456,8 @@ def mvr(*args, group=None, **kwargs):
 movr = mvr  # synonym
 
 
-def rd(obj, *, default_value=0):
+@plan
+def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
     """Reads a single-value non-triggered object
 
     This is a helper plan to get the scalar value out of a Device
@@ -412,7 +541,7 @@ def rd(obj, *, default_value=0):
         return default_value
 
     if hint is not None:
-        return ret[hint]["value"]
+        return ret[hint]["value"]  # type: ignore
 
     # handle the no hint 1 field case
     try:
@@ -427,10 +556,11 @@ def rd(obj, *, default_value=0):
 
         raise ValueError(msg) from er
     else:
-        return data["value"]
+        return data["value"]  # type: ignore
 
 
-def stop(obj):
+@plan
+def stop(obj: Stoppable) -> MsgGenerator:
     """
     Stop a device.
 
@@ -445,7 +575,13 @@ def stop(obj):
     return (yield Msg("stop", obj))
 
 
-def trigger(obj, *, group=None, wait=False):
+@plan
+def trigger(
+    obj: Triggerable,
+    *,
+    group: Optional[Hashable] = None,
+    wait: bool = False,
+) -> MsgGenerator[Status]:
     """
     Trigger and acquisition. Optionally, wait for it to complete.
 
@@ -461,6 +597,13 @@ def trigger(obj, *, group=None, wait=False):
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    status :
+        Status that completes when trigger is complete. If `wait` is True,
+        this will always be complete by the time it is returned.
+
     """
     ret = yield Msg("trigger", obj, group=group)
     if wait:
@@ -468,7 +611,8 @@ def trigger(obj, *, group=None, wait=False):
     return ret
 
 
-def sleep(time):
+@plan
+def sleep(time: float) -> MsgGenerator:
     """
     Tell the RunEngine to sleep, while asynchronously doing other processing.
 
@@ -488,7 +632,8 @@ def sleep(time):
     return (yield Msg("sleep", None, time))
 
 
-def wait(group=None, *, timeout=None):
+@plan
+def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, move_on: bool = False):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -500,15 +645,16 @@ def wait(group=None, *, timeout=None):
     Yields
     ------
     msg : Msg
-        Msg('wait', None, group=group)
+        Msg('wait', None, group=group, move_on=move_on, timeout=timeout)
     """
-    return (yield Msg("wait", None, group=group, timeout=timeout))
+    return (yield Msg("wait", None, group=group, move_on=move_on, timeout=timeout))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
 
 
-def checkpoint():
+@plan
+def checkpoint() -> MsgGenerator:
     """
     If interrupted, rewind to this point.
 
@@ -524,7 +670,8 @@ def checkpoint():
     return (yield Msg("checkpoint"))
 
 
-def clear_checkpoint():
+@plan
+def clear_checkpoint() -> MsgGenerator:
     """
     Designate that it is not safe to resume. If interrupted or paused, abort.
 
@@ -540,7 +687,8 @@ def clear_checkpoint():
     return (yield Msg("clear_checkpoint"))
 
 
-def pause():
+@plan
+def pause() -> MsgGenerator:
     """
     Pause and wait for the user to resume.
 
@@ -557,7 +705,8 @@ def pause():
     return (yield Msg("pause", None, defer=False))
 
 
-def deferred_pause():
+@plan
+def deferred_pause() -> MsgGenerator:
     """
     Pause at the next checkpoint.
 
@@ -574,7 +723,8 @@ def deferred_pause():
     return (yield Msg("pause", None, defer=True))
 
 
-def input_plan(prompt=""):
+@plan
+def input_plan(prompt: str = "") -> MsgGenerator[str]:
     """
     Prompt the user for text input.
 
@@ -587,11 +737,16 @@ def input_plan(prompt=""):
     ------
     msg : Msg
         Msg('input', prompt=prompt)
+
+    Returns
+    -------
+    input :
     """
     return (yield Msg("input", prompt=prompt))
 
 
-def prepare(obj, *args, group=None, wait=False, **kwargs):
+@plan
+def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
     """
     Prepare a device.
 
@@ -624,7 +779,14 @@ def prepare(obj, *args, group=None, wait=False, **kwargs):
     return ret
 
 
-def kickoff(obj, *, group=None, wait=False, **kwargs):
+@plan
+def kickoff(
+    obj: Flyable,
+    *,
+    group: Optional[Hashable] = None,
+    wait: bool = False,
+    **kwargs,
+) -> MsgGenerator[Status]:
     """
     Kickoff one fly-scanning device.
 
@@ -644,6 +806,12 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     msg : Msg
         Msg('kickoff', obj)
 
+    Returns
+    -------
+    status :
+        Status of kickoff operation. If `wait` is True,
+        this will always be complete by the time it is returned.
+
     See Also
     --------
     :func:`bluesky.plan_stubs.complete`
@@ -656,7 +824,8 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
-def kickoff_all(*args, group=None, wait=True, **kwargs):
+@plan
+def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kwargs):
     """
     Kickoff one or more fly-scanning devices.
 
@@ -696,7 +865,14 @@ def kickoff_all(*args, group=None, wait=True, **kwargs):
     return tuple(statuses)
 
 
-def complete(obj, *, group=None, wait=False, **kwargs):
+@plan
+def complete(
+    obj: Flyable,
+    *,
+    group: Optional[Hashable] = None,
+    wait: bool = False,
+    **kwargs,
+) -> MsgGenerator[Status]:
     """
     Tell a flyable, 'stop collecting, whenever you are ready'.
 
@@ -723,6 +899,12 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     msg : Msg
         a 'complete' Msg and maybe a 'wait' message
 
+    Returns
+    -------
+    status :
+        Status of complete operation. If `wait` is True,
+        this will always be complete by the time it is returned.
+
     See Also
     --------
     :func:`bluesky.plan_stubs.kickoff`
@@ -735,7 +917,8 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
-def complete_all(*args, group=None, wait=False, **kwargs):
+@plan
+def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
@@ -781,7 +964,10 @@ def complete_all(*args, group=None, wait=False, **kwargs):
     return tuple(statuses)
 
 
-def collect(obj, *args, stream=False, return_payload=True, name=None):
+@plan
+def collect(
+    obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: Optional[str] = None
+) -> MsgGenerator[List[PartialEvent]]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
 
@@ -814,7 +1000,49 @@ def collect(obj, *args, stream=False, return_payload=True, name=None):
     return (yield Msg("collect", obj, *args, stream=stream, return_payload=return_payload, name=name))
 
 
-def configure(obj, *args, **kwargs):
+@plan
+def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
+    """
+    Collect data from one or more fly-scanning devices and emit documents, then collect and emit
+    data from one or more Collectable detectors until all are done.
+
+    Parameters
+    ----------
+    flyers: An iterable sequence of fly-able devices with 'kickoff', 'complete' and
+        'collect' methods.
+    dets: An iterable sequence of collectable devices with 'describe_collect' method.
+    flush_period: float, int
+        Time period in seconds between each yield from collect while waiting for triggered
+        objects to be done
+    stream_name: str, optional
+        If not None, will collect for the named string specifically, else collect will be performed
+        on all streams.
+
+
+    Yields
+    ------
+    msg : Msg
+        A 'complete' message or 'collect' message
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.complete`
+    :func:`bluesky.plan_stubs.collect`
+    """
+    group = short_uid(label="complete")
+    yield from complete_all(*flyers, group=group, wait=False)
+    done = False
+    while not done:
+        done = yield from wait(group=group, timeout=flush_period, move_on=True)
+        yield from collect(*dets, name=stream_name)
+
+
+@plan
+def configure(
+    obj: Configurable,
+    *args,
+    **kwargs,
+) -> MsgGenerator[Mapping[str, Reading]]:
     """
     Change Device configuration and emit an updated Event Descriptor document.
 
@@ -830,11 +1058,23 @@ def configure(obj, *args, **kwargs):
     ------
     msg : Msg
         ``Msg('configure', obj, *args, **kwargs)``
+
+    Returns
+    -------
+    configuration:
+        Tuple of old and new configuration as returned by
+        obj.read_configuration()
     """
     return (yield Msg("configure", obj, *args, **kwargs))
 
 
-def stage(obj, *, group=None, wait=None):
+@plan
+def stage(
+    obj: Stageable,
+    *,
+    group: Optional[Hashable] = None,
+    wait: Optional[bool] = None,
+) -> MsgGenerator[Union[Status, List[Any]]]:
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
 
@@ -850,6 +1090,12 @@ def stage(obj, *, group=None, wait=None):
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    stage :
+        Either a status representing the stage operation or a list of
+        staged values for backward compatibility.
 
     See Also
     --------
@@ -871,7 +1117,11 @@ def stage(obj, *, group=None, wait=None):
     return ret
 
 
-def stage_all(*args, group=None):
+@plan
+def stage_all(
+    *args: Stageable,
+    group: Optional[Hashable] = None,
+) -> MsgGenerator[None]:
     """
     'Stage' one or more devices (i.e., prepare them for use, 'arm' them).
 
@@ -903,7 +1153,13 @@ def stage_all(*args, group=None):
         yield Msg("wait", None, group=group)
 
 
-def unstage(obj, *, group=None, wait=None):
+@plan
+def unstage(
+    obj: Stageable,
+    *,
+    group: Optional[Hashable] = None,
+    wait: Optional[bool] = None,
+) -> MsgGenerator[Union[Status, List[Any]]]:
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
 
@@ -919,6 +1175,12 @@ def unstage(obj, *, group=None, wait=None):
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    unstage :
+        Either a status representing the stage operation or a list of
+        staged values for backward compatibility.
 
     See Also
     --------
@@ -940,7 +1202,8 @@ def unstage(obj, *, group=None, wait=None):
     return ret
 
 
-def unstage_all(*args, group=None):
+@plan
+def unstage_all(*args: Stageable, group: Optional[Hashable] = None) -> MsgGenerator[None]:
     """
     'Unstage' one or more devices (i.e., put them in standby, 'disarm' them).
 
@@ -972,7 +1235,8 @@ def unstage_all(*args, group=None):
         yield Msg("wait", None, group=group)
 
 
-def subscribe(name, func):
+@plan
+def subscribe(name: str, func: Callable[[str, Mapping[str, Any]], None]) -> MsgGenerator[int]:
     """
     Subscribe the stream of emitted documents.
 
@@ -988,6 +1252,11 @@ def subscribe(name, func):
     msg : Msg
         Msg('subscribe', None, func, name)
 
+    Returns
+    -------
+    token :
+        Unique identifier for a subscription
+
     See Also
     --------
     :func:`bluesky.plan_stubs.unsubscribe`
@@ -995,7 +1264,8 @@ def subscribe(name, func):
     return (yield Msg("subscribe", None, func, name))
 
 
-def unsubscribe(token):
+@plan
+def unsubscribe(token: int) -> MsgGenerator:
     """
     Remove a subscription.
 
@@ -1016,7 +1286,8 @@ def unsubscribe(token):
     return (yield Msg("unsubscribe", token=token))
 
 
-def install_suspender(suspender):
+@plan
+def install_suspender(suspender: SuspenderBase) -> MsgGenerator:
     """
     Install a suspender during a plan.
 
@@ -1037,7 +1308,8 @@ def install_suspender(suspender):
     return (yield Msg("install_suspender", None, suspender))
 
 
-def remove_suspender(suspender):
+@plan
+def remove_suspender(suspender: SuspenderBase) -> MsgGenerator:
     """
     Remove a suspender during a plan.
 
@@ -1058,7 +1330,8 @@ def remove_suspender(suspender):
     return (yield Msg("remove_suspender", None, suspender))
 
 
-def open_run(md=None):
+@plan
+def open_run(md: Optional[CustomPlanMetadata] = None) -> MsgGenerator[str]:
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
 
@@ -1072,6 +1345,11 @@ def open_run(md=None):
     msg : Msg
         ``Msg('open_run', **md)``
 
+    Returns
+    -------
+    uuid :
+        Unique ID for the run
+
     See Also
     --------
     :func:`bluesky.plans_stubs.close_run`
@@ -1079,7 +1357,8 @@ def open_run(md=None):
     return (yield Msg("open_run", **(md or {})))
 
 
-def close_run(exit_status=None, reason=None):
+@plan
+def close_run(exit_status: Optional[str] = None, reason: Optional[str] = None) -> MsgGenerator[str]:
     """
     Mark the end of the current 'run'. Emit a RunStop document.
 
@@ -1095,6 +1374,11 @@ def close_run(exit_status=None, reason=None):
     msg : Msg
         Msg('close_run')
 
+    Returns
+    -------
+    uuid :
+        Unique ID for the run
+
     See Also
     --------
     :func:`bluesky.plans_stubs.open_run`
@@ -1102,14 +1386,15 @@ def close_run(exit_status=None, reason=None):
     return (yield Msg("close_run", exit_status=exit_status, reason=reason))
 
 
-def wait_for(futures, **kwargs):
+@plan
+def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs) -> MsgGenerator:
     """
     Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
 
     Parameters
     ----------
-    futures : collection
-        collection of asyncio.Future objects
+    futures : iterable
+        iterable collection of coroutine functions that take no arguments
     kwargs
         passed through to ``asyncio.wait()``
 
@@ -1125,17 +1410,23 @@ def wait_for(futures, **kwargs):
     return (yield Msg("wait_for", None, futures, **kwargs))
 
 
-def trigger_and_read(devices, name="primary"):
+@plan
+def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgGenerator[Mapping[str, Reading]]:
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
     Parameters
     ----------
-    devices : iterable
+    devices : list
         devices to trigger (if they have a trigger method) and then read
     name : string, optional
         event stream name, a convenient human-friendly identifier; default
         name is 'primary'
+
+    Returns
+    -------
+    readings:
+        dict of device name to recorded information
 
     Yields
     ------
@@ -1185,14 +1476,20 @@ def trigger_and_read(devices, name="primary"):
     return (yield from rewindable_wrapper(inner_trigger_and_read(), rewindable))
 
 
-def broadcast_msg(command, objs, *args, **kwargs):
+@plan
+def broadcast_msg(
+    command: str,
+    objs: Iterable[Any],
+    *args,
+    **kwargs,
+) -> MsgGenerator[Any]:
     """
     Generate many copies of a message, applying it to a list of devices.
 
     Parameters
     ----------
     command : string
-    devices : iterable
+    objs : iterable
     ``*args``
         args for message
     ``**kwargs``
@@ -1201,6 +1498,10 @@ def broadcast_msg(command, objs, *args, **kwargs):
     Yields
     ------
     msg : Msg
+
+    Returns
+    -------
+    any : out from RunEngine, if any
     """
     return_vals = []
     for o in objs:
@@ -1210,7 +1511,13 @@ def broadcast_msg(command, objs, *args, **kwargs):
     return return_vals
 
 
-def repeater(n, gen_func, *args, **kwargs):
+@plan
+def repeater(
+    n: Optional[int],
+    gen_func: Callable[..., MsgGenerator],
+    *args,
+    **kwargs,
+) -> MsgGenerator[None]:
     """
     Generate n chained copies of the messages from gen_func
 
@@ -1233,6 +1540,7 @@ def repeater(n, gen_func, *args, **kwargs):
     --------
     :func:`bluesky.plan_stubs.caching_repeater`
     """
+    it: Any
     it = range
     if n is None:
         n = 0
@@ -1242,7 +1550,8 @@ def repeater(n, gen_func, *args, **kwargs):
         yield from gen_func(*args, **kwargs)
 
 
-def caching_repeater(n, plan):
+@plan
+def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]:
     """
     Generate n chained copies of the messages in a plan.
 
@@ -1264,6 +1573,7 @@ def caching_repeater(n, plan):
     :func:`bluesky.plan_stubs.repeater`
     """
     warnings.warn("The caching_repeater will be removed in a future version of bluesky.", stacklevel=2)
+    gen: Any
     if n is None:
         gen = itertools.count(0)
     else:
@@ -1274,14 +1584,15 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def one_shot(detectors, take_reading=None):
+@plan
+def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator[None]:
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
 
     Parameters
     ----------
-    detectors : Iterable[OphydObj]
+    detectors : Sequence[OphydObj]
         devices to read
 
     take_reading : plan, optional
@@ -1293,13 +1604,23 @@ def one_shot(detectors, take_reading=None):
         Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
 
         Defaults to `trigger_and_read`
+
+    Yields
+    ------
+    msg : Msg
     """
     take_reading = trigger_and_read if take_reading is None else take_reading
     yield Msg("checkpoint")
-    yield from take_reading(list(detectors))
+    yield from take_reading(list(detectors))  # type: ignore  # Movable issue
 
 
-def one_1d_step(detectors, motor, step, take_reading=None):
+@plan
+def one_1d_step(
+    detectors: Sequence[Readable],
+    motor: Movable,
+    step: Any,
+    take_reading: Optional[TakeReading] = None,
+) -> MsgGenerator[Mapping[str, Reading]]:
     """
     Inner loop of a 1D step scan
 
@@ -1307,7 +1628,7 @@ def one_1d_step(detectors, motor, step, take_reading=None):
 
     Parameters
     ----------
-    detectors : iterable
+    detectors : list or tuple
         devices to read
     motor : Settable
         The motor to move
@@ -1322,6 +1643,15 @@ def one_1d_step(detectors, motor, step, take_reading=None):
         Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
 
         Defaults to `trigger_and_read`
+
+    Yields
+    ------
+    msg : Msg
+
+    Returns
+    -------
+    readings :
+        dict of device names to recorded information
     """
     take_reading = trigger_and_read if take_reading is None else take_reading
 
@@ -1332,10 +1662,11 @@ def one_1d_step(detectors, motor, step, take_reading=None):
         yield Msg("wait", None, group=grp)
 
     yield from move()
-    return (yield from take_reading(list(detectors) + [motor]))
+    return (yield from take_reading(list(detectors) + [motor]))  # type: ignore
 
 
-def move_per_step(step, pos_cache):
+@plan
+def move_per_step(step: Mapping[Movable, Any], pos_cache: Dict[Movable, Any]) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan without any readings
 
@@ -1347,6 +1678,10 @@ def move_per_step(step, pos_cache):
         mapping motors to positions in this step
     pos_cache : dict
         mapping motors to their last-set positions
+
+    Yields
+    ------
+    msg : Msg
     """
     yield Msg("checkpoint")
     grp = _short_uid("set")
@@ -1359,7 +1694,13 @@ def move_per_step(step, pos_cache):
     yield Msg("wait", None, group=grp)
 
 
-def one_nd_step(detectors, step, pos_cache, take_reading=None):
+@plan
+def one_nd_step(
+    detectors: Sequence[Readable],
+    step: Mapping[Movable, Any],
+    pos_cache: Dict[Movable, Any],
+    take_reading: Optional[TakeReading] = None,
+) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan
 
@@ -1367,7 +1708,7 @@ def one_nd_step(detectors, step, pos_cache, take_reading=None):
 
     Parameters
     ----------
-    detectors : iterable
+    detectors : list or tuple
         devices to read
     step : dict
         mapping motors to positions in this step
@@ -1382,14 +1723,23 @@ def one_nd_step(detectors, step, pos_cache, take_reading=None):
         Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
 
         Defaults to `trigger_and_read`
+
+    Yields
+    ------
+    msg : Msg
     """
     take_reading = trigger_and_read if take_reading is None else take_reading
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
-    yield from take_reading(list(detectors) + list(motors))
+    yield from take_reading(list(detectors) + list(motors))  # type: ignore  # Movable issue
 
 
-def repeat(plan, num=1, delay=None):
+@plan
+def repeat(
+    plan: Callable[[], MsgGenerator],
+    num: Optional[int] = 1,
+    delay: ScalarOrIterableFloat = 0.0,
+) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
 
@@ -1409,12 +1759,21 @@ def repeat(plan, num=1, delay=None):
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
 
+    Yields
+    ------
+    msg : Msg
+
+    Returns
+    -------
+    any : output of original plan
+
     Notes
     -----
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """
     # Create finite or infinite counter
+    iterator: Iterable
     if num is None:
         iterator = itertools.count()
     else:
@@ -1425,12 +1784,12 @@ def repeat(plan, num=1, delay=None):
         delay = itertools.repeat(delay)
     else:
         try:
-            num_delays = len(delay)
+            num_delays = len(delay)  # type: ignore
         except TypeError:
             # No way to tell in advance if we have enough delays.
             pass
         else:
-            if num - 1 > num_delays:
+            if num and num - 1 > num_delays:
                 raise ValueError("num=%r but delays only provides %r entries" % (num, num_delays))  # noqa: UP031
         delay = iter(delay)
 

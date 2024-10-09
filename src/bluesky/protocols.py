@@ -30,6 +30,11 @@ from typing_extensions import TypedDict
 # Squashes warning
 Dtype = Dtype  # type: ignore
 
+try:
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec  # type: ignore
+
 
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
@@ -45,11 +50,15 @@ class ReadingOptional(TypedDict, total=False):
     message: str
 
 
-class Reading(ReadingOptional):
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+class Reading(Generic[T], ReadingOptional):
     """A dictionary containing the value and timestamp of a piece of scan data"""
 
     #: The current value, as a JSON encodable type or numpy array
-    value: Any
+    value: T
     #: Timestamp in seconds since the UNIX epoch
     timestamp: float
 
@@ -59,13 +68,13 @@ Asset = Union[
     Tuple[Literal["datum"], Datum],
 ]
 
+
 StreamAsset = Union[
     Tuple[Literal["stream_resource"], StreamResource],
     Tuple[Literal["stream_datum"], StreamDatum],
 ]
 
 
-T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
 SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
 
@@ -517,6 +526,13 @@ class HasHints(HasName, Protocol):
         with minimal guidance from the user. See :ref:`hints`.
         """
         ...
+
+
+@runtime_checkable
+class NamedMovable(Movable, HasHints, Protocol):
+    """A movable object that has a name and hints."""
+
+    ...
 
 
 def check_supports(obj: T, protocol: Type[Any]) -> T:
