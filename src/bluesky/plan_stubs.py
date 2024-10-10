@@ -361,7 +361,7 @@ def rel_set(
 
 @plan
 def mv(
-    *args: Tuple[Union[Movable, NamedMovable, Any], ...],
+    *args: Union[Movable, NamedMovable, Any],
     group: Optional[Hashable] = None,
     **kwargs,
 ) -> MsgGenerator[Tuple[Status, ...]]:
