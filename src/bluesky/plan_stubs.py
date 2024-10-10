@@ -22,6 +22,7 @@ from typing import (
 )
 
 from cycler import cycler
+from typing_extensions import Unpack
 
 from bluesky.suspenders import SuspenderBase
 
@@ -359,9 +360,8 @@ def rel_set(
     return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
-@plan
 def mv(
-    *args: Tuple[Union[Movable, NamedMovable, Any], ...],
+    *args: Unpack[tuple[Movable, Any]],
     group: Optional[Hashable] = None,
     **kwargs,
 ) -> MsgGenerator[Tuple[Status, ...]]:
