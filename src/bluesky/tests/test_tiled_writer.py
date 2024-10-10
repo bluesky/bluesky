@@ -74,7 +74,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         stream_resource = None
         if self.counter == 0:
             stream_resource = StreamResource(
-                parameters={"dataset": hdf5_dataset, "chunk_size": False},
+                parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape)},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
@@ -89,7 +89,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                     hdf5_dataset,
                     (0, *data_shape),
                     maxshape=(None, *data_shape),
-                    dtype=np.dtype("double"),
+                    dtype=np.dtype("float64"),
                     chunks=(100, *data_shape),
                 )
 
@@ -119,7 +119,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             stream_resource = None
             if self.counter == 0:
                 stream_resource = StreamResource(
-                    parameters={"chunk_size": 1, "template": "{:05d}.tif"},
+                    parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
                     uri="file://localhost" + self.root + "/",
@@ -146,8 +146,12 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     def describe(self) -> Dict[str, DataKey]:
         """Describe datasets which will be backed by StreamResources"""
         return {
-            f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
-            f"{self.name}-sd2": DataKey(source="file", dtype="array", shape=[10, 15], external="STREAM:"),
+            f"{self.name}-sd1": DataKey(
+                source="file", dtype="number", dtype_numpy="float64", shape=[1], external="STREAM:"
+            ),
+            f"{self.name}-sd2": DataKey(
+                source="file", dtype="array", dtype_numpy="float64", shape=[10, 15], external="STREAM:"
+            ),
             f"{self.name}-sd3": DataKey(
                 source="file", dtype="array", dtype_numpy="uint8", shape=[5, 7, 4], external="STREAM:"
             ),
@@ -194,7 +198,7 @@ class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
 
     def stage(self):
         super().stage()
-        parameters = {"chunk_size": 1, "template": "_{:d}." + self.save_ext}
+        parameters = {"chunk_shape": (1,), "template": "_{:d}." + self.save_ext}
         self._asset_docs_cache[-1][1]["resource_kwargs"].update(parameters)
 
     def describe(self):
@@ -210,6 +214,7 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     RE(bp.count([det], 3), tw)
     arrs = client.values().last()["primary"]["external"].values()
+
     assert arrs[0].shape == (3,)
     assert arrs[1].shape == (3, 10, 15)
     assert arrs[2].shape == (3, 5, 7, 4)

@@ -106,7 +106,9 @@ class ConsolidatorBase:
                 DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
             )
         )
-        self.chunk_size = self._sres_parameters.get("chunk_size", None)
+        self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
+        if 0 in self.chunk_shape:
+            raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
@@ -141,18 +143,34 @@ class ConsolidatorBase:
 
     @property
     def chunks(self) -> Tuple[Tuple[int, ...], ...]:
-        """Chunking specification based on the Stream Resource parameter `chunk_size` and the current data shape"""
-        _chunks = [[] for _ in self.shape]
-        for spec, c, s in zip(_chunks, self.chunk_size, self.shape):
-            if s == 0:
-                spec.append(0)
-                continue
-            c = c or s  # If chunk_size c is 0 (or c is None) -- assume the dimension is not chunked, i.e. c == s
-            spec.extend([c] * int(s / c))
-            if s % c:
-                spec.append(s % c)  # Add the incomplete last chunk
+        """Explicit (dask-style) specification of chunk sizes
 
-        return tuple(tuple(s) for s in _chunks)
+        The produced chunk specification is a tuple of tuples of int that specify the sizes of each chunk in each
+        dimension; it is based on the StreamResource parameter `chunk_shape`.
+
+        If `chunk_shape` is an empty tuple -- assume the dataset is stored as a single chunk for all existing and
+        new elements. Usually, however, `chunk_shape` is a tuple of int, in which case, we assume fixed-sized
+        chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
+        is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
+        """
+
+        def list_summands(A, b):
+            # Generate a list with repeated b summing up to A; append the remainder if necessary
+            return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) or (0,)
+
+        if len(self.chunk_shape) == 0:
+            return (self._num_rows,), *[(d,) for d in self.datum_shape]
+
+        elif len(self.chunk_shape) == 1:
+            return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+
+        elif len(self.chunk_shape) == len(self.shape):
+            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
+
+        else:
+            raise ValueError(
+                f"The shape of chunks, {self.chunk_shape}, is not consistent with the shape of data, {self.shape}."
+            )
 
     @property
     def has_skips(self) -> bool:
@@ -296,16 +314,19 @@ class TIFFConsolidator(ConsolidatorBase):
         return self.uri + self._sres_parameters["template"].format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
-        indx = int(doc["uid"].split("/")[1])
-        new_datum_uri = self.get_datum_uri(indx)
-        new_asset = Asset(
-            data_uri=new_datum_uri,
-            is_directory=False,
-            parameter="data_uris",
-            num=len(self.assets) + 1,
-        )
-        self.assets.append(new_asset)
-        self.data_uris.append(new_datum_uri)
+        # Determine the indices in the names of tiff files from indices of frames and number of frames per file
+        first_file_indx = int(doc["indices"]["start"] / self.chunk_shape[0])
+        last_file_indx = int((doc["indices"]["stop"] - 1) / self.chunk_shape[0])
+        for indx in range(first_file_indx, last_file_indx + 1):
+            new_datum_uri = self.get_datum_uri(indx)
+            new_asset = Asset(
+                data_uri=new_datum_uri,
+                is_directory=False,
+                parameter="data_uris",
+                num=len(self.assets) + 1,
+            )
+            self.assets.append(new_asset)
+            self.data_uris.append(new_datum_uri)
 
         super().consume_stream_datum(doc)
 
