@@ -288,16 +288,19 @@ class TIFFConsolidator(ConsolidatorBase):
         return self.uri + self._sres_parameters["template"].format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
-        indx = int(doc["uid"].split("/")[1])
-        new_datum_uri = self.get_datum_uri(indx)
-        new_asset = Asset(
-            data_uri=new_datum_uri,
-            is_directory=False,
-            parameter="data_uris",
-            num=len(self.assets) + 1,
-        )
-        self.assets.append(new_asset)
-        self.data_uris.append(new_datum_uri)
+        # Determine the indices in the names of tiff files from indices of frames and number of frames per file
+        first_file_indx = int(doc["indices"]["start"] / self.chunk_shape[0])
+        last_file_indx = int((doc["indices"]["stop"] - 1) / self.chunk_shape[0])
+        for indx in range(first_file_indx, last_file_indx + 1):
+            new_datum_uri = self.get_datum_uri(indx)
+            new_asset = Asset(
+                data_uri=new_datum_uri,
+                is_directory=False,
+                parameter="data_uris",
+                num=len(self.assets) + 1,
+            )
+            self.assets.append(new_asset)
+            self.data_uris.append(new_datum_uri)
 
         super().consume_stream_datum(doc)
 
