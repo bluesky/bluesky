@@ -2,11 +2,13 @@ import copy
 from typing import Any, Dict, Optional, Tuple, Union
 
 import pandas as pd
-from event_model import RunRouter
+from event_model import RunRouter, unpack_datum_page, unpack_event_page
 from event_model.documents import (
     Datum,
+    DatumPage,
     Event,
     EventDescriptor,
+    EventPage,
     Resource,
     RunStart,
     RunStop,
@@ -209,8 +211,16 @@ class _RunWriter(CallbackBase):
                 else:
                     raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
 
+    def event_page(self, doc: EventPage):
+        for _doc in unpack_event_page(doc):
+            self.event(_doc)
+
     def datum(self, doc: Datum):
         self._docs_cache[doc["datum_id"]] = copy.copy(doc)
+
+    def datum_page(self, doc: DatumPage):
+        for _doc in unpack_datum_page(doc):
+            self.datum(_doc)
 
     def resource(self, doc: Resource):
         self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
