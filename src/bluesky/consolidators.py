@@ -277,6 +277,7 @@ class TIFFConsolidator(ConsolidatorBase):
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
         self.data_uris: List[str] = []
+        self.chunk_shape = self.chunk_shape or (1,)  # Assume one frame (chunk) per tiff file
 
     def get_datum_uri(self, indx: int):
         """Return a full uri for a datum (an individual TIFF file) based on its index in the sequence.
