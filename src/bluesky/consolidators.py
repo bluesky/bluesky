@@ -1,6 +1,7 @@
 import collections
 import dataclasses
 import enum
+import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
@@ -279,14 +280,52 @@ class TIFFConsolidator(ConsolidatorBase):
         self.data_uris: List[str] = []
         self.chunk_shape = self.chunk_shape or (1,)  # Assume one frame (chunk) per tiff file
 
+        # Normalize filename template
+        # self.template = self._sres_parameters["template"]
+        def int_replacer(match):
+            flags, width, precision, type_char = match.groups()
+
+            # Handle the flags
+            flag_str = ""
+            if "-" in flags:
+                flag_str += "<"  # Left-align
+            elif "0" in flags:
+                flag_str += "0"  # Zero padding
+            if "+" in flags:
+                flag_str += "+"  # Show positive sign
+            elif " " in flags:
+                flag_str += " "  # Space before positive numbers
+
+            # Build width and precision if they exist
+            width_str = width if width else ""
+            precision_str = f".{precision}" if precision else ""
+
+            # Handle cases like "%6.6d", which should be converted to "{:06d}"
+            if precision and width:
+                flag_str = "0"
+                precision_str = ""
+                width_str = str(max(precision, width))
+
+            # Construct the new-style format specifier
+            return f"{{:{flag_str}{width_str}{precision_str}{type_char}}}"
+
+        self.template = (
+            self._sres_parameters["template"]
+            .replace("%s", "{:s}", 1)
+            .replace("%s", "")
+            .format(self._sres_parameters.get("filename", ""))
+        )
+        self.template = re.sub(r"%([-+#0 ]*)(\d+)?(?:\.(\d+))?([d])", int_replacer, self.template)
+
     def get_datum_uri(self, indx: int):
         """Return a full uri for a datum (an individual TIFF file) based on its index in the sequence.
 
-        This relies on the `template` parameter passed in the StreamResource, which is a string either in the "new"
+        This relies on the `template` parameter passed in the StreamResource, which is a string in the "new"
         Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
         integer index, e.g. "{:05d}.tif".
         """
-        return self.uri + self._sres_parameters["template"].format(indx)
+
+        return self.uri.rstrip("/") + "/" + self.template.format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
         # Determine the indices in the names of tiff files from indices of frames and number of frames per file
