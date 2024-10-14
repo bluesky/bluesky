@@ -21,7 +21,7 @@ dependencies = [
     "importlib-resources;python_version<'3.9'",
     "msgpack",
     "msgpack-numpy",
-    "numpy<2.0.0",
+    "numpy",
     "opentelemetry-api",
     "toolz",
     "tqdm>=4.44",
