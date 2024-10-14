@@ -378,12 +378,12 @@ class LiveScatter(QtAwareCallback):
         self.sc.set_array(np.asarray(self._Idata))
 
         if self.xlim is None:
-            minx, maxx = np.minimum(x, self._minx), np.maximum(x, self._maxx)
-            self.ax.set_xlim(minx, maxx)
+            self.minx, self.maxx = np.minimum(x, self._minx), np.maximum(x, self._maxx)
+            self.ax.set_xlim(self.minx, self.maxx)
 
         if self.ylim is None:
-            miny, maxy = np.minimum(y, self._miny), np.maximum(y, self._maxy)
-            self.ax.set_ylim(miny, maxy)
+            self.miny, self.maxy = np.minimum(y, self._miny), np.maximum(y, self._maxy)
+            self.ax.set_ylim(self.miny, self.maxy)
 
         if self.clim is None:
             clim = np.nanmin(self._Idata), np.nanmax(self._Idata)
