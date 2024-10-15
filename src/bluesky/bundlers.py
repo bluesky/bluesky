@@ -1,6 +1,5 @@
 import asyncio
 import inspect
-import re
 import time as ttime
 from collections import defaultdict, deque
 from collections.abc import Iterable
