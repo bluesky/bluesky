@@ -286,7 +286,7 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         integer index, e.g. "{:05d}.ext".
         """
         filename_template = self._sres_parameters["template"]
-        assert os.path.splitext(filename_template) in self.permitted_extensions
+        assert os.path.splitext(filename_template)[1] in self.permitted_extensions
         return self.uri + filename_template.format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
@@ -316,7 +316,7 @@ class TIFFConsolidator(MultipartRelatedConsolidator):
 
 
 class JPEGConsolidator(MultipartRelatedConsolidator):
-    supported_mimetypes = {"multipart/related;type=image/tiff"}
+    supported_mimetypes = {"multipart/related;type=image/jpeg"}
     
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__([".jpeg", ".jpg"], stream_resource, descriptor)
