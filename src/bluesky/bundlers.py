@@ -383,7 +383,7 @@ class RunBundler:
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
 
-    async def monitor(self, msg, *, timestamp_cutoff_delay: float = 0.1):
+    async def monitor(self, msg, timestamp_cutoff_delay: float = 0.1):
         """
         Monitor a signal. Emit event documents asynchronously.
 
