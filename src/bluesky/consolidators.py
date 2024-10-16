@@ -314,7 +314,6 @@ class TIFFConsolidator(MultipartRelatedConsolidator):
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(set(".tif", ".tiff"), stream_resource, descriptor)
-        self.data_uris: List[str] = []
 
 
 class JPEGConsolidator(MultipartRelatedConsolidator):
@@ -322,7 +321,6 @@ class JPEGConsolidator(MultipartRelatedConsolidator):
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(set(".jpeg", ".jpg"), stream_resource, descriptor)
-        self.data_uris: List[str] = []
 
 
 CONSOLIDATOR_REGISTRY = {

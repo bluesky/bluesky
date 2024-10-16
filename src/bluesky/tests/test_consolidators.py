@@ -2,7 +2,7 @@ from math import ceil
 
 import pytest
 
-from bluesky.consolidators import HDF5Consolidator, CONSOLIDATOR_REGISTRY
+from bluesky.consolidators import HDF5Consolidator, consolidator_factory
 
 
 @pytest.fixture
@@ -101,14 +101,23 @@ def test_hdf5_shape(descriptor, hdf5_stream_resource_factory, stream_datum_facto
 
 supported_image_seq_formats = ["jpeg", "tiff"]
 
+
 @pytest.mark.parametrize("data_key, expected", shape_testdata)
 @pytest.mark.parametrize("image_format", supported_image_seq_formats)
 @pytest.mark.parametrize("files_per_stream_datum", [1, 2, 3, 5])
 def test_tiff_shape(
-    descriptor, image_seq_stream_resource_factory, stream_datum_factory, image_format, data_key, expected, files_per_stream_datum
+    descriptor,
+    image_seq_stream_resource_factory,
+    stream_datum_factory,
+    image_format,
+    data_key,
+    expected,
+    files_per_stream_datum,
 ):
-    stream_resource = image_seq_stream_resource_factory(image_format=image_format, data_key=data_key, chunk_shape=(1,))
-    cons = CONSOLIDATOR_REGISTRY[stream_resource["mimetype"]](stream_resource, descriptor)
+    stream_resource = image_seq_stream_resource_factory(
+        image_format=image_format, data_key=data_key, chunk_shape=(1,)
+    )
+    cons = consolidator_factory(stream_resource, descriptor)
     assert cons.shape == (0, *expected[1:])
     for i in range(ceil(5 / files_per_stream_datum)):
         doc = stream_datum_factory(
