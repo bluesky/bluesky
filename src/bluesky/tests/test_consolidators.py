@@ -2,7 +2,7 @@ from math import ceil
 
 import pytest
 
-from bluesky.consolidators import HDF5Consolidator, TIFFConsolidator
+from bluesky.consolidators import HDF5Consolidator, consolidator_factory
 
 
 @pytest.fixture
@@ -59,12 +59,12 @@ def hdf5_stream_resource_factory():
 
 
 @pytest.fixture
-def tiff_stream_resource_factory():
-    return lambda data_key, chunk_shape: {
+def image_seq_stream_resource_factory():
+    return lambda image_format, data_key, chunk_shape: {
         "data_key": data_key,
-        "mimetype": "multipart/related;type=image/tiff",
+        "mimetype": f"multipart/related;type=image/{image_format}",
         "uri": "file://localhost/test/file/path",
-        "parameters": {"chunk_shape": chunk_shape, "template": "img_{:06d}.tiff"},
+        "parameters": {"chunk_shape": chunk_shape, "template": "img_{:06d}." + image_format},
         "uid": f"stream-resource-uid-{data_key}",
     }
 
@@ -99,13 +99,25 @@ def test_hdf5_shape(descriptor, hdf5_stream_resource_factory, stream_datum_facto
     assert cons.shape == expected
 
 
+supported_image_seq_formats = ["jpeg", "tiff"]
+
+
 @pytest.mark.parametrize("data_key, expected", shape_testdata)
+@pytest.mark.parametrize("image_format", supported_image_seq_formats)
 @pytest.mark.parametrize("files_per_stream_datum", [1, 2, 3, 5])
 def test_tiff_shape(
-    descriptor, tiff_stream_resource_factory, stream_datum_factory, data_key, expected, files_per_stream_datum
+    descriptor,
+    image_seq_stream_resource_factory,
+    stream_datum_factory,
+    image_format,
+    data_key,
+    expected,
+    files_per_stream_datum,
 ):
-    stream_resource = tiff_stream_resource_factory(data_key=data_key, chunk_shape=(1,))
-    cons = TIFFConsolidator(stream_resource, descriptor)
+    stream_resource = image_seq_stream_resource_factory(
+        image_format=image_format, data_key=data_key, chunk_shape=(1,)
+    )
+    cons = consolidator_factory(stream_resource, descriptor)
     assert cons.shape == (0, *expected[1:])
     for i in range(ceil(5 / files_per_stream_datum)):
         doc = stream_datum_factory(
