@@ -412,7 +412,7 @@ class RunEngine:
         self,
         md=None,
         *,
-        loop: asyncio.AbstractEventLoop | None = None,
+        loop=None,
         preprocessors=None,
         context_managers=None,
         md_validator=None,
