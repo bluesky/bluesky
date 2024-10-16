@@ -53,7 +53,7 @@ class SuspenderBase(metaclass=ABCMeta):
             self._tripped_message,
         )
 
-    def install(self, RE, *, event_type=None):
+    def install(self, RE, **kwargs):
         """Install callback on signal
 
         This (re)installs the required callbacks at the pyepics level
@@ -69,7 +69,7 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         with self._lock:
             self.RE = RE
-        self._sig.subscribe(self, event_type=event_type, run=True)
+        self._sig.subscribe(self, run=True, **kwargs)
 
     def remove(self):
         """Disable the suspender
