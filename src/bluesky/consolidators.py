@@ -313,14 +313,14 @@ class TIFFConsolidator(MultipartRelatedConsolidator):
     supported_mimetypes = {"multipart/related;type=image/tiff"}
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__(set([".tif", ".tiff"]), stream_resource, descriptor)
+        super().__init__({".tif", ".tiff"}, stream_resource, descriptor)
 
 
 class JPEGConsolidator(MultipartRelatedConsolidator):
     supported_mimetypes = {"multipart/related;type=image/jpeg"}
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__(set([".jpeg", ".jpg"]), stream_resource, descriptor)
+        super().__init__({".jpeg", ".jpg"}, stream_resource, descriptor)
 
 
 CONSOLIDATOR_REGISTRY = {
