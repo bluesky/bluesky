@@ -273,10 +273,11 @@ class HDF5Consolidator(ConsolidatorBase):
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):
-    def __init__(self, permitted_extensions: str, stream_resource: StreamResource, descriptor: EventDescriptor):
+    def __init__(self, permitted_extensions: set, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
-        self.permitted_extensions: str = permitted_extensions
+        self.permitted_extensions: set = permitted_extensions
         self.data_uris: List[str] = []
+        self.template = self._sres_parameters["template"]
 
     def get_datum_uri(self, indx: int):
         """Return a full uri for a datum (an individual image file) based on its index in the sequence.
@@ -285,9 +286,8 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
         integer index, e.g. "{:05d}.ext".
         """
-        filename_template = self._sres_parameters["template"]
-        assert os.path.splitext(filename_template)[1] in self.permitted_extensions
-        return self.uri + filename_template.format(indx)
+        assert os.path.splitext(self.template)[1] in self.permitted_extensions
+        return self.uri + self.template.format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
         # Determine the indices in the names of tiff files from indices of frames and number of frames per file
@@ -311,7 +311,7 @@ class TIFFConsolidator(MultipartRelatedConsolidator):
     supported_mimetypes = {"multipart/related;type=image/tiff"}
     
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__([".tif", ".tiff"], stream_resource, descriptor)
+        super().__init__((".tif", ".tiff"), stream_resource, descriptor)
         self.data_uris: List[str] = []
 
 
@@ -319,7 +319,7 @@ class JPEGConsolidator(MultipartRelatedConsolidator):
     supported_mimetypes = {"multipart/related;type=image/jpeg"}
     
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__([".jpeg", ".jpg"], stream_resource, descriptor)
+        super().__init__((".jpeg", ".jpg"), stream_resource, descriptor)
         self.data_uris: List[str] = []
 
 
