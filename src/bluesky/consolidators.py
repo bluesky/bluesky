@@ -273,9 +273,11 @@ class HDF5Consolidator(ConsolidatorBase):
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):
-    def __init__(self, permitted_extensions: set, stream_resource: StreamResource, descriptor: EventDescriptor):
+    def __init__(
+        self, permitted_extensions: set[str], stream_resource: StreamResource, descriptor: EventDescriptor
+    ):
         super().__init__(stream_resource, descriptor)
-        self.permitted_extensions: set = permitted_extensions
+        self.permitted_extensions: set[str] = permitted_extensions
         self.data_uris: List[str] = []
         self.template = self._sres_parameters["template"]
 
@@ -309,17 +311,17 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
 
 class TIFFConsolidator(MultipartRelatedConsolidator):
     supported_mimetypes = {"multipart/related;type=image/tiff"}
-    
+
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__((".tif", ".tiff"), stream_resource, descriptor)
+        super().__init__(set(".tif", ".tiff"), stream_resource, descriptor)
         self.data_uris: List[str] = []
 
 
 class JPEGConsolidator(MultipartRelatedConsolidator):
     supported_mimetypes = {"multipart/related;type=image/jpeg"}
-    
+
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
-        super().__init__((".jpeg", ".jpg"), stream_resource, descriptor)
+        super().__init__(set(".jpeg", ".jpg"), stream_resource, descriptor)
         self.data_uris: List[str] = []
 
 
