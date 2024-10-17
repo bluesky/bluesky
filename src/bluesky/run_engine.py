@@ -1767,7 +1767,15 @@ class RunEngine:
             # in case we were interrupted between 'stage' and 'unstage'
             for obj in list(self._staged):
                 try:
-                    obj.unstage()
+                    maybe_status = obj.unstage()
+                    if isinstance(maybe_status, Status):
+                        ev = asyncio.Event()
+
+                        def callback(ev):
+                            self._loop.call_soon_threadsafe(ev.set())
+
+                        maybe_status.add_callback(callback)
+                        await ev.wait()
                 except Exception:
                     self.log.exception("Failed to unstage %r.", obj)
                 self._staged.remove(obj)
