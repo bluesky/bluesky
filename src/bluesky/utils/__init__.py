@@ -1966,9 +1966,12 @@ class Plan:
         self._stack = None
         return self._iter.send(value)
 
-    def throw(self, typ, val=None, tb=None):
+    def throw(self, *args, **kwargs):
+        # The 3 argument signature of throw is deprecated, just pass
+        # through any args/kwargs to avoid having to replicate any of
+        # that logic
         self._stack = None
-        return self._iter.throw(typ, val, tb)
+        return self._iter.throw(*args, **kwargs)
 
 
 def plan(bs_plan):

@@ -5,12 +5,21 @@ import pytest
 
 from bluesky.callbacks import CallbackCounter
 from bluesky.callbacks.stream import LiveDispatcher
-from bluesky.examples import stepscan
 from bluesky.tests.utils import DocCollector
+from bluesky.plans import list_scan
+
+import warnings
+
+
+def stepscan(det, motor):
+    yield from list_scan([det], motor, list(range(-5, 5)))
+
 
 # Do not run these test if streamz is not installed
 try:
-    import streamz
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        import streamz
 
     has_streamz = True
 except ImportError:
@@ -64,14 +73,18 @@ class AverageStream(LiveDispatcher):
             desc_id = cache[0]["descriptor"]
             # Check that all of our events came from the same configuration
             if not all([desc_id == evt["descriptor"] for evt in cache]):  # noqa: C419
-                raise Exception("The events in this bundle are from different configurations!")
+                raise Exception(
+                    "The events in this bundle are from different configurations!"
+                )
             # Use the last descriptor to avoid strings and objects
             data_keys = self.raw_descriptors[desc_id]["data_keys"]
             for key, info in data_keys.items():
                 # Information from non-number fields is dropped
                 if info["dtype"] in ("number", "array", "integer"):
                     # Average together
-                    average_evt[key] = np.mean([evt["data"][key] for evt in cache], axis=0)
+                    average_evt[key] = np.mean(
+                        [evt["data"][key] for evt in cache], axis=0
+                    )
             return {"data": average_evt, "descriptor": desc_id}
 
         self.out_node = self.averager.map(average_events)
@@ -107,9 +120,13 @@ def test_straight_through_stream(RE, hw):
     events = d.event[desc["uid"]]
     print(desc)
     print([evt["data"] for evt in events])
-    tmp_valid = all([evt["data"][key] <= 0 for evt in events for key in evt["data"].keys()])  # noqa: C419
+    tmp_valid = all(
+        [evt["data"][key] <= 0 for evt in events for key in evt["data"].keys()]
+    )  # noqa: C419
     assert tmp_valid
-    tmp_valid = all([key in desc["data_keys"] for key in events[0]["data"].keys()])  # noqa: C419
+    tmp_valid = all(
+        [key in desc["data_keys"] for key in events[0]["data"].keys()]
+    )  # noqa: C419
     assert tmp_valid
 
 
@@ -131,7 +148,9 @@ def test_average_stream(RE, hw):
     assert desc_uid in d.event
     evt = d.event[desc_uid][0]
     assert evt["seq_num"] == 1
-    assert all([key in d.descriptor[start_uid][0]["data_keys"] for key in evt["data"].keys()])  # noqa: C419
+    assert all(
+        [key in d.descriptor[start_uid][0]["data_keys"] for key in evt["data"].keys()]
+    )  # noqa: C419
     # See that we returned the correct average
     assert evt["data"]["motor"] == -0.5  # mean of range(-5, 5)
     assert evt["data"]["motor_setpoint"] == -0.5  # mean of range(-5, 5)

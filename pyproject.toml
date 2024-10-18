@@ -127,9 +127,6 @@ addopts = """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
     "error",
-    "ignore::PendingDeprecationWarning",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "src/bluesky/tests"
