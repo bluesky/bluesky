@@ -10,18 +10,24 @@ import pytest
 import bluesky.plan_stubs as bps
 from bluesky import FailedStatus, IllegalMessageSequence, Msg, RunEngineInterrupted
 from bluesky.callbacks.mpl_plotting import LivePlot
-from bluesky.examples import (
-    checkpoint_forever,
-    conditional_break,
-    conditional_pause,
-    fly_gen,
-    simple_scan,
-    simple_scan_saving,
-    sleepy,
-    stepscan,
-    wait_multiple,
-    wait_one,
-)
+
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+
+    from bluesky.examples import (
+        checkpoint_forever,
+        conditional_break,
+        conditional_pause,
+        fly_gen,
+        simple_scan,
+        simple_scan_saving,
+        sleepy,
+        stepscan,
+        wait_multiple,
+        wait_one,
+    )
 
 from .utils import _careful_event_set, _fabricate_asycio_event
 

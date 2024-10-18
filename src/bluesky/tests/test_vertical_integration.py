@@ -2,7 +2,11 @@ from collections import defaultdict
 from functools import partial
 
 from bluesky.callbacks.broker import post_run, verify_files_saved
-from bluesky.examples import stepscan
+from bluesky.plans import list_scan
+
+
+def stepscan(det, motor):
+    yield from list_scan([det], motor, list(range(-5, 5)))
 
 
 def test_scan_and_get_data(RE, hw, db):

@@ -5,8 +5,13 @@ import pytest
 
 from bluesky.callbacks import CallbackCounter
 from bluesky.callbacks.stream import LiveDispatcher
-from bluesky.examples import stepscan
 from bluesky.tests.utils import DocCollector
+from bluesky.plans import list_scan
+
+
+def stepscan(det, motor):
+    yield from list_scan([det], motor, list(range(-5, 5)))
+
 
 # Do not run these test if streamz is not installed
 try:
