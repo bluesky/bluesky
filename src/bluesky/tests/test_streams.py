@@ -8,6 +8,8 @@ from bluesky.callbacks.stream import LiveDispatcher
 from bluesky.tests.utils import DocCollector
 from bluesky.plans import list_scan
 
+import warnings
+
 
 def stepscan(det, motor):
     yield from list_scan([det], motor, list(range(-5, 5)))
@@ -15,7 +17,9 @@ def stepscan(det, motor):
 
 # Do not run these test if streamz is not installed
 try:
-    import streamz
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        import streamz
 
     has_streamz = True
 except ImportError:
