@@ -101,7 +101,14 @@ def test_deferred_pause(RE):
     # (future checkpoints should not trigger another pause)
     assert RE.state == "idle"
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg("pause", defer=True), Msg("checkpoint"), Msg("checkpoint"), Msg("checkpoint")])
+        RE(
+            [
+                Msg("pause", defer=True),
+                Msg("checkpoint"),
+                Msg("checkpoint"),
+                Msg("checkpoint"),
+            ]
+        )
     assert RE.state == "paused"
     RE.resume()
     assert RE.state == "idle"
@@ -119,7 +126,14 @@ def test_deferred_pause1(RE):
 
 def test_deferred_pause2(RE):
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg("pause", defer=True), Msg("checkpoint"), Msg("pause", defer=True), Msg("checkpoint")])
+        RE(
+            [
+                Msg("pause", defer=True),
+                Msg("checkpoint"),
+                Msg("pause", defer=True),
+                Msg("checkpoint"),
+            ]
+        )
     assert RE.state == "paused"
     with pytest.raises(RunEngineInterrupted):
         RE.resume()
@@ -195,7 +209,10 @@ def test_live_plotter(RE, hw):
 
         del plt
     except ImportError as ie:
-        pytest.skip("Skipping live plot test because matplotlib is not installed." f"Error was: {ie}")
+        pytest.skip(
+            "Skipping live plot test because matplotlib is not installed."
+            f"Error was: {ie}"
+        )
 
     my_plotter = LivePlot("det", "motor")
     assert RE.state == "idle"
@@ -224,7 +241,9 @@ def test_md_historydict(RE, hw):
     try:
         import historydict
     except ImportError as ie:
-        pytest.skip("Skipping test because historydict cannot be imported. " f"Error was {ie}")
+        pytest.skip(
+            "Skipping test because historydict cannot be imported. " f"Error was {ie}"
+        )
     _md(historydict.HistoryDict(":memory:"), RE, hw)
 
 
@@ -649,12 +668,16 @@ def test_failed_status_object(RE):
     class failer:
         def set(self, inp):
             st = StatusBase()
-            threading.Timer(1, st._finished, kwargs=dict(success=False)).start()  # noqa: C408
+            threading.Timer(
+                1, st._finished, kwargs=dict(success=False)
+            ).start()  # noqa: C408
             return st
 
         def trigger(self):
             st = StatusBase()
-            threading.Timer(1, st._finished, kwargs=dict(success=False)).start()  # noqa: C408
+            threading.Timer(
+                1, st._finished, kwargs=dict(success=False)
+            ).start()  # noqa: C408
             return st
 
         def stop(self, *, success=False):
