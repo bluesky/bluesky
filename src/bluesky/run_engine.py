@@ -57,6 +57,7 @@ from .utils import (
     RequestStop,
     RunEngineInterrupted,
     SigintHandler,
+    UncleanPause,
     ensure_generator,
     normalize_subs_input,
     single_gen,
@@ -825,7 +826,7 @@ class RunEngine:
         # TODO add a timeout here?
         return future.result()
 
-    async def _request_pause_coro(self, defer=False):
+    async def _request_pause_coro_inner(self, defer=False):
         # We are pausing. Cancel any deferred pause previously requested.
         if not self.state.can_pause:
             raise TransitionError(f"Run Engine is in '{self.state}' state and can not be paused.")
@@ -838,12 +839,14 @@ class RunEngine:
         print("Pausing...")
 
         self._deferred_pause_requested = False
-        self._interrupted = True
         self._state = "pausing"
         for current_run in self._run_bundlers.values():
             current_run.record_interruption("pause")
 
-        self._task.cancel()
+    async def _request_pause_coro(self, defer=False):
+        await self._request_pause_coro_inner(defer=defer)
+        if not defer:
+            self._task.cancel()
 
     def _create_result(self, plan_return):
         """
@@ -1213,22 +1216,18 @@ class RunEngine:
         print(f"Suspension occurred at {ts}.")
 
         async def _request_suspend(pre_plan, post_plan, justification):
-            if not self.resumable:
-                print("No checkpoint; cannot suspend.")
-                print("Aborting: running cleanup and marking exit_status as 'abort'...")
-                self._interrupted = True
-                with self._state_lock:
-                    self._exception = FailedPause()
-                was_paused = self._state == "paused"
-                self._state = "aborting"
-                if not was_paused:
-                    self._task.cancel()
             if justification is not None:
                 print(f"Justification for this suspension:\n{justification}")
 
+            def start_suspender():
+                try:
+                    yield Msg('_start_suspender', None, pre_plan, post_plan, justification, fut)
+                except FailedPause:
+                    if pre_plan is not None or post_plan is not None:
+                        raise RequestAbort
             # add starting the suspender logic to the stack
             self._plan_stack.append(
-                single_gen(Msg("_start_suspender", None, pre_plan, post_plan, justification, fut))
+                start_suspender()
             )
             self._response_stack.append(None)
 
@@ -1491,17 +1490,21 @@ class RunEngine:
         try:
             self._state = "running"
             while True:
-                if self._state in ("pausing", "suspending"):
+                if self._state == "pausing":
                     if not self.resumable:
-                        self._run_permit.set()
                         stashed_exception = FailedPause()
-
-                        self._state = "aborting"
+                        self._state = "paused"
+                        self._state = "running"
+                        self._interrupted = False
+                        self._run_permit.set()
                         continue
-                # currently only using 'suspending' to get us into the
-                # block above, we do not have a 'suspended' state
-                # (yet)
+                    else:
+                        self._interrupted = True
+                        self._run_permit.clear()
+
                 if self._state == "suspending":
+                    if not self.resumable:
+                        stashed_exception = FailedPause()
                     self._state = "running"
                 if not self._run_permit.is_set():
                     # A pause has been requested. First, put everything in a
@@ -1516,16 +1519,28 @@ class RunEngine:
                     await self._stop_movable_objects(success=True)
                     # Notify Devices of the pause in case they want to
                     # clean up.
+                    # track of any devices refuse to pause
+                    refuse_to_pause = False
                     for obj in self._objs_seen:
                         if isinstance(obj, Pausable):
                             try:
                                 await maybe_await(obj.pause())
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
+                            except UncleanPause:
+                                await self._clear_checkpoint(Msg("clear_checkpoint"))
+                                refuse_to_pause = True
+                    # if anything refused to pause, go back to top and let
+                    # FailedPause propogate to plans
+                    if refuse_to_pause:
+                        continue
+                    # otherwise move to paused state
                     self._state = "paused"
+
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
 
+                    # ... and wait things to be resumed externally
                     await self._run_permit.wait()
                     # Restore any monitors
                     for current_run in self._run_bundlers.values():
@@ -1578,6 +1593,10 @@ class RunEngine:
                         # throw the exception at the current plan
                         try:
                             msg = self._plan_stack[-1].throw(stashed_exception or resp)
+                        except FailedPause:
+                            self._state = 'aborting'
+                            self._interrupted = True
+                            raise
                         except Exception as e:
                             # The current plan did not handle it,
                             # maybe the next plan (if any) would like
@@ -2423,7 +2442,7 @@ class RunEngine:
         See RunEngine.request_pause() docstring for explanation of the three
         keyword arguments in the `Msg` signature
         """
-        await self._request_pause_coro(*msg.args, **msg.kwargs)
+        await self._request_pause_coro_inner(*msg.args, **msg.kwargs)
 
     async def _resume(self, msg):
         """Request the run engine to resume
@@ -2462,7 +2481,7 @@ class RunEngine:
             # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
             await asyncio.sleep(0.5, **self._loop_for_kwargs)
-            await self._request_pause_coro(defer=False)
+            await self._request_pause_coro_inner(defer=False)
 
     def _reset_checkpoint_state(self):
         self._reset_checkpoint_state_meth()
