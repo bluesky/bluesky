@@ -313,117 +313,11 @@ class SigintHandler(SignalHandler):
             self.last_sigint_time = time.time()
 
 
-class CallbackRegistry:
-    """
-    See matplotlib.cbook.CallbackRegistry. This is a simplified since
-    ``bluesky`` is python3.4+ only!
-    """
-
-    def __init__(self, ignore_exceptions: bool = False, allowed_sigs: Optional[List[Any]] = None):
-        self.ignore_exceptions = ignore_exceptions
-        self.allowed_sigs = allowed_sigs
-        self.callbacks: Dict[Any, Dict[int, Callable]] = {}
-        self._cid: int = 0
-        self._func_cid_map: dict[Any, WeakKeyDictionary] = {}
-
-    def __getstate__(self):
-        # We cannot currently pickle the callables in the registry, so
-        # return an empty dictionary.
-        return {}
-
-    def __setstate__(self, state):
-        # re-initialise an empty callback registry
-        self.__init__()
-
-    def connect(self, signal: Any, func: Callable) -> int:
-        """Register ``func`` to be called when ``signal`` is generated"""
-        if self.allowed_sigs is not None:
-            if signal not in self.allowed_sigs:
-                raise ValueError(f"Allowed signals are {self.allowed_sigs}")
-        self._func_cid_map.setdefault(signal, WeakKeyDictionary())
-        proxy = _BoundMethodProxy(func)
-        if proxy in self._func_cid_map[signal]:
-            return self._func_cid_map[signal][proxy]
-
-        proxy.add_destroy_callback(self._remove_proxy)
-        self._cid += 1
-        cid = self._cid
-        self._func_cid_map[signal][proxy] = cid
-        self.callbacks.setdefault(signal, {})[cid] = proxy
-        return cid
-
-    def _remove_proxy(self, proxy: _BoundMethodProxy) -> None:
-        # need the list because `del self._func_cid_map[sig]` mutates the dict
-        for sig, proxies in list(self._func_cid_map.items()):
-            try:
-                # Here we need to delete the last reference to proxy (in 'self.callbacks[sig]')
-                #   The respective entries in 'self._func_cid_map' are deleted automatically,
-                #   since 'self._func_cid_map[sig]' entries are WeakKeyDictionary objects.
-                del self.callbacks[sig][proxies[proxy]]
-            except KeyError:
-                pass
-
-            # Remove dictionary items for signals with no assigned callbacks
-            if not self.callbacks[sig]:
-                del self.callbacks[sig]
-                del self._func_cid_map[sig]
-
-    def disconnect(self, cid: int) -> None:
-        """Disconnect the callback registered with callback id *cid*
-
-        Parameters
-        ----------
-        cid : int
-            The callback index and return value from ``connect``
-        """
-        for _, callback_map in self.callbacks.items():
-            try:
-                # This may or may not remove entries in 'self._func_cid_map'.
-                del callback_map[cid]
-            except KeyError:
-                continue
-            else:
-                # Look for cid in 'self._func_cid_map' as well. It may still be there.
-                for _, proxies in self._func_cid_map.items():
-                    for func, stored_cid in list(proxies.items()):
-                        if stored_cid == cid:
-                            del proxies[func]
-                return
-
-    def process(self, sig, *args, **kwargs) -> List[Exception]:
-        """Process ``sig``
-
-        All of the functions registered to receive callbacks on ``sig``
-        will be called with ``args`` and ``kwargs``
-
-        Parameters
-        ----------
-        sig
-        args
-        kwargs
-        """
-        if self.allowed_sigs is not None and sig not in self.allowed_sigs:
-            raise ValueError(f"Allowed signals are {self.allowed_sigs}")
-        exceptions = []
-        if sig in self.callbacks:
-            for _, func in list(self.callbacks[sig].items()):  # noqa: B007
-                try:
-                    func(*args, **kwargs)
-                except ReferenceError:
-                    self._remove_proxy(func)
-                except Exception as e:
-                    if self.ignore_exceptions:
-                        exceptions.append((e, sys.exc_info()[2]))
-                    else:
-                        raise
-        return exceptions
-
-
 # Define a type for callables (functions, methods, etc.)
 CallableType = Union[types.MethodType, Callable[..., Any]]
 
 
-class _BoundMethodProxy:
+class _BoundMethodProxy(ReferenceType):
     """
     A proxy that enables weak references to bound and unbound methods
     and arbitrary callables. Automatically handles garbage collection
@@ -501,6 +395,112 @@ class _BoundMethodProxy:
 
     def __hash__(self) -> int:
         return self._hash
+
+
+class CallbackRegistry:
+    """
+    See matplotlib.cbook.CallbackRegistry. This is a simplified since
+    ``bluesky`` is python3.4+ only!
+    """
+
+    def __init__(self, ignore_exceptions: bool = False, allowed_sigs: Optional[List[Any]] = None):
+        self.ignore_exceptions = ignore_exceptions
+        self.allowed_sigs = allowed_sigs
+        self.callbacks: Dict[Any, Dict[int, Callable]] = {}
+        self._cid: int = 0
+        self._func_cid_map: dict[Any, WeakKeyDictionary] = {}
+
+    def __getstate__(self):
+        # We cannot currently pickle the callables in the registry, so
+        # return an empty dictionary.
+        return {}
+
+    def __setstate__(self, state):
+        # re-initialise an empty callback registry
+        self.__init__()
+
+    def connect(self, signal: Any, func: Callable) -> int:
+        """Register ``func`` to be called when ``signal`` is generated"""
+        if self.allowed_sigs is not None:
+            if signal not in self.allowed_sigs:
+                raise ValueError(f"Allowed signals are {self.allowed_sigs}")
+        self._func_cid_map.setdefault(signal, WeakKeyDictionary())
+        proxy = _BoundMethodProxy(func)
+        if proxy in self._func_cid_map[signal]:
+            return self._func_cid_map[signal][proxy]
+
+        proxy.add_destroy_callback(self._remove_proxy)
+        self._cid += 1
+        cid = self._cid
+        self._func_cid_map[signal][proxy] = cid
+        self.callbacks.setdefault(signal, {})[cid] = proxy
+        return cid
+
+    def _remove_proxy(self, proxy: Callable[..., Any]) -> None:
+        # need the list because `del self._func_cid_map[sig]` mutates the dict
+        for sig, proxies in list(self._func_cid_map.items()):
+            try:
+                # Here we need to delete the last reference to proxy (in 'self.callbacks[sig]')
+                #   The respective entries in 'self._func_cid_map' are deleted automatically,
+                #   since 'self._func_cid_map[sig]' entries are WeakKeyDictionary objects.
+                del self.callbacks[sig][proxies[proxy]]
+            except KeyError:
+                pass
+
+            # Remove dictionary items for signals with no assigned callbacks
+            if not self.callbacks[sig]:
+                del self.callbacks[sig]
+                del self._func_cid_map[sig]
+
+    def disconnect(self, cid: int) -> None:
+        """Disconnect the callback registered with callback id *cid*
+
+        Parameters
+        ----------
+        cid : int
+            The callback index and return value from ``connect``
+        """
+        for _, callback_map in self.callbacks.items():
+            try:
+                # This may or may not remove entries in 'self._func_cid_map'.
+                del callback_map[cid]
+            except KeyError:
+                continue
+            else:
+                # Look for cid in 'self._func_cid_map' as well. It may still be there.
+                for _, proxies in self._func_cid_map.items():
+                    for func, stored_cid in list(proxies.items()):
+                        if stored_cid == cid:
+                            del proxies[func]
+                return
+
+    def process(self, sig, *args, **kwargs) -> List[Exception]:
+        """Process ``sig``
+
+        All of the functions registered to receive callbacks on ``sig``
+        will be called with ``args`` and ``kwargs``
+
+        Parameters
+        ----------
+        sig
+        args
+        kwargs
+        """
+        if self.allowed_sigs is not None and sig not in self.allowed_sigs:
+            raise ValueError(f"Allowed signals are {self.allowed_sigs}")
+        exceptions = []
+        if sig in self.callbacks:
+            for _, func in list(self.callbacks[sig].items()):  # noqa: B007
+                try:
+                    func(*args, **kwargs)
+                except ReferenceError:
+                    self._remove_proxy(func)
+                except Exception as e:
+                    if self.ignore_exceptions:
+                        exceptions.append(e)
+                    else:
+                        raise
+        return exceptions
 
 
 # The following two code blocks are adapted from David Beazley's
