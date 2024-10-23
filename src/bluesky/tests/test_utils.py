@@ -141,7 +141,7 @@ def test_is_movable(hw):
 # Indicates if the step when all external references to callables are deleted is included.
 @pytest.mark.parametrize("delete_objects", [True, False])
 # Settings for the 'set_allowed_signals' parameter of the CallbackRegistry class.
-@pytest.mark.parametrize("set_allowed_signals", [True, False])
+@pytest.mark.parametrize("allowed_sigs", [["sig1", "sig2", "sig3"], []])
 # Callable type
 @pytest.mark.parametrize(
     "callable_type",
@@ -155,7 +155,7 @@ def test_is_movable(hw):
         "callable_object_static_method",
     ],
 )
-def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
+def test_CallbackRegistry_1(delete_objects, allowed_sigs, callable_type):
     """
     Basic tests for CallbackRegistry class. The tests verify the behavior
     of CallbackRegistry when connecting and disconnecting callback functions
@@ -193,10 +193,6 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     then the respective items in the dictionaries will remain in both dictionaries (they will
     hold ZERO callback references).
     """
-    if set_allowed_signals:
-        allowed_sigs = {"sig1", "sig2", "sig3"}
-    else:
-        allowed_sigs = None
 
     cb = CallbackRegistry(allowed_sigs=allowed_sigs)
 
