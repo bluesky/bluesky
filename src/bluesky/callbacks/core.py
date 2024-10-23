@@ -276,7 +276,7 @@ class CollectLiveStream(CallbackBase):
     def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
 
-        Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
+        Will make changes to and return a shallow copy of StreamResource dictionary adhering to the new structure.
         """
 
         doc = copy.copy(doc)
