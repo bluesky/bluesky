@@ -24,7 +24,6 @@ from typing import (
     AsyncIterable,
     AsyncIterator,
     Callable,
-    Dict,
     Generator,
     List,
     Optional,
@@ -99,7 +98,7 @@ P = TypeVar("P")
 MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
-CustomPlanMetadata = Dict[str, Any]
+CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
@@ -340,10 +339,12 @@ class _BoundMethodProxy(ReferenceType):
         if isinstance(cb, types.MethodType):
             self.weak_method: Optional[WeakMethod] = WeakMethod(cb, self._destroy)
             self.func: Callable[..., Any] = cb.__func__  # Reference to the underlying function
+            self.class_of_the_callback_function = cb.__self__.__class__
         else:
             # Handle unbound methods or callable objects
             self.weak_method = None
             self.func = ref(cb, self._destroy) if callable(cb) else cb
+            self.class_of_the_callback_function = None
 
     def add_destroy_callback(self, callback: Callable[[weakref.ReferenceType], None]) -> None:
         """Add a destroy callback to be called when the object is destroyed."""
@@ -358,6 +359,21 @@ class _BoundMethodProxy(ReferenceType):
                     callback(weak_ref)
                 except ReferenceError:
                     pass
+
+    def __getstate__(self):
+        self_dict_representation = self.__dict__.copy()
+        instance = self_dict_representation.pop("weak_method", None)
+        # make it strong
+        if instance is not None:
+            self_dict_representation["weak_method"] = instance()
+        return self_dict_representation
+
+    def __setstate__(self, statedict):
+        self.__dict__.update(statedict)
+        instance = self.__dict__.pop("weak_method", None)
+        # turn from strong to weak
+        if instance is not None:
+            self.__dict__["weak_method"] = WeakMethod(instance)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Invoke the callable, passing any arguments."""
@@ -406,7 +422,7 @@ class CallbackRegistry:
     def __init__(self, ignore_exceptions: bool = False, allowed_sigs: Optional[List[Any]] = None):
         self.ignore_exceptions = ignore_exceptions
         self.allowed_sigs = allowed_sigs
-        self.callbacks: Dict[Any, Dict[int, Callable]] = {}
+        self.callbacks: dict[Any, dict[int, Callable]] = {}
         self._cid: int = 0
         self._func_cid_map: dict[Any, WeakKeyDictionary] = {}
 
@@ -434,6 +450,10 @@ class CallbackRegistry:
         cid = self._cid
         self._func_cid_map[signal][proxy] = cid
         self.callbacks.setdefault(signal, {})[cid] = proxy
+        # it was not this change that broke things
+        # self.callbacks.setdefault(signal, {})
+        # self.callbacks[signal][cid] = proxy
+
         return cid
 
     def _remove_proxy(self, proxy: Callable[..., Any]) -> None:
@@ -474,7 +494,7 @@ class CallbackRegistry:
                             del proxies[func]
                 return
 
-    def process(self, sig, *args, **kwargs) -> List[Exception]:
+    def process(self, sig, *args, **kwargs) -> list[tuple[Exception, Any]]:
         """Process ``sig``
 
         All of the functions registered to receive callbacks on ``sig``
@@ -497,7 +517,8 @@ class CallbackRegistry:
                     self._remove_proxy(func)
                 except Exception as e:
                     if self.ignore_exceptions:
-                        exceptions.append(e)
+                        v: tuple[Exception, Any] = (e), sys.exc_info()[2]
+                        exceptions.append(v)
                     else:
                         raise
         return exceptions
@@ -1842,7 +1863,7 @@ def get_hinted_fields(obj) -> List[str]:
         return []
 
 
-already_warned: Dict[Any, bool] = {}
+already_warned: dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
@@ -1857,7 +1878,7 @@ https://github.com/bluesky/bluesky/issues"""
         warnings.warn(error_msg)  # noqa: B028
 
 
-def maybe_update_hints(hints: Dict[str, Hints], obj):
+def maybe_update_hints(hints: dict[str, Hints], obj):
     if isinstance(obj, HasHints):
         hints[obj.name] = obj.hints
 
