@@ -437,23 +437,20 @@ class CallbackRegistry:
 
     def connect(self, signal: Any, func: Callable) -> int:
         """Register ``func`` to be called when ``signal`` is generated"""
-        if self.allowed_sigs is not None:
-            if signal not in self.allowed_sigs:
-                raise ValueError(f"Allowed signals are {self.allowed_sigs}")
+        if self.allowed_sigs is not None and signal not in self.allowed_sigs:
+            raise ValueError(f"Allowed signals are {self.allowed_sigs}")
         self._func_cid_map.setdefault(signal, WeakKeyDictionary())
         proxy = _BoundMethodProxy(func)
+        # if the proxy is already set, just return the cid
         if proxy in self._func_cid_map[signal]:
             return self._func_cid_map[signal][proxy]
 
         proxy.add_destroy_callback(self._remove_proxy)
         self._cid += 1
         cid = self._cid
+        # once we increment the cid we can persist the proxy
         self._func_cid_map[signal][proxy] = cid
         self.callbacks.setdefault(signal, {})[cid] = proxy
-        # it was not this change that broke things
-        # self.callbacks.setdefault(signal, {})
-        # self.callbacks[signal][cid] = proxy
-
         return cid
 
     def _remove_proxy(self, proxy: Callable[..., Any]) -> None:
@@ -508,19 +505,22 @@ class CallbackRegistry:
         """
         if self.allowed_sigs is not None and sig not in self.allowed_sigs:
             raise ValueError(f"Allowed signals are {self.allowed_sigs}")
+
         exceptions = []
-        if sig in self.callbacks:
-            for _, func in list(self.callbacks[sig].items()):  # noqa: B007
-                try:
-                    func(*args, **kwargs)
-                except ReferenceError:
-                    self._remove_proxy(func)
-                except Exception as e:
-                    if self.ignore_exceptions:
-                        v: tuple[Exception, Any] = (e), sys.exc_info()[2]
-                        exceptions.append(v)
-                    else:
-                        raise
+        if sig not in self.callbacks:
+            return exceptions
+
+        for _, func in list(self.callbacks[sig].items()):  # noqa: B007
+            try:
+                func(*args, **kwargs)
+            except ReferenceError:
+                self._remove_proxy(func)
+            except Exception as e:
+                if self.ignore_exceptions:
+                    v: tuple[Exception, Any] = (e), sys.exc_info()[2]
+                    exceptions.append(v)
+                else:
+                    raise
         return exceptions
 
 

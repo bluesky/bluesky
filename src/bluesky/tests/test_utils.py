@@ -140,7 +140,7 @@ def test_is_movable(hw):
 
 # Indicates if the step when all external references to callables are deleted is included.
 @pytest.mark.parametrize("delete_objects", [True, False])
-# Settings for the 'set_allowed_signals' parameter of the CallbackRegistry class.
+# Settings for the 'allowed_signals' parameter of the CallbackRegistry class.
 @pytest.mark.parametrize("allowed_sigs", [["sig1", "sig2", "sig3"], []])
 # Callable type
 @pytest.mark.parametrize(

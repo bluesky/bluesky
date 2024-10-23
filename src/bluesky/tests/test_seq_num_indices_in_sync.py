@@ -224,7 +224,7 @@ def test_flyscan_with_stream_datum_pause(RE):
     RE.resume()
 
     stream_datum_collected_docs = [doc[1] for doc in collector if doc[0] == "stream_datum"]
-    # assert len(stream_datum_collected_docs) == 30
+    assert len(stream_datum_collected_docs) == 30
 
     collector_iter = iter(collector)
     stream_resource_collected = []
