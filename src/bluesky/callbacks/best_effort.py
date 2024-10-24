@@ -11,6 +11,7 @@ import sys
 import threading
 import time
 import weakref
+from collections import deque
 from collections.abc import Mapping
 from datetime import datetime
 from functools import partial
@@ -591,9 +592,10 @@ class LivePlotPlusPeaks(LivePlot):
         weakref.WeakKeyDictionary()
     )  # map ax to list of instances
 
-    def __init__(self, *args, peak_results, label_format=None, **kwargs):
+    def __init__(self, *args, peak_results, label_format=None, max_labels: int = 2, **kwargs):
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
+        self.max_labels = max_labels
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
         self.label_format = validate_label_format(label_format)
@@ -649,7 +651,7 @@ class LivePlotPlusPeaks(LivePlot):
     def plot_annotations(self):
         # Vertical and horizontal lines:
         styles = iter(cycler("color", "krbm"))
-        lines = []
+        lines = deque(maxlen=self.max_labels)
         for style, attr, numerical_method, ind in zip(
             styles, ["cen", "com", "min", "max"], ["axvline", "axvline", "axhline", "axhline"], [None, None, 1, 1]
         ):
@@ -657,15 +659,16 @@ class LivePlotPlusPeaks(LivePlot):
             if ind is not None:
                 val = val[ind]
             label = self.label_format.format(attr=attr, val=val)
-            lines.append(getattr(self.ax, numerical_method)(val, label=label, **style))
+            new_line = getattr(self.ax, numerical_method)(val, label=label, **style)
+            lines.append(new_line)
 
         # Arrows (e.g., FWHM):
         attr = "fwhm"
         val = self.peak_results[attr][self.y]
-        arrows = self._get_arrows(lines, attr, val)
+        arrows = self._get_arrows(list(lines), attr, val)
 
         self.__labeled[self.ax] = None
-        self.__arts = lines + arrows
+        self.__arts = list(lines) + arrows
 
     def _get_arrows(self, lines: list, attr: str, val):
         arrows = []
@@ -675,9 +678,6 @@ class LivePlotPlusPeaks(LivePlot):
             crossings = self.peak_results["crossings"][self.y]
             style = {"color": "g"}
             arrow_y_pos = (max_crds[1] + min_crds[1]) / 2
-            # label = self.label_format.format(attr=attr, val=val)
-            # Fake line for the legend:
-            # lines += self.ax.plot([], [], label=label, **style)
             arrows.append(
                 self.ax.annotate(
                     "",
