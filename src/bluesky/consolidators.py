@@ -345,11 +345,13 @@ class TIFFConsolidator(ConsolidatorBase):
         super().consume_stream_datum(doc)
 
 
-CONSOLIDATOR_REGISTRY = {
-    "application/octet-stream": ConsolidatorBase,
-    "application/x-hdf5": HDF5Consolidator,
-    "multipart/related;type=image/tiff": TIFFConsolidator,
-}
+CONSOLIDATOR_REGISTRY = collections.defaultdict(
+    lambda: ConsolidatorBase,
+    {
+        "application/x-hdf5": HDF5Consolidator,
+        "multipart/related;type=image/tiff": TIFFConsolidator,
+    },
+)
 
 
 def consolidator_factory(stream_resource_doc, descriptor_doc):
