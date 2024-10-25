@@ -86,7 +86,7 @@ class _RunWriter(CallbackBase):
         self.data_keys_int: Dict[str, Dict[str, Any]] = {}
         self.data_keys_ext: Dict[str, Dict[str, Any]] = {}
 
-    def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
+    def _ensure_resource_backcompat(self, doc: Union[Resource, StreamResource]) -> Union[Resource, StreamResource]:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
 
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
