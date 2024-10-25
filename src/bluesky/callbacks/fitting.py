@@ -26,6 +26,9 @@ class LiveFit(CallbackBase):
     update_every : int or None, optional
         How often to recompute the fit. If `None`, do not compute until the
         end. Default is 1 (recompute after each new point).
+    yerr: string or None, optional
+        name of field in the Event document that provides standard deviation
+        for each Y value
 
     Attributes
     ----------
