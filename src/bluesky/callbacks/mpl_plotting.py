@@ -125,7 +125,18 @@ class LivePlot(QtAwareCallback):
     """
 
     def __init__(
-        self, y, x=None, *, legend_keys=None, xlim=None, ylim=None, ax=None, fig=None, epoch="run", yerr=None, **kwargs
+        self,
+        y,
+        x=None,
+        *,
+        legend_keys=None,
+        xlim=None,
+        ylim=None,
+        ax=None,
+        fig=None,
+        epoch="run",
+        yerr=None,
+        **kwargs,
     ):
         super().__init__(use_teleporter=kwargs.pop("use_teleporter", None))
         self.__setup_lock = threading.Lock()
@@ -242,8 +253,7 @@ class LivePlot(QtAwareCallback):
         # Rescale and redraw.
         self.current_line.set_data(self.x_data, self.y_data)
         if self.yerr is not None:
-            self.ax.errorbar(x=self.x_data, y=self.y_data, yerr=self.yerr_data,
-                              fmt="none")
+            self.ax.errorbar(x=self.x_data, y=self.y_data, yerr=self.yerr_data, fmt="none")
         self.ax.relim(visible_only=True)
         self.ax.autoscale_view(tight=True)
         self.ax.figure.canvas.draw_idle()
