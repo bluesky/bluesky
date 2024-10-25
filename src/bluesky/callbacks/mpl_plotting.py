@@ -113,6 +113,9 @@ class LivePlot(QtAwareCallback):
     epoch : {'run', 'unix'}, optional
         If 'run' t=0 is the time recorded in the RunStart document. If 'unix',
         t=0 is 1 Jan 1970 ("the UNIX epoch"). Default is 'run'.
+    yerr : str, optional
+        the name of the field in the Event document that provides standard deviation
+        for each Y value
     All additional keyword arguments are passed through to ``Axes.plot``.
 
     Examples
@@ -122,7 +125,7 @@ class LivePlot(QtAwareCallback):
     """
 
     def __init__(
-        self, y, x=None, *, legend_keys=None, xlim=None, ylim=None, ax=None, fig=None, epoch="run", **kwargs
+        self, y, x=None, *, legend_keys=None, xlim=None, ylim=None, ax=None, fig=None, epoch="run", yerr=None, **kwargs
     ):
         super().__init__(use_teleporter=kwargs.pop("use_teleporter", None))
         self.__setup_lock = threading.Lock()
@@ -130,7 +133,7 @@ class LivePlot(QtAwareCallback):
 
         def setup():
             # Run this code in start() so that it runs on the correct thread.
-            nonlocal y, x, legend_keys, xlim, ylim, ax, fig, epoch, kwargs
+            nonlocal y, x, legend_keys, xlim, ylim, ax, fig, epoch, yerr, kwargs
             import matplotlib.pyplot as plt
 
             with self.__setup_lock:
@@ -158,6 +161,10 @@ class LivePlot(QtAwareCallback):
                 self.x, *others = get_obj_fields([x])
             else:
                 self.x = "seq_num"
+            if yerr is not None:
+                self.yerr, *others = get_obj_fields([yerr])
+            else:
+                self.yerr = None
             self.y, *others = get_obj_fields([y])
             self.ax.set_ylabel(y)
             self.ax.set_xlabel(x or "sequence #")
@@ -179,7 +186,7 @@ class LivePlot(QtAwareCallback):
         self.__setup()
         # The doc is not used; we just use the signal that a new run began.
         self._epoch_offset = doc["time"]  # used if self.x == 'time'
-        self.x_data, self.y_data = [], []
+        self.x_data, self.y_data, self.yerr_data = [], [], []
         label = " :: ".join([str(doc.get(name, name)) for name in self.legend_keys])
         kwargs = ChainMap(self.kwargs, {"label": label})
         (self.current_line,) = self.ax.plot([], [], **kwargs)
@@ -209,6 +216,8 @@ class LivePlot(QtAwareCallback):
                     new_x = doc[self.x]
                 else:
                     raise
+
+            new_yerr = None if self.yerr is None else doc["data"][self.yerr]
             new_y = doc["data"][self.y]
         except KeyError:
             # wrong event stream, skip it
@@ -219,17 +228,22 @@ class LivePlot(QtAwareCallback):
         if self.x == "time" and self._epoch == "run":
             new_x -= self._epoch_offset
 
-        self.update_caches(new_x, new_y)
+        self.update_caches(new_x, new_y, new_yerr)
         self.update_plot()
         super().event(doc)
 
-    def update_caches(self, x, y):
+    def update_caches(self, x, y, yerr=None):
         self.y_data.append(y)
         self.x_data.append(x)
 
+        self.yerr_data.append(yerr)
+
     def update_plot(self):
-        self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
+        self.current_line.set_data(self.x_data, self.y_data)
+        if self.yerr is not None:
+            self.ax.errorbar(x=self.x_data, y=self.y_data, yerr=self.yerr_data,
+                              fmt="none")
         self.ax.relim(visible_only=True)
         self.ax.autoscale_view(tight=True)
         self.ax.figure.canvas.draw_idle()
