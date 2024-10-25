@@ -32,7 +32,7 @@ class LiveFit(CallbackBase):
     result : lmfit.ModelResult
     """
 
-    def __init__(self, model, y, independent_vars, init_guess=None, *, update_every=1):
+    def __init__(self, model, y, independent_vars, init_guess=None, *, update_every=1, yerr=None):
         self.ydata = []
         self.independent_vars_data = {}
         self.__stale = False
@@ -42,6 +42,10 @@ class LiveFit(CallbackBase):
         self.independent_vars = independent_vars
         if init_guess is None:
             init_guess = {}
+
+        self.yerr = yerr
+        self.weight_data = []
+
         self.init_guess = init_guess
         self.update_every = update_every
 
@@ -84,8 +88,20 @@ class LiveFit(CallbackBase):
         y = doc["data"][self.y]
         idv = {k: doc["data"][v] for k, v in self.independent_vars.items()}
 
+        weight = None
+        if self.yerr is not None:
+            try:
+                weight = 1/doc["data"][self.yerr]
+            except ZeroDivisionError:
+                warnings.warn(
+                    f"standard deviation for {y} is 0, therefore applying weight of 0 on fit",
+                    stacklevel=1,
+                )
+                weight = 0.0
+
+
         # Always stash the data for the next time the fit is updated.
-        self.update_caches(y, idv)
+        self.update_caches(y, idv, weight)
         self.__stale = True
 
         # Maybe update the fit or maybe wait.
@@ -105,10 +121,13 @@ class LiveFit(CallbackBase):
             self.update_fit()
         super().stop(doc)
 
-    def update_caches(self, y, independent_vars):
+    def update_caches(self, y, independent_vars, weight=0.0):
         self.ydata.append(y)
         for k, v in self.independent_vars_data.items():
             v.append(independent_vars[k])
+
+        if self.yerr is not None:
+            self.weight_data.append(weight)
 
     def update_fit(self):
         N = len(self.model.param_names)
@@ -121,7 +140,7 @@ class LiveFit(CallbackBase):
             kwargs = {}
             kwargs.update(self.independent_vars_data)
             kwargs.update(self.init_guess)
-            self.result = self.model.fit(self.ydata, **kwargs)
+            self.result = self.model.fit(self.ydata, weights=None if self.yerr is None else self.weight_data, **kwargs)
             self.__stale = False
 
 
