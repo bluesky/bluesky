@@ -76,7 +76,7 @@ class ConsolidatorBase:
     automated discovery of the subclassed Consolidator.
     """
 
-    supported_mimetypes: Set[str] = set()
+    supported_mimetypes: Set[str] = {"application/octet-stream"}
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         self.mimetype = self.get_supported_mimetype(stream_resource)
@@ -346,6 +346,7 @@ class TIFFConsolidator(ConsolidatorBase):
 
 
 CONSOLIDATOR_REGISTRY = {
+    "application/octet-stream": ConsolidatorBase,
     "application/x-hdf5": HDF5Consolidator,
     "multipart/related;type=image/tiff": TIFFConsolidator,
 }
