@@ -475,7 +475,7 @@ def test_stage_and_unstage_status_objects(RE):
     RE(my_plan())
     stop = ttime.monotonic()
 
-    assert 2 < stop - start < 3
+    assert 2 <= stop - start < 3
 
 
 def test_bad_call_args(RE):
