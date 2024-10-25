@@ -199,9 +199,9 @@ class WritesStreamAssets(Protocol):
 
 
 @runtime_checkable
-class Configurable(Protocol):
+class Configurable(Protocol[T]):
     @abstractmethod
-    def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:
+    def read_configuration(self) -> SyncOrAsync[Dict[str, Reading[T]]]:
         """Same API as ``read`` but for slow-changing fields related to configuration.
         e.g., exposure time. These will typically be read only once per run.
 
@@ -270,7 +270,7 @@ class Preparable(Protocol):
 
 
 @runtime_checkable
-class Readable(Generic[T], HasName, Protocol):
+class Readable(HasName, Protocol[T]):
     @abstractmethod
     def read(self) -> SyncOrAsync[Dict[str, Reading[T]]]:
         """Return an OrderedDict mapping string field name(s) to dictionaries
@@ -356,14 +356,14 @@ T_co = TypeVar("T_co", contravariant=True)
 
 
 @runtime_checkable
-class Movable(Generic[T_co], Protocol):
+class Movable(Protocol[T_co]):
     @abstractmethod
     def set(self, value: T_co) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
 
-class Location(TypedDict, Generic[T]):
+class Location(Generic[T], TypedDict):
     """A dictionary containing the location of a Device"""
 
     #: Where the Device was requested to move to
@@ -373,7 +373,7 @@ class Location(TypedDict, Generic[T]):
 
 
 @runtime_checkable
-class Locatable(Generic[T], Movable, Protocol):
+class Locatable(Movable[T], Protocol):
     @abstractmethod
     def locate(self) -> SyncOrAsync[Location[T]]:
         """Return the current location of a Device.
@@ -465,7 +465,7 @@ Callback = Callable[[Dict[str, Reading[T]]], None]
 
 
 @runtime_checkable
-class Subscribable(Generic[T], HasName, Protocol):
+class Subscribable(HasName, Protocol[T]):
     @abstractmethod
     def subscribe(self, function: Callback[T]) -> None:
         """Subscribe to updates in value of a device.
@@ -484,7 +484,7 @@ class Subscribable(Generic[T], HasName, Protocol):
 
 
 @runtime_checkable
-class Checkable(Generic[T_co], Protocol):
+class Checkable(Protocol[T_co]):
     @abstractmethod
     def check_value(self, value: T_co) -> SyncOrAsync[None]:
         """Test for a valid setpoint without actually moving.
@@ -532,7 +532,7 @@ class HasHints(HasName, Protocol):
 
 
 @runtime_checkable
-class NamedMovable(Movable, HasHints, Protocol):
+class NamedMovable(Movable[T_co], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
     ...
