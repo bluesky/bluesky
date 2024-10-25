@@ -250,10 +250,10 @@ class LivePlot(QtAwareCallback):
         self.yerr_data.append(yerr)
 
     def update_plot(self):
-        # Rescale and redraw.
         self.current_line.set_data(self.x_data, self.y_data)
         if self.yerr is not None:
             self.ax.errorbar(x=self.x_data, y=self.y_data, yerr=self.yerr_data, fmt="none")
+        # Rescale and redraw.
         self.ax.relim(visible_only=True)
         self.ax.autoscale_view(tight=True)
         self.ax.figure.canvas.draw_idle()
