@@ -22,8 +22,12 @@ MIMETYPE_LOOKUP = defaultdict(
         "hdf5": "application/x-hdf5",
         "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
         "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
+        "PIL100k_HDF5": "application/x-hdf5",
+        "XPS3": "application/x-hdf5",
+        "XSP3_STEP": "application/x-hdf5",
         "AD_TIFF": "multipart/related;type=image/tiff",
         "AD_HDF5_GERM": "application/x-hdf5",
+        "PIZZABOX_ENC_FILE_TXT_PD": "text/csv",
     },
 )
 
