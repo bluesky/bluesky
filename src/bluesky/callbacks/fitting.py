@@ -94,14 +94,13 @@ class LiveFit(CallbackBase):
         weight = None
         if self.yerr is not None:
             try:
-                weight = 1/doc["data"][self.yerr]
+                weight = 1 / doc["data"][self.yerr]
             except ZeroDivisionError:
                 warnings.warn(
                     f"standard deviation for {y} is 0, therefore applying weight of 0 on fit",
                     stacklevel=1,
                 )
                 weight = 0.0
-
 
         # Always stash the data for the next time the fit is updated.
         self.update_caches(y, idv, weight)
@@ -143,7 +142,9 @@ class LiveFit(CallbackBase):
             kwargs = {}
             kwargs.update(self.independent_vars_data)
             kwargs.update(self.init_guess)
-            self.result = self.model.fit(self.ydata, weights=None if self.yerr is None else self.weight_data, **kwargs)
+            self.result = self.model.fit(
+                self.ydata, weights=None if self.yerr is None else self.weight_data, **kwargs
+            )
             self.__stale = False
 
 
