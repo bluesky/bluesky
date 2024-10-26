@@ -1,0 +1,41 @@
+on:
+  workflow_call:
+
+jobs:
+  check-python-version:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Install basic dependencies
+        run: python -m pip install --upgrade pip setuptools wheel packaging
+
+      - name: Check and warn on Python version support
+        run: |
+          issue_title="Python Version Support Warning"
+          output=$(python ./.github/scripts/check_python_version.py)
+          if [ ! -z "$output" ]; then
+            # Check if the issue already exists
+            existing_issue=$(gh issue list --search "$issue_title in:title" --json number,title)
+            if [[ -z "$existing_issue" || "$existing_issue" == "[]" ]]; then
+              # Create a new issue if one does not exist
+              echo "$output" | gh issue create --title "$issue_title" --body "$output"
+            else
+              echo "Issue already exists, not creating a new one."
+            fi
+          else
+            echo "Python version support is up to date."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
