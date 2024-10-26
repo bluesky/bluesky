@@ -890,8 +890,8 @@ def test_stage_all_and_unstage_all(RE):
         unstaged_keys = list(unstaged.keys())
         assert len(unstaged_keys) == 4
         assert unstaged_keys[:2] == ["o1", "o2"]
-        assert "n1" in staged_keys[2:]
-        assert "n2" in staged_keys[2:]
+        assert "n1" in unstaged_keys[2:]
+        assert "n2" in unstaged_keys[2:]
 
     start = ttime.monotonic()
     RE(plan())
