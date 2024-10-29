@@ -25,9 +25,9 @@ from typing_extensions import TypedDict
 Dtype = Dtype  # type: ignore
 
 try:
-    from typing import ParamSpec
+    from typing import ParamSpec, Unpack
 except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore
+    from typing_extensions import ParamSpec, Unpack  # type: ignore
 
 
 # TODO: these are not placed in Events by RE yet

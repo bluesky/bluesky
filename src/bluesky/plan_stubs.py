@@ -12,6 +12,7 @@ from typing import (
     Literal,
     Optional,
     Union,
+    Tuple
 )
 
 from cycler import cycler
@@ -33,7 +34,6 @@ from .protocols import (
     Locatable,
     Location,
     Movable,
-    NamedMovable,
     PartialEvent,
     Preparable,
     Readable,
@@ -263,7 +263,7 @@ def null() -> MsgGenerator:
 @plan
 def abs_set(
     obj: Movable,
-    *args,
+    *args: Any,
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
@@ -311,7 +311,7 @@ def abs_set(
 @plan
 def rel_set(
     obj: Movable,
-    *args,
+    *args: Any,
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
@@ -352,9 +352,11 @@ def rel_set(
     return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
+# The format (device1, value1, device2, value2, ...)
+# is not currently able to be represented in python's type system
 @plan
 def mv(
-    *args: tuple[Union[Movable, NamedMovable, Any], ...],
+    *args: Union[Movable, Any],
     group: Optional[Hashable] = None,
     **kwargs,
 ) -> MsgGenerator[tuple[Status, ...]]:
@@ -402,9 +404,7 @@ mov = mv  # synonym
 
 
 @plan
-def mvr(
-    *args: tuple[Union[Movable, NamedMovable, Any], ...], group: Optional[Hashable] = None, **kwargs
-) -> MsgGenerator[tuple[Status, ...]]:
+def mvr(*args: Union[Movable, Any], group: Optional[Hashable] = None, **kwargs) -> MsgGenerator[Tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
