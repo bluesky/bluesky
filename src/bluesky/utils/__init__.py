@@ -1029,10 +1029,8 @@ def install_remote_qt_kicker(loop=None, update_rate=0.03):
 
     import matplotlib.backends.backend_qt
     from matplotlib._pylab_helpers import Gcf
-    from matplotlib.backends.backend_qt import _create_qApp
 
-    _create_qApp()
-    qApp = matplotlib.backends.backend_qt.qApp
+    qApp = matplotlib.backends.backend_qt._create_qApp()
 
     try:
         _draw_all = Gcf.draw_all  # mpl version >= 1.5
