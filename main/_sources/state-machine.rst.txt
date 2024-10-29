@@ -222,7 +222,7 @@ after some interval. This can operate unattended.
 .. ipython::
     :verbatim:
 
-    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
+    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor.name, det.name]))
     +------------+-------------------+----------------+----------------+
     |   seq_num  |             time  |         motor  |           det  |
     +------------+-------------------+----------------+----------------+

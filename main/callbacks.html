@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Live Visualization and Processing &#8212; bluesky 1.14.dev23+g3bce96b8 documentation</title>
+    <title>Live Visualization and Processing &#8212; bluesky 1.14.dev25+gaa6d13ed documentation</title>
   
   
   
@@ -16,34 +16,37 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-
-  
-  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+  <link href="_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
-  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="_static/documentation_options.js?v=cea56af5"></script>
+    <script src="_static/documentation_options.js?v=0565605c"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'callbacks';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev23+g3bce96b8';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev25+gaa6d13ed';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -52,6 +55,7 @@
     <link rel="prev" title="Recording Metadata" href="metadata.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.14.dev25+gaa6d13ed" />
   </head>
   
   
@@ -67,19 +71,8 @@
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
-  <input type="checkbox"
-          class="sidebar-toggle"
-          id="pst-primary-sidebar-checkbox"/>
-  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
-  
-  <input type="checkbox"
-          class="sidebar-toggle"
-          id="pst-secondary-sidebar-checkbox"/>
-  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
-  
-  <div class="search-button__wrapper">
-    <div class="search-button__overlay"></div>
-    <div class="search-button__search-container">
+  <dialog id="pst-search-dialog">
+    
 <form class="bd-search d-flex align-items-center"
       action="search.html"
       method="get">
@@ -87,7 +80,6 @@
   <input type="search"
          class="form-control"
          name="q"
-         id="search-input"
          placeholder="Search the docs ..."
          aria-label="Search the docs ..."
          autocomplete="off"
@@ -95,8 +87,8 @@
          autocapitalize="off"
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form></div>
-  </div>
+</form>
+  </dialog>
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
@@ -130,7 +122,7 @@
     
     
     <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
-    <script>document.write(`<img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark" alt=""/>`);</script>
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
     <p class="title logo__title">bluesky</p>
@@ -235,29 +227,21 @@
         <div class="navbar-item navbar-persistent--container">
           
 
- <script>
- document.write(`
-   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
         </div>
       
       
         <div class="navbar-item">
 
-<script>
-document.write(`
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
-  </button>
-`);
-</script></div>
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
       
         <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -288,28 +272,24 @@ document.write(`
 </ul></div>
       
         <div class="navbar-item">
-<script>
-document.write(`
-  <div class="version-switcher__container dropdown">
-    <button id="pst-version-switcher-button-2"
-      type="button"
-      class="version-switcher__button btn btn-sm dropdown-toggle"
-      data-bs-toggle="dropdown"
-      aria-haspopup="listbox"
-      aria-controls="pst-version-switcher-list-2"
-      aria-label="Version switcher list"
-    >
-      Choose version  <!-- this text may get changed later by javascript -->
-      <span class="caret"></span>
-    </button>
-    <div id="pst-version-switcher-list-2"
-      class="version-switcher__menu dropdown-menu list-group-flush py-0"
-      role="listbox" aria-labelledby="pst-version-switcher-button-2">
-      <!-- dropdown will be populated by javascript on page load -->
-    </div>
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
   </div>
-`);
-</script></div>
+</div></div>
       
     </div>
     
@@ -318,15 +298,11 @@ document.write(`
   
     <div class="navbar-persistent--mobile">
 
- <script>
- document.write(`
-   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
     </div>
   
 
@@ -345,7 +321,8 @@ document.write(`
       
       
       
-      <div class="bd-sidebar-primary bd-sidebar">
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -441,15 +418,11 @@ document.write(`
         
           <div class="navbar-item">
 
-<script>
-document.write(`
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
-  </button>
-`);
-</script></div>
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
         
           <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -480,28 +453,24 @@ document.write(`
 </ul></div>
         
           <div class="navbar-item">
-<script>
-document.write(`
-  <div class="version-switcher__container dropdown">
-    <button id="pst-version-switcher-button-3"
-      type="button"
-      class="version-switcher__button btn btn-sm dropdown-toggle"
-      data-bs-toggle="dropdown"
-      aria-haspopup="listbox"
-      aria-controls="pst-version-switcher-list-3"
-      aria-label="Version switcher list"
-    >
-      Choose version  <!-- this text may get changed later by javascript -->
-      <span class="caret"></span>
-    </button>
-    <div id="pst-version-switcher-list-3"
-      class="version-switcher__menu dropdown-menu list-group-flush py-0"
-      role="listbox" aria-labelledby="pst-version-switcher-button-3">
-      <!-- dropdown will be populated by javascript on page load -->
-    </div>
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
   </div>
-`);
-</script></div>
+</div></div>
         
       </div>
     
@@ -560,8 +529,6 @@ document.write(`
       
         <div class="header-article-item">
 
-
-
 <nav aria-label="Breadcrumb" class="d-print-none">
   <ul class="bd-breadcrumbs">
     
@@ -573,7 +540,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="userindex.html" class="nav-link">User Documentation</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Live...</li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Live Visualization and Processing</span></li>
   </ul>
 </nav>
 </div>
@@ -641,7 +608,7 @@ For some callback function <code class="docutils literal notranslate"><span clas
 <span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span>
 <span class="kn">from</span> <span class="nn">bluesky.callbacks</span> <span class="kn">import</span> <span class="n">LiveTable</span>
 <span class="n">dets</span> <span class="o">=</span> <span class="p">[</span><span class="n">det</span><span class="p">]</span>
-<span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">LiveTable</span><span class="p">(</span><span class="n">dets</span><span class="p">))</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">LiveTable</span><span class="p">([</span><span class="s2">&quot;det&quot;</span><span class="p">]))</span>
 </pre></div>
 </div>
 <p>A <em>list</em> of callbacks — <code class="docutils literal notranslate"><span class="pre">[cb1,</span> <span class="pre">cb2]</span></code> — is also accepted; see
@@ -738,7 +705,7 @@ callbacks to a plan so that they are subscribed every time it is run.</p>
 <span class="k">def</span> <span class="nf">my_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;This plan takes the same arguments as `scan`.&quot;</span>
 
-    <span class="n">table</span> <span class="o">=</span> <span class="n">LiveTable</span><span class="p">([</span><span class="n">motor</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">))</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">LiveTable</span><span class="p">([</span><span class="n">motor</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">det</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">])</span>
 
     <span class="nd">@subs_decorator</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">inner</span><span class="p">():</span>
@@ -762,22 +729,22 @@ row is added to the table. Demo:</p>
 
 <span class="gp">In [3]: </span><span class="kn">from</span> <span class="nn">bluesky.callbacks</span> <span class="kn">import</span> <span class="n">LiveTable</span>
 
-<span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">LiveTable</span><span class="p">([</span><span class="n">motor</span><span class="p">,</span> <span class="n">det</span><span class="p">]))</span>
+<span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">LiveTable</span><span class="p">([</span><span class="s2">&quot;motor&quot;</span><span class="p">,</span> <span class="s2">&quot;det&quot;</span><span class="p">]))</span>
 
 
-<span class="go">+-----------+------------+------------+----------------+------------+</span>
-<span class="go">|   seq_num |       time |      motor | motor_setpoint |        det |</span>
-<span class="go">+-----------+------------+------------+----------------+------------+</span>
-<span class="go">|         1 | 15:43:11.5 |      1.000 |          1.000 |      0.607 |</span>
-<span class="go">|         2 | 15:43:11.5 |      2.000 |          2.000 |      0.135 |</span>
-<span class="go">|         3 | 15:43:11.5 |      3.000 |          3.000 |      0.011 |</span>
-<span class="go">|         4 | 15:43:11.5 |      4.000 |          4.000 |      0.000 |</span>
-<span class="go">|         5 | 15:43:11.5 |      5.000 |          5.000 |      0.000 |</span>
-<span class="go">+-----------+------------+------------+----------------+------------+</span>
-<span class="go">generator scan [&#39;87fb95aa&#39;] (scan num: 1)</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |      motor |        det |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|         1 | 14:03:25.3 |      1.000 |      0.607 |</span>
+<span class="go">|         2 | 14:03:25.3 |      2.000 |      0.135 |</span>
+<span class="go">|         3 | 14:03:25.3 |      3.000 |      0.011 |</span>
+<span class="go">|         4 | 14:03:25.3 |      4.000 |      0.000 |</span>
+<span class="go">|         5 | 14:03:25.3 |      5.000 |      0.000 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">generator scan [&#39;a1fd45cf&#39;] (scan num: 1)</span>
 
 
-<span class="gh">Out[4]: </span><span class="go">(&#39;87fb95aa-b241-42b7-a175-07306910e49c&#39;,)</span>
+<span class="gh">Out[4]: </span><span class="go">(&#39;a1fd45cf-87f9-4b60-be78-7969ec79c66b&#39;,)</span>
 </pre></div>
 </div>
 <p>Pass an empty list of columns to show simply ‘time’ and ‘seq_num’ (sequence
@@ -785,7 +752,9 @@ number).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">LiveTable</span><span class="p">([])</span>
 </pre></div>
 </div>
-<p>In the demo above, we passed in a list of <em>device(s)</em>, like so:</p>
+<p>For devices which are implemented using synchronous functions, for example
+<code class="docutils literal notranslate"><span class="pre">ophyd</span></code> devices, it is also possible to pass the device <em>object</em> itself,
+as opposed to a field name:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">LiveTable</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>
 </pre></div>
 </div>
@@ -805,6 +774,13 @@ device.</p>
 <p>In fact, almost all other callbacks (including <a class="reference internal" href="#liveplot"><span class="std std-ref">LivePlot (for scalar data)</span></a>) <em>require</em> a
 specific field. They will not accept a device because it may have more than one
 field.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>For compatibility between <code class="docutils literal notranslate"><span class="pre">ophyd</span></code> devices, which are implemented using
+synchronous functions, and <code class="docutils literal notranslate"><span class="pre">ophyd-async</span></code> devices, which are implemented using
+coroutines, it is recommended to always specify a signal name rather than a
+device object in the <code class="docutils literal notranslate"><span class="pre">LiveTable</span></code> callback.</p>
+</div>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.LiveTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.</span></span><span class="sig-name descname"><span class="pre">LiveTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_name='primary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_header_interval=50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_width=12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_prec=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_pad=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separator_lines=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logbook=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/core.html#LiveTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.LiveTable" title="Link to this definition">#</a></dt>
@@ -1435,23 +1411,23 @@ plans in <code class="xref py py-mod docutils literal notranslate"><span class="
 <span class="gp">In [9]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>  <span class="c1"># automatically prints table, shows plot</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2024-10-14 15:43:26</span>
-<span class="go">Persistent Unique Scan ID: &#39;09911789-0451-4ec8-bca4-fb37a30bf61d&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2024-10-29 14:03:41</span>
+<span class="go">Persistent Unique Scan ID: &#39;e3e8bfcf-d6c7-4bde-940a-ddf08abc8f7b&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |      motor |       det2 |       det1 |</span>
+<span class="go">|   seq_num |       time |      motor |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:43:26.0 |      1.000 |      0.271 |      0.000 |</span>
-<span class="go">|         2 | 15:43:26.2 |      2.000 |      0.271 |      0.000 |</span>
-<span class="go">|         3 | 15:43:26.5 |      3.000 |      0.271 |      0.000 |</span>
-<span class="go">|         4 | 15:43:26.7 |      4.000 |      0.271 |      0.000 |</span>
-<span class="go">|         5 | 15:43:26.9 |      5.000 |      0.271 |      0.000 |</span>
+<span class="go">|         1 | 14:03:41.2 |      1.000 |      0.000 |      0.271 |</span>
+<span class="go">|         2 | 14:03:41.5 |      2.000 |      0.000 |      0.271 |</span>
+<span class="go">|         3 | 14:03:41.7 |      3.000 |      0.000 |      0.271 |</span>
+<span class="go">|         4 | 14:03:41.9 |      4.000 |      0.000 |      0.271 |</span>
+<span class="go">|         5 | 14:03:42.2 |      5.000 |      0.000 |      0.271 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;09911789&#39;] (scan num: 2)</span>
+<span class="go">generator scan [&#39;e3e8bfcf&#39;] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">(&#39;09911789-0451-4ec8-bca4-fb37a30bf61d&#39;,)</span>
+<span class="gh">Out[9]: </span><span class="go">(&#39;e3e8bfcf-d6c7-4bde-940a-ddf08abc8f7b&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1909,20 +1885,20 @@ We are setting up a <em>subscription</em>.</p>
 <span class="gp">In [13]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="p">{</span><span class="s1">&#39;event&#39;</span><span class="p">:</span> <span class="n">print_data</span><span class="p">})</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2024-10-14 15:43:28</span>
-<span class="go">Persistent Unique Scan ID: &#39;0a0e229d-4a3c-4932-8081-8994efc3b34e&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2024-10-29 14:03:43</span>
+<span class="go">Persistent Unique Scan ID: &#39;ff545400-43c9-42e2-9e2a-b93be290c3a0&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 15:43:28.2 |      0.000 |</span>
+<span class="go">|         1 | 14:03:43.5 |      0.000 |</span>
 <span class="go">Measured: {&#39;det&#39;: np.float64(3.726653172078671e-06)}</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;0a0e229d&#39;] (scan num: 3)</span>
+<span class="go">generator count [&#39;ff545400&#39;] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[13]: </span><span class="go">(&#39;0a0e229d-4a3c-4932-8081-8994efc3b34e&#39;,)</span>
+<span class="gh">Out[13]: </span><span class="go">(&#39;ff545400-43c9-42e2-9e2a-b93be290c3a0&#39;,)</span>
 </pre></div>
 </div>
 <p>Each time the RunEngine generates a new Event Document (i.e., data point)
@@ -2430,7 +2406,8 @@ anywhere.</p>
             
             
               
-                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
   <div class="sidebar-secondary-item">
@@ -2554,7 +2531,7 @@ anywhere.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.dev23+g3bce96b8/docs/callbacks.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.dev25+gaa6d13ed/docs/callbacks.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -2588,8 +2565,8 @@ anywhere.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
-<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -2622,7 +2599,7 @@ anywhere.</p>
       
         <div class="footer-item">
 <p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
 </p></div>
       
     </div>
