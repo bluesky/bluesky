@@ -37,7 +37,7 @@ from bluesky.run_engine import (
     TransitionError,
     WaitForTimeoutError,
 )
-from bluesky.tests import requires_ophyd
+from bluesky.tests import requires_ophyd, uses_os_kill_sigint
 from bluesky.tests.utils import DocCollector, MsgCollector
 
 from .utils import _careful_event_set, _fabricate_asycio_event
@@ -475,7 +475,7 @@ def test_stage_and_unstage_status_objects(RE):
     RE(my_plan())
     stop = ttime.monotonic()
 
-    assert 2 < stop - start < 3
+    assert 2 <= stop - start < 3
 
 
 def test_bad_call_args(RE):
@@ -713,6 +713,7 @@ def test_exit_raise(RE, unpause_func, excp):
     assert flag
 
 
+@uses_os_kill_sigint
 def test_sigint_three_hits(RE, hw):
     import time
 
@@ -746,6 +747,7 @@ def test_sigint_three_hits(RE, hw):
     assert 0.3 < done_cleanup_time - end_time < 0.6
 
 
+@uses_os_kill_sigint
 def test_sigint_many_hits_pln(RE):
     pid = os.getpid()
 
@@ -774,6 +776,7 @@ def test_sigint_many_hits_pln(RE):
     timer.join()
 
 
+@uses_os_kill_sigint
 def test_sigint_many_hits_panic(RE):
     raise pytest.skip("hangs tests on exit")
     pid = os.getpid()
@@ -820,6 +823,7 @@ def test_sigint_many_hits_panic(RE):
         RE.request_pause()
 
 
+@uses_os_kill_sigint
 def test_sigint_many_hits_cb(RE):
     pid = os.getpid()
 
@@ -850,6 +854,7 @@ def test_sigint_many_hits_cb(RE):
     timer.join()
 
 
+@uses_os_kill_sigint
 def test_no_context_manager(RE):
     # Clear the context managers so that RE will not react to sigint
     RE.context_managers = []

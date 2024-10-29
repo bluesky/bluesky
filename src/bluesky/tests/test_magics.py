@@ -7,6 +7,7 @@ import pytest
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from bluesky.magics import BlueskyMagics
+from bluesky.tests import uses_os_kill_sigint
 
 
 class FakeIPython:
@@ -148,6 +149,7 @@ def test_magics_missing_ns_key(RE, hw):
     sm.mov("motor1 5")
 
 
+@uses_os_kill_sigint
 def test_interrupted(RE, hw):
     motor = hw.motor
     motor.delay = 10

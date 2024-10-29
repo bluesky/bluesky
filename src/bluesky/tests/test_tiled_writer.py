@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Iterator, Optional, Tuple
 
 import h5py
@@ -64,7 +65,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
     def _get_hdf5_stream(self, data_key: str, index: int) -> Tuple[StreamResource, StreamDatum]:
-        file_path = self.root + "/dataset.h5"
+        file_path = os.path.join(self.root, "dataset.h5")
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
         data_shape = tuple(data_desc["shape"])
@@ -78,7 +79,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
-                uri="file://localhost" + file_path,
+                uri="file://localhost/" + file_path,
                 spec="AD_HDF5_SWMR_STREAM",
                 mimetype="application/x-hdf5",
                 uid=uid,
@@ -122,7 +123,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                     parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
-                    uri="file://localhost" + self.root + "/",
+                    uri="file://localhost/" + self.root + "/",
                     spec="AD_TIFF",
                     mimetype="multipart/related;type=image/tiff",
                     uid=uid,
@@ -139,7 +140,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
             # Write a tiff file
             data = np.random.randint(0, 255, data_shape, dtype="uint8")
-            tf.imwrite(file_path + f"/{self.counter:05}.tif", data)
+            tf.imwrite(os.path.join(file_path, f"{self.counter:05}.tif"), data)
 
         return stream_resource, stream_datum
 
