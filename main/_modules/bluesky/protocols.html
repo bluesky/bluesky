@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.protocols &#8212; bluesky 1.14.dev35+g26cde4a6 documentation</title>
+    <title>bluesky.protocols &#8212; bluesky 1.14.dev38+g627885de documentation</title>
   
   
   
@@ -38,21 +38,21 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../../_static/documentation_options.js?v=ef8d7841"></script>
+    <script src="../../_static/documentation_options.js?v=6190a143"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/protocols';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev35+g26cde4a6';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev38+g627885de';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.dev35+g26cde4a6" />
+  <meta name="docsearch:version" content="1.14.dev38+g627885de" />
   </head>
   
   
@@ -752,11 +752,11 @@
 <div class="viewcode-block" id="Configurable">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Configurable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
-<span class="k">class</span> <span class="nc">Configurable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Configurable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
 <div class="viewcode-block" id="Configurable.read_configuration">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Configurable.read_configuration">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">read_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">read_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Same API as ``read`` but for slow-changing fields related to configuration.</span>
 <span class="sd">        e.g., exposure time. These will typically be read only once per run.</span>
 
@@ -844,11 +844,11 @@
 <div class="viewcode-block" id="Readable">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Readable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
-<span class="k">class</span> <span class="nc">Readable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Readable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
 <div class="viewcode-block" id="Readable.read">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Readable.read">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an OrderedDict mapping string field name(s) to dictionaries</span>
 <span class="sd">        of values and timestamps and optional per-point metadata.</span>
 
@@ -933,14 +933,17 @@
         <span class="o">...</span>
 
 
+<span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">contravariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="Movable">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Movable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
-<span class="k">class</span> <span class="nc">Movable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Movable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
 <div class="viewcode-block" id="Movable.set">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Movable.set">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">T_co</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a ``Status`` that is marked done when the device is done moving.&quot;&quot;&quot;</span>
         <span class="o">...</span></div>
 </div>
@@ -949,7 +952,7 @@
 
 <div class="viewcode-block" id="Location">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Location">[docs]</a>
-<span class="k">class</span> <span class="nc">Location</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<span class="k">class</span> <span class="nc">Location</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">TypedDict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary containing the location of a Device&quot;&quot;&quot;</span>
 
     <span class="c1">#: Where the Device was requested to move to</span>
@@ -962,11 +965,11 @@
 <div class="viewcode-block" id="Locatable">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Locatable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
-<span class="k">class</span> <span class="nc">Locatable</span><span class="p">(</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Locatable</span><span class="p">(</span><span class="n">Movable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">Protocol</span><span class="p">):</span>
 <div class="viewcode-block" id="Locatable.locate">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Locatable.locate">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">locate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Location</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">locate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Location</span><span class="p">[</span><span class="n">T</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the current location of a Device.</span>
 
 <span class="sd">        While a ``Readable`` reports many values, a ``Movable`` will have the</span>
@@ -1087,17 +1090,17 @@
 
 
 
-<span class="n">Callback</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]],</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">Callback</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]],</span> <span class="kc">None</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="Subscribable">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
-<span class="k">class</span> <span class="nc">Subscribable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Subscribable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
 <div class="viewcode-block" id="Subscribable.subscribe">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable.subscribe">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Subscribe to updates in value of a device.</span>
 
 <span class="sd">        When the device has a new value ready, it should call ``function``</span>
@@ -1111,7 +1114,7 @@
 <div class="viewcode-block" id="Subscribable.clear_sub">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable.clear_sub">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">clear_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">clear_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a subscription.&quot;&quot;&quot;</span>
         <span class="o">...</span></div>
 </div>
@@ -1121,11 +1124,11 @@
 <div class="viewcode-block" id="Checkable">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Checkable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
-<span class="k">class</span> <span class="nc">Checkable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Checkable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
 <div class="viewcode-block" id="Checkable.check_value">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Checkable.check_value">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">check_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">check_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">T_co</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Test for a valid setpoint without actually moving.</span>
 
 <span class="sd">        This should accept the same arguments as ``set``. It should raise an</span>
@@ -1179,7 +1182,7 @@
 
 
 <span class="nd">@runtime_checkable</span>
-<span class="k">class</span> <span class="nc">NamedMovable</span><span class="p">(</span><span class="n">Movable</span><span class="p">,</span> <span class="n">HasHints</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">NamedMovable</span><span class="p">(</span><span class="n">Movable</span><span class="p">[</span><span class="n">T_co</span><span class="p">],</span> <span class="n">HasHints</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A movable object that has a name and hints.&quot;&quot;&quot;</span>
 
     <span class="o">...</span>
