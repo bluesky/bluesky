@@ -148,13 +148,25 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         """Describe datasets which will be backed by StreamResources"""
         return {
             f"{self.name}-sd1": DataKey(
-                source="file", dtype="number", dtype_numpy="float64", shape=[1], external="STREAM:"
+                source="file",
+                dtype="number",
+                dtype_numpy=np.dtype("float64").str,
+                shape=[1],
+                external="STREAM:",
             ),
             f"{self.name}-sd2": DataKey(
-                source="file", dtype="array", dtype_numpy="float64", shape=[10, 15], external="STREAM:"
+                source="file",
+                dtype="array",
+                dtype_numpy=np.dtype("float64").str,
+                shape=[10, 15],
+                external="STREAM:",
             ),
             f"{self.name}-sd3": DataKey(
-                source="file", dtype="array", dtype_numpy="uint8", shape=[5, 7, 4], external="STREAM:"
+                source="file",
+                dtype="array",
+                dtype_numpy=np.dtype("uint8").str,
+                shape=[5, 7, 4],
+                external="STREAM:",
             ),
         }
 
@@ -238,7 +250,7 @@ def test_stream_datum_collectable(RE, client, tmp_path):
 def test_handling_non_stream_resource(RE, client, tmp_path):
     det = SynSignalWithRegistry(
         func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
-        dtype_numpy="uint8",
+        dtype_numpy=np.dtype("uint8").str,
         name="img",
         labels={"detectors"},
         save_func=tf.imwrite,
