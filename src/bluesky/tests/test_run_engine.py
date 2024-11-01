@@ -7,7 +7,6 @@ import types
 from collections import defaultdict
 from functools import partial
 from traceback import FrameSummary, extract_tb
-from typing import List
 
 import pytest
 from event_model import DocumentNames
@@ -1516,7 +1515,7 @@ def test_status_propagates_exception_through_run_engine(RE):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg("set", dummy1, 1, group="test"), Msg("wait", group="test")])
 
-        traceback: List[FrameSummary] = extract_tb(exc.__traceback__)
+        traceback: list[FrameSummary] = extract_tb(exc.__traceback__)
         assert traceback[0].filename == __file__
         assert traceback[0].line == "RE([Msg('set', dummy1, 1, group='test'),"
         assert traceback[-1].name == "set"

@@ -2,7 +2,6 @@ import asyncio
 import threading
 import time as ttime
 from collections import defaultdict
-from typing import Dict, List
 
 import pytest
 
@@ -224,10 +223,10 @@ def test_locatable_message_multiple_objects(RE, hw):
 
 def test_rd_locatable(RE, hw):
     class Jittery(Readable, Locatable):
-        def describe(self) -> Dict[str, Descriptor]:
+        def describe(self) -> dict[str, Descriptor]:
             return dict(x=dict(source="dummy", dtype="number", shape=[]))  # noqa: C408
 
-        def read(self) -> Dict[str, Reading]:
+        def read(self) -> dict[str, Reading]:
             return dict(x=dict(value=1.2, timestamp=0.0))  # noqa: C408
 
         def locate(self) -> Location:
@@ -377,7 +376,7 @@ def test_lazily_stage(hw):
 
     processed_plan = list(lazily_stage_wrapper(plan()))
 
-    expected_plan: List[Msg] = [
+    expected_plan: list[Msg] = [
         Msg("stage", det1),
         Msg("read", det1),
         Msg("read", det1),

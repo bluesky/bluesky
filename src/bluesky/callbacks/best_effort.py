@@ -11,11 +11,11 @@ import sys
 import threading
 import time
 import weakref
+from collections.abc import Mapping
 from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
-from typing import List, Mapping
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -553,7 +553,7 @@ class LivePlotPlusPeaks(LivePlot):
     # Track state of axes, which may share instances of LivePlotPlusPeaks.
     __labeled: Mapping[Axis, bool] = weakref.WeakKeyDictionary()  # map ax to True/False
     __visible: Mapping[Axis, bool] = weakref.WeakKeyDictionary()  # map ax to True/False
-    __instances: Mapping[Axis, List["LivePlotPlusPeaks"]] = (
+    __instances: Mapping[Axis, list["LivePlotPlusPeaks"]] = (
         weakref.WeakKeyDictionary()
     )  # map ax to list of instances
 
