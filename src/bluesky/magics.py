@@ -9,7 +9,6 @@ import asyncio
 import collections
 import warnings
 from operator import attrgetter
-from typing import List
 
 import numpy as np
 from IPython.core.magic import Magics, line_magic, magics_class
@@ -63,8 +62,8 @@ class MetaclassForClassProperties(MetaHasTraits, type):
         )
         self._detectors = val
 
-    _positioners: List[Movable] = []
-    _detectors: List[Readable] = []
+    _positioners: list[Movable] = []
+    _detectors: list[Readable] = []
 
 
 @magics_class

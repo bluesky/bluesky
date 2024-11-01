@@ -15,24 +15,17 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Generator, Iterable
+from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
     Any,
-    AsyncIterable,
-    AsyncIterator,
     Callable,
-    Dict,
-    Generator,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )
-from typing import Iterable as TypingIterable
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -98,7 +91,7 @@ P = TypeVar("P")
 MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
-CustomPlanMetadata = Dict[str, Any]
+CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
@@ -151,7 +144,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES: Tuple[Type, ...] = (types.GeneratorType,)
+PLAN_TYPES: tuple[type, ...] = (types.GeneratorType,)
 try:
     from types import CoroutineType
 except ImportError:
@@ -562,7 +555,7 @@ class StructMeta(type):
 class Struct(metaclass=StructMeta):
     "The _fields of any subclass become its attritubes and __init__ args."
 
-    _fields: List[str] = []
+    _fields: list[str] = []
 
     def __init__(self, *args, **kwargs):
         # Now bind default values of optional arguments.
@@ -645,7 +638,7 @@ class Subs:
         self.data[instance] = normalize_subs_input(value)
 
 
-def snake_cyclers(cyclers: List[Cycler], snake_booleans: List[bool]) -> Cycler:
+def snake_cyclers(cyclers: list[Cycler], snake_booleans: list[bool]) -> Cycler:
     """
     Combine cyclers with a 'snaking' back-and-forth order.
     If none of the cyclers are "snaked" this is equivalent to taking the product of all the cyclers.
@@ -1875,14 +1868,14 @@ def is_movable(obj):
     return isinstance(obj, Movable) and isinstance(obj, Readable)
 
 
-def get_hinted_fields(obj) -> List[str]:
+def get_hinted_fields(obj) -> list[str]:
     if isinstance(obj, HasHints):
         return obj.hints.get("fields", [])
     else:
         return []
 
 
-already_warned: Dict[Any, bool] = {}
+already_warned: dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
@@ -1897,7 +1890,7 @@ https://github.com/bluesky/bluesky/issues"""
         warnings.warn(error_msg)  # noqa: B028
 
 
-def maybe_update_hints(hints: Dict[str, Hints], obj):
+def maybe_update_hints(hints: dict[str, Hints], obj):
     if isinstance(obj, HasHints):
         hints[obj.name] = obj.hints
 
