@@ -1,18 +1,12 @@
 from abc import abstractmethod
+from collections.abc import AsyncIterator, Awaitable, Iterator
 from typing import (
     Any,
-    AsyncIterator,
-    Awaitable,
     Callable,
-    Dict,
     Generic,
-    Iterator,
-    List,
     Literal,
     Optional,
     Protocol,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     runtime_checkable,
@@ -64,14 +58,14 @@ class Reading(Generic[T], ReadingOptional):
 
 
 Asset = Union[
-    Tuple[Literal["resource"], PartialResource],
-    Tuple[Literal["datum"], Datum],
+    tuple[Literal["resource"], PartialResource],
+    tuple[Literal["datum"], Datum],
 ]
 
 
 StreamAsset = Union[
-    Tuple[Literal["stream_resource"], StreamResource],
-    Tuple[Literal["stream_datum"], StreamDatum],
+    tuple[Literal["stream_resource"], StreamResource],
+    tuple[Literal["stream_datum"], StreamDatum],
 ]
 
 
@@ -199,9 +193,9 @@ class WritesStreamAssets(Protocol):
 
 
 @runtime_checkable
-class Configurable(Protocol):
+class Configurable(Protocol[T]):
     @abstractmethod
-    def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:
+    def read_configuration(self) -> SyncOrAsync[dict[str, Reading[T]]]:
         """Same API as ``read`` but for slow-changing fields related to configuration.
         e.g., exposure time. These will typically be read only once per run.
 
@@ -210,7 +204,7 @@ class Configurable(Protocol):
         ...
 
     @abstractmethod
-    def describe_configuration(self) -> SyncOrAsync[Dict[str, DataKey]]:
+    def describe_configuration(self) -> SyncOrAsync[dict[str, DataKey]]:
         """Same API as ``describe``, but corresponding to the keys in
         ``read_configuration``.
 
@@ -270,9 +264,9 @@ class Preparable(Protocol):
 
 
 @runtime_checkable
-class Readable(HasName, Protocol):
+class Readable(HasName, Protocol[T]):
     @abstractmethod
-    def read(self) -> SyncOrAsync[Dict[str, Reading]]:
+    def read(self) -> SyncOrAsync[dict[str, Reading[T]]]:
         """Return an OrderedDict mapping string field name(s) to dictionaries
         of values and timestamps and optional per-point metadata.
 
@@ -290,7 +284,7 @@ class Readable(HasName, Protocol):
         ...
 
     @abstractmethod
-    def describe(self) -> SyncOrAsync[Dict[str, DataKey]]:
+    def describe(self) -> SyncOrAsync[dict[str, DataKey]]:
         """Return an OrderedDict with exactly the same keys as the ``read``
         method, here mapped to per-scan metadata about each field.
 
@@ -315,7 +309,7 @@ class Readable(HasName, Protocol):
 @runtime_checkable
 class Collectable(HasName, Protocol):
     @abstractmethod
-    def describe_collect(self) -> SyncOrAsync[Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]]]:
+    def describe_collect(self) -> SyncOrAsync[Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
         Since a flyer can potentially return more than one event stream, this is either
@@ -352,15 +346,18 @@ class EventPageCollectable(Collectable, Protocol):
         ...
 
 
+T_co = TypeVar("T_co", contravariant=True)
+
+
 @runtime_checkable
-class Movable(Protocol):
+class Movable(Protocol[T_co]):
     @abstractmethod
-    def set(self, value) -> Status:
+    def set(self, value: T_co) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
 
-class Location(TypedDict, Generic[T]):
+class Location(Generic[T], TypedDict):
     """A dictionary containing the location of a Device"""
 
     #: Where the Device was requested to move to
@@ -370,9 +367,9 @@ class Location(TypedDict, Generic[T]):
 
 
 @runtime_checkable
-class Locatable(Movable, Protocol):
+class Locatable(Movable[T], Protocol):
     @abstractmethod
-    def locate(self) -> SyncOrAsync[Location]:
+    def locate(self) -> SyncOrAsync[Location[T]]:
         """Return the current location of a Device.
 
         While a ``Readable`` reports many values, a ``Movable`` will have the
@@ -404,7 +401,7 @@ class Stageable(Protocol):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     @abstractmethod
-    def stage(self) -> Union[Status, List[Any]]:
+    def stage(self) -> Union[Status, list[Any]]:
         """An optional hook for "setting up" the device for acquisition.
 
         It should return a ``Status`` that is marked done when the device is
@@ -413,7 +410,7 @@ class Stageable(Protocol):
         ...
 
     @abstractmethod
-    def unstage(self) -> Union[Status, List[Any]]:
+    def unstage(self) -> Union[Status, list[Any]]:
         """A hook for "cleaning up" the device after acquisition.
 
         It should return a ``Status`` that is marked done when the device is finished
@@ -458,13 +455,13 @@ class Stoppable(Protocol):
         ...
 
 
-Callback = Callable[[Dict[str, Reading]], None]
+Callback = Callable[[dict[str, Reading[T]]], None]
 
 
 @runtime_checkable
-class Subscribable(HasName, Protocol):
+class Subscribable(HasName, Protocol[T]):
     @abstractmethod
-    def subscribe(self, function: Callback) -> None:
+    def subscribe(self, function: Callback[T]) -> None:
         """Subscribe to updates in value of a device.
 
         When the device has a new value ready, it should call ``function``
@@ -475,15 +472,15 @@ class Subscribable(HasName, Protocol):
         ...
 
     @abstractmethod
-    def clear_sub(self, function: Callback) -> None:
+    def clear_sub(self, function: Callback[T]) -> None:
         """Remove a subscription."""
         ...
 
 
 @runtime_checkable
-class Checkable(Protocol):
+class Checkable(Protocol[T_co]):
     @abstractmethod
-    def check_value(self, value: Any) -> SyncOrAsync[None]:
+    def check_value(self, value: T_co) -> SyncOrAsync[None]:
         """Test for a valid setpoint without actually moving.
 
         This should accept the same arguments as ``set``. It should raise an
@@ -505,11 +502,11 @@ class Hints(TypedDict, total=False):
     """A dictionary of optional hints for visualization"""
 
     #: A list of the interesting fields to plot
-    fields: List[str]
+    fields: list[str]
     #: Partition fields (and their stream name) into dimensions for plotting
     #:
     #: ``'dimensions': [(fields, stream_name), (fields, stream_name), ...]``
-    dimensions: List[Tuple[List[str], str]]
+    dimensions: list[tuple[list[str], str]]
     #: Include this if scan data is sampled on a regular rectangular grid
     gridding: Literal["rectilinear", "rectilinear_nonsequential"]
 
@@ -529,13 +526,13 @@ class HasHints(HasName, Protocol):
 
 
 @runtime_checkable
-class NamedMovable(Movable, HasHints, Protocol):
+class NamedMovable(Movable[T_co], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
     ...
 
 
-def check_supports(obj: T, protocol: Type[Any]) -> T:
+def check_supports(obj: T, protocol: type[Any]) -> T:
     """Check that an object supports a protocol
 
     This exists so that multiple protocol checks can be run in a mypy

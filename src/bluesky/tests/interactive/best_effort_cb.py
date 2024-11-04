@@ -1,6 +1,7 @@
 # %matplotlib qt5
 import shutil
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np

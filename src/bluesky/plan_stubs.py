@@ -4,20 +4,13 @@ import time
 import typing
 import uuid
 import warnings
+from collections.abc import Awaitable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
 from typing import (
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    Hashable,
-    Iterable,
-    List,
     Literal,
-    Mapping,
     Optional,
-    Sequence,
-    Tuple,
     Union,
 )
 
@@ -75,7 +68,7 @@ TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]
 @plan
 def declare_stream(
     *objs: Readable, name: str, collect: bool = False
-) -> MsgGenerator[Tuple[EventDescriptor, ComposeEvent]]:
+) -> MsgGenerator[tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
 
@@ -185,7 +178,7 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
 @typing.overload
 def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
 @typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> List[Location]: ...
+def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
 @plan
 def locate(*objs, squeeze=True):
     """
@@ -361,10 +354,10 @@ def rel_set(
 
 @plan
 def mv(
-    *args: Tuple[Union[Movable, NamedMovable, Any], ...],
+    *args: tuple[Union[Movable, NamedMovable, Any], ...],
     group: Optional[Hashable] = None,
     **kwargs,
-) -> MsgGenerator[Tuple[Status, ...]]:
+) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -410,8 +403,8 @@ mov = mv  # synonym
 
 @plan
 def mvr(
-    *args: Tuple[Union[Movable, NamedMovable, Any], ...], group: Optional[Hashable] = None, **kwargs
-) -> MsgGenerator[Tuple[Status, ...]]:
+    *args: tuple[Union[Movable, NamedMovable, Any], ...], group: Optional[Hashable] = None, **kwargs
+) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
@@ -854,7 +847,7 @@ def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kw
     """
     objs = [check_supports(arg, Flyable) for arg in args]
     group = group or str(uuid.uuid4())
-    statuses: List[Status] = []
+    statuses: list[Status] = []
 
     for obj in objs:
         ret = yield Msg("kickoff", obj, group=group, **kwargs)
@@ -953,7 +946,7 @@ def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **
     """
     objs = [check_supports(arg, Flyable) for arg in args]
     group = group or str(uuid.uuid4())
-    statuses: List[Status] = []
+    statuses: list[Status] = []
 
     for obj in objs:
         ret = yield Msg("complete", obj, group=group, **kwargs)
@@ -967,7 +960,7 @@ def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **
 @plan
 def collect(
     obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: Optional[str] = None
-) -> MsgGenerator[List[PartialEvent]]:
+) -> MsgGenerator[list[PartialEvent]]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
 
@@ -1074,7 +1067,7 @@ def stage(
     *,
     group: Optional[Hashable] = None,
     wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, List[Any]]]:
+) -> MsgGenerator[Union[Status, list[Any]]]:
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
 
@@ -1159,7 +1152,7 @@ def unstage(
     *,
     group: Optional[Hashable] = None,
     wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, List[Any]]]:
+) -> MsgGenerator[Union[Status, list[Any]]]:
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
 
@@ -1666,7 +1659,7 @@ def one_1d_step(
 
 
 @plan
-def move_per_step(step: Mapping[Movable, Any], pos_cache: Dict[Movable, Any]) -> MsgGenerator[None]:
+def move_per_step(step: Mapping[Movable, Any], pos_cache: dict[Movable, Any]) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan without any readings
 
@@ -1698,7 +1691,7 @@ def move_per_step(step: Mapping[Movable, Any], pos_cache: Dict[Movable, Any]) ->
 def one_nd_step(
     detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
-    pos_cache: Dict[Movable, Any],
+    pos_cache: dict[Movable, Any],
     take_reading: Optional[TakeReading] = None,
 ) -> MsgGenerator[None]:
     """

@@ -3,7 +3,7 @@ import sys
 import time
 from functools import partial
 from threading import RLock
-from typing import Any, List, Optional, TextIO
+from typing import Any, Optional, TextIO
 
 import numpy as np
 from IPython.core.display import HTML
@@ -15,13 +15,13 @@ from bluesky.utils import ProgressBarBase, ProgressBarManager, _L2norm
 
 
 class NotebookProgressBar(ProgressBarBase):
-    containers: List[HBox]
-    status_objs: List[Any]
+    containers: list[HBox]
+    status_objs: list[Any]
     fp: TextIO
     creation_time: float
     lock: RLock
 
-    def __init__(self, status_objs: List[Any], delay_draw: float = 0.2):
+    def __init__(self, status_objs: list[Any], delay_draw: float = 0.2):
         """
         Represents status objects with Jupyter Notebook progress bars.
 

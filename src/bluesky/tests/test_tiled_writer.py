@@ -1,4 +1,6 @@
-from typing import Dict, Iterator, Optional, Tuple
+import os
+from collections.abc import Iterator
+from typing import Optional
 
 import h5py
 import numpy as np
@@ -63,8 +65,8 @@ class Named(HasName):
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
-    def _get_hdf5_stream(self, data_key: str, index: int) -> Tuple[StreamResource, StreamDatum]:
-        file_path = self.root + "/dataset.h5"
+    def _get_hdf5_stream(self, data_key: str, index: int) -> tuple[StreamResource, StreamDatum]:
+        file_path = os.path.join(self.root, "dataset.h5")
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
         data_shape = tuple(data_desc["shape"])
@@ -78,7 +80,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
-                uri="file://localhost" + file_path,
+                uri="file://localhost/" + file_path,
                 spec="AD_HDF5_SWMR_STREAM",
                 mimetype="application/x-hdf5",
                 uid=uid,
@@ -110,7 +112,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         return stream_resource, stream_datum
 
-    def _get_tiff_stream(self, data_key: str, index: int) -> Tuple[StreamResource, StreamDatum]:
+    def _get_tiff_stream(self, data_key: str, index: int) -> tuple[StreamResource, StreamDatum]:
         file_path = self.root
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
@@ -122,7 +124,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                     parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
-                    uri="file://localhost" + self.root + "/",
+                    uri="file://localhost/" + self.root + "/",
                     spec="AD_TIFF",
                     mimetype="multipart/related;type=image/tiff",
                     uid=uid,
@@ -139,25 +141,37 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
             # Write a tiff file
             data = np.random.randint(0, 255, data_shape, dtype="uint8")
-            tf.imwrite(file_path + f"/{self.counter:05}.tif", data)
+            tf.imwrite(os.path.join(file_path, f"{self.counter:05}.tif"), data)
 
         return stream_resource, stream_datum
 
-    def describe(self) -> Dict[str, DataKey]:
+    def describe(self) -> dict[str, DataKey]:
         """Describe datasets which will be backed by StreamResources"""
         return {
             f"{self.name}-sd1": DataKey(
-                source="file", dtype="number", dtype_numpy="float64", shape=[1], external="STREAM:"
+                source="file",
+                dtype="number",
+                dtype_numpy=np.dtype("float64").str,
+                shape=[1],
+                external="STREAM:",
             ),
             f"{self.name}-sd2": DataKey(
-                source="file", dtype="array", dtype_numpy="float64", shape=[10, 15], external="STREAM:"
+                source="file",
+                dtype="array",
+                dtype_numpy=np.dtype("float64").str,
+                shape=[10, 15],
+                external="STREAM:",
             ),
             f"{self.name}-sd3": DataKey(
-                source="file", dtype="array", dtype_numpy="uint8", shape=[5, 7, 4], external="STREAM:"
+                source="file",
+                dtype="array",
+                dtype_numpy=np.dtype("uint8").str,
+                shape=[5, 7, 4],
+                external="STREAM:",
             ),
         }
 
-    def describe_collect(self) -> Dict[str, DataKey]:
+    def describe_collect(self) -> dict[str, DataKey]:
         return self.describe()
 
     def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:
@@ -181,7 +195,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         """Report how many frames were written"""
         return self.counter
 
-    def read(self) -> Dict[str, Reading]:
+    def read(self) -> dict[str, Reading]:
         """Produce an empty event"""
         return {}
 
@@ -237,7 +251,7 @@ def test_stream_datum_collectable(RE, client, tmp_path):
 def test_handling_non_stream_resource(RE, client, tmp_path):
     det = SynSignalWithRegistry(
         func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
-        dtype_numpy="uint8",
+        dtype_numpy=np.dtype("uint8").str,
         name="img",
         labels={"detectors"},
         save_func=tf.imwrite,
