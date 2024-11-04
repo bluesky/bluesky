@@ -464,7 +464,7 @@ Callback = Callable[[Dict[str, Reading]], None]
 @runtime_checkable
 class Subscribable(HasName, Protocol):
     @abstractmethod
-    def subscribe(self, function: Callback, run: bool = True) -> None:
+    def subscribe(self, function: Callback, *, run: bool = True) -> None:
         """Subscribe to updates in value of a device.
 
         When the device has a new value ready, it should call ``function``
