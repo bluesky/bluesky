@@ -1,6 +1,7 @@
 import collections
 import dataclasses
 import enum
+import os
 from typing import Any, Optional
 
 import numpy as np
@@ -271,21 +272,24 @@ class HDF5Consolidator(ConsolidatorBase):
         return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
 
 
-class TIFFConsolidator(ConsolidatorBase):
-    supported_mimetypes = {"multipart/related;type=image/tiff"}
-
-    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+class MultipartRelatedConsolidator(ConsolidatorBase):
+    def __init__(
+        self, permitted_extensions: set[str], stream_resource: StreamResource, descriptor: EventDescriptor
+    ):
         super().__init__(stream_resource, descriptor)
+        self.permitted_extensions: set[str] = permitted_extensions
         self.data_uris: list[str] = []
+        self.template = self._sres_parameters["template"]
 
     def get_datum_uri(self, indx: int):
-        """Return a full uri for a datum (an individual TIFF file) based on its index in the sequence.
+        """Return a full uri for a datum (an individual image file) based on its index in the sequence.
 
         This relies on the `template` parameter passed in the StreamResource, which is a string either in the "new"
         Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
-        integer index, e.g. "{:05d}.tif".
+        integer index, e.g. "{:05d}.ext".
         """
-        return self.uri + self._sres_parameters["template"].format(indx)
+        assert os.path.splitext(self.template)[1] in self.permitted_extensions
+        return self.uri + self.template.format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
         # Determine the indices in the names of tiff files from indices of frames and number of frames per file
@@ -305,9 +309,24 @@ class TIFFConsolidator(ConsolidatorBase):
         super().consume_stream_datum(doc)
 
 
+class TIFFConsolidator(MultipartRelatedConsolidator):
+    supported_mimetypes = {"multipart/related;type=image/tiff"}
+
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        super().__init__({".tif", ".tiff"}, stream_resource, descriptor)
+
+
+class JPEGConsolidator(MultipartRelatedConsolidator):
+    supported_mimetypes = {"multipart/related;type=image/jpeg"}
+
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        super().__init__({".jpeg", ".jpg"}, stream_resource, descriptor)
+
+
 CONSOLIDATOR_REGISTRY = {
     "application/x-hdf5": HDF5Consolidator,
     "multipart/related;type=image/tiff": TIFFConsolidator,
+    "multipart/related;type=image/jpeg": JPEGConsolidator,
 }
 
 
