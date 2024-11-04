@@ -23,6 +23,7 @@ from warnings import warn
 import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
+from event_model import Dtype, EventDescriptor
 from matplotlib.axis import Axis
 
 from .core import LiveTable, make_class_safe
@@ -61,7 +62,7 @@ class BestEffortCallback(QtAwareCallback):
         super().__init__(**kwargs)
         # internal state
         self._start_doc = None
-        self._descriptors = {}
+        self._descriptors: dict[str, EventDescriptor] = {}
         self._table = None
         self._heading_enabled = True
         self._table_enabled = table_enabled
@@ -70,14 +71,14 @@ class BestEffortCallback(QtAwareCallback):
         # axes supplied from outside
         self._fig_factory = fig_factory or partial(plt.figure, layout="constrained")
         # maps descriptor uid to dict which maps data key to LivePlot instance
-        self._live_plots = {}
-        self._live_grids = {}
-        self._live_scatters = {}
-        self._peak_stats = {}  # same structure as live_plots
+        self._live_plots: dict[str, dict[str, LivePlotPlusPeaks]] = {}
+        self._live_grids: dict[str, LiveGrid] = {}
+        self._live_scatters: dict[str, LiveScatter] = {}
+        self._peak_stats: dict[str, dict[str, LivePlotPlusPeaks]] = {}  # same structure as live_plots
         self._label_format = label_format or default_label_format
         self._calc_derivative_and_stats = calc_derivative_and_stats
         self._cleanup_motor_heuristic = False
-        self._stream_names_seen = set()
+        self._stream_names_seen: set[str] = set()
 
         # public options
         self.overplot = True
@@ -183,7 +184,7 @@ class BestEffortCallback(QtAwareCallback):
             )
             print("Persistent Unique Scan ID: '{0}'".format(self._start_doc["uid"]))  # noqa: UP030
 
-    def _set_up_plots(self, doc, stream_name, columns):
+    def _set_up_plots(self, doc: EventDescriptor, stream_name, columns: list):
         """Using the descriptor doc"""
         plot_data = True
 
@@ -194,7 +195,7 @@ class BestEffortCallback(QtAwareCallback):
         if not columns:
             plot_data = False
         if (
-            (self._start_doc.get("num_points") == 1)
+            (self._start_doc is not None and self._start_doc.get("num_points") == 1)
             and (stream_name == self.dim_stream)
             and self.omit_single_point_plot
         ):
@@ -241,30 +242,28 @@ class BestEffortCallback(QtAwareCallback):
 
             if not fig.axes:
                 if len(columns) < 5:
-                    layout = (len(columns), 1)
+                    ncols = len(columns)
+                    nrows = 1
                 else:
                     nrows = ncols = int(np.ceil(np.sqrt(len(columns))))
                     while (nrows - 1) * ncols >= len(columns):
                         nrows -= 1
-                    layout = (nrows, ncols)
-                if ndims == 1:
-                    share_kwargs = {"sharex": True}
-                elif ndims == 2:
-                    share_kwargs = {"sharex": True, "sharey": True}
-                else:
+
+                if ndims not in [1, 2]:
                     raise NotImplementedError("we now support 3D?!")
 
-                fig_size = np.array(layout[::-1]) * 5
+                fig_size = np.array((ncols, nrows)[::-1]) * 5
                 fig.set_size_inches(*fig_size)
-                axes_grid = fig.subplots(*map(int, layout), **share_kwargs)
+                share_y_axis = ndims == 2
+                axes_grid = fig.subplots(ncols=int(ncols), nrows=int(nrows), sharex=True, sharey=share_y_axis)
                 for ax in fig.axes[len(columns) :]:
                     ax.set_visible(False)
 
                 if len(fig.axes) > 1 and len(axes_grid.shape) == 2:
                     # Axes go left to right, top to bottom, and will make some labels invisible
-                    for i in range(int(layout[1])):
-                        if axes_grid[-1, i].get_visible() is False:
-                            axes_grid[-2, i].tick_params(axis="x", labelbottom=True)
+                    for row in range(int(nrows)):
+                        if axes_grid[-1, row].get_visible() is False:
+                            axes_grid[-2, row].tick_params(axis="x", labelbottom=True)
 
             axes = fig.axes
 
@@ -275,7 +274,7 @@ class BestEffortCallback(QtAwareCallback):
                 self._peak_stats[doc["uid"]] = {}
                 (x_key,) = dim_fields
                 for y_key, ax in zip(columns, axes):
-                    dtype = doc["data_keys"][y_key]["dtype"]
+                    dtype: Dtype = doc["data_keys"][y_key]["dtype"]
                     if dtype not in ("number", "integer"):
                         warn(
                             f"Omitting {y_key} from plot because dtype is {dtype}",
@@ -307,6 +306,7 @@ class BestEffortCallback(QtAwareCallback):
             elif ndims == 2:
                 # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
                 # safer one to use, so it is the fallback..
+                assert self._start_doc is not None, "Start doc should already be here"
                 gridding = self._start_doc.get("hints", {}).get("gridding")
                 if gridding == "rectilinear":
                     self._live_grids[doc["uid"]] = {}
