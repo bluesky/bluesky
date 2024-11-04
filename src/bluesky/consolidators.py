@@ -2,7 +2,7 @@ import collections
 import dataclasses
 import enum
 import os
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
