@@ -100,15 +100,17 @@ def test_live_grid(RE, hw):
 def test_many_grids(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
-    RE(grid_scan([hw.det1, hw.det2, hw.det3, hw.det4, hw.det5], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
+    dets = [hw.det1, hw.det2, hw.det3, hw.det4, hw.det5]
+    RE(grid_scan(dets, hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
     # Exactly 3 Live plots should have x tick labels in a 3 column grid
-    assert sum([bool(lg.ax.get_xticklabels()) for lg in list(bec._live_grids.values())[0].values()]) == 3
+    live_grids = list(bec._live_grids.values())
+    assert sum([bool(lg.ax.get_xticklabels()) for lg in live_grids[0].values()]) == 3
     # Exactly 5 axes should be visible of the 6 in the figure (ignoring color bars)
     assert (
         sum(
             [
                 bool(ax.get_visible())
-                for ax in list(list(bec._live_grids.values())[0].values())[0].ax.figure.axes
+                for ax in list(live_grids[0].values())[0].ax.figure.axes
                 if ax.get_label() != "<colorbar>"
             ]
         )

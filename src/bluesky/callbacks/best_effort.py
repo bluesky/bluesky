@@ -616,7 +616,7 @@ class LivePlotPlusPeaks(LivePlot):
 
                 def toggle(event):
                     if event.key == "P":
-                        self.__visible[ax] = ~self.__visible[ax]
+                        self.__visible[ax] = not self.__visible[ax]
                         for instance in self.__instances[ax]:
                             instance.check_visibility()
 
