@@ -1114,9 +1114,11 @@ class RunEngine:
                             plan_return = self._task_fut.result()
                         except concurrent.futures.CancelledError:
                             plan_return = self.NO_PLAN_RETURN
-                        return plan_return  # noqa: B012
                     else:
-                        return self.NO_PLAN_RETURN
+                        plan_return = self.NO_PLAN_RETURN
+                else:
+                    plan_return = None
+            return plan_return
 
     def install_suspender(self, suspender):
         """
