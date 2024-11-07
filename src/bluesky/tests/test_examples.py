@@ -22,6 +22,7 @@ from bluesky.examples import (
     wait_multiple,
     wait_one,
 )
+from bluesky.tests import uses_os_kill_sigint
 
 from .utils import _careful_event_set, _fabricate_asycio_event
 
@@ -310,6 +311,7 @@ def test_suspend(RE, hw):
     assert RE.state == "idle"
 
 
+@uses_os_kill_sigint
 def test_pause_resume(RE):
     from bluesky.utils import ts_msg_hook
 
@@ -354,6 +356,7 @@ def test_pause_resume(RE):
     assert stop - start > 2
 
 
+@uses_os_kill_sigint
 def test_pause_abort(RE):
     ev = _fabricate_asycio_event(RE.loop)
 
@@ -397,6 +400,7 @@ def test_pause_abort(RE):
     assert stop - start < 1
 
 
+@uses_os_kill_sigint
 def test_abort(RE):
     ev = _fabricate_asycio_event(RE.loop)
 

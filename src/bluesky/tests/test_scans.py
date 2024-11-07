@@ -520,9 +520,9 @@ def test_wait_for(RE):
         ),
     ]
     RE.loop.call_soon_threadsafe(RE.loop.call_later, 2, done)
-    start = ttime.time()
+    start = ttime.monotonic()
     RE(scan)
-    stop = ttime.time()
+    stop = ttime.monotonic()
     assert stop - start >= 2
 
 

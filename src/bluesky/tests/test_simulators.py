@@ -1,8 +1,9 @@
 import uuid
+from collections.abc import Generator
 from functools import partial
 from math import isclose
 from time import time
-from typing import Any, Generator
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest

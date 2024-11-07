@@ -4,9 +4,10 @@ import os
 import sys
 import time
 from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 from cycler import Cycler
@@ -41,7 +42,7 @@ PerStepND = Callable[
     [
         Sequence[Readable],
         Mapping[Movable, Any],
-        Dict[Movable, Any],
+        dict[Movable, Any],
         Optional[bps.TakeReading],
     ],
     MsgGenerator,
@@ -54,7 +55,7 @@ def _check_detectors_type_input(detectors):
         raise TypeError("The input argument must be either as a list or a tuple of Readable objects.")
 
 
-def derive_default_hints(motors: List[Any]) -> Dict[str, Sequence]:
+def derive_default_hints(motors: list[Any]) -> dict[str, Sequence]:
     x_fields = [field for motor in motors for field in get_hinted_fields(motor)]
 
     default_dimensions = [(x_fields, "primary")] if x_fields else []
@@ -130,7 +131,7 @@ def count(
 
 def list_scan(
     detectors: Sequence[Readable],
-    *args: Tuple[Union[Movable, Any], List[Any]],
+    *args: tuple[Union[Movable, Any], list[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -175,7 +176,7 @@ def list_scan(
 
     # set some variables and check that all lists are the same length
     lengths = {}
-    motors: List[Any] = []
+    motors: list[Any] = []
     pos_lists = []
     length = None
     for motor, pos_list in partition(2, args):
@@ -1154,7 +1155,7 @@ def scan_nd(
                 "<Signature (detectors, motor, step)>. \n"
                 f"per_step signature received: {sig}"
             )
-    pos_cache: Dict = defaultdict(lambda: None)  # where last position is stashed
+    pos_cache: dict = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
 
@@ -1278,7 +1279,7 @@ def scan(
 
     default_dimensions = [(x_fields, "primary")]
 
-    default_hints: Dict[str, Sequence] = {}
+    default_hints: dict[str, Sequence] = {}
     if len(x_fields) > 0:
         default_hints.update(dimensions=default_dimensions)
 
@@ -2304,7 +2305,7 @@ def ramp_plan(
 
 
 def fly(
-    flyers: List[Flyable],
+    flyers: list[Flyable],
     *,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:

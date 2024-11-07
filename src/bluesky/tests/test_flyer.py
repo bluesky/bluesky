@@ -1,7 +1,6 @@
 import functools
 from collections import defaultdict
 from time import time
-from typing import Dict
 
 import pytest
 from event_model.documents.event import PartialEvent
@@ -85,7 +84,7 @@ def test_collect_while_completing_plan_trivial_case(RE):
     flyer = SlowFlyer()
     docs = defaultdict(list)
 
-    def assert_emitted(docs: Dict[str, list], **numbers: int):
+    def assert_emitted(docs: dict[str, list], **numbers: int):
         assert list(docs) == list(numbers)
         assert {name: len(d) for name, d in docs.items()} == numbers
 

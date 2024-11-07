@@ -1,5 +1,6 @@
 import re
-from typing import Dict, Iterator, Optional
+from collections.abc import Iterator
+from typing import Optional
 
 import pytest
 from event_model.documents import Datum
@@ -77,7 +78,7 @@ class Named(HasName):
         self.counter = 0
 
 
-def describe_datum(self: Named) -> Dict[str, DataKey]:
+def describe_datum(self: Named) -> dict[str, DataKey]:
     """Describe a single data key backed with Resource"""
     return {f"{self.name}-datum": DataKey(source="file", dtype="number", shape=[1000, 1500], external="OLD:")}
 
@@ -100,7 +101,7 @@ def collect_asset_docs_datum(self) -> Iterator[Asset]:
     yield "datum", datum
 
 
-def read_datum(self: Named) -> Dict[str, Reading]:
+def read_datum(self: Named) -> dict[str, Reading]:
     """Read a single reference to a Datum"""
     return {f"{self.name}-datum": {"value": "RESOURCEUID/1", "timestamp": 456}}
 
@@ -113,7 +114,7 @@ class DatumReadable(Named, Readable, WritesExternalAssets):
     collect_asset_docs = collect_asset_docs_datum
 
 
-def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
+def describe_stream_datum(self: Named) -> dict[str, DataKey]:
     """Describe 2 datasets which will be backed by StreamResources"""
     return {
         f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1000, 1500], external="STREAM:"),
@@ -153,17 +154,17 @@ def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) ->
     self.counter += index
 
 
-def read_empty(self) -> Dict[str, Reading]:
+def read_empty(self) -> dict[str, Reading]:
     """Produce an empty event"""
     return {}
 
 
-def describe_pv(self: Named) -> Dict[str, DataKey]:
+def describe_pv(self: Named) -> dict[str, DataKey]:
     """Describe a single data_key backed by a PV value"""
     return {f"{self.name}-pv": DataKey(source="pv", dtype="number", shape=[])}
 
 
-def read_pv(self: Named) -> Dict[str, Reading]:
+def read_pv(self: Named) -> dict[str, Reading]:
     """Read a single data_key from a PV"""
     return {f"{self.name}-pv": Reading(value=5.8, timestamp=123)}
 
@@ -185,7 +186,7 @@ class PvAndStreamDatumReadable(Named, Readable, WritesStreamAssets):
     get_index = get_index
 
 
-def describe_collect_old_pv(self) -> Dict[str, Dict[str, DataKey]]:
+def describe_collect_old_pv(self) -> dict[str, dict[str, DataKey]]:
     """Doubly nested old describe format with 2 pvs in each stream"""
     return {
         stream: {f"{stream}-{pv}": DataKey(source="pv", dtype="number", shape=[]) for pv in ["pv1", "pv2"]}
@@ -261,7 +262,7 @@ class OldPvAndDatumCollectable(Named, EventCollectable, WritesExternalAssets):
     collect_asset_docs = collect_asset_docs_datum
 
 
-def describe_collect_pv(self: Named) -> Dict[str, Dict[str, DataKey]]:
+def describe_collect_pv(self: Named) -> dict[str, dict[str, DataKey]]:
     """New style describe collect with 2 PVs"""
     return {f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[]) for pv in ["pv1", "pv2"]}
 
