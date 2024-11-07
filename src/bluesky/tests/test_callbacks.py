@@ -653,6 +653,7 @@ def test_in_plan_qt_callback(RE, hw):
 
     RE(my_plan())
 
+
 def test_errorbars_created_if_yerr_is_given():
     _, ax = plt.subplots()
     ax.errorbar = MagicMock()
