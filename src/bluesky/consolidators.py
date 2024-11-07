@@ -254,6 +254,24 @@ class ConsolidatorBase:
         return adapter_factory(**adapter_kwargs)
 
 
+class CSVConsolidator(ConsolidatorBase):
+    supported_mimetypes: Set[str] = {"text/csv;header=absent"}
+
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        super().__init__(stream_resource, descriptor)
+        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uris"))
+        self.swmr = self._sres_parameters.get("swmr", True)
+
+    @property
+    def adapter_parameters(self) -> Dict:
+        """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
+
+        dataset: List[str] - a path to the dataset within the hdf5 file represented as list split at `/`
+        swmr: bool -- True to enable the single writer / multiple readers regime
+        """
+        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+
+
 class HDF5Consolidator(ConsolidatorBase):
     supported_mimetypes = {"application/x-hdf5"}
 
@@ -348,6 +366,7 @@ class TIFFConsolidator(ConsolidatorBase):
 CONSOLIDATOR_REGISTRY = collections.defaultdict(
     lambda: ConsolidatorBase,
     {
+        "text/csv;header=absent": CSVConsolidator,
         "application/x-hdf5": HDF5Consolidator,
         "multipart/related;type=image/tiff": TIFFConsolidator,
     },
