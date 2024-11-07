@@ -228,31 +228,14 @@ class ConsolidatorBase:
 
         # User-provided adapters take precedence over defaults.
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
-        adapter_factory = all_adapters_by_mimetype[self.mimetype]
-
-        # Construct kwargs to pass to Adapter.
-        parameters = collections.defaultdict(list)
-        for asset in self.assets:
-            if asset.parameter is None:
-                # This asset is not directly opened by the Adapter. It is used indirectly, such as the case of HDF5
-                # virtual dataset 'data' files are referenced from 'master' files.
-                continue
-            if asset.num is None:
-                # This parameters takes the URI as a scalar value.
-                parameters[asset.parameter] = asset.data_uri
-            else:
-                # This parameters takes a list of URIs.
-                parameters[asset.parameter].append(asset.data_uri)
-
-        parameters["structure"] = ArrayStructure(
+        adapter_class = all_adapters_by_mimetype[self.mimetype]
+        structure = ArrayStructure(
             data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
             shape=self.shape,
             chunks=self.chunks,
         )
-        adapter_kwargs = dict(parameters)
-        adapter_kwargs.update(self.adapter_parameters)
 
-        return adapter_factory(**adapter_kwargs)
+        return adapter_class.from_assets(self.assets, structure=structure, **self.adapter_parameters)
 
 
 class CSVConsolidator(ConsolidatorBase):
@@ -261,7 +244,6 @@ class CSVConsolidator(ConsolidatorBase):
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uris"))
-        self.swmr = self._sres_parameters.get("swmr", True)
 
     @property
     def adapter_parameters(self) -> dict:
