@@ -99,6 +99,8 @@ class _RunWriter(CallbackBase):
             doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[doc.get("spec")]
         if "parameters" not in doc.keys():
             doc["parameters"] = doc.pop("resource_kwargs", {})
+        if doc["mimetype"] == "application/x-hdf5":
+            doc["parameters"]["dataset"] = doc["parameters"].pop("path", doc["parameters"].pop("dataset", ""))
         if "uri" not in doc.keys():
             file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
             doc["uri"] = "file://localhost/" + file_path
