@@ -262,7 +262,7 @@ def test_handling_non_stream_resource(RE, client, tmp_path):
     tw = TiledWriter(client)
     RE(bp.count([det], 3), tw)
     extr = client.values().last()["primary"]["external"]["img"]
-    intr = client.values().last()["primary"]["internal"]["events"]
+    intr = client.values().last()["primary"]["internal"]
     conf = client.values().last()["primary"]["config"]["img"]
 
     assert extr.shape == (3, 10, 15)

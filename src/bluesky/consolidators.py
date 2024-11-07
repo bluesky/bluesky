@@ -300,8 +300,9 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         self.data_uris: list[str] = []
         self.chunk_shape = self.chunk_shape or (1,)  # Assume one frame (chunk) per tiff file
 
-        # Normalize filename template
-        # self.template = self._sres_parameters["template"]
+        # Normalize filename template:
+        # Convert the template string from "old" to "new" Python style
+        # e.g. "%s%s_%06d.tif" to "filename_{:06d}.tif"
         def int_replacer(match):
             flags, width, precision, type_char = match.groups()
 
@@ -333,9 +334,11 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
             self._sres_parameters["template"]
             .replace("%s", "{:s}", 1)
             .replace("%s", "")
-            .format(self._sres_parameters.get("filename", ""))
+            .replace("%s", self._sres_parameters.get("filename", ""), 1)
         )
         self.template = re.sub(r"%([-+#0 ]*)(\d+)?(?:\.(\d+))?([d])", int_replacer, self.template)
+
+        # self.template = self._sres_parameters["template"]
 
     def get_datum_uri(self, indx: int):
         """Return a full uri for a datum (an individual image file) based on its index in the sequence.
