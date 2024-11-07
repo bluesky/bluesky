@@ -143,7 +143,7 @@ class LiveFit(CallbackBase):
             kwargs.update(self.independent_vars_data)
             kwargs.update(self.init_guess)
             self.result = self.model.fit(
-                self.ydata, weights=None if self.yerr is None else self.weight_data, **kwargs
+                data=self.ydata, weights=None if self.yerr is None else self.weight_data, **kwargs
             )
             self.__stale = False
 

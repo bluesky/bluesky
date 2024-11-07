@@ -3,7 +3,9 @@ from collections import defaultdict
 from io import StringIO
 from itertools import permutations
 from unittest.mock import MagicMock
+import warnings
 
+import lmfit
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -652,3 +654,62 @@ def test_in_plan_qt_callback(RE, hw):
         return (yield from plan)
 
     RE(my_plan())
+
+
+def test_model_called_with_weights_if_yerr_is_given():
+    model = lmfit.Model(lambda x: x)
+    model.fit = MagicMock()
+    lf = LiveFit(model, y="y", independent_vars={"x":"x"}, yerr="yerr")
+
+    x = 1
+    y = 2
+    yerr = 3
+
+    lf.event(
+        {
+            "data": {  # type: ignore
+                "y": y,
+                "x": x,
+                "yerr": yerr,
+            }
+        }
+    )
+
+    model.fit.assert_called_with([y], weights=[1 / yerr], x=[1])
+
+
+def test_warning_given_if_yerr_is_0():
+    model = lmfit.Model(lambda x: x)
+    model.fit = MagicMock()
+    lf = LiveFit(model, y="y", independent_vars={"x":"x"}, yerr="yerr")
+
+    x = 1.0
+    y = 2.0
+    yerr = 0.0
+
+    with warnings.catch_warnings(record=True) as w:
+        lf.event(
+            {
+                "data": {  # type: ignore
+                    "y": y,
+                    "x": x,
+                    "yerr": yerr,
+                }
+            }
+        )
+
+        model.fit.assert_called_with(data=[y], weights=[yerr], x=[x])
+        assert len(w) == 1
+        assert f"standard deviation for {y} is 0, therefore applying weight of 0 on fit" in str(
+            w[-1].message
+        )
+
+
+def test_warning_if_no_y_data():
+    with warnings.catch_warnings(record=True) as w:
+        model = lmfit.Model(lambda x: x)
+        lf = LiveFit(model, y="y", independent_vars={"x":"x"}, yerr="yerr")
+        lf.update_fit()
+
+        assert len(w) == 1
+        assert "LiveFitPlot cannot update fit until there are at least" in str(w[-1].message)
