@@ -256,7 +256,7 @@ class CSVConsolidator(ConsolidatorBase):
 
     @property
     def adapter_parameters(self) -> dict:
-        return {**self._sres_parameters, "dtype": self.data_type.to_numpy_descr()}
+        return {**self._sres_parameters}
 
 
 class HDF5Consolidator(ConsolidatorBase):
@@ -323,8 +323,6 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
             .replace("%s", self._sres_parameters.get("filename", ""), 1)
         )
         self.template = re.sub(r"%([-+#0 ]*)(\d+)?(?:\.(\d+))?([d])", int_replacer, self.template)
-
-        # self.template = self._sres_parameters["template"]
 
     def get_datum_uri(self, indx: int):
         """Return a full uri for a datum (an individual image file) based on its index in the sequence.
