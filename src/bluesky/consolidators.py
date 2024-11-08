@@ -3,13 +3,12 @@ import dataclasses
 import enum
 import os
 import re
-from copy import deepcopy
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
 from tiled.mimetypes import DEFAULT_ADAPTERS_BY_MIMETYPE
-from tiled.structures.array import ArrayStructure, BuiltinDtype
+from tiled.structures.array import ArrayStructure, BuiltinDtype, StructDtype
 
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
@@ -92,20 +91,30 @@ class ConsolidatorBase:
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
-        # Get data type. From highest precedent to lowest:
-        # 1. Try 'dtype_numpy', optional in the document schema.
-        # 2. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
-        # 3. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
+
+        # Determine data type. From highest precedent to lowest:
+        # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
+        # 2. Try 'dtype_numpy', optional in the document schema.
+        # 3. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
+        # 4. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
         #    and make a best effort to convert it to a numpy spec like '<u8'.
-        # 4. If unable to do any of the above, pass through whatever string is in 'dtype'.
-        self.dtype = np.dtype(
-            data_desc.get("dtype_numpy")  # standard location
+        # 5. If unable to do any of the above, pass through whatever string is in 'dtype'.
+        self.data_type: Optional[Union[BuiltinDtype, StructDtype]]
+        dtype_numpy = np.dtype(
+            list(map(tuple, data_desc.get("dtype_descr", [])))  # fileds of structural dtype
+            or data_desc.get("dtype_numpy")  # standard location
             or data_desc.get(
                 "dtype_str",  # legacy location
                 # try to guess numpy dtype from JSON type
                 DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
             )
         )
+        if dtype_numpy.kind == "V":
+            self.data_type = StructDtype.from_numpy_dtype(dtype_numpy)
+        else:
+            self.data_type = BuiltinDtype.from_numpy_dtype(dtype_numpy)
+
+        # Set chunk (or partition) shape
         self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
         if 0 in self.chunk_shape:
             raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
@@ -182,6 +191,14 @@ class ConsolidatorBase:
         """
         return {}
 
+    @property
+    def structure(self) -> ArrayStructure:
+        return ArrayStructure(
+            data_type=self.data_type,
+            shape=self.shape,
+            chunks=self.chunks,
+        )
+
     def consume_stream_datum(self, doc: StreamDatum):
         """Process a new StreamDatum and update the internal data structure
 
@@ -210,11 +227,7 @@ class ConsolidatorBase:
             mimetype=self.mimetype,
             assets=self.assets,
             structure_family=StructureFamily.array,
-            structure=ArrayStructure(
-                data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
-                shape=self.shape,
-                chunks=self.chunks,
-            ),
+            structure=self.structure,
             parameters=self.adapter_parameters,
             management=Management.external,
         )
@@ -230,13 +243,8 @@ class ConsolidatorBase:
         # User-provided adapters take precedence over defaults.
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
-        structure = ArrayStructure(
-            data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
-            shape=self.shape,
-            chunks=self.chunks,
-        )
 
-        return adapter_class.from_assets(self.assets, structure=structure, **self.adapter_parameters)
+        return adapter_class.from_assets(self.assets, structure=self.structure, **self.adapter_parameters)
 
 
 class CSVConsolidator(ConsolidatorBase):
@@ -248,7 +256,7 @@ class CSVConsolidator(ConsolidatorBase):
 
     @property
     def adapter_parameters(self) -> dict:
-        return deepcopy(self._sres_parameters)
+        return {**self._sres_parameters, "dtype": self.data_type.to_numpy_dtype()}
 
 
 class HDF5Consolidator(ConsolidatorBase):
