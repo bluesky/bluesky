@@ -256,7 +256,7 @@ class CSVConsolidator(ConsolidatorBase):
 
     @property
     def adapter_parameters(self) -> dict:
-        return {**self._sres_parameters, "dtype": self.data_type.to_numpy_dtype()}
+        return {**self._sres_parameters, "dtype": self.data_type.to_numpy_descr()}
 
 
 class HDF5Consolidator(ConsolidatorBase):
