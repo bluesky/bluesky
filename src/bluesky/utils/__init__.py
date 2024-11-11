@@ -1664,8 +1664,7 @@ class DefaultDuringTask(DuringTask):
         if "matplotlib" in sys.modules:
             import matplotlib
 
-            backend = matplotlib.get_backend().lower()
-            if "qt" in backend:
+            if _qt_is_imported_app_available():
                 from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
 
                 initialize_qt_teleporter()
@@ -1683,7 +1682,7 @@ class DefaultDuringTask(DuringTask):
 
             backend = matplotlib.get_backend().lower()
             # if with a Qt backend, do the scary thing
-            if "qt" in backend:
+            if _qt_is_imported_app_available():
                 import functools
 
                 from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
@@ -1842,6 +1841,17 @@ class DefaultDuringTask(DuringTask):
                 # We are not using matplotlib + Qt. Just wait on the Event.
                 blocking_event.wait()
 
+
+def _qt_is_imported_app_available():
+    qt_modules_names = ["PyQt6.QtCore", "PySide6.QtCore", "PyQt5.QtCore", "PySide2.QtCore"]
+    try:
+        qt_core, *_ = (mod for mod in [sys.modules.get(name) for name in qt_modules_names] if mod is not None)
+    except TypeError:
+        return False
+    qapp = qt_core.QAppliaction.instance()
+    if qapp is None:
+        return False
+    return True
 
 def _rearrange_into_parallel_dicts(readings):
     data = {}
