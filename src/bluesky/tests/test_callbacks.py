@@ -674,4 +674,4 @@ def test_model_called_with_weights_if_yerr_is_given():
         }
     )
 
-    model.fit.assert_called_with([y], weights=[1 / yerr], x=[1])
+    model.fit.assert_called_with(data=[y], weights=[1 / yerr], x=[1])
