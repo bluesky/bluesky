@@ -1663,8 +1663,8 @@ class DefaultDuringTask(DuringTask):
         """
         if "matplotlib" in sys.modules:
             import matplotlib
-
-            if _qt_is_imported_app_available():
+            backend = matplotlib.get_backend().lower()
+            if "qt" in backend:
                 from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
 
                 initialize_qt_teleporter()
@@ -1843,15 +1843,11 @@ class DefaultDuringTask(DuringTask):
 
 
 def _qt_is_imported_app_available():
-    qt_modules_names = ["PyQt6.QtCore", "PySide6.QtCore", "PyQt5.QtCore", "PySide2.QtCore"]
-    try:
-        qt_core, *_ = (mod for mod in [sys.modules.get(name) for name in qt_modules_names] if mod is not None)
-    except TypeError:
-        return False
-    qapp = qt_core.QAppliaction.instance()
-    if qapp is None:
-        return False
-    return True
+    qt_modules_names = ["PyQt6.QtWidgets", "PySide6.QtWidgets", "PyQt5.QtWidgets", "PySide2.QtWidgets"]
+    qt_widgets = next((sys.modules.get(name) for name in qt_modules_names if sys.modules.get(name)), None)
+
+    return qt_widgets is not None and qt_widgets.QApplication.instance() is not None
+
 
 def _rearrange_into_parallel_dicts(readings):
     data = {}
