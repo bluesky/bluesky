@@ -2,6 +2,7 @@ import functools
 import logging
 import threading
 import warnings
+import sys
 from collections import ChainMap
 
 import numpy as np
@@ -66,7 +67,7 @@ class QtAwareCallback(CallbackBase):
         if use_teleporter is None:
             import matplotlib
 
-            use_teleporter = "qt" in matplotlib.get_backend().lower()
+            use_teleporter = self._get_qapplication() is not None
         if use_teleporter:
             self.__teleporter = _get_teleporter()
         else:
@@ -78,6 +79,19 @@ class QtAwareCallback(CallbackBase):
             self.__teleporter.name_doc_escape.emit(name, doc, self)
         else:
             return CallbackBase.__call__(self, name, doc)
+
+    @staticmethod
+    def _get_qt_widgets_module():
+        qt_modules_names = ["PyQt6.QtWidgets", "PySide6.QtWidgets", "PyQt5.QtWidgets", "PySide2.QtWidgets"]
+        qt_widgets = next((sys.modules.get(name) for name in qt_modules_names if sys.modules.get(name)), None)
+        return qt_widgets
+
+    def _qt_is_imported(self):
+        return self._get_qt_widgets_module() is not None
+
+    def _get_qapplication(self):
+        qt_widgets = self._get_qt_widgets_module()
+        return qt_widgets.QApplication.instance() if qt_widgets is not None else None
 
 
 @make_class_safe(logger=logger)
