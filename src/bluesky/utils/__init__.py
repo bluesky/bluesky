@@ -1661,18 +1661,10 @@ class DefaultDuringTask(DuringTask):
         initializing the 'teleporter' if Qt backend is used.
 
         """
-        if "matplotlib" in sys.modules:
-            if _qt_is_imported():
-                from matplotlib.backends.qt_compat import QtWidgets
+        if "matplotlib" in sys.modules and _qt_is_imported():
+            from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
 
-                app = QtWidgets.QApplication.instance()
-                if app is None:
-                    app = QtWidgets.QApplication([b"bluesky"])
-                assert app is not None
-
-                from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
-
-                initialize_qt_teleporter()
+            initialize_qt_teleporter()
 
     def block(self, blocking_event):
         # docstring inherited
@@ -1688,10 +1680,15 @@ class DefaultDuringTask(DuringTask):
             backend = matplotlib.get_backend().lower()
 
             # if with a Qt backend, do the scary thing
-            if _get_qapplication() is not None:
+            if _qt_is_imported() is not None:
                 import functools
 
-                from matplotlib.backends.qt_compat import QT_API, QtCore
+                from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
+
+                app = QtWidgets.QApplication.instance()
+                if app is None:
+                    app = QtWidgets.QApplication([b"bluesky"])
+                assert app is not None
 
                 event_loop = QtCore.QEventLoop()
 
@@ -1854,7 +1851,7 @@ def _qt_is_imported():
     return _get_qt_widgets_module() is not None
 
 
-def _get_qapplication():
+def get_qapplication():
     qt_widgets = _get_qt_widgets_module()
     return qt_widgets.QApplication.instance() if qt_widgets is not None else None
 
