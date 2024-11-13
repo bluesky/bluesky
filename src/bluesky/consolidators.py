@@ -74,9 +74,21 @@ class ConsolidatorBase:
     `consume_stream_datum` and `get_data_source` methods, and ensure that the returned `adapter_parameters`
     property matches the expected adapter signature. Declare a set of supported mimetypes to allow validation and
     automated discovery of the subclassed Consolidator.
+
+    Attributes:
+    -----------
+
+    supported_mimetypes : set[str]
+        a set of mimetypes that can be handled by a derived Consolidator class; raises ValueError if attempted to
+        pass Resource documents related to unsupported mimetypes.
+    stackable : bool
+        when True (default), the resulting consolidated dataset is produced by stacking all datums along a new
+        dimension added on the left, e.g. a stack of tiff images, otherwise -- new datum will appended to the end
+        of the exisitng leftmost dimension, e.g. rows of a table.
     """
 
-    supported_mimetypes: set[str] = set()
+    supported_mimetypes: set[str] = {"application/octet-stream"}
+    stackable: bool = True
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         self.mimetype = self.get_supported_mimetype(stream_resource)
@@ -122,10 +134,13 @@ class ConsolidatorBase:
     def shape(self) -> tuple[int]:
         """Native shape of the data stored in assets
 
-        This includes the leading (0-th) dimension corresponding to the number of rows, including skipped rows, if
-        any. The number of relevant usable data rows may be lower, which is determined by the `seq_nums` field of
-        StreamDatum documents."""
-        return self._num_rows, *self.datum_shape
+        This includes the leading (0th) dimension corresponding to the number of rows, if the dataset is stackable,
+        including skipped rows, if any. The number of relevant usable data rows may be lower, which is determined
+        by the `seq_nums` field of StreamDatum documents."""
+        if self.stackable:
+            return self._num_rows, *self.datum_shape
+        else:
+            return self._num_rows * self.datum_shape[0], *self.datum_shape[1:]
 
     @property
     def chunks(self) -> tuple[tuple[int, ...], ...]:
@@ -138,20 +153,33 @@ class ConsolidatorBase:
         new elements. Usually, however, `chunk_shape` is a tuple of int, in which case, we assume fixed-sized
         chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
         is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
+
+        If the consolidator is not stackable, the chunking along the leftmost dimensions is assumed to be preserved
+        in each appended data point, i.e. consecutive chunks do not join, e.g. (3,3,1) -> (3,3,1,3,3,1,3,3,1).
         """
 
-        def list_summands(A, b):
+        def list_summands(A, b, repeat=1):
             # Generate a list with repeated b summing up to A; append the remainder if necessary
-            return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) or (0,)
+            return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) * repeat or (0,)
 
         if len(self.chunk_shape) == 0:
-            return (self._num_rows,), *[(d,) for d in self.datum_shape]
+            return tuple((d,) for d in self.shape)
 
         elif len(self.chunk_shape) == 1:
-            return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+            if self.stackable:
+                return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+            else:
+                return list_summands(self.datum_shape[0], self.chunk_shape[0], repeat=self._num_rows), *[
+                    (d,) for d in self.datum_shape[1:]
+                ]
 
         elif len(self.chunk_shape) == len(self.shape):
-            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
+            if self.stackable:
+                return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
+            else:
+                return list_summands(self.datum_shape[0], self.chunk_shape[0], repeat=self._num_rows), *[
+                    list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape[1:], self.shape[1:])
+                ]
 
         else:
             raise ValueError(
