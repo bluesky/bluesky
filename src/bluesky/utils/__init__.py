@@ -1663,6 +1663,7 @@ class DefaultDuringTask(DuringTask):
         """
         if "matplotlib" in sys.modules:
             import matplotlib
+
             backend = matplotlib.get_backend().lower()
             if "qt" in backend:
                 from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
