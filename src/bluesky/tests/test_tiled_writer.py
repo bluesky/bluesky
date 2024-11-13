@@ -10,9 +10,6 @@ import tifffile as tf
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
-from tiled.catalog import in_memory
-from tiled.client import Context, from_context
-from tiled.server.app import build_app
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
@@ -29,26 +26,27 @@ from bluesky.protocols import (
 
 @pytest.fixture
 def catalog(tmp_path):
-    catalog = in_memory(writable_storage=str(tmp_path))
-    yield catalog
+    tiled_catalog = pytest.importorskip("tiled.catalog")
+    yield tiled_catalog.in_memory(writable_storage=str(tmp_path))
 
 
 @pytest.fixture
 def app(catalog):
-    app = build_app(catalog)
-    yield app
+    tsa = pytest.importorskip("tiled.server.app")
+    yield tsa.build_app(catalog)
 
 
 @pytest.fixture
 def context(app):
-    with Context.from_app(app) as context:
+    tc = pytest.importorskip("tiled.client")
+    with tc.Context.from_app(app) as context:
         yield context
 
 
 @pytest.fixture
 def client(context):
-    client = from_context(context)
-    yield client
+    tc = pytest.importorskip("tiled.client")
+    yield tc.from_context(context)
 
 
 class Named(HasName):

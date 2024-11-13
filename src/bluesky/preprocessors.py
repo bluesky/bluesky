@@ -1204,12 +1204,17 @@ def baseline_wrapper(plan, devices, name="baseline"):
 
     def insert_baseline(msg):
         if msg.command == "open_run":
-            return None, head()
-
+            if msg.run is not None:
+                return None, set_run_key_wrapper(head(), msg.run)
+            else:
+                return None, head()
         elif msg.command == "close_run":
 
             def post_baseline():
-                yield from trigger_and_read(devices, name=name)
+                if msg.run is not None:
+                    yield from set_run_key_wrapper(trigger_and_read(devices, name=name), run=msg.run)
+                else:
+                    yield from trigger_and_read(devices, name=name)
                 return (yield msg)
 
             return post_baseline(), None

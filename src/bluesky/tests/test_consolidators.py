@@ -81,17 +81,22 @@ def stream_datum_factory():
 
 
 shape_testdata = [
-    ("test_img", (5, 10, 15)),
-    ("test_cube", (5, 10, 15, 3)),
-    ("test_arr", (5,)),
-    ("test_num", (5,)),
+    # ("test_img", True, (5, 10, 15)),
+    # ("test_cube", True, (5, 10, 15, 3)),
+    # ("test_arr", True, (5,)),
+    # ("test_num", True, (5,)),
+    ("test_img", False, (50, 15)),
+    ("test_cube", False, (50, 15, 3)),
+    ("test_arr", False, (5,)),
+    ("test_num", False, (5,)),
 ]
 
 
-@pytest.mark.parametrize("data_key, expected", shape_testdata)
-def test_hdf5_shape(descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, expected):
+@pytest.mark.parametrize("data_key, stackable, expected", shape_testdata)
+def test_hdf5_shape(descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, stackable, expected):
     stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=())
     cons = HDF5Consolidator(stream_resource, descriptor)
+    cons.stackable = stackable
     assert cons.shape == (0, *expected[1:])
     for i in range(5):
         doc = stream_datum_factory(data_key, i, i, i + 1)
@@ -102,7 +107,7 @@ def test_hdf5_shape(descriptor, hdf5_stream_resource_factory, stream_datum_facto
 supported_image_seq_formats = ["jpeg", "tiff"]
 
 
-@pytest.mark.parametrize("data_key, expected", shape_testdata)
+@pytest.mark.parametrize("data_key, stackable, expected", shape_testdata)
 @pytest.mark.parametrize("image_format", supported_image_seq_formats)
 @pytest.mark.parametrize("files_per_stream_datum", [1, 2, 3, 5])
 def test_tiff_shape(
@@ -111,6 +116,7 @@ def test_tiff_shape(
     stream_datum_factory,
     image_format,
     data_key,
+    stackable,
     expected,
     files_per_stream_datum,
 ):
@@ -118,6 +124,7 @@ def test_tiff_shape(
         image_format=image_format, data_key=data_key, chunk_shape=(1,)
     )
     cons = consolidator_factory(stream_resource, descriptor)
+    cons.stackable = stackable
     assert cons.shape == (0, *expected[1:])
     for i in range(ceil(5 / files_per_stream_datum)):
         doc = stream_datum_factory(
@@ -129,24 +136,30 @@ def test_tiff_shape(
 
 
 chunk_testdata = [
-    ("test_img", (), ((5,), (10,), (15,))),
-    ("test_img", (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
-    ("test_img", (2,), ((2, 2, 1), (10,), (15,))),
-    ("test_img", (5, 10, 15), ((5,), (10,), (15,))),
-    ("test_img", (10, 10, 15), ((5,), (10,), (15,))),
-    ("test_img", (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
-    ("test_cube", (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
-    ("test_arr", (), ((5,),)),
-    ("test_arr", (2,), ((2, 2, 1),)),
-    ("test_num", (), ((5,),)),
-    ("test_num", (2,), ((2, 2, 1),)),
+    ("test_img", True, (), ((5,), (10,), (15,))),
+    ("test_img", True, (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_img", True, (2,), ((2, 2, 1), (10,), (15,))),
+    ("test_img", True, (5, 10, 15), ((5,), (10,), (15,))),
+    ("test_img", True, (10, 10, 15), ((5,), (10,), (15,))),
+    ("test_img", True, (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
+    ("test_cube", True, (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
+    ("test_arr", True, (), ((5,),)),
+    ("test_arr", True, (2,), ((2, 2, 1),)),
+    ("test_num", True, (), ((5,),)),
+    ("test_num", True, (2,), ((2, 2, 1),)),
+    ("test_img", False, (), ((50,), (15,))),
+    ("test_img", False, (10, 15), ((10, 10, 10, 10, 10), (15,))),
+    ("test_img", False, (7,), ((7, 3, 7, 3, 7, 3, 7, 3, 7, 3), (15,))),
 ]
 
 
-@pytest.mark.parametrize("data_key, chunk_shape, expected", chunk_testdata)
-def test_chunks(descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, chunk_shape, expected):
+@pytest.mark.parametrize("data_key, stackable, chunk_shape, expected", chunk_testdata)
+def test_chunks(
+    descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, stackable, chunk_shape, expected
+):
     stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=chunk_shape)
     cons = HDF5Consolidator(stream_resource, descriptor)
+    cons.stackable = stackable
     assert cons.chunks == ((0,), *expected[1:])
     for i in range(5):
         doc = stream_datum_factory(data_key, i, i, i + 1)
