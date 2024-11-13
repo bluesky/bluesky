@@ -35,13 +35,19 @@ def initialize_qt_teleporter():
         return
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError("initialize_qt_teleporter() may only be called from the main thread.")
+
     _get_teleporter()
 
 
 # use function + LRU cache to hide Matplotib import until needed
 @functools.lru_cache(maxsize=1)
 def _get_teleporter():
-    from matplotlib.backends.qt_compat import QtCore
+
+    from bluesky.utils import _ensure_qapp, _get_qt_widgets_module
+
+    QtCore = _get_qt_widgets_module('QtCore')
+    # if we do not make the QApplication here, the teleporter will not work right
+    _ensure_qapp()
 
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError(
@@ -66,7 +72,7 @@ def _get_teleporter():
 class QtAwareCallback(CallbackBase):
     def __init__(self, *args, use_teleporter=None, **kwargs):
         if use_teleporter is None:
-            use_teleporter = get_qapplication() is not None and sys.modules.get("matplotlib") is not None
+            use_teleporter = get_qapplication() is not None
         if use_teleporter:
             self.__teleporter = _get_teleporter()
         else:
