@@ -1680,15 +1680,10 @@ class DefaultDuringTask(DuringTask):
             backend = matplotlib.get_backend().lower()
 
             # if with a Qt backend, do the scary thing
-            if _qt_is_imported() is not None:
+            if get_qapplication() is not None:
                 import functools
 
                 from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
-
-                app = QtWidgets.QApplication.instance()
-                if app is None:
-                    app = QtWidgets.QApplication([b"bluesky"])
-                assert app is not None
 
                 event_loop = QtCore.QEventLoop()
 
