@@ -6,7 +6,6 @@ import packaging
 import pytest
 
 from bluesky.run_engine import RunEngine, TransitionError
-from bluesky.utils import get_qapplication
 
 
 @pytest.fixture(scope="function", params=[False, True])

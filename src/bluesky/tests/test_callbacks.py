@@ -637,12 +637,11 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, stri
 
 
 def test_in_plan_qt_callback(RE, hw):
-
     def my_plan():
         motor = hw.motor
         det = hw.det
 
-        motor.delay = .1
+        motor.delay = 0.1
 
         plan = bp.scan([det], motor, -5, 5, 25)
         plan = subs_wrapper(bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name))

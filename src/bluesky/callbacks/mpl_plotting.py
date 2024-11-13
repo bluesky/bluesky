@@ -1,6 +1,5 @@
 import functools
 import logging
-import sys
 import threading
 import warnings
 from collections import ChainMap
@@ -42,10 +41,9 @@ def initialize_qt_teleporter():
 # use function + LRU cache to hide Matplotib import until needed
 @functools.lru_cache(maxsize=1)
 def _get_teleporter():
-
     from bluesky.utils import _ensure_qapp, _get_qt_widgets_module
 
-    QtCore = _get_qt_widgets_module('QtCore')
+    QtCore = _get_qt_widgets_module("QtCore")
     # if we do not make the QApplication here, the teleporter will not work right
     _ensure_qapp()
 
