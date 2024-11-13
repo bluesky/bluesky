@@ -137,10 +137,11 @@ class ConsolidatorBase:
         This includes the leading (0th) dimension corresponding to the number of rows, if the dataset is stackable,
         including skipped rows, if any. The number of relevant usable data rows may be lower, which is determined
         by the `seq_nums` field of StreamDatum documents."""
-        if self.stackable:
-            return self._num_rows, *self.datum_shape
-        else:
+
+        if (not self.stackable) and len(self.datum_shape) > 0:
             return self._num_rows * self.datum_shape[0], *self.datum_shape[1:]
+
+        return self._num_rows, *self.datum_shape
 
     @property
     def chunks(self) -> tuple[tuple[int, ...], ...]:
