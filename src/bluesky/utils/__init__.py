@@ -1681,11 +1681,10 @@ class DefaultDuringTask(DuringTask):
             import matplotlib
 
             backend = matplotlib.get_backend().lower()
-            # if with a Qt backend, do the scary thing
-            if _qt_is_imported_app_available():
-                import functools
 
-                from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
+            # if with a Qt backend, do the scary thing
+            if _qt_is_imported():
+                import functools
 
                 @functools.lru_cache(None)
                 def _enum(name):
@@ -1716,6 +1715,8 @@ class DefaultDuringTask(DuringTask):
                     return operator.attrgetter(name if QT_API == "PyQt6" else name.rpartition(".")[0])(
                         sys.modules[QtCore.__package__]
                     )
+
+                from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
 
                 app = QtWidgets.QApplication.instance()
                 if app is None:
@@ -1842,11 +1843,14 @@ class DefaultDuringTask(DuringTask):
                 blocking_event.wait()
 
 
-def _qt_is_imported_app_available():
+def _get_qt_widgets_module():
     qt_modules_names = ["PyQt6.QtWidgets", "PySide6.QtWidgets", "PyQt5.QtWidgets", "PySide2.QtWidgets"]
     qt_widgets = next((sys.modules.get(name) for name in qt_modules_names if sys.modules.get(name)), None)
+    return qt_widgets
 
-    return qt_widgets is not None and qt_widgets.QApplication.instance() is not None
+
+def _qt_is_imported():
+    return _get_qt_widgets_module() is not None
 
 
 def _rearrange_into_parallel_dicts(readings):
