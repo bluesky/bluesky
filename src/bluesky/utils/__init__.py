@@ -1662,10 +1662,14 @@ class DefaultDuringTask(DuringTask):
 
         """
         if "matplotlib" in sys.modules:
-            import matplotlib
+            if _qt_is_imported():
+                from matplotlib.backends.qt_compat import QtWidgets
 
-            backend = matplotlib.get_backend().lower()
-            if "qt" in backend:
+                app = QtWidgets.QApplication.instance()
+                if app is None:
+                    app = QtWidgets.QApplication([b"bluesky"])
+                assert app is not None
+
                 from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
 
                 initialize_qt_teleporter()
@@ -1684,8 +1688,12 @@ class DefaultDuringTask(DuringTask):
             backend = matplotlib.get_backend().lower()
 
             # if with a Qt backend, do the scary thing
-            if _qt_is_imported():
+            if _get_qapplication() is not None:
                 import functools
+
+                from matplotlib.backends.qt_compat import QT_API, QtCore
+
+                event_loop = QtCore.QEventLoop()
 
                 @functools.lru_cache(None)
                 def _enum(name):
@@ -1716,14 +1724,6 @@ class DefaultDuringTask(DuringTask):
                     return operator.attrgetter(name if QT_API == "PyQt6" else name.rpartition(".")[0])(
                         sys.modules[QtCore.__package__]
                     )
-
-                from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
-
-                app = QtWidgets.QApplication.instance()
-                if app is None:
-                    _qapp = app = QtWidgets.QApplication([b"bluesky"])
-                assert app is not None
-                event_loop = QtCore.QEventLoop()
 
                 def start_killer_thread():
                     def exit_loop():
@@ -1852,6 +1852,11 @@ def _get_qt_widgets_module():
 
 def _qt_is_imported():
     return _get_qt_widgets_module() is not None
+
+
+def _get_qapplication():
+    qt_widgets = _get_qt_widgets_module()
+    return qt_widgets.QApplication.instance() if qt_widgets is not None else None
 
 
 def _rearrange_into_parallel_dicts(readings):
