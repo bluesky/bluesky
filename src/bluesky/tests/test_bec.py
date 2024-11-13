@@ -29,13 +29,13 @@ def test_hints(RE, hw):
     assert doc["hints"][motor.name] == expected_hint
 
 
-def test_simple(RE, hw):
+def test_simple(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
 
 
-def test_disable(RE, hw):
+def test_disable(RE, hw, ensure_mpl_qt_setup):
     det, motor = hw.ab_det, hw.motor
     bec = BestEffortCallback()
     RE.subscribe(bec)
@@ -65,13 +65,13 @@ def test_disable(RE, hw):
     bec.enable_heading()
 
 
-def test_blank_hints(RE, hw):
+def test_blank_hints(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(scan([hw.ab_det], hw.motor, 1, 5, 5, md={"hints": {}}))
 
 
-def test_with_baseline(RE, hw):
+def test_with_baseline(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     sd = SupplementalData(baseline=[hw.det])
@@ -79,7 +79,7 @@ def test_with_baseline(RE, hw):
     RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
 
 
-def test_underhinted_plan(RE, hw):
+def test_underhinted_plan(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
@@ -91,13 +91,13 @@ def test_underhinted_plan(RE, hw):
     RE(broken_plan([hw.det]))
 
 
-def test_live_grid(RE, hw):
+def test_live_grid(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
 
 
-def test_many_grids(RE, hw):
+def test_many_grids(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det1, hw.det2, hw.det3, hw.det4, hw.det5], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
@@ -116,7 +116,7 @@ def test_many_grids(RE, hw):
     )
 
 
-def test_push_start_document(capsys):
+def test_push_start_document(capsys, ensure_mpl_qt_setup):
     """Pass the start document to BEC and verify if the scan information is printed correctly"""
 
     bec = BestEffortCallback()
@@ -140,7 +140,7 @@ def test_push_start_document(capsys):
     ), "BestEffortCallback: Scan UID is not printed correctly"
 
 
-def test_multirun_nested_plan(capsys, caplog, RE, hw):
+def test_multirun_nested_plan(capsys, caplog, RE, hw, ensure_mpl_qt_setup):
     # This test only checks if the plan runs without crashing. If BEC crashes,
     #   the plan will still run, but data will not be displayed.
     @bpp.set_run_key_decorator(run="inner_run")
@@ -201,7 +201,7 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     assert err_msg_substr not in caplog.text, "Best Effort Callback failed while executing nested plans"
 
 
-def test_plot_ints(RE):
+def test_plot_ints(RE, ensure_mpl_qt_setup):
     from ophyd import Signal
 
     import bluesky.plan_stubs as bps
@@ -221,7 +221,7 @@ def test_plot_ints(RE):
         RE(count([s], num=35))
 
 
-def test_plot_prune_fifo(RE, hw):
+def test_plot_prune_fifo(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
@@ -267,7 +267,7 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned
 
 
-def test_bec_peak_stats_derivative_and_stats(RE, hw):
+def test_bec_peak_stats_derivative_and_stats(RE, hw, ensure_mpl_qt_setup):
     bec = BestEffortCallback(calc_derivative_and_stats=True)
     RE.subscribe(bec)
 
@@ -319,7 +319,7 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
             stats_value == out_value  # noqa: B015
 
 
-def test_many_motors(RE, hw):
+def test_many_motors(RE, hw, ensure_mpl_qt_setup):
     """Ensure appropriate behavior for too many motors to plot. No figures with warning, and a table."""
     dets = [hw.ab_det]
     motors = [hw.motor, hw.motor1, hw.motor2, hw.motor3]

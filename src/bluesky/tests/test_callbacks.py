@@ -308,7 +308,7 @@ def test_live_plot_from_callbacks():
     FromCallbacks("det", "motor")
 
 
-def test_live_fit_plot(RE, hw):
+def test_live_fit_plot(RE, hw, ensure_mpl_qt_setup):
     try:
         import lmfit
     except ImportError:
@@ -636,7 +636,7 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, stri
     assert logger.exception.call_count == len(documents)
 
 
-def test_in_plan_qt_callback(RE, hw):
+def test_in_plan_qt_callback(RE, hw, ensure_mpl_qt_setup):
     from bluesky.callbacks.mpl_plotting import _get_teleporter
 
     _get_teleporter()

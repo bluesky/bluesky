@@ -6,6 +6,7 @@ import packaging
 import pytest
 
 from bluesky.run_engine import RunEngine, TransitionError
+from bluesky.utils import _get_qapplication
 
 
 @pytest.fixture(scope="function", params=[False, True])
@@ -76,3 +77,16 @@ def cleanup_any_figures(request):
 
     "Close any matplotlib figures that were opened during a test."
     plt.close("all")
+
+
+@pytest.fixture(scope="function")
+def ensure_mpl_qt_setup(request):
+    import matplotlib.backends.backend_qt
+    from bluesky.callbacks.mpl_plotting import _get_teleporter
+
+    app = _get_qapplication()
+    if not app:
+        manager = matplotlib.backends.backend_qt.new_figure_manager(1)
+        manager.destroy()
+    _get_teleporter.cache_clear()
+    _get_teleporter()
