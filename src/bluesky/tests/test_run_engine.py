@@ -1961,6 +1961,33 @@ def test_wait_with_timeout(set_finished, RE):
             RE(plan())
 
 
+@pytest.mark.parametrize("set_finished", [True, False])
+def test_wait_with_statuses(set_finished, RE):
+    from ophyd import StatusBase
+    from ophyd.device import Device
+
+    class MockDevice(Device):
+        def stage(self):
+            status = StatusBase()
+            if set_finished:
+                status.set_finished()
+            return status
+
+    mock_device_a = MockDevice(name="mock_device_a")
+    mock_device_b = MockDevice(name="mock_device_b")
+
+    def plan():
+        status_a = yield Msg("stage", mock_device_a)
+        status_b = yield Msg("stage", mock_device_b)
+        yield from wait(group=[status_a, status_b], timeout=0.1)
+
+    if set_finished:
+        RE(plan())
+    else:
+        with pytest.raises(TimeoutError):
+            RE(plan())
+
+
 async def passing_coroutine():
     await asyncio.sleep(0.001)
     return 1080

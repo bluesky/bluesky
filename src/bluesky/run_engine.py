@@ -1,4 +1,5 @@
 import asyncio
+import collections.abc
 import concurrent
 import copy
 import functools
@@ -2323,12 +2324,17 @@ class RunEngine:
         true when all triggered objects are done. When the keyword argument
         `move_on=<MOVE_ON>` is true, this method can return before all objects are done
         after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
+        Optionally, the `group` keyword argument can be a list of status objects passed
+        in the same way. A temporary group is created for them and the function is
+        processed as normal.
 
-        Expected message object is:
+        Expected message objects are:
 
             Msg('wait', group=<GROUP>, move_on=<MOVE_ON>)
+            Msg('wait', group=[<STATUS_OBJECTS>], move_on=<MOVE_ON>)
 
-        where ``<GROUP>`` is any hashable key and ``<MOVE_ON>`` is a boolean.
+        where ``<GROUP>`` is any hashable key, ``<MOVE_ON>`` is a boolean, and
+        ``[<STATUS_OBJECTS>]`` is a list of status objects.
         """
         _set_span_msg_attributes(trace.get_current_span(), msg)
         done = False  # boolean that tracks whether waiting is complete
@@ -2338,6 +2344,13 @@ class RunEngine:
         else:
             group = msg.kwargs["group"]
             move_on = msg.kwargs.get("move_on", False)
+
+        if isinstance(group, collections.abc.Iterable) and not isinstance(group, str):
+            status_objs = group
+            group = str(hash(tuple(sorted(id(s) for s in group))))
+            for status in status_objs:
+                self._add_status_to_group(obj=None, status_object=status, group=group, action="wait")
+
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:

@@ -1376,9 +1376,36 @@ motors in motion at once, including multiple fast motors and one slow motor. We
 want to wait for the fast motors to arrive, print a message, then wait for the
 slow motor to arrive, and print a second message.
 
+For Bluesky version v1.13.0 and higher, this approach is recommended:
+
 .. code-block:: python
 
     def staggered_wait(fast_motors, slow_motor):
+        # Start all the motors, fast and slow, moving at once.
+        # Put all the fast_motors in one group...
+        statuses = []
+        for motor in fast_motors:
+            status = yield from bps.abs_set(motor, 5)
+            statuses.append(status)
+        # ...but put the slow motor is separate group.
+        slow_status = yield from bps.abs_set(slow_motor, 5)
+
+        # Wait for all the fast motors.
+        print('Waiting on the fast motors.')
+        yield from bps.wait(statuses)
+        print('Fast motors are in place. Just waiting on the slow one now.')
+
+        # Then wait for the slow motor.
+        yield from bps.wait([slow_status])
+        print('Slow motor is in place.')
+
+An alternative approach is also supported. It is possible to assign each motion
+a "group" label, and refer to the label when waiting. This is the only approach
+available Bluesky versions older than v1.13.0.
+
+.. code-block:: python
+
+    def staggered_wait_alt(fast_motors, slow_motor):
         # Start all the motors, fast and slow, moving at once.
         # Put all the fast_motors in one group...
         for motor in fast_motors:
