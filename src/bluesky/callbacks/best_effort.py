@@ -261,9 +261,9 @@ class BestEffortCallback(QtAwareCallback):
 
                 if len(fig.axes) > 1 and len(axes_grid.shape) == 2:
                     # Axes go left to right, top to bottom, and will make some labels invisible
-                    for row in range(int(nrows)):
-                        if axes_grid[-1, row].get_visible() is False:
-                            axes_grid[-2, row].tick_params(axis="x", labelbottom=True)
+                    for column in range(int(ncols)):
+                        if not axes_grid[-1, column].get_visible():
+                            axes_grid[-2, column].tick_params(axis="x", labelbottom=True)
 
             axes = fig.axes
 
