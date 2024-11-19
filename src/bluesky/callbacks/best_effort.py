@@ -17,7 +17,7 @@ from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
-from typing import Any
+from typing import Any, Optional
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 default_label_format = "{attr}={val:.3f}"
 
 
-def validate_label_format(label_format: str | None) -> str:
+def validate_label_format(label_format: Optional[str]) -> str:
     """Validate label format for a legend in LivePlot"""
     if label_format is None:
         return default_label_format
@@ -53,9 +53,9 @@ class BestEffortCallback(QtAwareCallback):
     def __init__(
         self,
         *,
-        fig_factory: Any | None = None,
+        fig_factory: Optional[Any] = None,
         table_enabled=True,
-        label_format: str | None = None,
+        label_format: Optional[str] = None,
         calc_derivative_and_stats=False,
         **kwargs,
     ):
