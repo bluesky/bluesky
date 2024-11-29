@@ -4,16 +4,9 @@ import time
 import typing
 import uuid
 import warnings
-from collections.abc import Awaitable, Hashable, Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Union,
-    Tuple
-)
+from typing import Any, Literal, Optional, Union
 
 from cycler import cycler
 
@@ -404,7 +397,9 @@ mov = mv  # synonym
 
 
 @plan
-def mvr(*args: Union[Movable, Any], group: Optional[Hashable] = None, **kwargs) -> MsgGenerator[Tuple[Status, ...]]:
+def mvr(
+    *args: Union[Movable, Any], group: Optional[Hashable] = None, **kwargs
+) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
