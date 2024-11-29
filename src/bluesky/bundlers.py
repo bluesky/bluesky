@@ -40,12 +40,12 @@ from .protocols import (
 from .utils import (
     IllegalMessageSequence,
     Msg,
-    rearrange_into_parallel_dicts,
     iterate_maybe_async,
     maybe_await,
     maybe_collect_asset_docs,
     maybe_update_hints,
     new_uid,
+    rearrange_into_parallel_dicts,
     short_uid,
 )
 
