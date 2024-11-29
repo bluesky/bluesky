@@ -56,7 +56,7 @@ def _get_teleporter():
         obj(name, doc, escape=True)
 
     class Teleporter(QtCore.QObject):
-        name_doc_escape = QtCore.Signal(str, dict, object)
+        name_doc_escape = QtCore.PyQtSignal(str, dict, object)
 
     t = Teleporter()
     t.name_doc_escape.connect(handle_teleport)
