@@ -1864,10 +1864,15 @@ class DefaultDuringTask(DuringTask):
                 # We are not using matplotlib + Qt. Just wait on the Event.
                 blocking_event.wait()
 
+def get_qt_module_name(mod="QtWidgets"):
+    qt_modules_names = [f"{p}.{mod}" for p in ("PyQt6", "PySide6", "PyQt5", "PySide2")]
+    module = next((name for name in qt_modules_names if sys.modules.get(name)) is not None, None)
+    return module
 
 def get_qt_widgets_module(mod="QtWidgets"):
     qt_modules_names = [f"{p}.{mod}" for p in ("PyQt6", "PySide6", "PyQt5", "PySide2")]
-    qt_widgets = next((sys.modules.get(name) for name in qt_modules_names if sys.modules.get(name)), None)
+    qt_widgets = next((sys.modules.get(name) for name in qt_modules_names
+                       if sys.modules.get(name)) is not None, None)
     return qt_widgets
 
 

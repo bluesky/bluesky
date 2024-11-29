@@ -60,7 +60,14 @@ def _get_teleporter():
         obj(name, doc, escape=True)
 
     class Teleporter(QtCore.QObject):
-        name_doc_escape = QtCore.PyQtSignal(str, dict, object)
+        from bluesky.utils import get_qt_module_name
+        qt_module_name = get_qt_module_name()
+        if qt_module_name in ["PyQt5", "PyQt6"]:
+            name_doc_escape = QtCore.pyqtSignal(str, dict, object)
+        elif qt_module_name in ["PySide2", "PySide6"]:
+            name_doc_escape = QtCore.Signal(str, dict, object)
+        else:
+            raise RuntimeError(f"Unsupported Qt module {qt_module_name}")
 
     t = Teleporter()
     t.name_doc_escape.connect(handle_teleport)
