@@ -1670,7 +1670,7 @@ class DefaultDuringTask(DuringTask):
         if "qt" in backend:
             # import this for side effects
             import matplotlib.backends.backend_qt  # noqa
-        if _qt_is_imported():
+        if qt_is_imported():
             from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
 
             initialize_qt_teleporter()
@@ -1687,7 +1687,7 @@ class DefaultDuringTask(DuringTask):
         else:
             backend = ""
             mpl_is_qt = False
-        qt_imported = _qt_is_imported()
+        qt_imported = qt_is_imported()
         _qapp = get_qapplication()
 
         # check if we are using a mpl web backend
@@ -1710,11 +1710,11 @@ class DefaultDuringTask(DuringTask):
         # otherwise do the Qt event loop thing
         else:
             # if with a Qt backend, do the scary thing
-            if _ensure_qapp() is not None:
+            if ensure_qapp() is not None:
                 import functools
 
-                QtWidgets = _get_qt_widgets_module("QtWidgets")
-                QtCore = _get_qt_widgets_module("QtCore")
+                QtWidgets = get_qt_widgets_module("QtWidgets")
+                QtCore = get_qt_widgets_module("QtCore")
                 QT_API = QtCore.__name__.split(".")[0]
                 assert QT_API == QtWidgets.__name__.split(".")[0]
                 if "matplotlib" in sys.modules:
@@ -1865,23 +1865,23 @@ class DefaultDuringTask(DuringTask):
                 blocking_event.wait()
 
 
-def _get_qt_widgets_module(mod="QtWidgets"):
+def get_qt_widgets_module(mod="QtWidgets"):
     qt_modules_names = [f"{p}.{mod}" for p in ("PyQt6", "PySide6", "PyQt5", "PySide2")]
     qt_widgets = next((sys.modules.get(name) for name in qt_modules_names if sys.modules.get(name)), None)
     return qt_widgets
 
 
-def _qt_is_imported():
-    return _get_qt_widgets_module() is not None
+def qt_is_imported():
+    return get_qt_widgets_module() is not None
 
 
 def get_qapplication():
-    qt_widgets = _get_qt_widgets_module()
+    qt_widgets = get_qt_widgets_module()
     return qt_widgets.QApplication.instance() if qt_widgets is not None else None
 
 
-def _ensure_qapp():
-    QtWidgets = _get_qt_widgets_module()
+def ensure_qapp():
+    QtWidgets = get_qt_widgets_module()
     global _qapp
 
     if QtWidgets is None:
@@ -1892,7 +1892,7 @@ def _ensure_qapp():
     return _qapp
 
 
-def _rearrange_into_parallel_dicts(readings):
+def rearrange_into_parallel_dicts(readings):
     data = {}
     timestamps = {}
     for key, payload in readings.items():
