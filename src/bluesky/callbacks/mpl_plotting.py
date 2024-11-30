@@ -61,6 +61,7 @@ def _get_teleporter():
 
     class Teleporter(QtCore.QObject):
         from bluesky.utils import get_qt_module_name
+
         qt_module_name = get_qt_module_name()
         if qt_module_name in ["PyQt5", "PyQt6"]:
             name_doc_escape = QtCore.pyqtSignal(str, dict, object)
