@@ -7,6 +7,7 @@ from collections import ChainMap
 import numpy as np
 from cycler import cycler
 
+from ..utils import get_qapplication
 from .core import CallbackBase, get_obj_fields, make_class_safe
 
 logger = logging.getLogger(__name__)
@@ -33,13 +34,18 @@ def initialize_qt_teleporter():
         return
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError("initialize_qt_teleporter() may only be called from the main thread.")
+
     _get_teleporter()
 
 
 # use function + LRU cache to hide Matplotib import until needed
 @functools.lru_cache(maxsize=1)
 def _get_teleporter():
-    from matplotlib.backends.qt_compat import QtCore
+    from bluesky.utils import ensure_qapp, get_qt_widgets_module
+
+    QtCore = get_qt_widgets_module("QtCore")
+    # if we do not make the QApplication here, the teleporter will not work right
+    ensure_qapp()
 
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError(
@@ -54,7 +60,15 @@ def _get_teleporter():
         obj(name, doc, escape=True)
 
     class Teleporter(QtCore.QObject):
-        name_doc_escape = QtCore.Signal(str, dict, object)
+        from bluesky.utils import get_qt_module_name
+
+        qt_module_name = get_qt_module_name("QtCore")
+        if "PyQt6" in qt_module_name:
+            name_doc_escape = QtCore.pyqtSignal(str, dict, object)
+        elif "PySide" in qt_module_name or "PyQt5" in qt_module_name:
+            name_doc_escape = QtCore.Signal(str, dict, object)
+        else:
+            raise RuntimeError(f"Unsupported Qt module {qt_module_name}")
 
     t = Teleporter()
     t.name_doc_escape.connect(handle_teleport)
@@ -64,9 +78,7 @@ def _get_teleporter():
 class QtAwareCallback(CallbackBase):
     def __init__(self, *args, use_teleporter=None, **kwargs):
         if use_teleporter is None:
-            import matplotlib
-
-            use_teleporter = "qt" in matplotlib.get_backend().lower()
+            use_teleporter = get_qapplication() is not None
         if use_teleporter:
             self.__teleporter = _get_teleporter()
         else:
