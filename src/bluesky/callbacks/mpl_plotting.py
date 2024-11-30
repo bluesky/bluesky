@@ -63,7 +63,6 @@ def _get_teleporter():
         from bluesky.utils import get_qt_module_name
 
         qt_module_name = get_qt_module_name("QtCore")
-        print(qt_module_name)
         if "PyQt" in qt_module_name:
             name_doc_escape = QtCore.pyqtSignal(str, dict, object)
         elif "PySide" in qt_module_name:
