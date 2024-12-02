@@ -29,9 +29,13 @@ class SuspenderBase(metaclass=ABCMeta):
 
     tripped_message : str, optional
         Message to include in the trip notification
+
+    is_async : bool, optional
+        Whether the signal is asynchronous and implements `subscribe_value`
+        or is synchronous and implements `subscribe`
     """
 
-    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message=""):
+    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message="", is_async=False):
         """ """
         self.RE = None
         self._ev = None
@@ -43,6 +47,7 @@ class SuspenderBase(metaclass=ABCMeta):
         self._pre_plan = pre_plan
         self._post_plan = post_plan
         self._last_value = None
+        self._is_async = is_async
 
     def __repr__(self):
         return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
@@ -70,7 +75,10 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         with self._lock:
             self.RE = RE
-        self._sig.subscribe(self, event_type=event_type, run=True)
+        if self._is_async:
+            self.RE.loop.call_soon_threadsafe(partial(self._sig.subscribe_value, self))
+        else:
+            self._sig.subscribe(self, event_type=event_type, run=True)
 
     def remove(self):
         """Disable the suspender
@@ -139,7 +147,7 @@ class SuspenderBase(metaclass=ABCMeta):
                 if self._ev is None and self.RE is not None:
                     self.__make_event()
                     if self._ev is None:
-                        raise RuntimeError("Could not create the ")
+                        raise RuntimeError("Could not create the suspend event")
                     cb = partial(
                         self.RE.request_suspend,
                         self._ev.wait,
@@ -157,15 +165,18 @@ class SuspenderBase(metaclass=ABCMeta):
         """Make or return the asyncio.Event to use as a bridge."""
         assert self._lock.locked()
         if self._ev is None and self.RE is not None:
-            th_ev = threading.Event()
-
-            def really_make_the_event():
+            if self._is_async:
                 self._ev = asyncio.Event()
-                th_ev.set()
+            else:
+                th_ev = threading.Event()
 
-            h = self.RE._loop.call_soon_threadsafe(really_make_the_event)
-            if not th_ev.wait(0.1):
-                h.cancel()
+                def really_make_the_event():
+                    self._ev = asyncio.Event()
+                    th_ev.set()
+
+                h = self.RE._loop.call_soon_threadsafe(really_make_the_event)
+                if not th_ev.wait(0.1):
+                    h.cancel()
         return self._ev
 
     def __set_event(self, loop):
