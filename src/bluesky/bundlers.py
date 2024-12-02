@@ -431,7 +431,7 @@ class RunBundler:
                 readings is not None
             ), "The callback passed to subscribe() was not called with Dict[str, Reading]"
             now = ttime.time()
-            if any(r.timestamp - now < timestamp_cutoff_delay for r in readings.values()):  # type: ignore
+            if any(r["timestamp"] - now < timestamp_cutoff_delay for r in readings.values()):  # type: ignore
                 print("WARNING: The timestamps in the readings are too old.")
                 return
             data, timestamps = _rearrange_into_parallel_dicts(readings)
