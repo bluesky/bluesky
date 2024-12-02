@@ -29,9 +29,13 @@ class SuspenderBase(metaclass=ABCMeta):
 
     tripped_message : str, optional
         Message to include in the trip notification
+
+    is_async : bool, optional
+        Whether the signal is asynchronous and implements `subscribe_value`
+        or is synchronous and implements `subscribe`
     """
 
-    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message=""):
+    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message="", is_async=False):
         """ """
         self.RE = None
         self._ev = None
@@ -43,6 +47,7 @@ class SuspenderBase(metaclass=ABCMeta):
         self._pre_plan = pre_plan
         self._post_plan = post_plan
         self._last_value = None
+        self._is_async = is_async
 
     def __repr__(self):
         return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
@@ -70,7 +75,10 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         with self._lock:
             self.RE = RE
-        self._sig.subscribe(self, event_type=event_type, run=True)
+        if self._is_async:
+            self.RE.loop.call_soon_threadsafe(partial(self._sig.subscribe_value, self))
+        else:
+            self._sig.subscribe(self, event_type=event_type, run=True)
 
     def remove(self):
         """Disable the suspender
