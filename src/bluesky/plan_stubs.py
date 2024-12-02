@@ -626,7 +626,7 @@ def sleep(time: float) -> MsgGenerator:
 
 
 @plan
-def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, move_on: bool = False):
+def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, error_on_timeout: bool = True):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -638,9 +638,9 @@ def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, m
     Yields
     ------
     msg : Msg
-        Msg('wait', None, group=group, move_on=move_on, timeout=timeout)
+        Msg('wait', None, group=group, error_on_timeout=error_on_timeout, timeout=timeout)
     """
-    return (yield Msg("wait", None, group=group, move_on=move_on, timeout=timeout))
+    return (yield Msg("wait", None, group=group, error_on_timeout=error_on_timeout, timeout=timeout))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -1026,7 +1026,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     yield from complete_all(*flyers, group=group, wait=False)
     done = False
     while not done:
-        done = yield from wait(group=group, timeout=flush_period, move_on=True)
+        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=True)
         yield from collect(*dets, name=stream_name)
 
 
