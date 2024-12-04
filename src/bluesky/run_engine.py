@@ -2321,23 +2321,23 @@ class RunEngine:
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
         true when all triggered objects are done. When the keyword argument
-        `move_on=<MOVE_ON>` is true, this method can return before all objects are done
+        `error_on_timeout=<error_on_timeout>` is false, this method can return before all objects are done
         after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
 
         Expected message object is:
 
-            Msg('wait', group=<GROUP>, move_on=<MOVE_ON>)
+            Msg('wait', group=<GROUP>, error_on_timeout=<ERROR_ON_TIMEOUT>)
 
-        where ``<GROUP>`` is any hashable key and ``<MOVE_ON>`` is a boolean.
+        where ``<GROUP>`` is any hashable key and ``<ERROR_ON_TIMEOUT>`` is a boolean.
         """
         _set_span_msg_attributes(trace.get_current_span(), msg)
         done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
-            move_on = False
+            error_on_timeout = True
         else:
             group = msg.kwargs["group"]
-            move_on = msg.kwargs.get("move_on", False)
+            error_on_timeout = msg.kwargs.get("error_on_timeout", True)
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:
@@ -2346,11 +2346,11 @@ class RunEngine:
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
-                if move_on:
+                if not error_on_timeout:
                     if group not in self._seen_wait_and_move_on_keys:
                         self._seen_wait_and_move_on_keys.add(group)
                         self._call_waiting_hook(status_objs)
-                else:  # if move_on False
+                else:  # if error_on_timeout False
                     # Notify the waiting_hook function that the RunEngine is
                     # waiting for these status_objs to complete. Users can use
                     # the information these encapsulate to create a progress
@@ -2361,10 +2361,10 @@ class RunEngine:
                 # We might wait to call wait again, so put the futures and status objects back in
                 self._groups[group] = futs
                 self._status_objs[group] = status_objs
-                if not move_on:
+                if error_on_timeout:
                     raise
             finally:
-                if not move_on:
+                if error_on_timeout:
                     # Notify the waiting_hook function that we have moved on by
                     # sending it `None`. If all goes well, it could have
                     # inferred this from the status_obj, but there are edge
