@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.14.dev61+g92d26331 documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.14.dev64+g1b8422be documentation</title>
   
   
   
@@ -38,21 +38,21 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../../_static/documentation_options.js?v=87a31bcc"></script>
+    <script src="../../_static/documentation_options.js?v=1bdd0cdd"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev61+g92d26331';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev64+g1b8422be';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.dev61+g92d26331" />
+  <meta name="docsearch:version" content="1.14.dev64+g1b8422be" />
   </head>
   
   
@@ -2898,23 +2898,23 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Block progress until every object that was triggered or set</span>
 <span class="sd">        with the keyword argument `group=&lt;GROUP&gt;` is done. Returns a boolean that is</span>
 <span class="sd">        true when all triggered objects are done. When the keyword argument</span>
-<span class="sd">        `move_on=&lt;MOVE_ON&gt;` is true, this method can return before all objects are done</span>
+<span class="sd">        `error_on_timeout=&lt;error_on_timeout&gt;` is false, this method can return before all objects are done</span>
 <span class="sd">        after a flush period given by the `timeout=&lt;TIMEOUT&gt;` keyword argument.</span>
 
 <span class="sd">        Expected message object is:</span>
 
-<span class="sd">            Msg(&#39;wait&#39;, group=&lt;GROUP&gt;, move_on=&lt;MOVE_ON&gt;)</span>
+<span class="sd">            Msg(&#39;wait&#39;, group=&lt;GROUP&gt;, error_on_timeout=&lt;ERROR_ON_TIMEOUT&gt;)</span>
 
-<span class="sd">        where ``&lt;GROUP&gt;`` is any hashable key and ``&lt;MOVE_ON&gt;`` is a boolean.</span>
+<span class="sd">        where ``&lt;GROUP&gt;`` is any hashable key and ``&lt;ERROR_ON_TIMEOUT&gt;`` is a boolean.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">_set_span_msg_attributes</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">(),</span> <span class="n">msg</span><span class="p">)</span>
         <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># boolean that tracks whether waiting is complete</span>
         <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
             <span class="p">(</span><span class="n">group</span><span class="p">,)</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span>
-            <span class="n">move_on</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">error_on_timeout</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">group</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;group&quot;</span><span class="p">]</span>
-            <span class="n">move_on</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;move_on&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">error_on_timeout</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error_on_timeout&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">group</span><span class="p">:</span>
             <span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">()</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -2923,11 +2923,11 @@
         <span class="k">if</span> <span class="n">futs</span><span class="p">:</span>
             <span class="n">status_objs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status_objs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">move_on</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">error_on_timeout</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">group</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_seen_wait_and_move_on_keys</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_seen_wait_and_move_on_keys</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_call_waiting_hook</span><span class="p">(</span><span class="n">status_objs</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>  <span class="c1"># if move_on False</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># if error_on_timeout False</span>
                     <span class="c1"># Notify the waiting_hook function that the RunEngine is</span>
                     <span class="c1"># waiting for these status_objs to complete. Users can use</span>
                     <span class="c1"># the information these encapsulate to create a progress</span>
@@ -2938,10 +2938,10 @@
                 <span class="c1"># We might wait to call wait again, so put the futures and status objects back in</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span> <span class="o">=</span> <span class="n">futs</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_status_objs</span><span class="p">[</span><span class="n">group</span><span class="p">]</span> <span class="o">=</span> <span class="n">status_objs</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">move_on</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">error_on_timeout</span><span class="p">:</span>
                     <span class="k">raise</span>
             <span class="k">finally</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">move_on</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">error_on_timeout</span><span class="p">:</span>
                     <span class="c1"># Notify the waiting_hook function that we have moved on by</span>
                     <span class="c1"># sending it `None`. If all goes well, it could have</span>
                     <span class="c1"># inferred this from the status_obj, but there are edge</span>
