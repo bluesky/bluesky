@@ -634,7 +634,14 @@ def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, e
     ----------
     group : string (or any hashable object), optional
         Identifier given to `abs_set`, `rel_set`, `trigger`; None by default
+    timeout : float, optional
+        The maximum duration, in seconds, to wait for all objects in the group to complete.
+        If the timeout expires and `error_on_timeout` is set to True, a TimeoutError is raised.
 
+    error_on_timeout : bool, Defaults to True
+        Specifies the behavior when the timeout is reached:
+        - If True, a TimeoutError is raised if the operations do not complete within the specified timeout.
+        - If False, the method returns once all objects are done.
     Yields
     ------
     msg : Msg
@@ -1026,7 +1033,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     yield from complete_all(*flyers, group=group, wait=False)
     done = False
     while not done:
-        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=True)
+        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False)
         yield from collect(*dets, name=stream_name)
 
 

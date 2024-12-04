@@ -2321,7 +2321,7 @@ class RunEngine:
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
         true when all triggered objects are done. When the keyword argument
-        `error_on_timeout=<error_on_timeout>` is true, this method can return before all objects are done
+        `error_on_timeout=<error_on_timeout>` is false, this method can return before all objects are done
         after a flush period given by the `timeout=<TIMEOUT>` keyword argument.
 
         Expected message object is:
@@ -2334,10 +2334,10 @@ class RunEngine:
         done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
-            error_on_timeout = False
+            error_on_timeout = True
         else:
             group = msg.kwargs["group"]
-            error_on_timeout = msg.kwargs.get("error_on_timeout", False)
+            error_on_timeout = msg.kwargs.get("error_on_timeout", True)
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:
@@ -2350,7 +2350,7 @@ class RunEngine:
                     if group not in self._seen_wait_and_move_on_keys:
                         self._seen_wait_and_move_on_keys.add(group)
                         self._call_waiting_hook(status_objs)
-                else:  # if move_on False
+                else:  # if error_on_timeout False
                     # Notify the waiting_hook function that the RunEngine is
                     # waiting for these status_objs to complete. Users can use
                     # the information these encapsulate to create a progress
