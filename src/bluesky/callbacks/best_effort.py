@@ -16,12 +16,15 @@ from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
+from typing import Any
 from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
+from matplotlib.axes import Axes
 from matplotlib.axis import Axis
+from matplotlib.figure import Figure
 
 from .core import LiveTable, make_class_safe
 from .fitting import PeakStats
@@ -154,8 +157,188 @@ class BestEffortCallback(QtAwareCallback):
             )
             print("Persistent Unique Scan ID: '{0}'".format(self._start_doc["uid"]))  # noqa: UP030
 
-    def _set_up_plots(self, doc, stream_name, columns):
+    def _set_up_plots(self, doc, stream_name, columns: list[Any]):
         """Using the descriptor doc"""
+        plot_data = self._verify_plot_data(stream_name, columns)
+        if not plot_data:
+            return
+
+        # This is a heuristic approach until we think of how to hint this in a
+        # generalizable way.
+        # 'time' once LivePlot can do that
+        dim_fields: list[str] = self.dim_fields if stream_name == self.dim_stream else ["time"]
+
+        ndims = len(dim_fields)
+        if not 0 < ndims < 3:
+            # we need 1 or 2 dims to do anything, do not make empty figures
+            warn(  # noqa: B028
+                "Plots are only made for 1 or 2 dimensions. "
+                "Adjust the metadata hints field for BestEffortCallback to produce plots."
+            )
+            return
+        # Create a figure or reuse an existing one.
+
+        figure_name = self._get_figure_name(columns, dim_fields)
+
+        figure = self._fig_factory(figure_name)
+
+        axes = self._generate_axes(columns, ndims, figure)
+
+        # ## LIVE PLOT AND PEAK ANALYSIS ## #
+
+        if ndims == 1:
+            self._live_plots[doc["uid"]] = {}
+            self._peak_stats[doc["uid"]] = {}
+            (x_key,) = dim_fields
+            for y_key, ax in zip(columns, axes):
+                dtype = doc["data_keys"][y_key]["dtype"]
+                if dtype not in ("number", "integer"):
+                    warn(
+                        f"Omitting {y_key} from plot because dtype is {dtype}",
+                        stacklevel=1,
+                    )
+                    continue
+                # Create an instance of LivePlot and an instance of PeakStats.
+                live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax, peak_results=self.peaks)
+                live_plot("start", self._start_doc)
+                live_plot("descriptor", doc)
+                peak_stats = PeakStats(x=x_key, y=y_key, calc_derivative_and_stats=self._calc_derivative_and_stats)
+                peak_stats("start", self._start_doc)
+                peak_stats("descriptor", doc)
+
+                # Stash them in state.
+                self._live_plots[doc["uid"]][y_key] = live_plot
+                self._peak_stats[doc["uid"]][y_key] = peak_stats
+
+            for ax in axes[:-1]:
+                ax.set_xlabel("")
+        elif ndims == 2:
+            # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
+            # safer one to use, so it is the fallback..
+            gridding = self._start_doc.get("hints", {}).get("gridding")
+            if gridding == "rectilinear":
+                self._live_grids[doc["uid"]] = {}
+                slow, fast = dim_fields
+                try:
+                    extents = self._start_doc["extents"]
+                    shape = self._start_doc["shape"]
+                except KeyError:
+                    warn(
+                        "Need both 'shape' and 'extents' in plan metadata to create LiveGrid.",
+                        stacklevel=1,
+                    )
+                else:
+                    data_range = np.array([float(e[-1] - e[0]) for e in extents])
+                    y_step, x_step = data_range / [max(1, s - 1) for s in shape]
+                    adjusted_extent = [
+                        extents[1][0] - x_step / 2,
+                        extents[1][1] + x_step / 2,
+                        extents[0][0] - y_step / 2,
+                        extents[0][1] + y_step / 2,
+                    ]
+                    # MAGIC NUMBERS based on what tacaswell thinks looks OK
+                    ASPECT_RATIO_REF_VALUE = 2
+                    for I_key, ax in zip(columns, axes):
+                        data_aspect_ratio = np.abs(data_range[1] / data_range[0])
+                        if 1 / ASPECT_RATIO_REF_VALUE < data_aspect_ratio < ASPECT_RATIO_REF_VALUE:
+                            aspect = "equal"
+                            ax.set_aspect(aspect, adjustable="box")
+                        else:
+                            aspect = "auto"
+                            ax.set_aspect(aspect, adjustable="datalim")
+
+                        live_grid = LiveGrid(
+                            shape,
+                            I_key,
+                            xlabel=fast,
+                            ylabel=slow,
+                            extent=adjusted_extent,
+                            aspect=aspect,
+                            ax=ax,
+                        )
+
+                        live_grid("start", self._start_doc)
+                        live_grid("descriptor", doc)
+                        self._live_grids[doc["uid"]][I_key] = live_grid
+            else:
+                self._live_scatters[doc["uid"]] = {}
+                x_key, y_key = dim_fields
+                for I_key, ax in zip(columns, axes):
+                    try:
+                        extents = self._start_doc["extents"]
+                    except KeyError:
+                        xlim = ylim = None
+                    else:
+                        xlim, ylim = extents
+                    live_scatter = LiveScatter(
+                        x_key,
+                        y_key,
+                        I_key,
+                        xlim=xlim,
+                        ylim=ylim,
+                        # Let clim autoscale.
+                        ax=ax,
+                    )
+                    live_scatter("start", self._start_doc)
+                    live_scatter("descriptor", doc)
+                    self._live_scatters[doc["uid"]][I_key] = live_scatter
+
+        else:
+            raise NotImplementedError("we do not support 3D+ in BEC yet (and it should have bailed above)")
+
+    def _generate_axes(self, columns, ndims, figure: Figure) -> list[Axes]:
+        if not figure.axes:
+            if len(columns) < 5:
+                layout = (len(columns), 1)
+            else:
+                nrows = ncols = int(np.ceil(np.sqrt(len(columns))))
+                while (nrows - 1) * ncols >= len(columns):
+                    nrows -= 1
+                layout = (nrows, ncols)
+            if ndims == 1:
+                share_kwargs = {"sharex": True}
+            elif ndims == 2:
+                share_kwargs = {"sharex": True, "sharey": True}
+            else:
+                raise NotImplementedError("we now support 3D?!")
+
+            fig_size = np.array(layout[::-1]) * 5
+            figure.set_size_inches(*fig_size)
+            axes_grid = figure.subplots(*map(int, layout), **share_kwargs)
+            for ax in figure.axes[len(columns) :]:
+                ax.set_visible(False)
+
+            if len(figure.axes) > 1 and len(axes_grid.shape) == 2:
+                # Axes go left to right, top to bottom, and will make some labels invisible
+                for i in range(int(layout[1])):
+                    if axes_grid[-1, i].get_visible() is False:
+                        axes_grid[-2, i].tick_params(axis="x", labelbottom=True)
+
+        axes = figure.axes
+        return axes
+
+    def _get_figure_name(self, columns, dim_fields: list[str]) -> str:
+        fig_name = "{} vs {}".format(" ".join(sorted(columns)), " ".join(sorted(dim_fields)))
+        if self.overplot and len(dim_fields) == 1:
+            # If any open figure matches 'figname {number}', use it. If there
+            # are multiple, the most recently touched one will be used.
+            pattern1 = re.compile("^" + fig_name + "$")
+            pattern2 = re.compile("^" + fig_name + r" \d+$")
+            for label in plt.get_figlabels():
+                if pattern1.match(label) or pattern2.match(label):
+                    fig_name = label
+                    break
+        else:
+            if plt.fignum_exists(fig_name):
+                # Generate a unique name by appending a number.
+                for number in itertools.count(2):
+                    new_name = f"{fig_name} {number}"
+                    if not plt.fignum_exists(new_name):
+                        fig_name = new_name
+                        break
+        return fig_name
+
+    def _verify_plot_data(self, stream_name, columns: list[Any]) -> bool:
         plot_data = True
 
         if not self._plots_enabled:
@@ -170,178 +353,7 @@ class BestEffortCallback(QtAwareCallback):
             and self.omit_single_point_plot
         ):
             plot_data = False
-
-        if plot_data:
-            # This is a heuristic approach until we think of how to hint this in a
-            # generalizable way.
-            if stream_name == self.dim_stream:
-                dim_fields = self.dim_fields
-            else:
-                dim_fields = ["time"]  # 'time' once LivePlot can do that
-
-            # Create a figure or reuse an existing one.
-
-            fig_name = "{} vs {}".format(" ".join(sorted(columns)), " ".join(sorted(dim_fields)))
-            if self.overplot and len(dim_fields) == 1:
-                # If any open figure matches 'figname {number}', use it. If there
-                # are multiple, the most recently touched one will be used.
-                pat1 = re.compile("^" + fig_name + "$")
-                pat2 = re.compile("^" + fig_name + r" \d+$")
-                for label in plt.get_figlabels():
-                    if pat1.match(label) or pat2.match(label):
-                        fig_name = label
-                        break
-            else:
-                if plt.fignum_exists(fig_name):
-                    # Generate a unique name by appending a number.
-                    for number in itertools.count(2):
-                        new_name = f"{fig_name} {number}"
-                        if not plt.fignum_exists(new_name):
-                            fig_name = new_name
-                            break
-            ndims = len(dim_fields)
-            if not 0 < ndims < 3:
-                # we need 1 or 2 dims to do anything, do not make empty figures
-                warn(  # noqa: B028
-                    "Plots are only made for 1 or 2 dimensions. "
-                    "Adjust the metadata hints field for BestEffortCallback to produce plots."
-                )
-                return
-
-            fig = self._fig_factory(fig_name)
-
-            if not fig.axes:
-                if len(columns) < 5:
-                    layout = (len(columns), 1)
-                else:
-                    nrows = ncols = int(np.ceil(np.sqrt(len(columns))))
-                    while (nrows - 1) * ncols >= len(columns):
-                        nrows -= 1
-                    layout = (nrows, ncols)
-                if ndims == 1:
-                    share_kwargs = {"sharex": True}
-                elif ndims == 2:
-                    share_kwargs = {"sharex": True, "sharey": True}
-                else:
-                    raise NotImplementedError("we now support 3D?!")
-
-                fig_size = np.array(layout[::-1]) * 5
-                fig.set_size_inches(*fig_size)
-                axes_grid = fig.subplots(*map(int, layout), **share_kwargs)
-                for ax in fig.axes[len(columns) :]:
-                    ax.set_visible(False)
-
-                if len(fig.axes) > 1 and len(axes_grid.shape) == 2:
-                    # Axes go left to right, top to bottom, and will make some labels invisible
-                    for i in range(int(layout[1])):
-                        if axes_grid[-1, i].get_visible() is False:
-                            axes_grid[-2, i].tick_params(axis="x", labelbottom=True)
-
-            axes = fig.axes
-
-            # ## LIVE PLOT AND PEAK ANALYSIS ## #
-
-            if ndims == 1:
-                self._live_plots[doc["uid"]] = {}
-                self._peak_stats[doc["uid"]] = {}
-                (x_key,) = dim_fields
-                for y_key, ax in zip(columns, axes):
-                    dtype = doc["data_keys"][y_key]["dtype"]
-                    if dtype not in ("number", "integer"):
-                        warn(
-                            f"Omitting {y_key} from plot because dtype is {dtype}",
-                            stacklevel=1,
-                        )
-                        continue
-                    # Create an instance of LivePlot and an instance of PeakStats.
-                    live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax, peak_results=self.peaks)
-                    live_plot("start", self._start_doc)
-                    live_plot("descriptor", doc)
-                    peak_stats = PeakStats(
-                        x=x_key, y=y_key, calc_derivative_and_stats=self._calc_derivative_and_stats
-                    )
-                    peak_stats("start", self._start_doc)
-                    peak_stats("descriptor", doc)
-
-                    # Stash them in state.
-                    self._live_plots[doc["uid"]][y_key] = live_plot
-                    self._peak_stats[doc["uid"]][y_key] = peak_stats
-
-                for ax in axes[:-1]:
-                    ax.set_xlabel("")
-            elif ndims == 2:
-                # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
-                # safer one to use, so it is the fallback..
-                gridding = self._start_doc.get("hints", {}).get("gridding")
-                if gridding == "rectilinear":
-                    self._live_grids[doc["uid"]] = {}
-                    slow, fast = dim_fields
-                    try:
-                        extents = self._start_doc["extents"]
-                        shape = self._start_doc["shape"]
-                    except KeyError:
-                        warn(
-                            "Need both 'shape' and 'extents' in plan metadata to create LiveGrid.",
-                            stacklevel=1,
-                        )
-                    else:
-                        data_range = np.array([float(e[-1] - e[0]) for e in extents])
-                        y_step, x_step = data_range / [max(1, s - 1) for s in shape]
-                        adjusted_extent = [
-                            extents[1][0] - x_step / 2,
-                            extents[1][1] + x_step / 2,
-                            extents[0][0] - y_step / 2,
-                            extents[0][1] + y_step / 2,
-                        ]
-                        for I_key, ax in zip(columns, axes):
-                            # MAGIC NUMBERS based on what tacaswell thinks looks OK
-                            data_aspect_ratio = np.abs(data_range[1] / data_range[0])
-                            MAR = 2
-                            if 1 / MAR < data_aspect_ratio < MAR:
-                                aspect = "equal"
-                                ax.set_aspect(aspect, adjustable="box")
-                            else:
-                                aspect = "auto"
-                                ax.set_aspect(aspect, adjustable="datalim")
-
-                            live_grid = LiveGrid(
-                                shape,
-                                I_key,
-                                xlabel=fast,
-                                ylabel=slow,
-                                extent=adjusted_extent,
-                                aspect=aspect,
-                                ax=ax,
-                            )
-
-                            live_grid("start", self._start_doc)
-                            live_grid("descriptor", doc)
-                            self._live_grids[doc["uid"]][I_key] = live_grid
-                else:
-                    self._live_scatters[doc["uid"]] = {}
-                    x_key, y_key = dim_fields
-                    for I_key, ax in zip(columns, axes):
-                        try:
-                            extents = self._start_doc["extents"]
-                        except KeyError:
-                            xlim = ylim = None
-                        else:
-                            xlim, ylim = extents
-                        live_scatter = LiveScatter(
-                            x_key,
-                            y_key,
-                            I_key,
-                            xlim=xlim,
-                            ylim=ylim,
-                            # Let clim autoscale.
-                            ax=ax,
-                        )
-                        live_scatter("start", self._start_doc)
-                        live_scatter("descriptor", doc)
-                        self._live_scatters[doc["uid"]][I_key] = live_scatter
-
-            else:
-                raise NotImplementedError("we do not support 3D+ in BEC yet (and it should have bailed above)")
+        return plot_data
 
     def descriptor(self, doc):
         self._descriptors[doc["uid"]] = doc
