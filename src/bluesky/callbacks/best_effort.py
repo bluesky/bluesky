@@ -11,16 +11,19 @@ import sys
 import threading
 import time
 import weakref
+from collections import deque
 from collections.abc import Mapping
 from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
+from typing import Any, Optional
 from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
+from event_model import Dtype, EventDescriptor
 from matplotlib.axis import Axis
 
 from .core import LiveTable, make_class_safe
@@ -29,29 +32,53 @@ from .mpl_plotting import LiveGrid, LivePlot, LiveScatter, QtAwareCallback
 
 logger = logging.getLogger(__name__)
 
+default_label_format = "{attr}={val:.3f}"
+
+
+def validate_label_format(label_format: Optional[str]) -> str:
+    """Validate label format for a legend in LivePlot"""
+    if label_format is None:
+        return default_label_format
+    assert (label_format is None) or ("attr" in label_format and "val" in label_format), (
+        'Label format string must either be "None" or \n'
+        f'contain named placeholders "attr" and "val", e.g. "{default_label_format}"'
+    )
+    if not label_format:
+        return default_label_format
+    return label_format
+
 
 @make_class_safe(logger=logger)
 class BestEffortCallback(QtAwareCallback):
-    def __init__(self, *, fig_factory=None, table_enabled=True, calc_derivative_and_stats=False, **kwargs):
+    def __init__(
+        self,
+        *,
+        fig_factory: Optional[Any] = None,
+        table_enabled=True,
+        label_format: Optional[str] = None,
+        calc_derivative_and_stats=False,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         # internal state
         self._start_doc = None
-        self._descriptors = {}
+        self._descriptors: dict[str, EventDescriptor] = {}
         self._table = None
         self._heading_enabled = True
         self._table_enabled = table_enabled
         self._baseline_enabled = True
         self._plots_enabled = True
         # axes supplied from outside
-        self._fig_factory = fig_factory if fig_factory is not None else partial(plt.figure, layout="constrained")
+        self._fig_factory = fig_factory or partial(plt.figure, layout="constrained")
         # maps descriptor uid to dict which maps data key to LivePlot instance
-        self._live_plots = {}
-        self._live_grids = {}
-        self._live_scatters = {}
-        self._peak_stats = {}  # same structure as live_plots
+        self._live_plots: dict[str, dict[str, LivePlotPlusPeaks]] = {}
+        self._live_grids: dict[str, LiveGrid] = {}
+        self._live_scatters: dict[str, LiveScatter] = {}
+        self._peak_stats: dict[str, dict[str, LivePlotPlusPeaks]] = {}  # same structure as live_plots
+        self._label_format = label_format or default_label_format
         self._calc_derivative_and_stats = calc_derivative_and_stats
         self._cleanup_motor_heuristic = False
-        self._stream_names_seen = set()
+        self._stream_names_seen: set[str] = set()
 
         # public options
         self.overplot = True
@@ -96,6 +123,9 @@ class BestEffortCallback(QtAwareCallback):
     def disable_plots(self):
         "Do not plot anything."
         self._plots_enabled = False
+
+    def change_label_format(self, format: str):
+        self._label_format = validate_label_format(format)
 
     def __call__(self, name, doc, *args, **kwargs):
         if not (self._table_enabled or self._baseline_enabled or self._plots_enabled):
@@ -154,7 +184,7 @@ class BestEffortCallback(QtAwareCallback):
             )
             print("Persistent Unique Scan ID: '{0}'".format(self._start_doc["uid"]))  # noqa: UP030
 
-    def _set_up_plots(self, doc, stream_name, columns):
+    def _set_up_plots(self, doc: EventDescriptor, stream_name, columns: list):
         """Using the descriptor doc"""
         plot_data = True
 
@@ -165,7 +195,7 @@ class BestEffortCallback(QtAwareCallback):
         if not columns:
             plot_data = False
         if (
-            (self._start_doc.get("num_points") == 1)
+            (self._start_doc is not None and self._start_doc.get("num_points") == 1)
             and (stream_name == self.dim_stream)
             and self.omit_single_point_plot
         ):
@@ -212,30 +242,28 @@ class BestEffortCallback(QtAwareCallback):
 
             if not fig.axes:
                 if len(columns) < 5:
-                    layout = (len(columns), 1)
+                    ncols = len(columns)
+                    nrows = 1
                 else:
                     nrows = ncols = int(np.ceil(np.sqrt(len(columns))))
                     while (nrows - 1) * ncols >= len(columns):
                         nrows -= 1
-                    layout = (nrows, ncols)
-                if ndims == 1:
-                    share_kwargs = {"sharex": True}
-                elif ndims == 2:
-                    share_kwargs = {"sharex": True, "sharey": True}
-                else:
+
+                if ndims not in [1, 2]:
                     raise NotImplementedError("we now support 3D?!")
 
-                fig_size = np.array(layout[::-1]) * 5
+                fig_size = np.array((ncols, nrows)[::-1]) * 5
                 fig.set_size_inches(*fig_size)
-                axes_grid = fig.subplots(*map(int, layout), **share_kwargs)
+                share_y_axis = ndims == 2
+                axes_grid = fig.subplots(ncols=int(ncols), nrows=int(nrows), sharex=True, sharey=share_y_axis)
                 for ax in fig.axes[len(columns) :]:
                     ax.set_visible(False)
 
                 if len(fig.axes) > 1 and len(axes_grid.shape) == 2:
                     # Axes go left to right, top to bottom, and will make some labels invisible
-                    for i in range(int(layout[1])):
-                        if axes_grid[-1, i].get_visible() is False:
-                            axes_grid[-2, i].tick_params(axis="x", labelbottom=True)
+                    for column in range(int(ncols)):
+                        if not axes_grid[-1, column].get_visible():
+                            axes_grid[-2, column].tick_params(axis="x", labelbottom=True)
 
             axes = fig.axes
 
@@ -246,7 +274,7 @@ class BestEffortCallback(QtAwareCallback):
                 self._peak_stats[doc["uid"]] = {}
                 (x_key,) = dim_fields
                 for y_key, ax in zip(columns, axes):
-                    dtype = doc["data_keys"][y_key]["dtype"]
+                    dtype: Dtype = doc["data_keys"][y_key]["dtype"]
                     if dtype not in ("number", "integer"):
                         warn(
                             f"Omitting {y_key} from plot because dtype is {dtype}",
@@ -254,7 +282,13 @@ class BestEffortCallback(QtAwareCallback):
                         )
                         continue
                     # Create an instance of LivePlot and an instance of PeakStats.
-                    live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax, peak_results=self.peaks)
+                    live_plot = LivePlotPlusPeaks(
+                        y=y_key,
+                        x=x_key,
+                        ax=ax,
+                        peak_results=self.peaks,
+                        label_format=self._label_format or default_label_format,
+                    )
                     live_plot("start", self._start_doc)
                     live_plot("descriptor", doc)
                     peak_stats = PeakStats(
@@ -272,6 +306,7 @@ class BestEffortCallback(QtAwareCallback):
             elif ndims == 2:
                 # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
                 # safer one to use, so it is the fallback..
+                assert self._start_doc is not None, "Start doc should already be here"
                 gridding = self._start_doc.get("hints", {}).get("gridding")
                 if gridding == "rectilinear":
                     self._live_grids[doc["uid"]] = {}
@@ -515,7 +550,7 @@ class BestEffortCallback(QtAwareCallback):
 
 
 class PeakResults:
-    ATTRS = ("com", "cen", "max", "min", "fwhm")
+    ATTRS = ("com", "cen", "max", "min", "fwhm", "crossings")
 
     def __init__(self):
         for attr in self.ATTRS:
@@ -557,11 +592,13 @@ class LivePlotPlusPeaks(LivePlot):
         weakref.WeakKeyDictionary()
     )  # map ax to list of instances
 
-    def __init__(self, *args, peak_results, **kwargs):
+    def __init__(self, *args, peak_results, label_format=None, max_labels: int = 2, **kwargs):
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
+        self.max_labels = max_labels
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
+        self.label_format = validate_label_format(label_format)
 
         def setup():
             # Run this code in start() so that it runs on the correct thread.
@@ -574,11 +611,12 @@ class LivePlotPlusPeaks(LivePlot):
                 # This is the first instance of LivePlotPlusPeaks on these axes.
                 # Set up matplotlib event handling.
 
+                # TODO: make it configurable, requested by beamline scientists:
                 self.__visible[ax] = False
 
                 def toggle(event):
                     if event.key == "P":
-                        self.__visible[ax] = ~self.__visible[ax]
+                        self.__visible[ax] = not self.__visible[ax]
                         for instance in self.__instances[ax]:
                             instance.check_visibility()
 
@@ -598,25 +636,58 @@ class LivePlotPlusPeaks(LivePlot):
             else:
                 for artist in self.__arts:
                     artist.set_visible(True)
+                    label = artist.get_label()
+                    if label.startswith("_"):
+                        artist.set_label(label[1:])
         elif self.__arts is not None:
             for artist in self.__arts:
                 artist.set_visible(False)
+                label = artist.get_label()
+                if label.startswith("_"):
+                    artist.set_label(label[1:])
         self.ax.legend(loc="best")
         self.ax.figure.canvas.draw_idle()
 
     def plot_annotations(self):
-        styles = iter(cycler("color", "kr"))
-        vlines = []
-        for style, attr in zip(styles, ["cen", "com"]):
+        # Vertical and horizontal lines:
+        styles = iter(cycler("color", "krbm"))
+        lines = deque(maxlen=self.max_labels)
+        for style, attr, numerical_method, ind in zip(
+            styles, ["cen", "com", "min", "max"], ["axvline", "axvline", "axhline", "axhline"], [None, None, 1, 1]
+        ):
             val = self.peak_results[attr][self.y]
-            # Only put labels in this legend once per axis.
-            if self.ax in self.__labeled:
-                label = "_no_legend_"
-            else:
-                label = attr
-            vlines.append(self.ax.axvline(val, label=label, **style))
+            if ind is not None:
+                val = val[ind]
+            label = self.label_format.format(attr=attr, val=val)
+            new_line = getattr(self.ax, numerical_method)(val, label=label, **style)
+            lines.append(new_line)
+
+        # Arrows (e.g., FWHM):
+        attr = "fwhm"
+        val = self.peak_results[attr][self.y]
+        arrows = self._get_arrows(list(lines), attr, val)
+
         self.__labeled[self.ax] = None
-        self.__arts = vlines
+        self.__arts = list(lines) + arrows
+
+    def _get_arrows(self, lines: list, attr: str, val):
+        arrows = []
+        if val:
+            max_crds = self.peak_results["max"][self.y]
+            min_crds = self.peak_results["min"][self.y]
+            crossings = self.peak_results["crossings"][self.y]
+            style = {"color": "g"}
+            arrow_y_pos = (max_crds[1] + min_crds[1]) / 2
+            arrows.append(
+                self.ax.annotate(
+                    "",
+                    xytext=(crossings[0], arrow_y_pos),
+                    xy=(crossings[-1], arrow_y_pos),
+                    arrowprops=dict(arrowstyle="<->", **style),
+                )
+            )
+
+        return arrows
 
     def start(self, doc):
         super().start(doc)

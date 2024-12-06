@@ -15,7 +15,7 @@ classifiers = [
 description = "Experiment specification & orchestration."
 dependencies = [
     "cycler",
-    "event-model>=1.19.8",
+    "event-model>=1.21",
     "historydict",
     "importlib-resources;python_version<'3.9'",
     "msgpack",
