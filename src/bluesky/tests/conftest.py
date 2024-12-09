@@ -76,3 +76,16 @@ def cleanup_any_figures(request):
 
     "Close any matplotlib figures that were opened during a test."
     plt.close("all")
+
+
+@pytest.fixture(scope="function", params=["NO", "YES"])
+def bluesky_pause_on_plan_exception_env_var(request):
+    tmpv = None
+    if "BLUESKY_PAUSE_ON_PLAN_EXCEPTION" in os.environ:
+        tmpv = os.environ["BLUESKY_PAUSE_ON_PLAN_EXCEPTION"]
+    os.environ["BLUESKY_PAUSE_ON_PLAN_EXCEPTION"] = request.param
+    yield
+    if tmpv is None:
+        os.environ.pop("BLUESKY_PAUSE_ON_PLAN_EXCEPTION")
+    else:
+        os.environ["BLUESKY_PAUSE_ON_PLAN_EXCEPTION"] = tmpv
