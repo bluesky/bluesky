@@ -108,7 +108,7 @@ class LogFormatter(logging.Formatter):
                 # If curses is not present (currently we'll only get here for
                 # colorama on windows), assume hard-coded ANSI color codes.
                 for levelno, code in colors.items():
-                    self._colors[levelno] = f"\033[2;3{code:d}m"
+                    self._colors[levelno] = "\033[2;3%dm" % code
                 self._normal = "\033[0m"
         else:
             self._normal = ""
