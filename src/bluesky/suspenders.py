@@ -29,9 +29,13 @@ class SuspenderBase(metaclass=ABCMeta):
 
     tripped_message : str, optional
         Message to include in the trip notification
+
+    is_async : bool, optional
+        Whether the signal is asynchronous and implements `subscribe_value`
+        or is synchronous and implements `subscribe`
     """
 
-    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message=""):
+    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message="", is_async=False):
         """ """
         self.RE = None
         self._ev = None
@@ -42,6 +46,8 @@ class SuspenderBase(metaclass=ABCMeta):
         self._sig = signal
         self._pre_plan = pre_plan
         self._post_plan = post_plan
+        self._last_value = None
+        self._is_async = is_async
 
     def __repr__(self):
         return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
@@ -69,7 +75,10 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         with self._lock:
             self.RE = RE
-        self._sig.subscribe(self, event_type=event_type, run=True)
+        if self._is_async:
+            self.RE.loop.call_soon_threadsafe(partial(self._sig.subscribe_value, self))
+        else:
+            self._sig.subscribe(self, event_type=event_type, run=True)
 
     def remove(self):
         """Disable the suspender
@@ -131,14 +140,14 @@ class SuspenderBase(metaclass=ABCMeta):
             if self.RE is None:
                 return
             loop = self.RE._loop
-
+            self._last_value = value
             if self._should_suspend(value):
                 self._tripped = True
                 # this does dirty things with internal state
                 if self._ev is None and self.RE is not None:
                     self.__make_event()
                     if self._ev is None:
-                        raise RuntimeError("Could not create the ")
+                        raise RuntimeError("Could not create the suspend event")
                     cb = partial(
                         self.RE.request_suspend,
                         self._ev.wait,
@@ -156,15 +165,18 @@ class SuspenderBase(metaclass=ABCMeta):
         """Make or return the asyncio.Event to use as a bridge."""
         assert self._lock.locked()
         if self._ev is None and self.RE is not None:
-            th_ev = threading.Event()
-
-            def really_make_the_event():
+            if self._is_async:
                 self._ev = asyncio.Event()
-                th_ev.set()
+            else:
+                th_ev = threading.Event()
 
-            h = self.RE._loop.call_soon_threadsafe(really_make_the_event)
-            if not th_ev.wait(0.1):
-                h.cancel()
+                def really_make_the_event():
+                    self._ev = asyncio.Event()
+                    th_ev.set()
+
+                h = self.RE._loop.call_soon_threadsafe(really_make_the_event)
+                if not th_ev.wait(0.1):
+                    h.cancel()
         return self._ev
 
     def __set_event(self, loop):
@@ -370,7 +382,7 @@ class SuspendFloor(_Threshold):
             return ""
 
         just = (
-            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            f"Signal {self._sig.name} = {self._last_value!r} "
             + f"fell below {self._suspend_thresh} "
             + f"and has not yet crossed above {self._resume_thresh}."
         )
@@ -425,7 +437,7 @@ class SuspendCeil(_Threshold):
             return ""
 
         just = (
-            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            f"Signal {self._sig.name} = {self._last_value!r} "
             + f"went above {self._suspend_thresh} "
             + f"and has not yet crossed below {self._resume_thresh}."
         )
@@ -486,7 +498,7 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
             return ""
 
         just = "Signal {} = {!r} is outside of the range ({}, {})".format(  # noqa: UP032
-            self._sig.name, self._sig.get(), self._bot, self._top
+            self._sig.name, self._last_value, self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
@@ -543,7 +555,7 @@ class SuspendOutBand(_SuspendBandBase):
             return ""
 
         just = "Signal {} = {!r} is inside of the range ({}, {})".format(  # noqa: UP032
-            self._sig.name, self._sig.get(), self._bot, self._top
+            self._sig.name, self._last_value, self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
@@ -679,7 +691,7 @@ class SuspendWhenChanged(SuspenderBase):
         if not self.tripped:
             return ""
 
-        just = f"Signal {self._sig.name}" f', got "{self._sig.get()}"' f', expected "{self.expected_value}"'
+        just = f'Signal {self._sig.name}, got "{self._last_value}", expected "{self.expected_value}"'
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
         return ": ".join(s for s in (just, self._tripped_message) if s)
