@@ -450,7 +450,7 @@ movr = mvr  # synonym
 
 
 @plan
-def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
+def rd(obj: Union[Readable, Locatable], *, default_value: Any = 0) -> MsgGenerator[Any]:
     """Reads a single-value non-triggered object
 
     This is a helper plan to get the scalar value out of a Device
