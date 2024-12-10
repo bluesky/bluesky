@@ -1,3 +1,4 @@
+import os
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,11 +9,14 @@ from bluesky.preprocessors import (
     contingency_wrapper,
     msg_mutator,
 )
-from bluesky.run_engine import RequestStop, RunEngine
+from bluesky.run_engine import RequestStop, RunEngine, RunEngineInterrupted
 
 
-def test_given_a_plan_that_raises_contigency_will_call_except_plan_with_exception_and_run_engine_errors():
+def test_given_a_plan_that_raises_contigency_will_call_except_plan_with_exception_and_run_engine_errors(
+    bluesky_pause_on_plan_exception_env_var,
+):
     expected_exception = Exception()
+    ev = os.environ.get("BLUESKY_PAUSE_ON_PLAN_EXCEPTION")
 
     def except_plan(exception: Exception):
         assert exception == expected_exception
@@ -28,11 +32,16 @@ def test_given_a_plan_that_raises_contigency_will_call_except_plan_with_exceptio
 
     RE = RunEngine()
 
-    with pytest.raises(Exception) as exception:
-        RE(raising_plan())
-        assert exception == expected_exception
-
-    except_plan.assert_called_once()
+    if ev == "NO":
+        with pytest.raises(Exception) as exception:
+            RE(raising_plan())
+            assert RE.state != "paused"
+            assert exception == expected_exception
+        except_plan.assert_called_once()
+    else:
+        with pytest.raises(RunEngineInterrupted) as exception:
+            RE(raising_plan())
+            assert RE.state == "paused"
 
 
 def test_given_a_plan_that_raises_contigency_with_no_auto_raise_will_call_except_plan_and_RE_does_not_raise():
