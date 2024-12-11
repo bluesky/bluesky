@@ -78,7 +78,6 @@ dev = [
     "sphinx-copybutton",
     "sphinx-design",
     "sphinx_rtd_theme",
-    "streamz",
     # These suitcases are test deps of databroker which we need to access
     # databroker fixtures.
     "suitcase-jsonl",
@@ -87,6 +86,7 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
+    "bluesky[integrations]",
     "tiled[all]",
     "vendoring",
 ]
@@ -94,11 +94,11 @@ ipython = ["ipython"]
 zmq = ["pyzmq"]
 common = ["ophyd", "databroker"]
 tools = ["doct", "lmfit", "tifffile", "historydict"]
-streamz = ["streamz"]
+integrations = ["reactivex"]
 plotting = ["matplotlib"]
 cmd = ["colorama"]
 olog = ["jinja2"]
-all = ["bluesky[dev,ipython,zmq,common,tools,streamz,plotting,cmd,olog]"]
+all = ["bluesky[dev,ipython,zmq,common,tools,integrations,plotting,cmd,olog]"]
 
 [project.scripts]
 bluesky-0MQ-proxy = "bluesky.commandline.zmq_proxy:main"
