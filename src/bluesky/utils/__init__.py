@@ -31,7 +31,6 @@ from weakref import WeakKeyDictionary, ref
 import msgpack
 import msgpack_numpy
 import numpy as np
-import zict
 from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
@@ -824,6 +823,14 @@ class PersistentDict(collections.abc.MutableMapping):
     """
 
     def __init__(self, directory):
+        try:
+            import zict
+        except ImportError as e:
+            raise RuntimeError(
+                "In order to use PersistentDict you must install zict. "
+                "zict v3 has the limitation that only one Python process "
+                "can reliably work with the data files at a time."
+            ) from e
         self._directory = directory
         self._file = zict.File(directory)
         self._func = zict.Func(self._dump, self._load, self._file)
