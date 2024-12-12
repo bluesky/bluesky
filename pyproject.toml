@@ -26,7 +26,6 @@ dependencies = [
     "tqdm>=4.44",
     "typing-extensions>=4.0.0;python_version<'3.11'",
     "dataclasses;python_version<'3.7'",
-    "zict<3.0.0",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -89,6 +88,7 @@ dev = [
     "types-mock",
     "tiled[all]",
     "vendoring",
+    "zict",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]
@@ -98,6 +98,7 @@ streamz = ["streamz"]
 plotting = ["matplotlib"]
 cmd = ["colorama"]
 olog = ["jinja2"]
+old_persistentdict = ["zict<3"]
 all = ["bluesky[dev,ipython,zmq,common,tools,streamz,plotting,cmd,olog]"]
 
 [project.scripts]
