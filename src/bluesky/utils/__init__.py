@@ -1642,7 +1642,13 @@ class DuringTask:
         blocking_event : threading.Event
 
         """
-        blocking_event.wait()
+        if os.name == "nt":
+            # On windows, threading.Event.wait cannot be interrupted by CTRL-C - so split the
+            # wait into a series of smaller waits with timeouts.
+            while not blocking_event.wait(0.1):
+                pass
+        else:
+            blocking_event.wait()
 
 
 class DefaultDuringTask(DuringTask):
@@ -1682,7 +1688,7 @@ class DefaultDuringTask(DuringTask):
         global _qapp
         if "matplotlib" not in sys.modules:
             # We are not using matplotlib + Qt. Just wait on the Event.
-            blocking_event.wait()
+            super().block(blocking_event)
         # Figure out if we are using matplotlib with which backend
         # without importing anything that is not already imported.
         else:
@@ -1847,7 +1853,7 @@ class DefaultDuringTask(DuringTask):
                         return
             else:
                 # We are not using matplotlib + Qt. Just wait on the Event.
-                blocking_event.wait()
+                super().block(blocking_event)
 
 
 def _rearrange_into_parallel_dicts(readings):
