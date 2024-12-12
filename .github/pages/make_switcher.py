@@ -68,9 +68,7 @@ def write_json(path: Path, repository: str, versions: list[str]):
 
 def main(args=None):
     """Parse args and write switcher."""
-    parser = ArgumentParser(
-        description="Make a versions.json file from gh-pages directories"
-    )
+    parser = ArgumentParser(description="Make a versions.json file from gh-pages directories")
     parser.add_argument(
         "--add",
         help="Add this directory to the list of existing directories",
