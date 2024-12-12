@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.14.dev72+g10c69d8b documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.14.dev75+gf655a730 documentation</title>
   
   
   
@@ -38,21 +38,21 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../../_static/documentation_options.js?v=721f104f"></script>
+    <script src="../../_static/documentation_options.js?v=54534b24"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev72+g10c69d8b';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.dev75+gf655a730';
         DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
         </script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.dev72+g10c69d8b" />
+  <meta name="docsearch:version" content="1.14.dev75+gf655a730" />
   </head>
   
   
@@ -1659,10 +1659,6 @@
                         <span class="n">exc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_fut</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
                     <span class="k">except</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">):</span>
                         <span class="n">exc</span> <span class="o">=</span> <span class="kc">None</span>
-                    <span class="c1"># if the main task exception is not None, re-raise</span>
-                    <span class="c1"># it (unless it is a canceled error)</span>
-                    <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">_RunEnginePanic</span><span class="p">):</span>
-                        <span class="k">raise</span> <span class="n">exc</span>
                     <span class="c1"># Only try to get a result if there wasn&#39;t an error,</span>
                     <span class="c1"># (other than a cancelled error)</span>
                     <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1670,9 +1666,17 @@
                             <span class="n">plan_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_fut</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
                         <span class="k">except</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
                             <span class="n">plan_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NO_PLAN_RETURN</span>
-                        <span class="k">return</span> <span class="n">plan_return</span>  <span class="c1"># noqa: B012</span>
+                    <span class="c1"># we have something in exc</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">NO_PLAN_RETURN</span>
+                        <span class="c1"># special case the panic exception that we put in above</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">_RunEnginePanic</span><span class="p">):</span>
+                            <span class="n">plan_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NO_PLAN_RETURN</span>
+                        <span class="c1"># otherwise re-raise it</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">exc</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">plan_return</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="n">plan_return</span>
 
 <div class="viewcode-block" id="RunEngine.install_suspender">
 <a class="viewcode-back" href="../../state-machine.html#bluesky.run_engine.RunEngine.install_suspender">[docs]</a>
