@@ -31,7 +31,6 @@ from weakref import WeakKeyDictionary, ref
 import msgpack
 import msgpack_numpy
 import numpy as np
-
 from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
