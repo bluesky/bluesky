@@ -1,0 +1,1795 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bluesky.bundlers &#8212; bluesky 1.13.1rc1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+
+    <script src="../../_static/documentation_options.js?v=6443d743"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/bundlers';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc1';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.13.1rc1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky.bundlers</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for bluesky.bundlers</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">time</span> <span class="k">as</span> <span class="nn">ttime</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">event_model</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ComposeDescriptorBundle</span><span class="p">,</span>
+    <span class="n">DataKey</span><span class="p">,</span>
+    <span class="n">Datum</span><span class="p">,</span>
+    <span class="n">DocumentNames</span><span class="p">,</span>
+    <span class="n">EventModelValueError</span><span class="p">,</span>
+    <span class="n">Resource</span><span class="p">,</span>
+    <span class="n">StreamDatum</span><span class="p">,</span>
+    <span class="n">StreamRange</span><span class="p">,</span>
+    <span class="n">StreamResource</span><span class="p">,</span>
+    <span class="n">compose_run</span><span class="p">,</span>
+    <span class="n">pack_event_page</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">event_model.documents.event</span> <span class="kn">import</span> <span class="n">Event</span>
+
+<span class="kn">from</span> <span class="nn">.log</span> <span class="kn">import</span> <span class="n">doc_logger</span>
+<span class="kn">from</span> <span class="nn">.protocols</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Callback</span><span class="p">,</span>
+    <span class="n">Collectable</span><span class="p">,</span>
+    <span class="n">Configurable</span><span class="p">,</span>
+    <span class="n">EventCollectable</span><span class="p">,</span>
+    <span class="n">EventPageCollectable</span><span class="p">,</span>
+    <span class="n">Flyable</span><span class="p">,</span>
+    <span class="n">HasName</span><span class="p">,</span>
+    <span class="n">Readable</span><span class="p">,</span>
+    <span class="n">Reading</span><span class="p">,</span>
+    <span class="n">Subscribable</span><span class="p">,</span>
+    <span class="n">SyncOrAsync</span><span class="p">,</span>
+    <span class="n">T</span><span class="p">,</span>
+    <span class="n">WritesStreamAssets</span><span class="p">,</span>
+    <span class="n">check_supports</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">IllegalMessageSequence</span><span class="p">,</span>
+    <span class="n">Msg</span><span class="p">,</span>
+    <span class="n">_rearrange_into_parallel_dicts</span><span class="p">,</span>
+    <span class="n">iterate_maybe_async</span><span class="p">,</span>
+    <span class="n">maybe_await</span><span class="p">,</span>
+    <span class="n">maybe_collect_asset_docs</span><span class="p">,</span>
+    <span class="n">maybe_update_hints</span><span class="p">,</span>
+    <span class="n">new_uid</span><span class="p">,</span>
+    <span class="n">short_uid</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ObjDict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">T</span><span class="p">]]</span>
+<span class="n">ExternalAssetDoc</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Datum</span><span class="p">,</span> <span class="n">Resource</span><span class="p">,</span> <span class="n">StreamDatum</span><span class="p">,</span> <span class="n">StreamResource</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="RunBundler">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.html#bluesky.bundlers.RunBundler">[docs]</a>
+<span class="k">class</span> <span class="nc">RunBundler</span><span class="p">:</span>
+<div class="viewcode-block" id="RunBundler.__init__">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.html#bluesky.bundlers.RunBundler.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">md</span><span class="p">,</span> <span class="n">record_interruptions</span><span class="p">,</span> <span class="n">emit</span><span class="p">,</span> <span class="n">emit_sync</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">strict_pre_declare</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># if create can YOLO implicitly create a stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strict_pre_declare</span> <span class="o">=</span> <span class="n">strict_pre_declare</span>
+        <span class="c1"># state stolen from the RE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># if we are in the middle of bundling readings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># name given to event descriptor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># The (future) runstart uid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">HasName</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># objects read in one Event</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.read() in one Event</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.collect_asset_docs()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># cache of all obj.describe() output  # noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408  # cache of all obj.describe() output</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.describe_configuration()  # noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_values_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.read_configuration() values  # noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_ts_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.read_configuration() timestamps  # noqa: C408</span>
+        <span class="c1"># cache of {name: (doc, compose_event, compose_event_page)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">HasName</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="c1"># cache of {obj: {objs_frozen_set: (doc, compose_event, compose_event_page)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="c1"># a seq_num counter per stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters_copy</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># for if we redo data-points  # noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Subscribable</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Callback</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408  # cache of {obj: (cb, kwargs)}</span>
+        <span class="c1"># a cache of stream_resource uid to the data_keys that stream_resource collects for</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># objects after kickoff(), before collect()</span>
+        <span class="c1"># we expect the RE to take care of the composition</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_md</span> <span class="o">=</span> <span class="n">md</span>
+        <span class="c1"># this is state on the RE, mirror it here rather than refer to</span>
+        <span class="c1"># the parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_interruptions</span> <span class="o">=</span> <span class="n">record_interruptions</span>
+        <span class="c1"># this is RE.emit, but lifted to this context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span> <span class="o">=</span> <span class="n">emit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit_sync</span> <span class="o">=</span> <span class="n">emit_sync</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">log</span>
+        <span class="c1"># Map of set of collect objects to list of stream names that they can be collected into</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_declared_stream_names</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.open_run">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.open_run.html#bluesky.bundlers.RunBundler.open_run">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">open_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span> <span class="o">=</span> <span class="n">new_uid</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_desc_uid</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># uid for a special Event Desc.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_counter</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># seq_num, special Event stream</span>
+
+        <span class="n">run</span> <span class="o">=</span> <span class="n">compose_run</span><span class="p">(</span><span class="n">uid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span> <span class="n">event_counters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_md</span><span class="p">)</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">start_doc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compose_descriptor</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">compose_descriptor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compose_resource</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">compose_resource</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compose_stop</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">compose_stop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compose_stream_resource</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">compose_stream_resource</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+        <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;[start] document is emitted (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span>
+            <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;doc_name&quot;</span><span class="p">:</span> <span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="s2">&quot;run_uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset_checkpoint_state_coro</span><span class="p">()</span>
+
+        <span class="c1"># Emit an Event Descriptor for recording any interruptions as Events.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_interruptions</span><span class="p">:</span>
+            <span class="c1"># To store the interruptions uid outside of event-model</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_desc_uid</span> <span class="o">=</span> <span class="n">new_uid</span><span class="p">()</span>
+            <span class="n">dk</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;RunEngine&quot;</span><span class="p">}</span>
+            <span class="n">descriptor_bundle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compose_descriptor</span><span class="p">(</span>
+                <span class="n">uid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_desc_uid</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;interruptions&quot;</span><span class="p">,</span>
+                <span class="n">data_keys</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;interruption&quot;</span><span class="p">:</span> <span class="n">dk</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_desc</span> <span class="o">=</span> <span class="n">descriptor_bundle</span><span class="o">.</span><span class="n">descriptor_doc</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_compose_event</span> <span class="o">=</span> <span class="n">descriptor_bundle</span><span class="o">.</span><span class="n">compose_event</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">descriptor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_desc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.close_run">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.close_run.html#bluesky.bundlers.RunBundler.close_run">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">close_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instruct the RunEngine to write the RunStop document</span>
+
+<span class="sd">        Expected message object is::</span>
+
+<span class="sd">            Msg(&#39;close_run&#39;, None, exit_status=None, reason=None)</span>
+
+<span class="sd">        if *exit_stats* and *reason* are not provided, use the values</span>
+<span class="sd">        stashed on the RE.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
+                <span class="s2">&quot;A &#39;close_run&#39; message was received but there is no run &quot;</span>
+                <span class="s2">&quot;open. If this occurred after a pause/resume, add &quot;</span>
+                <span class="s2">&quot;a &#39;checkpoint&#39; message after the &#39;close_run&#39; message.&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Stopping run </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">)</span>
+        <span class="c1"># Clear any uncleared monitoring callbacks.</span>
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>  <span class="c1"># noqa: B007</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">exit_status</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="s2">&quot;success&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;success&quot;</span>
+
+        <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compose_stop</span><span class="p">(</span>
+            <span class="n">exit_status</span><span class="o">=</span><span class="n">exit_status</span><span class="p">,</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+        <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;[stop] document is emitted (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span>
+            <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;doc_name&quot;</span><span class="p">:</span> <span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="s2">&quot;run_uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset_checkpoint_state_coro</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">]</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_prepare_stream</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">desc_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">objs_dks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">HasName</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]],</span>
+    <span class="p">):</span>
+        <span class="c1"># We do not have an Event Descriptor for this set</span>
+        <span class="c1"># so one must be created.</span>
+        <span class="n">data_keys</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">object_keys</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">hints</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">dks</span> <span class="ow">in</span> <span class="n">objs_dks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">maybe_update_hints</span><span class="p">(</span><span class="n">hints</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+            <span class="c1"># dks is an OrderedDict. Record that order as a list.</span>
+            <span class="n">object_keys</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dks</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dks</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">dks</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s2">&quot;object_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">data_keys</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dks</span><span class="p">)</span>
+            <span class="n">config</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_values_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
+                <span class="s2">&quot;timestamps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_ts_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
+                <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
+            <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compose_descriptor</span><span class="p">(</span>
+            <span class="n">desc_key</span><span class="p">,</span>
+            <span class="n">data_keys</span><span class="p">,</span>
+            <span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">hints</span><span class="o">=</span><span class="n">hints</span><span class="p">,</span>
+            <span class="n">object_keys</span><span class="o">=</span><span class="n">object_keys</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">descriptor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">)</span>
+        <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;[descriptor] document emitted with name </span><span class="si">%r</span><span class="s2"> containing data keys </span><span class="si">%r</span><span class="s2"> (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="n">desc_key</span><span class="p">,</span>
+            <span class="n">data_keys</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span>
+            <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;doc_name&quot;</span><span class="p">:</span> <span class="s2">&quot;descriptor&quot;</span><span class="p">,</span> <span class="s2">&quot;run_uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span> <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="n">data_keys</span><span class="o">.</span><span class="n">keys</span><span class="p">()},</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">objs_dks</span>
+        <span class="k">if</span> <span class="n">desc_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters_copy</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span><span class="o">.</span><span class="n">compose_event</span><span class="p">,</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">objs_dks</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_ensure_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">coros</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">collect</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">:</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">collect</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe_collect</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">:</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe_config</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">coros</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">declare_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate and emit an EventDescriptor.&quot;&quot;&quot;</span>
+        <span class="n">command</span><span class="p">,</span> <span class="n">no_obj</span><span class="p">,</span> <span class="n">objs</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="n">stream_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">stream_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;A stream name that is not None is required for pre-declare&quot;</span>
+
+        <span class="n">collect</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;collect&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">no_obj</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="n">objs</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">objs</span><span class="p">)</span>
+        <span class="n">objs_dks</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># {collect_object: stream_data_keys}</span>
+
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="n">collect</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">collect</span><span class="p">:</span>
+                <span class="n">data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+                <span class="n">streams_and_data_keys</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_format_datakeys_with_stream_name</span><span class="p">(</span><span class="n">data_keys</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span>
+                <span class="p">)</span>
+
+                <span class="c1"># ensure that there is only one stream and it is the stream we have provided.</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">streams_and_data_keys</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">streams_and_data_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">stream_name</span><span class="p">,</span> <span class="p">(</span>
+                    <span class="s2">&quot;`declare_stream` contained `collect=True` but  `describe_collect` did &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;not return a single Dict[str, DataKey] for the passed in </span><span class="si">{</span><span class="n">stream_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+
+            <span class="n">objs_dks</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_keys</span>
+
+        <span class="n">existing_stream_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_declared_stream_names</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">existing_stream_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stream_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">stream_name</span><span class="p">,</span> <span class="n">objs_dks</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RunBundler.create">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.create.html#bluesky.bundlers.RunBundler.create">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start bundling future obj.read() calls for an Event document.</span>
+
+<span class="sd">        Expected message object is::</span>
+
+<span class="sd">            Msg(&#39;create&#39;, None, name=&#39;primary&#39;)</span>
+<span class="sd">            Msg(&#39;create&#39;, name=&#39;primary&#39;)</span>
+
+<span class="sd">        Note that the `name` kwarg will be the &#39;name&#39; field of the resulting</span>
+<span class="sd">        descriptor. So descriptor[&#39;name&#39;] = msg.kwargs[&#39;name&#39;].</span>
+
+<span class="sd">        Also note that changing the &#39;name&#39; of the Event will create a new</span>
+<span class="sd">        Descriptor document.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
+                <span class="s2">&quot;A second &#39;create&#39; message is not &quot;</span>
+                <span class="s2">&quot;allowed until the current event &quot;</span>
+                <span class="s2">&quot;bundle is closed with a &#39;save&#39; or &quot;</span>
+                <span class="s2">&quot;&#39;drop&#39; message.&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">command</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span><span class="p">,)</span> <span class="o">=</span> <span class="n">args</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Msg(&#39;create&#39;) now requires a stream name, given as &quot;</span>
+                    <span class="s2">&quot;Msg(&#39;create&#39;, name) or Msg(&#39;create&#39;, name=name)&quot;</span>
+                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strict_pre_declare</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;In strict mode you must pre-declare streams.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.read">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.read.html#bluesky.bundlers.RunBundler.read">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">reading</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a reading to the open event bundle.</span>
+
+<span class="sd">        Expected message object is::</span>
+
+<span class="sd">            Msg(&#39;read&#39;, obj)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
+            <span class="c1"># if the object is not in the _describe_cache, cache it</span>
+            <span class="c1"># Note: there is a race condition between the code here</span>
+            <span class="c1"># and in monitor() and collect(), so if you do them concurrently</span>
+            <span class="c1"># on the same device you make obj.describe() calls multiple times.</span>
+            <span class="c1"># As this is harmless and not an expected use case, we don&#39;t guard</span>
+            <span class="c1"># against it. Reading multiple devices concurrently works fine.</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="c1"># check that current read collides with nothing else in</span>
+            <span class="c1"># current event</span>
+            <span class="n">cur_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">read_obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span>
+                <span class="c1"># that is, field names</span>
+                <span class="n">known_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">read_obj</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">known_keys</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">cur_keys</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Data keys (field names) from </span><span class="si">{</span><span class="n">obj</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;collide with those from </span><span class="si">{</span><span class="n">read_obj</span><span class="si">!r}</span><span class="s2">. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;The colliding keys are </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">known_keys</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">cur_keys</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># add this object to the cache of things we have read</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="c1"># Stash the results, which will be emitted the next time _save is</span>
+            <span class="c1"># called --- or never emitted if _drop is called instead.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reading</span><span class="p">)</span>
+            <span class="c1"># Ask the object for any resource or datum documents is has cached</span>
+            <span class="c1"># and cache them as well. Likewise, these will be emitted if and</span>
+            <span class="c1"># when _save is called.</span>
+            <span class="n">asset_docs_collected</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">async</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">maybe_collect_asset_docs</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">asset_docs_collected</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">reading</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_cache_describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s describe and cache it.&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_cache_describe_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s describe_configuration and cache it.&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Configurable</span><span class="p">):</span>
+            <span class="n">conf_keys</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_configuration</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conf_keys</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">conf_keys</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_cache_read_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s configuration and cache it.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Configurable</span><span class="p">):</span>
+            <span class="n">conf</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">read_configuration</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conf</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config_values</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config_ts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">config_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+            <span class="n">config_ts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_values_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_ts_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_ts</span>
+
+<div class="viewcode-block" id="RunBundler.monitor">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.monitor.html#bluesky.bundlers.RunBundler.monitor">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Monitor a signal. Emit event documents asynchronously.</span>
+
+<span class="sd">        A descriptor document is emitted immediately. Then, a closure is</span>
+<span class="sd">        defined that emits Event documents associated with that descriptor</span>
+<span class="sd">        from a separate thread. This process is not related to the main</span>
+<span class="sd">        bundling process (create/read/save).</span>
+
+<span class="sd">        Expected message object is::</span>
+
+<span class="sd">            Msg(&#39;monitor&#39;, obj, **kwargs)</span>
+<span class="sd">            Msg(&#39;monitor&#39;, obj, name=&#39;event-stream-name&#39;, **kwargs)</span>
+
+<span class="sd">        where kwargs are passed through to ``obj.subscribe()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;monitor&#39; Msg does not accept positional arguments.&quot;</span><span class="p">)</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">short_uid</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A &#39;monitor&#39; message was sent for </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2"> which is already monitored&quot;</span><span class="p">)</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="n">stream_bundle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="n">obj</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]})</span>
+        <span class="n">compose_event</span> <span class="o">=</span> <span class="n">stream_bundle</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">emit_event</span><span class="p">(</span><span class="n">readings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">readings</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># We were passed something we can use, but check no args or kwargs</span>
+                <span class="k">assert</span> <span class="p">(</span>
+                    <span class="ow">not</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">kwargs</span>
+                <span class="p">),</span> <span class="s2">&quot;If subscribe callback called with readings, args and kwargs are not supported.&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Ignore the inputs. Use this call as a signal to call read on the</span>
+                <span class="c1"># object, a crude way to be sure we get all the info we need.</span>
+                <span class="n">readable_obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="n">readings</span> <span class="o">=</span> <span class="n">readable_obj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
+                <span class="k">assert</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isawaitable</span><span class="p">(</span><span class="n">readings</span><span class="p">),</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">readable_obj</span><span class="si">}</span><span class="s2"> has async read() method and the callback &quot;</span>
+                    <span class="s2">&quot;passed to subscribe() was not called with Dict[str, Reading]&quot;</span>
+                <span class="p">)</span>
+            <span class="n">data</span><span class="p">,</span> <span class="n">timestamps</span> <span class="o">=</span> <span class="n">_rearrange_into_parallel_dicts</span><span class="p">(</span><span class="n">readings</span><span class="p">)</span>
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">compose_event</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit_sync</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">emit_event</span><span class="p">,</span> <span class="n">kwargs</span>
+        <span class="c1"># TODO: deprecate **kwargs when Ophyd.v2 is available</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">emit_event</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.record_interruption">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.record_interruption.html#bluesky.bundlers.RunBundler.record_interruption">[docs]</a>
+    <span class="k">def</span> <span class="nf">record_interruption</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Emit an event in the &#39;interruptions&#39; event stream.</span>
+
+<span class="sd">        If we are not inside a run or if self.record_interruptions is False,</span>
+<span class="sd">        nothing is done.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_desc_uid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># We are inside a run and self.record_interruptions is True.</span>
+            <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_compose_event</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;interruption&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">},</span>
+                <span class="n">timestamps</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;interruption&quot;</span><span class="p">:</span> <span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">()},</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit_sync</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.rewind">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.rewind.html#bluesky.bundlers.RunBundler.rewind">[docs]</a>
+    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters_copy</span><span class="p">)</span>
+        <span class="c1"># make sure we do not forget about streams we roll back to the</span>
+        <span class="c1"># very beginning of</span>
+        <span class="k">for</span> <span class="n">desc_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">desc_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters_copy</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="c1"># This is needed to &#39;cancel&#39; an open bundling (e.g. create) if</span>
+        <span class="c1"># the pause happens after a &#39;checkpoint&#39;, after a &#39;create&#39;, but</span>
+        <span class="c1"># before the paired &#39;save&#39;.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.unmonitor">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.unmonitor.html#bluesky.bundlers.RunBundler.unmonitor">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">unmonitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stop monitoring; i.e., remove the callback emitting event documents.</span>
+
+<span class="sd">        Expected message object is::</span>
+
+<span class="sd">            Msg(&#39;unmonitor&#39;, obj)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot &#39;unmonitor&#39; </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">; it is not being monitored.&quot;</span><span class="p">)</span>
+        <span class="n">cb</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset_checkpoint_state_coro</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.save">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.save.html#bluesky.bundlers.RunBundler.save">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the event that is currently being bundled</span>
+
+<span class="sd">        Create and emit an Event document containing the data read from devices</span>
+<span class="sd">        in self._objs_read. Emit any Resource and Datum documents cached by</span>
+<span class="sd">        those devices before emitting the Event document. If this is the first</span>
+<span class="sd">        Event of its stream then create and emit the Event Descriptor document</span>
+<span class="sd">        before emitting Resource, Datum, and Event documents.</span>
+
+<span class="sd">        Expected message object is::</span>
+
+<span class="sd">            Msg(&#39;save&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
+                <span class="s2">&quot;A &#39;create&#39; message must be sent, to &quot;</span>
+                <span class="s2">&quot;open an event bundle, before that &quot;</span>
+                <span class="s2">&quot;bundle can be saved with &#39;save&#39;.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Short-circuit if nothing has been read. (Do not create empty Events.)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span>
+        <span class="c1"># The Event Descriptor is uniquely defined by the set of objects</span>
+        <span class="c1"># read in this Event grouping.</span>
+        <span class="n">objs_read</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">)</span>
+
+        <span class="c1"># Event Descriptor key</span>
+        <span class="n">desc_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span>
+
+        <span class="c1"># This is a separate check because it can be reset on resume.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="p">(</span>
+            <span class="n">descriptor_doc</span><span class="p">,</span>
+            <span class="n">compose_event</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">desc_key</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">d_objs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">desc_key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">objs_dks</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># we do not have the descriptor cached, make it</span>
+        <span class="k">if</span> <span class="n">descriptor_doc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">d_objs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs_read</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">))</span>
+                <span class="n">objs_dks</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+
+            <span class="n">descriptor_doc</span><span class="p">,</span> <span class="n">compose_event</span><span class="p">,</span> <span class="n">d_objs</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">desc_key</span><span class="p">,</span> <span class="n">objs_dks</span><span class="p">)</span>
+
+        <span class="c1"># do have the descriptor cached</span>
+        <span class="k">elif</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">d_objs</span><span class="p">)</span> <span class="o">!=</span> <span class="n">objs_read</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mismatched objects read, expected </span><span class="si">{</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">d_objs</span><span class="p">)</span><span class="si">!s}</span><span class="s2">, &quot;</span> <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="n">objs_read</span><span class="si">!s}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Resource and Datum documents</span>
+        <span class="n">indices_generated</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pack_external_assets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="o">=</span><span class="n">desc_key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">indices_generated</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Received multiple indices in a `stream_datum` document for one event, &quot;</span>
+                <span class="s1">&#39; during a `read()` `save()`. `stream_datum` should have indices {&quot;start&quot;: n, &quot;stop&quot;: n+1} &#39;</span>
+                <span class="s2">&quot;in a `read()` `save()`.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Merge list of readings into single dict.</span>
+        <span class="n">readings</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">timestamps</span> <span class="o">=</span> <span class="n">_rearrange_into_parallel_dicts</span><span class="p">(</span><span class="n">readings</span><span class="p">)</span>
+        <span class="c1"># Mark all externally-stored data as not filled so that consumers</span>
+        <span class="c1"># know that the corresponding data are identifiers, not dereferenced</span>
+        <span class="c1"># data.</span>
+        <span class="n">filled</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;external&quot;</span> <span class="ow">in</span> <span class="n">v</span> <span class="ow">and</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;external&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;STREAM:&quot;</span>
+        <span class="p">}</span>
+        <span class="n">event_doc</span> <span class="o">=</span> <span class="n">compose_event</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+            <span class="n">filled</span><span class="o">=</span><span class="n">filled</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">event_doc</span><span class="p">)</span>
+        <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;[event] document emitted with data keys </span><span class="si">%r</span><span class="s2"> (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span>
+            <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;doc_name&quot;</span><span class="p">:</span> <span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="s2">&quot;run_uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span> <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()},</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.clear_monitors">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.clear_monitors.html#bluesky.bundlers.RunBundler.clear_monitors">[docs]</a>
+    <span class="k">def</span> <span class="nf">clear_monitors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>  <span class="c1"># noqa: B007</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Failed to stop monitoring </span><span class="si">%r</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.reset_checkpoint_state">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.reset_checkpoint_state.html#bluesky.bundlers.RunBundler.reset_checkpoint_state">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset_checkpoint_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Keep a safe separate copy of the sequence counters to use if we</span>
+        <span class="c1"># rewind and retake some data points.</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters_copy</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">counter</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.reset_checkpoint_state_coro">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.reset_checkpoint_state_coro.html#bluesky.bundlers.RunBundler.reset_checkpoint_state_coro">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">reset_checkpoint_state_coro</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_checkpoint_state</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.suspend_monitors">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.suspend_monitors.html#bluesky.bundlers.RunBundler.suspend_monitors">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">suspend_monitors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>  <span class="c1"># noqa: B007</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.restore_monitors">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.restore_monitors.html#bluesky.bundlers.RunBundler.restore_monitors">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">restore_monitors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.clear_checkpoint">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.clear_checkpoint.html#bluesky.bundlers.RunBundler.clear_checkpoint">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">clear_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters_copy</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.drop">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.drop.html#bluesky.bundlers.RunBundler.drop">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Drop the event that is currently being bundled</span>
+
+<span class="sd">        Expected message object is::</span>
+
+<span class="sd">            Msg(&#39;drop&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
+                <span class="s2">&quot;A &#39;create&#39; message must be sent, to &quot;</span>
+                <span class="s2">&quot;open an event bundle, before that &quot;</span>
+                <span class="s2">&quot;bundle can be dropped with &#39;drop&#39;.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Dropped open event bundle&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.kickoff">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.kickoff.html#bluesky.bundlers.RunBundler.kickoff">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">kickoff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start a flyscan object.</span>
+
+<span class="sd">        Expected message object is:</span>
+
+<span class="sd">        If `flyer_object` has a `kickoff` function that takes no arguments::</span>
+
+<span class="sd">            Msg(&#39;kickoff&#39;, flyer_object)</span>
+<span class="sd">            Msg(&#39;kickoff&#39;, flyer_object, group=&lt;name&gt;)</span>
+
+<span class="sd">        If *flyer_object* has a ``kickoff`` function that takes</span>
+<span class="sd">        ``(start, stop, steps)`` as its function arguments::</span>
+
+<span class="sd">            Msg(&#39;kickoff&#39;, flyer_object, start, stop, step)</span>
+<span class="sd">            Msg(&#39;kickoff&#39;, flyer_object, start, stop, step, group=&lt;name&gt;)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span></div>
+
+
+    <span class="c1"># Could we have a look at changing this now? we use one of each use can in</span>
+    <span class="c1"># seperate places so it could be two seperate methods for each dictionary type.</span>
+    <span class="k">def</span> <span class="nf">_maybe_format_datakeys_with_stream_name</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">describe_collect_dict</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]],</span>
+        <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the dictionary returned by describe collect is a dict</span>
+<span class="sd">            `{str: DataKey}` or a `{str: {str: DataKey}}`.</span>
+<span class="sd">        If a `message_stream_name` is passed then return a singleton list of the form of</span>
+<span class="sd">            `{message_stream_name: describe_collect_dict}.items()`.</span>
+<span class="sd">        If the `message_stream_name` is None then return the `describe_collect_dict.items()`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">has_str_source</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="nb">str</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">describe_collect_dict</span><span class="p">:</span>
+            <span class="n">first_value</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">has_str_source</span><span class="p">(</span><span class="n">first_value</span><span class="p">):</span>
+                <span class="c1"># We have Dict[str, DataKey], so return just this</span>
+                <span class="c1"># If stream name not given then default to &quot;primary&quot;</span>
+                <span class="k">return</span> <span class="p">[(</span><span class="n">message_stream_name</span> <span class="ow">or</span> <span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">describe_collect_dict</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_str_source</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">first_value</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="c1"># We have Dict[str, Dict[str, DataKey]] so return its items</span>
+                <span class="k">if</span> <span class="n">message_stream_name</span> <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="p">)</span> <span class="o">!=</span> <span class="p">[</span><span class="n">message_stream_name</span><span class="p">]:</span>
+                    <span class="c1"># The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],</span>
+                    <span class="c1"># this is only acceptable if the only key in the parent dict is message_stream_name</span>
+
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Expected a single stream </span><span class="si">{</span><span class="n">message_stream_name</span><span class="si">!r}</span><span class="s2">, got </span><span class="si">{</span><span class="n">describe_collect_dict</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid describe_collect return: </span><span class="si">{</span><span class="n">describe_collect_dict</span><span class="si">}</span><span class="s2"> when collect &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;was called on </span><span class="si">{</span><span class="n">message_stream_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Empty dict, could be either but we don&#39;t care</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_cache_describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Collectable</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s describe and cache it.&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_collect</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collect_object</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read an object&#39;s describe_collect and cache it.</span>
+
+<span class="sd">        Read describe collect for a collect_object and ensure it is cached in the</span>
+<span class="sd">        _describe_collect_cache. This is required for scans of a single collect object</span>
+<span class="sd">        where the data structure is doubly nested. In this case calling</span>
+<span class="sd">        describe_collect on the object returns a data structure like so:</span>
+
+<span class="sd">            {</span>
+<span class="sd">                &quot;stream1&quot; : {&quot;stream1-pv1&quot;:{data_keys}, &quot;stream1-pv2&quot; :{data_keys}},</span>
+<span class="sd">                &quot;stream2&quot; : {&quot;stream2-pv1&quot;:{data_keys}, &quot;stream2-pv2&quot; :{data_keys}}</span>
+<span class="sd">            }</span>
+
+<span class="sd">        Single nested data keys should be rejected since they are new style, and are</span>
+<span class="sd">        collected under one stream. They should be pre-declared with declare-stream,</span>
+<span class="sd">        prior to collecting. The describe_collect on this object returns a data</span>
+<span class="sd">        structure like so:</span>
+<span class="sd">            {</span>
+<span class="sd">                &quot;stream1-pv1&quot;: {data_keys},</span>
+<span class="sd">                &quot;stream1-pv1&quot;: {data_keys}</span>
+<span class="sd">            }</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">collect_object</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">describe_collect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">collect_object</span><span class="p">]</span>
+        <span class="n">describe_collect_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_maybe_format_datakeys_with_stream_name</span><span class="p">(</span><span class="n">describe_collect</span><span class="p">))</span>
+
+        <span class="n">local_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Check that singly nested stuff should have been pre-declared</span>
+        <span class="k">def</span> <span class="nf">is_data_key</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">}</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="ow">not</span> <span class="n">is_data_key</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">describe_collect</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="p">),</span> <span class="s2">&quot;Single nested data keys should be pre-decalred&quot;</span>
+
+        <span class="c1"># Make sure you can&#39;t use identidal data keys in multiple streams</span>
+        <span class="n">duplicates</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">stream</span><span class="p">,</span> <span class="n">data_keys</span> <span class="ow">in</span> <span class="n">describe_collect</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">stuff</span> <span class="ow">in</span> <span class="n">data_keys</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">other_stream</span><span class="p">,</span> <span class="n">other_data_keys</span> <span class="ow">in</span> <span class="n">describe_collect</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">for</span> <span class="n">other_key</span><span class="p">,</span> <span class="n">other_stuff</span> <span class="ow">in</span> <span class="n">other_data_keys</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">stream</span> <span class="o">!=</span> <span class="n">other_stream</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">==</span> <span class="n">other_key</span> <span class="ow">and</span> <span class="n">stuff</span> <span class="o">==</span> <span class="n">other_stuff</span><span class="p">:</span>
+                            <span class="n">duplicates</span><span class="p">[</span><span class="n">stream</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">stuff</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">duplicates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Can&#39;t use identical data keys in multiple streams: </span><span class="si">{</span><span class="n">duplicates</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;Data keys: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">duplicates</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;streams: </span><span class="si">{</span><span class="n">duplicates</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">stream_data_keys</span> <span class="ow">in</span> <span class="n">describe_collect_items</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">collect_object</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">stream_name</span><span class="p">,</span> <span class="p">{</span><span class="n">collect_object</span><span class="p">:</span> <span class="n">stream_data_keys</span><span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">objs_read</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">stream_data_keys</span> <span class="o">!=</span> <span class="n">objs_read</span><span class="p">[</span><span class="n">collect_object</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="s2">&quot;Mismatched objects read, &quot;</span> <span class="sa">f</span><span class="s2">&quot;expected </span><span class="si">{</span><span class="n">stream_data_keys</span><span class="si">!s}</span><span class="s2">, &quot;</span> <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="n">objs_read</span><span class="si">!s}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+            <span class="n">local_descriptors</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">stream_data_keys</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span><span class="p">[</span><span class="n">collect_object</span><span class="p">]</span> <span class="o">=</span> <span class="n">local_descriptors</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_pack_seq_nums_into_stream_datum</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">:</span> <span class="n">StreamDatum</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stream_datum_previous_indices_difference</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;seq_nums&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">StreamRange</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">EventModelValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Received `seq_nums` </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;seq_nums&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> in stream </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;stream_resource&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;during `collect()` or `describe_collect()`. `seq_nums` should be None or &quot;</span>
+                <span class="s2">&quot;`StreamRange(start=0, stop=0)` on `ComposeStreamDatum` when used with the &quot;</span>
+                <span class="s2">&quot;run engine.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">indices_difference</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;indices&quot;</span><span class="p">][</span><span class="s2">&quot;stop&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;indices&quot;</span><span class="p">][</span><span class="s2">&quot;start&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">stream_datum_previous_indices_difference</span>
+            <span class="ow">and</span> <span class="n">stream_datum_previous_indices_difference</span> <span class="o">!=</span> <span class="n">indices_difference</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">EventModelValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Received `indices` </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;indices&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> during `collect()` these are of a different &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;width `</span><span class="si">{</span><span class="n">indices_difference</span><span class="si">}</span><span class="s2">` than other detectors in the same collect() or save().&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">current_seq_counter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">[</span><span class="n">message_stream_name</span><span class="p">]</span>
+        <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;seq_nums&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">StreamRange</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">current_seq_counter</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">current_seq_counter</span> <span class="o">+</span> <span class="n">indices_difference</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Receieved a `steam_datum` referring to an unknown stream resource </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;stream_resource&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">indices_difference</span>
+
+    <span class="c1"># message strem name here?</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_pack_external_assets</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">asset_docs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ExternalAssetDoc</span><span class="p">]],</span> <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Packs some external asset documents with relevant information from the run.&quot;&quot;&quot;</span>
+
+        <span class="n">stream_datum_previous_indices_difference</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">data_keys_received</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">descriptor_doc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">external_data_keys</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">message_stream_name</span><span class="p">:</span>
+            <span class="n">descriptor_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">message_stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span>
+            <span class="n">external_data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_external_data_keys</span><span class="p">(</span><span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">asset_docs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">resource</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+                <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span>
+            <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">stream_resource</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+                <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span>
+
+                <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Received `stream_resource` with uid </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> twice.&quot;</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data_key&quot;</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">external_data_keys</span> <span class="ow">or</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data_key&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">external_data_keys</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Receieved a `stream_resource` with data_key </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data_key&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> that is not in the &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;descriptor &#39;STREAM:&#39; data_keys </span><span class="si">{</span><span class="n">external_data_keys</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">stream_datum</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Received a `stream_datum` </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> with a `descriptor` uid already &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;filled in, with the value </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;descriptor&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> this should be an empty string.&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">descriptor_doc</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;`descriptor` not made for stream </span><span class="si">{</span><span class="n">message_stream_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                <span class="n">data_keys_received</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">]])</span>
+
+                <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+                <span class="n">stream_datum_previous_indices_difference</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pack_seq_nums_into_stream_datum</span><span class="p">(</span>
+                    <span class="n">doc</span><span class="p">,</span>
+                    <span class="n">message_stream_name</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">stream_datum_previous_indices_difference</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">datum</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+                <span class="o">...</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Tried to emit an external asset </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">, acceptable external assets are &quot;</span>
+                    <span class="s2">&quot;`resource`, `stream_resource`, `datum`, or `stream_datum`&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">doc</span><span class="p">)</span>
+
+            <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] document emitted </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">doc</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;doc_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;run_uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span> <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Check we have a stream_datum for each external data_key in the descriptor</span>
+        <span class="k">if</span> <span class="n">descriptor_doc</span> <span class="ow">and</span> <span class="n">data_keys_received</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">external_data_keys</span><span class="p">)</span> <span class="o">!=</span> <span class="n">data_keys_received</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Received `stream_datum` for each of the data_keys </span><span class="si">{</span><span class="n">data_keys_received</span><span class="si">}</span><span class="s2">, &quot;</span>  <span class="c1"># type: ignore</span>
+                <span class="sa">f</span><span class="s2">&quot;expected `stream_datum` for each of the data_keys </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">external_data_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>  <span class="c1"># type: ignore</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">stream_datum_previous_indices_difference</span>
+
+    <span class="k">def</span> <span class="nf">get_external_data_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the external data keys from the descriptor data_keys dictionary&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data_keys</span> <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;external&quot;</span> <span class="ow">in</span> <span class="n">data_keys</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data_keys</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;external&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;STREAM:&quot;</span><span class="p">)]</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_collect_events</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">collect_obj</span><span class="p">:</span> <span class="n">EventCollectable</span><span class="p">,</span>
+        <span class="n">local_descriptors</span><span class="p">,</span>
+        <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pages</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">message_stream_name</span><span class="p">:</span>
+            <span class="n">compose_event</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">message_stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">compose_event</span>
+            <span class="n">data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">message_stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]</span>
+            <span class="n">objs_read</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">data_keys</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">async</span> <span class="k">for</span> <span class="n">partial_event</span> <span class="ow">in</span> <span class="n">iterate_maybe_async</span><span class="p">(</span><span class="n">collect_obj</span><span class="o">.</span><span class="n">collect</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">return_payload</span><span class="p">:</span>
+                <span class="n">payload</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">partial_event</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">message_stream_name</span><span class="p">:</span>
+                <span class="n">objs_read</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">partial_event</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">])</span>
+                <span class="n">compose_event</span> <span class="o">=</span> <span class="n">local_descriptors</span><span class="p">[</span><span class="n">objs_read</span><span class="p">]</span><span class="o">.</span><span class="n">compose_event</span>
+                <span class="n">data_keys</span> <span class="o">=</span> <span class="n">local_descriptors</span><span class="p">[</span><span class="n">objs_read</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]</span>
+                <span class="k">assert</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">data_keys</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="n">objs_read</span>
+
+            <span class="k">if</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_external_data_keys</span><span class="p">(</span><span class="n">data_keys</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">partial_event</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]]:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Received an event containing data for external data keys.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># is there a way to generalise the keys?</span>
+            <span class="k">if</span> <span class="s2">&quot;filled&quot;</span> <span class="ow">in</span> <span class="n">partial_event</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">event</span> <span class="o">=</span> <span class="n">compose_event</span><span class="p">(</span>
+                    <span class="n">data</span><span class="o">=</span><span class="n">partial_event</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span>
+                    <span class="n">timestamps</span><span class="o">=</span><span class="n">partial_event</span><span class="p">[</span><span class="s2">&quot;timestamps&quot;</span><span class="p">],</span>
+                    <span class="n">filled</span><span class="o">=</span><span class="n">partial_event</span><span class="p">[</span><span class="s2">&quot;filled&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">event</span> <span class="o">=</span> <span class="n">compose_event</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">partial_event</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">partial_event</span><span class="p">[</span><span class="s2">&quot;timestamps&quot;</span><span class="p">])</span>
+
+            <span class="n">pages</span><span class="p">[</span><span class="n">objs_read</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">event_list</span> <span class="ow">in</span> <span class="n">pages</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event_page</span><span class="p">,</span> <span class="n">pack_event_page</span><span class="p">(</span><span class="o">*</span><span class="n">event_list</span><span class="p">))</span>
+            <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;[event_page] document is emitted for descriptors (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;doc_name&quot;</span><span class="p">:</span> <span class="s2">&quot;event_page&quot;</span><span class="p">,</span> <span class="s2">&quot;run_uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">payload</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_collect_event_pages</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">collect_obj</span><span class="p">:</span> <span class="n">EventPageCollectable</span><span class="p">,</span> <span class="n">local_descriptors</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">):</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">message_stream_name</span><span class="p">:</span>
+            <span class="n">compose_event_page</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">message_stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">compose_event_page</span>
+            <span class="n">data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">message_stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]</span>
+
+        <span class="k">async</span> <span class="k">for</span> <span class="n">ev_page</span> <span class="ow">in</span> <span class="n">iterate_maybe_async</span><span class="p">(</span><span class="n">collect_obj</span><span class="o">.</span><span class="n">collect_pages</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">return_payload</span><span class="p">:</span>
+                <span class="n">payload</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ev_page</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">message_stream_name</span><span class="p">:</span>
+                <span class="n">objs_read</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">ev_page</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">])</span>
+                <span class="n">compose_event_page</span> <span class="o">=</span> <span class="n">local_descriptors</span><span class="p">[</span><span class="n">objs_read</span><span class="p">]</span><span class="o">.</span><span class="n">compose_event_page</span>
+                <span class="n">data_keys</span> <span class="o">=</span> <span class="n">local_descriptors</span><span class="p">[</span><span class="n">objs_read</span><span class="p">]</span><span class="o">.</span><span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_external_data_keys</span><span class="p">(</span><span class="n">data_keys</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ev_page</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]]:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Received an event_page containing data for external data keys.&quot;</span><span class="p">)</span>
+
+            <span class="n">ev_page</span> <span class="o">=</span> <span class="n">compose_event_page</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ev_page</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">ev_page</span><span class="p">[</span><span class="s2">&quot;timestamps&quot;</span><span class="p">])</span>
+            <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;[event_page] document is emitted with data keys </span><span class="si">%r</span><span class="s2"> (run_uid=</span><span class="si">%r</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="n">ev_page</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                <span class="n">ev_page</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">],</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;doc_name&quot;</span><span class="p">:</span> <span class="s2">&quot;event_page&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;run_uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span><span class="p">,</span>
+                    <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="n">ev_page</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event_page</span><span class="p">,</span> <span class="n">ev_page</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">payload</span>
+
+<div class="viewcode-block" id="RunBundler.collect">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.collect.html#bluesky.bundlers.RunBundler.collect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Collect data cached by a flyer and emit documents.</span>
+
+<span class="sd">        Expect message object is</span>
+<span class="sd">            Msg(&#39;collect&#39;,  collect_obj,  collect_obj_2, ..., stream=True,</span>
+<span class="sd">                return_payload=True, name=&#39;stream_name&#39;)</span>
+
+<span class="sd">        Where there must be at least one collect object. If multiple are used</span>
+<span class="sd">        they must obey the WritesStreamAssets protocol.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stream_name</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span><span class="p">:</span>
+            <span class="c1"># sanity check -- &#39;kickoff&#39; should catch this and make this</span>
+            <span class="c1"># code path impossible</span>
+            <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;A &#39;collect&#39; message was sent but no run is open.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># If stream is True, run &#39;event&#39; subscription per document.</span>
+        <span class="c1"># If stream is False, run &#39;event_page&#39; subscription once.</span>
+        <span class="c1"># Stream is True is no longer supported</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stream&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stream</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Collect now emits EventPages (stream=False), &quot;</span>
+                <span class="s2">&quot;so emitting Events (stream=True) is no longer supported&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># If True, accumulate all the Events in memory and return them at the</span>
+        <span class="c1"># end, providing the plan access to the Events. If False, do not</span>
+        <span class="c1"># accumulate, and return None.</span>
+        <span class="n">return_payload</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_payload&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Get a list of the collectable objects from the message obj and args</span>
+        <span class="n">collect_objects</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,)</span> <span class="o">+</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">]</span>
+
+        <span class="c1"># Get references to get_index methods if we have more than one collect object</span>
+        <span class="c1"># raise error if collect_objects don&#39;t obey WritesStreamAssests protocol</span>
+        <span class="n">indices</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="kc">None</span><span class="p">],</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">WritesStreamAssets</span><span class="p">)</span><span class="o">.</span><span class="n">get_index</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">collect_objects</span><span class="p">]</span>
+
+        <span class="c1"># Warn for page collectable support</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">collect_objects</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">EventCollectable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">EventPageCollectable</span><span class="p">):</span>
+                <span class="n">doc_logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;collect() was called for a device </span><span class="si">%r</span><span class="s2"> which is both EventCollectable &quot;</span>
+                    <span class="s2">&quot;and EventPageCollectable. Using device.collect_pages().&quot;</span><span class="p">,</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># Get the provided message stream name for singly nested scans</span>
+        <span class="n">message_stream_name</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Retrive the stream names from pre-declared streams</span>
+        <span class="n">declared_stream_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_declared_stream_names</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">),</span> <span class="p">[])</span>
+
+        <span class="c1"># If a stream name was provided in the message, check the stream has been declared</span>
+        <span class="c1"># If one was not provided, but a single stream has been declared, then use that stream.</span>
+        <span class="k">if</span> <span class="n">message_stream_name</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="p">(</span>
+                <span class="n">message_stream_name</span> <span class="ow">in</span> <span class="n">declared_stream_names</span>
+            <span class="p">),</span> <span class="s2">&quot;If a message stream name is provided declare stream needs to be called first.&quot;</span>
+            <span class="n">stream_name</span> <span class="o">=</span> <span class="n">message_stream_name</span>
+        <span class="k">elif</span> <span class="n">declared_stream_names</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">declared_stream_names</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span>  <span class="c1"># Allow duplicate declarations</span>
+            <span class="n">stream_name</span> <span class="o">=</span> <span class="n">declared_stream_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># If there is not a stream then we should be using an old-style doubly nested</span>
+        <span class="c1"># and we need to describe_collect and prepare the nested streams.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">stream_name</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">collect_objects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span>
+                        <span class="s2">&quot;If collecting multiple objects you must predeclare a stream for all &quot;</span>
+                        <span class="s2">&quot;the objects first and provide the stream name&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># Get the indicies from the collect objects</span>
+        <span class="n">coros</span> <span class="o">=</span> <span class="p">[</span><span class="n">maybe_await</span><span class="p">(</span><span class="n">get_index</span><span class="p">())</span> <span class="k">for</span> <span class="n">get_index</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">coros</span><span class="p">:</span>
+            <span class="c1"># There is more than one collect object, so collect up to a minimum index</span>
+            <span class="n">min_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">coros</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># There is only one collect object, so don&#39;t pass an index down</span>
+            <span class="n">min_index</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">collected_asset_docs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">x</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">collect_objects</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">maybe_collect_asset_docs</span><span class="p">(</span>
+                <span class="n">msg</span><span class="p">,</span>
+                <span class="n">obj</span><span class="p">,</span>
+                <span class="n">index</span><span class="o">=</span><span class="n">min_index</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="n">indices_difference</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pack_external_assets</span><span class="p">(</span>
+            <span class="n">collected_asset_docs</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="o">=</span><span class="n">stream_name</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Make event pages for an object which is EventCollectable or EventPageCollectable</span>
+        <span class="c1"># objects that are EventCollectable will now group the Events and Emit an Event Page</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">WritesStreamAssets</span><span class="p">):</span>
+            <span class="n">local_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">collect_obj</span> <span class="o">=</span> <span class="n">collect_objects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># If the single collect object is singly nested, gather descriptors</span>
+            <span class="k">if</span> <span class="n">collect_obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span><span class="p">:</span>
+                <span class="n">objs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+                <span class="n">data_keys</span> <span class="o">=</span> <span class="n">objs</span><span class="p">[</span><span class="n">collect_obj</span><span class="p">]</span>
+                <span class="n">local_descriptors</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">data_keys</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span><span class="p">[</span><span class="n">collect_obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">local_descriptors</span>
+
+            <span class="n">local_descriptors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span><span class="p">[</span><span class="n">collect_obj</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">collect_obj</span><span class="p">,</span> <span class="n">EventPageCollectable</span><span class="p">):</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_event_pages</span><span class="p">(</span>
+                    <span class="n">collect_obj</span><span class="p">,</span> <span class="n">local_descriptors</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">,</span> <span class="n">stream_name</span>
+                <span class="p">)</span>
+                <span class="c1"># TODO: check that event pages have same length as indices_difference</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">collect_obj</span><span class="p">,</span> <span class="n">EventCollectable</span><span class="p">):</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_events</span><span class="p">(</span><span class="n">collect_obj</span><span class="p">,</span> <span class="n">local_descriptors</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">)</span>
+                <span class="c1"># TODO: check that events have same length as indices_difference</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">return_payload</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">stream_name</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="s2">&quot;A `collect` message on a device that isn&#39;t EventCollectable or EventPageCollectable &quot;</span>
+                        <span class="s2">&quot;requires a `name=stream_name` argument&quot;</span>
+                    <span class="p">)</span>
+                <span class="c1"># Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span> <span class="o">+=</span> <span class="n">indices_difference</span>
+
+            <span class="k">if</span> <span class="n">return_payload</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">payload</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_counters</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span> <span class="o">+=</span> <span class="n">indices_difference</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.backstop_collect">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.backstop_collect.html#bluesky.bundlers.RunBundler.backstop_collect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">backstop_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;collect&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Failed to collect </span><span class="si">%r</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunBundler.configure">
+<a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.configure.html#bluesky.bundlers.RunBundler.configure">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure an object</span>
+
+<span class="sd">        Expected message object is ::</span>
+
+<span class="sd">            Msg(&#39;configure&#39;, object, *args, **kwargs)</span>
+
+<span class="sd">        which results in this call ::</span>
+
+<span class="sd">            object.configure(*args, **kwargs)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
+        <span class="c1"># Invalidate any event descriptors that include this object.</span>
+        <span class="c1"># New event descriptors, with this new configuration, will</span>
+        <span class="c1"># be created for any future event documents.</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">):</span>
+            <span class="n">obj_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">obj_set</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj_set</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

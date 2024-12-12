@@ -1,0 +1,6 @@
+﻿bluesky.plans.tweak
+===================
+
+.. currentmodule:: bluesky.plans
+
+.. autofunction:: tweak
