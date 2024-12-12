@@ -1103,10 +1103,6 @@ class RunEngine:
                         exc = self._task_fut.exception()
                     except (asyncio.CancelledError, concurrent.futures.CancelledError):
                         exc = None
-                    # if the main task exception is not None, re-raise
-                    # it (unless it is a canceled error)
-                    if exc is not None and not isinstance(exc, _RunEnginePanic):
-                        raise exc
                     # Only try to get a result if there wasn't an error,
                     # (other than a cancelled error)
                     if exc is None:
@@ -1114,9 +1110,17 @@ class RunEngine:
                             plan_return = self._task_fut.result()
                         except concurrent.futures.CancelledError:
                             plan_return = self.NO_PLAN_RETURN
-                        return plan_return  # noqa: B012
+                    # we have something in exc
                     else:
-                        return self.NO_PLAN_RETURN
+                        # special case the panic exception that we put in above
+                        if isinstance(exc, _RunEnginePanic):
+                            plan_return = self.NO_PLAN_RETURN
+                        # otherwise re-raise it
+                        else:
+                            raise exc
+                else:
+                    plan_return = None
+            return plan_return
 
     def install_suspender(self, suspender):
         """
