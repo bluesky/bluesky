@@ -361,18 +361,22 @@ dictionary interface. The simplest is just a plain Python dictionary.
 
     RE.md = {}
 
-To persist metadata between sessions, bluesky recommends
+To persist metadata between sessions, bluesky provides
 :class:`bluesky.utils.PersistentDict` --- a Python dictionary synced with a
-directory of files on disk. Any changes made to ``RE.md`` are synced to the
-file, so the contents of ``RE.md`` can persist between sessions.
+directory of files on disk backed by ``zict``.  Any changes made to ``RE.md``
+are synced to the file, so the contents of ``RE.md`` can persist between
+sessions.
 
 .. code-block:: python
 
     from bluesky.utils import PersistentDict
     RE.md = PersistentDict('some/path/here')
 
-Bluesky does not provide a strong recommendation on that path; that a detail
-left to the local deployment.
+``zict`` v3 changed how the contents of are serialized to disk such that only
+one Python process can reliably interact with the files at a time, which is
+suitable for testing and small-scale applications.  Installing ``zict`` v2
+avoids this problem, but causes conflicts with other packages (such as
+``dask``).
 
 Bluesky formerly recommended using :class:`~historydict.HistoryDict` --- a
 Python dictionary backed by a sqlite database file. This approach proved
