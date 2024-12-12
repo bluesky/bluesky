@@ -5,6 +5,7 @@ repos:
       - id: check-added-large-files
       - id: check-yaml
       - id: check-merge-conflict
+      - id: end-of-file-fixer
 
   - repo: local
     hooks:

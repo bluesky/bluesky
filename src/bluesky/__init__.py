@@ -8,3 +8,5 @@ from .utils import (
     Msg,  # noqa: F401
     RunEngineInterrupted,  # noqa: F401
 )
+
+__all__ = ["__version__"]
