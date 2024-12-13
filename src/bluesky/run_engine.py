@@ -2899,3 +2899,12 @@ def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Option
         loop=_bluesky_event_loop,
     )
     return fut.result(timeout=timeout)
+
+
+def autoawait_in_bluesky_event_loop(ip=None):
+    if ip is None:
+        import IPython
+
+        ip = IPython.get_ipython()  # type: ignore
+    assert ip, "Couldn't import IPython"
+    ip.loop_runner = call_in_bluesky_event_loop
