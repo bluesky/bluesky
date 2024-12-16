@@ -10,7 +10,7 @@ from ..plans import count
 from ..utils import PersistentDict
 
 zict = pytest.importorskip("zict")
-pytest.mark.skipif(
+pytestmark = pytest.mark.skipif(
     condition=Version(zict.__version__) >= Version("3"),
     reason="Version 3 does not support multiple instances looking at same files",
 )
