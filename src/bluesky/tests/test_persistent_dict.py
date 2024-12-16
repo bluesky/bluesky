@@ -10,12 +10,12 @@ from ..plans import count
 from ..utils import PersistentDict
 
 zict = pytest.importorskip("zict")
-
-
-@pytest.mark.xfail(
+pytest.mark.skipif(
     condition=Version(zict.__version__) >= Version("3"),
     reason="Version 3 does not support multiple instances looking at same files",
 )
+
+
 def test_persistent_dict(tmp_path):
     d = PersistentDict(tmp_path)
     d["a"] = 1
@@ -139,10 +139,6 @@ def test_clear(tmp_path):
     recursive_assert_equal(actual, expected)
 
 
-@pytest.mark.xfail(
-    condition=Version(zict.__version__) >= Version("3"),
-    reason="Version 3 does not support multiple instances looking at same files",
-)
 def test_integration(tmp_path, RE, hw):
     """
     Test integration with RE.
