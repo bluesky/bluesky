@@ -1,4 +1,5 @@
 """Interface for ``python -m bluesky``."""
+
 from typing import Union
 from argparse import ArgumentParser
 from collections.abc import Sequence
