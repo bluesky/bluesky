@@ -7,7 +7,6 @@ name = "bluesky"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -21,18 +20,17 @@ dependencies = [
     "importlib-resources;python_version<'3.9'",
     "msgpack",
     "msgpack-numpy",
-    "numpy<2.0.0",
+    "numpy",
     "opentelemetry-api",
     "toolz",
     "tqdm>=4.44",
     "typing-extensions>=4.0.0;python_version<'3.11'",
     "dataclasses;python_version<'3.7'",
-    "zict<3.0.0",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [project.optional-dependencies]
 dev = [
@@ -90,6 +88,7 @@ dev = [
     "types-mock",
     "tiled[all]",
     "vendoring",
+    "zict",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]
@@ -99,6 +98,7 @@ streamz = ["streamz"]
 plotting = ["matplotlib"]
 cmd = ["colorama"]
 olog = ["jinja2"]
+old_persistentdict = ["zict<3"]
 all = ["bluesky[dev,ipython,zmq,common,tools,streamz,plotting,cmd,olog]"]
 
 [project.scripts]
@@ -180,6 +180,7 @@ lint.select = [
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
+ignore = ["UP031"] # Ignore %-format strings until #1848 is done
 exclude = [
     "docs/source/conf.py",
     "docs/source/examples",

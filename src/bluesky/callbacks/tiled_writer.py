@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import pandas as pd
 from event_model import RunRouter
@@ -13,7 +13,7 @@ from event_model.documents import (
     StreamDatum,
     StreamResource,
 )
-from pydantic.utils import deep_update
+from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
 from tiled.client.container import Container
@@ -60,12 +60,12 @@ class _RunWriter(CallbackBase):
     def __init__(self, client: BaseClient):
         self.client = client
         self.root_node: Union[None, Container] = None
-        self._desc_nodes: Dict[str, Container] = {}  # references to descriptor containers by their uid's
-        self._sres_nodes: Dict[str, BaseClient] = {}
-        self._docs_cache: Dict[str, Union[Datum, Resource, StreamResource]] = {}
-        self._handlers: Dict[str, ConsolidatorBase] = {}
-        self.data_keys_int: Dict[str, Dict[str, Any]] = {}
-        self.data_keys_ext: Dict[str, Dict[str, Any]] = {}
+        self._desc_nodes: dict[str, Container] = {}  # references to descriptor containers by their uid's
+        self._sres_nodes: dict[str, BaseClient] = {}
+        self._docs_cache: dict[str, Union[Datum, Resource, StreamResource]] = {}
+        self._handlers: dict[str, ConsolidatorBase] = {}
+        self.data_keys_int: dict[str, dict[str, Any]] = {}
+        self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
     def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
@@ -218,7 +218,7 @@ class _RunWriter(CallbackBase):
     def stream_resource(self, doc: StreamResource):
         self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
 
-    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> Tuple[BaseClient, ConsolidatorBase]:
+    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> tuple[BaseClient, ConsolidatorBase]:
         """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""
 
         if sres_uid in self._sres_nodes.keys():

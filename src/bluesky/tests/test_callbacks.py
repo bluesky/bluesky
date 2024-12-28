@@ -14,14 +14,7 @@ import bluesky.preprocessors as bpp
 from bluesky.callbacks import CallbackBase, CallbackCounter, LiveFit, LiveTable
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.core import make_callback_safe, make_class_safe
-from bluesky.callbacks.mpl_plotting import (
-    LiveFitPlot,
-    LiveGrid,
-    LiveMesh,
-    LivePlot,
-    LiveRaster,
-    LiveScatter,
-)
+from bluesky.callbacks.mpl_plotting import LiveFitPlot, LiveGrid, LiveMesh, LivePlot, LiveRaster, LiveScatter
 from bluesky.plan_stubs import pause
 from bluesky.plans import count, grid_scan, inner_product_scan, scan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
@@ -387,6 +380,19 @@ def test_live_scatter(RE, hw):
             grid_scan([hw.det5], hw.jittery_motor1, -3, 3, 6, hw.jittery_motor2, -5, 5, 10, False),
             LiveMesh("jittery_motor1", "jittery_motor2", "det5", xlim=(-3, 3), ylim=(-5, 5)),
         )
+
+
+def test_live_scatter_auto_range(RE, hw):
+    cb = LiveScatter("motor1", "motor2", "det5")
+    RE(grid_scan([hw.det5], hw.motor1, -3, 3, 6, hw.motor2, -5, 5, 10, False), cb)
+    assert cb.minx is not None
+    assert cb.maxx is not None
+    assert cb.miny is not None
+    assert cb.maxy is not None
+    assert cb.ax.get_xlim()[0] == -3
+    assert cb.ax.get_xlim()[1] == 3
+    assert cb.ax.get_ylim()[0] == -5
+    assert cb.ax.get_ylim()[1] == 5
 
 
 @pytest.mark.xfail(

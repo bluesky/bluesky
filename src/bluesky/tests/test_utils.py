@@ -1,17 +1,24 @@
+import asyncio
 import operator
+import time
 import warnings
 from functools import reduce
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 from cycler import cycler
 
 from bluesky import RunEngine
+from bluesky.plan_stubs import complete_all, mv
+from bluesky.run_engine import WaitForTimeoutError
 from bluesky.utils import (
+    AsyncInput,
     CallbackRegistry,
     Msg,
     ensure_generator,
     is_movable,
+    is_plan,
     merge_cycler,
     plan,
     warn_if_msg_args_or_kwargs,
@@ -536,3 +543,59 @@ def test_warning_behavior(gen_func, iterated):
     else:
         with pytest.warns(RuntimeWarning, match=r".*was never iterated.*"):
             RE(gen_func())
+
+
+@pytest.mark.parametrize(
+    "func, is_plan_result",
+    [
+        (print, False),
+        (mv, True),
+        (complete_all, True),
+        (iterating_plan, True),
+        (sample_plan, True),
+    ],
+)
+def test_check_if_func_is_plan(func, is_plan_result):
+    assert is_plan(func) == is_plan_result
+
+
+def test_async_input_does_not_block_event_loop(RE, capsys):
+    a_short_time = 0.5
+    background_event = asyncio.Event()
+    input_completed_event = asyncio.Event()
+
+    async def get_input():
+        ai = AsyncInput()
+
+        # Patch stdin.readline as a *blocking* function that takes a while to return - the wait_for
+        # should time out before this returns, so the input_completed_event should never have a
+        # chance to be set.
+        with patch("bluesky.utils.sys.stdin.readline", side_effect=lambda: time.sleep(3 * a_short_time)):
+            await ai("prompt: ")
+
+        input_completed_event.set()
+
+    async def sleep_then_set_background_event():
+        await asyncio.sleep(a_short_time)
+        background_event.set()
+
+    def plan():
+        get_input_fut = asyncio.ensure_future(get_input(), loop=RE.loop)
+        try:
+            yield Msg(
+                "wait_for",
+                None,
+                [lambda: get_input_fut, lambda: sleep_then_set_background_event()],
+                timeout=a_short_time * 2,
+            )
+        except WaitForTimeoutError:
+            # Expected
+            # Input call should not have managed to "complete" before timeout in test(), but the
+            # background event should have been set as the input call shouldn't stall the
+            # whole event loop.
+            assert background_event.is_set() and not input_completed_event.is_set()
+            get_input_fut.cancel()
+        else:
+            pytest.fail("Should have timed out waiting for input")
+
+    RE(plan())

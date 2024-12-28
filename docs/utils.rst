@@ -63,12 +63,10 @@ are the clients of the :obj:`~ophyd.status.MoveStatus.watch` API
    :nosignatures:
    :toctree: generated
 
-   ProgressBar
    ProgressBar.update
    ProgressBar.draw
    ProgressBar.clear
 
-   ProgressBarManager
 
 
 During tasks

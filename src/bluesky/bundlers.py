@@ -2,7 +2,8 @@ import asyncio
 import inspect
 import time as ttime
 from collections import defaultdict, deque
-from typing import Any, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Any, Callable, Optional, Union
 
 from event_model import (
     ComposeDescriptorBundle,
@@ -48,7 +49,7 @@ from .utils import (
     short_uid,
 )
 
-ObjDict = Dict[Any, Dict[str, T]]
+ObjDict = dict[Any, dict[str, T]]
 ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
 
 
@@ -60,26 +61,26 @@ class RunBundler:
         self.bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
         self._run_start_uid = None  # The (future) runstart uid
-        self._objs_read: Deque[HasName] = deque()  # objects read in one Event
-        self._read_cache: Deque[Dict[str, Reading]] = deque()  # cache of obj.read() in one Event
+        self._objs_read: deque[HasName] = deque()  # objects read in one Event
+        self._read_cache: deque[dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output  # noqa: C408
-        self._describe_collect_cache: ObjDict[Dict[str, DataKey]] = dict()  # noqa: C408  # cache of all obj.describe() output
+        self._describe_collect_cache: ObjDict[dict[str, DataKey]] = dict()  # noqa: C408  # cache of all obj.describe() output
 
         self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()  # noqa: C408
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values  # noqa: C408
         self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps  # noqa: C408
         # cache of {name: (doc, compose_event, compose_event_page)}
-        self._descriptors: Dict[Any, ComposeDescriptorBundle] = dict()  # noqa: C408
-        self._descriptor_objs: Dict[str, Dict[HasName, Dict[str, DataKey]]] = dict()  # noqa: C408
+        self._descriptors: dict[Any, ComposeDescriptorBundle] = dict()  # noqa: C408
+        self._descriptor_objs: dict[str, dict[HasName, dict[str, DataKey]]] = dict()  # noqa: C408
         # cache of {obj: {objs_frozen_set: (doc, compose_event, compose_event_page)}
-        self._local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = dict()  # noqa: C408
+        self._local_descriptors: dict[Any, dict[frozenset[str], ComposeDescriptorBundle]] = dict()  # noqa: C408
         # a seq_num counter per stream
-        self._sequence_counters: Dict[Any, int] = dict()  # noqa: C408
-        self._sequence_counters_copy: Dict[Any, int] = dict()  # for if we redo data-points  # noqa: C408
-        self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # noqa: C408  # cache of {obj: (cb, kwargs)}
+        self._sequence_counters: dict[Any, int] = dict()  # noqa: C408
+        self._sequence_counters_copy: dict[Any, int] = dict()  # for if we redo data-points  # noqa: C408
+        self._monitor_params: dict[Subscribable, tuple[Callback, dict]] = dict()  # noqa: C408  # cache of {obj: (cb, kwargs)}
         # a cache of stream_resource uid to the data_keys that stream_resource collects for
-        self._stream_resource_data_keys: Dict[str, Iterable[str]] = dict()  # noqa: C408
+        self._stream_resource_data_keys: dict[str, Iterable[str]] = dict()  # noqa: C408
         self.run_is_open = False
         self._uncollected = set()  # objects after kickoff(), before collect()
         # we expect the RE to take care of the composition
@@ -92,7 +93,7 @@ class RunBundler:
         self.emit_sync = emit_sync
         self.log = log
         # Map of set of collect objects to list of stream names that they can be collected into
-        self._declared_stream_names: Dict[FrozenSet, List[str]] = {}
+        self._declared_stream_names: dict[frozenset, list[str]] = {}
 
     async def open_run(self, msg):
         self.run_is_open = True
@@ -174,14 +175,14 @@ class RunBundler:
     async def _prepare_stream(
         self,
         desc_key: str,
-        objs_dks: Dict[HasName, Dict[str, DataKey]],
+        objs_dks: dict[HasName, dict[str, DataKey]],
     ):
         # We do not have an Event Descriptor for this set
         # so one must be created.
         data_keys = {}
         config = {}
         object_keys = {}
-        hints: Dict[str, Any] = {}
+        hints: dict[str, Any] = {}
 
         for obj, dks in objs_dks.items():
             maybe_update_hints(hints, obj)
@@ -248,7 +249,7 @@ class RunBundler:
         for obj in objs:
             if collect:
                 data_keys = self._describe_collect_cache[obj]
-                streams_and_data_keys: List[Tuple[str, Dict[str, Any]]] = (
+                streams_and_data_keys: list[tuple[str, dict[str, Any]]] = (
                     self._maybe_format_datakeys_with_stream_name(data_keys, message_stream_name=stream_name)
                 )
 
@@ -411,7 +412,7 @@ class RunBundler:
         stream_bundle = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
         compose_event = stream_bundle[1]
 
-        def emit_event(readings: Optional[Dict[str, Reading]] = None, *args, **kwargs):
+        def emit_event(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
                 assert (
@@ -645,9 +646,9 @@ class RunBundler:
     # seperate places so it could be two seperate methods for each dictionary type.
     def _maybe_format_datakeys_with_stream_name(
         self,
-        describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],
+        describe_collect_dict: Union[dict[str, DataKey], dict[str, dict[str, DataKey]]],
         message_stream_name: Optional[str] = None,
-    ) -> List[Tuple[str, Dict[str, DataKey]]]:
+    ) -> list[tuple[str, dict[str, DataKey]]]:
         """
         Check if the dictionary returned by describe collect is a dict
             `{str: DataKey}` or a `{str: {str: DataKey}}`.
@@ -718,7 +719,7 @@ class RunBundler:
         describe_collect = self._describe_collect_cache[collect_object]
         describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(describe_collect))
 
-        local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
+        local_descriptors: dict[Any, dict[frozenset[str], ComposeDescriptorBundle]] = {}
 
         # Check that singly nested stuff should have been pre-declared
         def is_data_key(obj: Any) -> bool:
@@ -729,7 +730,7 @@ class RunBundler:
         ), "Single nested data keys should be pre-decalred"
 
         # Make sure you can't use identidal data keys in multiple streams
-        duplicates: Dict[str, DataKey] = defaultdict(dict)
+        duplicates: dict[str, DataKey] = defaultdict(dict)
         for stream, data_keys in describe_collect.items():
             for key, stuff in data_keys.items():
                 for other_stream, other_data_keys in describe_collect.items():
@@ -792,7 +793,7 @@ class RunBundler:
 
     # message strem name here?
     async def _pack_external_assets(
-        self, asset_docs: Iterable[Tuple[str, ExternalAssetDoc]], message_stream_name: Optional[str]
+        self, asset_docs: Iterable[tuple[str, ExternalAssetDoc]], message_stream_name: Optional[str]
     ):
         """Packs some external asset documents with relevant information from the run."""
 
@@ -864,7 +865,7 @@ class RunBundler:
 
         return stream_datum_previous_indices_difference
 
-    def get_external_data_keys(self, data_keys: Dict[str, DataKey]) -> List[DataKey]:
+    def get_external_data_keys(self, data_keys: dict[str, DataKey]) -> list[DataKey]:
         """Get the external data keys from the descriptor data_keys dictionary"""
         return [x for x in data_keys if ("external" in data_keys[x] and data_keys[x]["external"] == "STREAM:")]
 
@@ -876,7 +877,7 @@ class RunBundler:
         message_stream_name: Optional[str],
     ):
         payload = []
-        pages: Dict[FrozenSet[str], List[Event]] = defaultdict(list)
+        pages: dict[frozenset[str], list[Event]] = defaultdict(list)
 
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
@@ -991,7 +992,7 @@ class RunBundler:
 
         # Get references to get_index methods if we have more than one collect object
         # raise error if collect_objects don't obey WritesStreamAssests protocol
-        indices: List[Callable[[None], SyncOrAsync[int]]] = []
+        indices: list[Callable[[None], SyncOrAsync[int]]] = []
         if len(collect_objects) > 1:
             indices = [check_supports(obj, WritesStreamAssets).get_index for obj in collect_objects]
 
@@ -1062,7 +1063,7 @@ class RunBundler:
         # Make event pages for an object which is EventCollectable or EventPageCollectable
         # objects that are EventCollectable will now group the Events and Emit an Event Page
         if len(collect_objects) == 1 and not isinstance(collect_objects[0], WritesStreamAssets):
-            local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
+            local_descriptors: dict[Any, dict[frozenset[str], ComposeDescriptorBundle]] = {}
             collect_obj = collect_objects[0]
 
             # If the single collect object is singly nested, gather descriptors

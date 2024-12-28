@@ -13,6 +13,7 @@ from event_model import sanitize_doc
 from bluesky import Msg
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
+from bluesky.tests import uses_os_kill_sigint
 
 
 def test_proxy_script():
@@ -91,6 +92,7 @@ def test_zmq(RE, hw):
     gc.collect()
 
 
+@uses_os_kill_sigint
 def test_zmq_proxy_blocks_sigint_exits():
     # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
     # process, which coverage misses.

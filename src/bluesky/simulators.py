@@ -1,14 +1,11 @@
+from collections.abc import Generator, Sequence
 from itertools import dropwhile
 from time import time
 from typing import (
     Any,
     Callable,
-    Generator,
-    List,
     Literal,
     Optional,
-    Sequence,
-    Tuple,
     Union,
 )
 from warnings import warn
@@ -332,7 +329,7 @@ class RunEngineSimulator:
     def add_callback_handler_for_multiple(
         self,
         command: str,
-        docs: Sequence[Sequence[Tuple[str, dict]]],
+        docs: Sequence[Sequence[tuple[str, dict]]],
         msg_filter: Optional[Callable[[Msg], bool]] = None,
     ):
         """Add a handler to fire callbacks in sequence when a matching command is encountered.
@@ -372,7 +369,7 @@ class RunEngineSimulator:
             if callback_docname == "all" or callback_docname == document_name:
                 callback_func(document_name, document)
 
-    def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> List[Msg]:
+    def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> list[Msg]:
         """Simulate the RunEngine executing the plan.
 
         After executing the plan return_value is populated with the return value of the plan.
@@ -409,7 +406,7 @@ class RunEngineSimulator:
 
 
 def assert_message_and_return_remaining(
-    messages: List[Msg],
+    messages: list[Msg],
     predicate: Callable[[Msg], bool],
     group: Optional[str] = None,
 ):

@@ -1,7 +1,8 @@
 import collections
 import dataclasses
 import enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+import os
+from typing import Any, Optional
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
@@ -47,7 +48,7 @@ class DataSource:
     id: Optional[int] = None
     mimetype: Optional[str] = None
     parameters: dict = dataclasses.field(default_factory=dict)
-    assets: List[Asset] = dataclasses.field(default_factory=list)
+    assets: list[Asset] = dataclasses.field(default_factory=list)
     management: Management = Management.writable
 
 
@@ -75,28 +76,41 @@ class ConsolidatorBase:
     automated discovery of the subclassed Consolidator.
     """
 
-    supported_mimetypes: Set[str] = set()
+    supported_mimetypes: set[str] = set()
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         self.mimetype = self.get_supported_mimetype(stream_resource)
 
         self.data_key = stream_resource["data_key"]
         self.uri = stream_resource["uri"]
-        self.assets: List[Asset] = []
+        self.assets: list[Asset] = []
         self._sres_parameters = stream_resource["parameters"]
 
-        # Find data shape and machine dtype; dtype_str takes precedence if specified
+        # Find data shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
-        self.dtype = data_desc["dtype"]
-        self.dtype = DTYPE_LOOKUP[self.dtype] if self.dtype in DTYPE_LOOKUP.keys() else self.dtype
-        self.dtype = np.dtype(data_desc.get("dtype_str", self.dtype))
-        self.chunk_size = self._sres_parameters.get("chunk_size", None)
+        # Get data type. From highest precedent to lowest:
+        # 1. Try 'dtype_numpy', optional in the document schema.
+        # 2. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
+        # 3. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
+        #    and make a best effort to convert it to a numpy spec like '<u8'.
+        # 4. If unable to do any of the above, pass through whatever string is in 'dtype'.
+        self.dtype = np.dtype(
+            data_desc.get("dtype_numpy")  # standard location
+            or data_desc.get(
+                "dtype_str",  # legacy location
+                # try to guess numpy dtype from JSON type
+                DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
+            )
+        )
+        self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
+        if 0 in self.chunk_shape:
+            raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
-        self._seqnums_to_indices_map: Dict[int, int] = {}
+        self._seqnums_to_indices_map: dict[int, int] = {}
 
     @classmethod
     def get_supported_mimetype(cls, sres):
@@ -105,7 +119,7 @@ class ConsolidatorBase:
         return sres["mimetype"]
 
     @property
-    def shape(self) -> Tuple[int]:
+    def shape(self) -> tuple[int]:
         """Native shape of the data stored in assets
 
         This includes the leading (0-th) dimension corresponding to the number of rows, including skipped rows, if
@@ -114,19 +128,35 @@ class ConsolidatorBase:
         return self._num_rows, *self.datum_shape
 
     @property
-    def chunks(self) -> Tuple[Tuple[int, ...], ...]:
-        """Chunking specification based on the Stream Resource parameter `chunk_size`:
-        None or 0 -- single chunk for all existing and new elements
-        int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
-        """
-        if not self.chunk_size:
-            dim0_chunk = [self._num_rows]
-        else:
-            dim0_chunk = [self.chunk_size] * int(self._num_rows / self.chunk_size)
-            if self._num_rows % self.chunk_size:
-                dim0_chunk.append(self._num_rows % self.chunk_size)
+    def chunks(self) -> tuple[tuple[int, ...], ...]:
+        """Explicit (dask-style) specification of chunk sizes
 
-        return tuple(dim0_chunk or [0]), *[(d,) for d in self.datum_shape]
+        The produced chunk specification is a tuple of tuples of int that specify the sizes of each chunk in each
+        dimension; it is based on the StreamResource parameter `chunk_shape`.
+
+        If `chunk_shape` is an empty tuple -- assume the dataset is stored as a single chunk for all existing and
+        new elements. Usually, however, `chunk_shape` is a tuple of int, in which case, we assume fixed-sized
+        chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
+        is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
+        """
+
+        def list_summands(A, b):
+            # Generate a list with repeated b summing up to A; append the remainder if necessary
+            return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) or (0,)
+
+        if len(self.chunk_shape) == 0:
+            return (self._num_rows,), *[(d,) for d in self.datum_shape]
+
+        elif len(self.chunk_shape) == 1:
+            return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+
+        elif len(self.chunk_shape) == len(self.shape):
+            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
+
+        else:
+            raise ValueError(
+                f"The shape of chunks, {self.chunk_shape}, is not consistent with the shape of data, {self.shape}."
+            )
 
     @property
     def has_skips(self) -> bool:
@@ -139,7 +169,7 @@ class ConsolidatorBase:
         return self._num_rows > len(self._seqnums_to_indices_map)
 
     @property
-    def adapter_parameters(self) -> Dict:
+    def adapter_parameters(self) -> dict:
         """A dictionary of parameters passed to an Adapter
 
         These parameters are intended to provide any additional information required to read a data source of a
@@ -233,49 +263,70 @@ class HDF5Consolidator(ConsolidatorBase):
         self.swmr = self._sres_parameters.get("swmr", True)
 
     @property
-    def adapter_parameters(self) -> Dict:
+    def adapter_parameters(self) -> dict:
         """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
 
-        path: List[str] - file path represented as list split at `/`
+        dataset: List[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"path": self._sres_parameters["path"].strip("/").split("/"), "swmr": self.swmr}
+        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
 
 
-class TIFFConsolidator(ConsolidatorBase):
-    supported_mimetypes = {"multipart/related;type=image/tiff"}
-
-    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+class MultipartRelatedConsolidator(ConsolidatorBase):
+    def __init__(
+        self, permitted_extensions: set[str], stream_resource: StreamResource, descriptor: EventDescriptor
+    ):
         super().__init__(stream_resource, descriptor)
-        self.data_uris: List[str] = []
+        self.permitted_extensions: set[str] = permitted_extensions
+        self.data_uris: list[str] = []
+        self.template = self._sres_parameters["template"]
 
     def get_datum_uri(self, indx: int):
-        """Return a full uri for a datum (an individual TIFF file) based on its index in the sequence.
+        """Return a full uri for a datum (an individual image file) based on its index in the sequence.
 
         This relies on the `template` parameter passed in the StreamResource, which is a string either in the "new"
         Python formatting style that can be evaluated to a file name using the `.format(indx)` method given an
-        integer index, e.g. "{:05d}.tif".
+        integer index, e.g. "{:05d}.ext".
         """
-        return self.uri + self._sres_parameters["template"].format(indx)
+        assert os.path.splitext(self.template)[1] in self.permitted_extensions
+        return self.uri + self.template.format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
-        indx = int(doc["uid"].split("/")[1])
-        new_datum_uri = self.get_datum_uri(indx)
-        new_asset = Asset(
-            data_uri=new_datum_uri,
-            is_directory=False,
-            parameter="data_uris",
-            num=len(self.assets) + 1,
-        )
-        self.assets.append(new_asset)
-        self.data_uris.append(new_datum_uri)
+        # Determine the indices in the names of tiff files from indices of frames and number of frames per file
+        first_file_indx = int(doc["indices"]["start"] / self.chunk_shape[0])
+        last_file_indx = int((doc["indices"]["stop"] - 1) / self.chunk_shape[0])
+        for indx in range(first_file_indx, last_file_indx + 1):
+            new_datum_uri = self.get_datum_uri(indx)
+            new_asset = Asset(
+                data_uri=new_datum_uri,
+                is_directory=False,
+                parameter="data_uris",
+                num=len(self.assets) + 1,
+            )
+            self.assets.append(new_asset)
+            self.data_uris.append(new_datum_uri)
 
         super().consume_stream_datum(doc)
+
+
+class TIFFConsolidator(MultipartRelatedConsolidator):
+    supported_mimetypes = {"multipart/related;type=image/tiff"}
+
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        super().__init__({".tif", ".tiff"}, stream_resource, descriptor)
+
+
+class JPEGConsolidator(MultipartRelatedConsolidator):
+    supported_mimetypes = {"multipart/related;type=image/jpeg"}
+
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        super().__init__({".jpeg", ".jpg"}, stream_resource, descriptor)
 
 
 CONSOLIDATOR_REGISTRY = {
     "application/x-hdf5": HDF5Consolidator,
     "multipart/related;type=image/tiff": TIFFConsolidator,
+    "multipart/related;type=image/jpeg": JPEGConsolidator,
 }
 
 

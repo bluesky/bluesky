@@ -11,11 +11,11 @@ import sys
 import threading
 import time
 import weakref
+from collections.abc import Mapping
 from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
-from typing import List, Mapping
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -134,7 +134,8 @@ class BestEffortCallback(QtAwareCallback):
         # for each dimension, choose one field only
         # the plan can supply a list of fields. It's assumed the first
         # of the list is always the one plotted against
-        self.dim_fields = [fields[0] for fields, stream_name in dimensions]
+        default_field_name = "time"
+        self.dim_fields = [fields[0] if len(fields) else default_field_name for fields, stream_name in dimensions]
 
         # make distinction between flattened fields and plotted fields
         # motivation for this is that when plotting, we find dependent variable
@@ -552,7 +553,7 @@ class LivePlotPlusPeaks(LivePlot):
     # Track state of axes, which may share instances of LivePlotPlusPeaks.
     __labeled: Mapping[Axis, bool] = weakref.WeakKeyDictionary()  # map ax to True/False
     __visible: Mapping[Axis, bool] = weakref.WeakKeyDictionary()  # map ax to True/False
-    __instances: Mapping[Axis, List["LivePlotPlusPeaks"]] = (
+    __instances: Mapping[Axis, list["LivePlotPlusPeaks"]] = (
         weakref.WeakKeyDictionary()
     )  # map ax to list of instances
 

@@ -2,6 +2,7 @@ import pytest
 
 import bluesky.preprocessors as bsp
 from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from bluesky.preprocessors import set_run_key_wrapper as srkw
 from bluesky.tests.utils import DocCollector
 
@@ -138,3 +139,35 @@ def test_multirun_smoke_fail(RE, hw):
     for v in dc.stop.values():
         assert v["exit_status"] == "fail"
         assert v["reason"] == "womp womp"
+
+
+def test_multirun_baseline(RE, hw):
+    det1, det2, det3 = hw.det1, hw.det2, hw.det3
+
+    @bpp.set_run_key_decorator("run_2")
+    @bpp.run_decorator(md={})
+    def sim_plan_inner(npts):
+        for j in range(npts):
+            yield from bps.mov(hw.motor1, j * 0.1 + 1, hw.motor2, j * 0.2 - 2)
+            yield from bps.trigger_and_read([hw.motor1, hw.motor2, hw.det2])
+
+    @bpp.set_run_key_decorator("run_1")
+    @bpp.run_decorator(md={})
+    def sim_plan_outer(npts):
+        for j in range(int(npts / 2)):
+            yield from bps.mov(hw.motor, j * 0.2)
+            yield from bps.trigger_and_read([hw.motor, hw.det])
+
+        yield from sim_plan_inner(npts + 1)
+
+        for j in range(int(npts / 2), npts):
+            yield from bps.mov(hw.motor, j * 0.2)
+            yield from bps.trigger_and_read([hw.motor, hw.det])
+
+    # add baseline to RE
+    baseline = [det1, det2, det3]
+    sd = bpp.SupplementalData(baseline=baseline)
+    RE.preprocessors.append(sd)  # comment out this line to avoid error
+
+    # run the plan
+    RE(sim_plan_outer(10))

@@ -1,6 +1,7 @@
 import importlib.metadata
+from collections.abc import Iterable, Iterator
 from random import randint, sample
-from typing import Dict, Iterable, Iterator, List, Optional, Union
+from typing import Optional, Union
 
 import packaging.version
 import pytest
@@ -28,14 +29,14 @@ DRAFT_0_STREAM_RESOURCE = event_model_version < packaging.version.parse("1.21.0"
 
 
 class ExternalAssetDevice:
-    sequence_counter_at_chunks: Optional[Union[range, List[int]]] = None
+    sequence_counter_at_chunks: Optional[Union[range, list[int]]] = None
     current_chunk: int = 0
 
     def __init__(
         self,
         number_of_chunks: int,
         number_of_frames: int,
-        detectors: Optional[List[str]] = None,
+        detectors: Optional[list[str]] = None,
         stream_datum_contains_one_index: bool = False,
     ):
         self.detectors = detectors or ["det1", "det2", "det3"]
@@ -170,11 +171,11 @@ def pause(self, *_, **__): ...
 def resume(self, *_, **__): ...
 
 
-def read_Readable(self) -> Dict[str, Reading]:
+def read_Readable(self) -> dict[str, Reading]:
     return dict(det3=dict(value=1.2, timestamp=0.0))  # noqa: C408
 
 
-def describe_Readable(self) -> Dict[str, DataKey]:
+def describe_Readable(self) -> dict[str, DataKey]:
     return dict(  # noqa: C408
         det1=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),  # noqa: C408
         det2=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),  # noqa: C408
@@ -182,7 +183,7 @@ def describe_Readable(self) -> Dict[str, DataKey]:
     )
 
 
-def describe_collect_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
+def describe_collect_with_name(self) -> SyncOrAsync[dict[str, DataKey]]:
     description = {
         str(det): DataKey(shape=[], source="stream1", dtype="string", external="STREAM:")
         for det in ["det1", "det2", "det3"]

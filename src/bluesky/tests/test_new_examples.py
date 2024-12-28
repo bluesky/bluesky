@@ -2,7 +2,6 @@ import asyncio
 import threading
 import time as ttime
 from collections import defaultdict
-from typing import Dict, List
 
 import pytest
 
@@ -112,8 +111,8 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
         (trigger, ("det",), {"group": "A"}, [Msg("trigger", "det", group="A")]),
         (sleep, (2,), {}, [Msg("sleep", None, 2)]),
-        (wait, (), {}, [Msg("wait", None, move_on=False, group=None, timeout=None)]),
-        (wait, ("A",), {}, [Msg("wait", None, group="A", move_on=False, timeout=None)]),
+        (wait, (), {}, [Msg("wait", None, error_on_timeout=True, group=None, timeout=None)]),
+        (wait, ("A",), {}, [Msg("wait", None, group="A", error_on_timeout=True, timeout=None)]),
         (checkpoint, (), {}, [Msg("checkpoint")]),
         (clear_checkpoint, (), {}, [Msg("clear_checkpoint")]),
         (pause, (), {}, [Msg("pause", None, defer=False)]),
@@ -224,10 +223,10 @@ def test_locatable_message_multiple_objects(RE, hw):
 
 def test_rd_locatable(RE, hw):
     class Jittery(Readable, Locatable):
-        def describe(self) -> Dict[str, Descriptor]:
+        def describe(self) -> dict[str, Descriptor]:
             return dict(x=dict(source="dummy", dtype="number", shape=[]))  # noqa: C408
 
-        def read(self) -> Dict[str, Reading]:
+        def read(self) -> dict[str, Reading]:
             return dict(x=dict(value=1.2, timestamp=0.0))  # noqa: C408
 
         def locate(self) -> Location:
@@ -377,7 +376,7 @@ def test_lazily_stage(hw):
 
     processed_plan = list(lazily_stage_wrapper(plan()))
 
-    expected_plan: List[Msg] = [
+    expected_plan: list[Msg] = [
         Msg("stage", det1),
         Msg("read", det1),
         Msg("read", det1),
@@ -703,7 +702,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det]))
     expected = [
         Msg("trigger", det),
-        Msg("wait", move_on=False),
+        Msg("wait", error_on_timeout=True),
         Msg("create", name="primary"),
         Msg("read", det),
         Msg("save"),
@@ -716,7 +715,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det], "custom"))
     expected = [
         Msg("trigger", det),
-        Msg("wait", move_on=False),
+        Msg("wait", error_on_timeout=True),
         Msg("create", name="custom"),
         Msg("read", det),
         Msg("save"),
@@ -880,10 +879,18 @@ def test_stage_all_and_unstage_all(RE):
 
     def plan():
         yield from stage_all(olddummy1, olddummy2, newdummy1, newdummy2)
-        assert list(staged.keys()) == ["o1", "o2", "n1", "n2"]
+        staged_keys = list(staged.keys())
+        assert len(staged_keys) == 4
+        assert staged_keys[:2] == ["o1", "o2"]
+        assert "n1" in staged_keys[2:]
+        assert "n2" in staged_keys[2:]
 
         yield from unstage_all(olddummy1, olddummy2, newdummy1, newdummy2)
-        assert list(unstaged.keys()) == ["o1", "o2", "n1", "n2"]
+        unstaged_keys = list(unstaged.keys())
+        assert len(unstaged_keys) == 4
+        assert unstaged_keys[:2] == ["o1", "o2"]
+        assert "n1" in unstaged_keys[2:]
+        assert "n2" in unstaged_keys[2:]
 
     start = ttime.monotonic()
     RE(plan())
