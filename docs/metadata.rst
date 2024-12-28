@@ -362,13 +362,14 @@ dictionary interface. The simplest is just a plain Python dictionary.
     RE.md = {}
 
 To persist metadata between sessions, bluesky provides two alternatives to save
-the content of the ``RE.md`` dictionary between sessions:
+the content of the ``RE.md`` dictionary between sessions.  It is recommended
+to use :class:`~bluesky.utils.StoredDict`.
 
 ======================================  ======================================
 class                                   storage model
 ======================================  ======================================
-:class:`~bluesky.utils.PersistentDict`  Directory of files backed by ``zict``.  
 :class:`~bluesky.utils.StoredDict`      Single YAML file.
+:class:`~bluesky.utils.PersistentDict`  Directory of files backed by ``zict``.  
 ======================================  ======================================
 
 Any changes made to ``RE.md`` are synced to the storage model, so the contents
@@ -381,6 +382,12 @@ of ``RE.md`` can persist between sessions.
     RE.md = StoredDict('some/path/here')  # path is a file
 
 .. rubric:: PersistentDict
+
+Bluesky formerly recommended using :class:`~bluesky.utils.PersistentDict` --- a
+Python dictionary backed by a zict directory. This approach proved
+problematic with the file names created by zict, especially when multiple, 
+simultaneous bluesky sessions are writing to the same directory.
+
 .. code-block:: python
 
     from bluesky.utils import PersistentDict
@@ -393,6 +400,7 @@ avoids this problem, but causes conflicts with other packages (such as
 ``dask``).
 
 .. rubric:: HistoryDict (legacy support)
+
 Bluesky formerly recommended using :class:`~historydict.HistoryDict` --- a
 Python dictionary backed by a sqlite database file. This approach proved
 problematic with the threading introduced in bluesky v1.6.0, so it is no longer
