@@ -25,6 +25,7 @@ dependencies = [
     "pyyaml",
     "toolz",
     "tqdm>=4.44",
+    "types-PyYAML",
     "typing-extensions>=4.0.0;python_version<'3.11'",
     "dataclasses;python_version<'3.7'",
 ]
