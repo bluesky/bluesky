@@ -361,16 +361,30 @@ dictionary interface. The simplest is just a plain Python dictionary.
 
     RE.md = {}
 
-To persist metadata between sessions, bluesky provides
-:class:`bluesky.utils.PersistentDict` --- a Python dictionary synced with a
-directory of files on disk backed by ``zict``.  Any changes made to ``RE.md``
-are synced to the file, so the contents of ``RE.md`` can persist between
-sessions.
+To persist metadata between sessions, bluesky provides two alternatives to save
+the content of the ``RE.md`` dictionary between sessions:
 
+======================================  ======================================
+class                                   storage model
+======================================  ======================================
+:class:`~bluesky.utils.PersistentDict`  Directory of files backed by ``zict``.  
+:class:`~bluesky.utils.StoredDict`      Single YAML file.
+======================================  ======================================
+
+Any changes made to ``RE.md`` are synced to the storage model, so the contents
+of ``RE.md`` can persist between sessions.
+
+.. rubric:: StoredDict
+.. code-block:: python
+
+    from bluesky.utils import StoredDict
+    RE.md = StoredDict('some/path/here')  # path is a file
+
+.. rubric:: PersistentDict
 .. code-block:: python
 
     from bluesky.utils import PersistentDict
-    RE.md = PersistentDict('some/path/here')
+    RE.md = PersistentDict('some/path/here')  # path is a directory
 
 ``zict`` v3 changed how the contents of are serialized to disk such that only
 one Python process can reliably interact with the files at a time, which is
@@ -378,6 +392,7 @@ suitable for testing and small-scale applications.  Installing ``zict`` v2
 avoids this problem, but causes conflicts with other packages (such as
 ``dask``).
 
+.. rubric:: HistoryDict (legacy support)
 Bluesky formerly recommended using :class:`~historydict.HistoryDict` --- a
 Python dictionary backed by a sqlite database file. This approach proved
 problematic with the threading introduced in bluesky v1.6.0, so it is no longer

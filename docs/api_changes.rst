@@ -2,6 +2,12 @@
  Release History
 =================
 
+..
+    Added
+    -----
+
+    * Add ``StoredDict`` as an alternative to ``PersistentDict`` in  TODO_URL
+
 v1.13.1 (2024-12-12)
 ====================
 

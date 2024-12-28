@@ -4,8 +4,10 @@ import collections.abc
 import datetime
 import inspect
 import itertools
+import json
 import operator
 import os
+import pathlib
 import signal
 import sys
 import threading
@@ -31,6 +33,7 @@ from weakref import WeakKeyDictionary, ref
 import msgpack
 import msgpack_numpy
 import numpy as np
+import yaml
 from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
@@ -896,6 +899,168 @@ class PersistentDict(collections.abc.MutableMapping):
     def reload(self):
         """Force a reload from disk, overwriting current cache"""
         self._cache = dict(self._func.items())
+
+
+class StoredDict(collections.abc.MutableMapping):
+    """
+    A MutableMapping which syncs it contents to storage.
+
+    The contents are stored as a single YAML file.
+
+    When an item is *mutated* it is not written to storage immediately. The
+    mapping is written to storage afer a 'delay' period. The 'delay' is
+    chosen long enough to allow multiple updates to the mapping before a single
+    write but short enough to ensure prompt backup of the mapping.
+
+    Example::
+
+        >>> import bluesky
+        >>> RE = bluesky.RunEngine()
+        >>> RE.md = StoredDict(".re_md_dict")  # save file in pwd
+
+    .. autosummary::
+
+        ~flush
+        ~popitem
+        ~reload
+
+    .. rubric:: Static methods
+
+    All support for the YAML format is implemented in the static methods.
+
+    .. autosummary::
+
+        ~dump
+        ~load
+    """
+
+    def __init__(self, file, delay=5, title=None, serializable=True):
+        """
+        StoredDict : Dictionary that syncs to storage
+
+        PARAMETERS
+
+        file : str or pathlib.Path
+            Name of file to store dictionary contents.
+        delay : number
+            Time delay (s) since last dictionary update to write to storage.
+            Default: 5 seconds.
+        title : str or None
+            Comment to write at top of file.
+            Default: "Written by StoredDict."
+        serializable : bool
+            If True, validate new dictionary entries are JSON serializable.
+        """
+        self._file = pathlib.Path(file)
+        self._delay = max(0, delay)
+        self._title = title or f"Written by {self.__class__.__name__}."
+        self.test_serializable = serializable
+
+        self.sync_in_progress = False
+        self._sync_deadline = time.time()
+        self._sync_key = f"sync_agent_{id(self):x}"
+        self._sync_loop_period = 0.005
+
+        self._cache = {}
+        self.reload()
+
+    def __delitem__(self, key):
+        """Delete dictionary value by key."""
+        del self._cache[key]
+
+    def __getitem__(self, key):
+        """Get dictionary value by key."""
+        return self._cache[key]
+
+    def __iter__(self):
+        """Iterate over the dictionary keys."""
+        yield from self._cache
+
+    def __len__(self):
+        """Number of keys in the dictionary."""
+        return len(self._cache)
+
+    def __repr__(self):
+        """representation of this object."""
+        return f"<{self.__class__.__name__} {dict(self)!r}>"
+
+    def __setitem__(self, key, value):
+        """Write to the dictionary."""
+        outermost_frame = inspect.getouterframes(inspect.currentframe())[-1]
+        if "sphinx-build" in outermost_frame.filename:
+            # Seems that Sphinx is building the documentation.
+            # Ignore all the objects it tries to add.
+            return
+
+        if self.test_serializable:
+            json.dumps({key: value})
+
+        self._cache[key] = value  # Store the new (or revised) content.
+
+        # Reset the deadline.
+        self._sync_deadline = time.time() + self._delay
+
+        if not self.sync_in_progress:
+            # Start the sync_agent (thread).
+            self._delayed_sync_to_storage()
+
+    def _delayed_sync_to_storage(self):
+        """
+        Sync the metadata to storage.
+
+        Start a time-delay thread.  New writes to the metadata dictionary will
+        extend the deadline.  Sync once the deadline is reached.
+        """
+
+        def sync_agent():
+            """Threaded task."""
+            self.sync_in_progress = True
+            while time.time() < self._sync_deadline:
+                time.sleep(self._sync_loop_period)
+            self.sync_in_progress = False
+
+            StoredDict.dump(self._file, self._cache, title=self._title)
+
+        thred = threading.Thread(target=sync_agent)
+        thred.start()
+
+    def flush(self):
+        """Force a write of the dictionary to disk"""
+        if not self.sync_in_progress:
+            StoredDict.dump(self._file, self._cache, title=self._title)
+        self._sync_deadline = time.time()
+        self.sync_in_progress = False
+
+    def popitem(self):
+        """
+        Remove and return a (key, value) pair as a 2-tuple.
+
+        Pairs are returned in LIFO (last-in, first-out) order.
+        Raises KeyError if the dict is empty.
+        """
+        return self._cache.popitem()
+
+    def reload(self):
+        """Read dictionary from storage."""
+        self._cache = StoredDict.load(self._file)
+
+    @staticmethod
+    def dump(file, contents, title=None):
+        """Write dictionary to YAML file."""
+        with open(file, "w") as f:
+            if isinstance(title, str) and len(title) > 0:
+                f.write(f"# {title}\n")
+            f.write(f"# Dictionary contents written: {datetime.datetime.now()}\n\n")
+            f.write(yaml.dump(contents, indent=2))
+
+    @staticmethod
+    def load(file):
+        """Read dictionary from YAML file."""
+        file = pathlib.Path(file)
+        md = None
+        if file.exists():
+            md = yaml.load(open(file).read(), yaml.Loader)
+        return md or {}  # In case file is empty.
 
 
 SEARCH_PATH = []

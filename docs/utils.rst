@@ -17,8 +17,15 @@ Msg
 Persistent metadata
 -------------------
 
-To maintain a peristent set of meta-data between Python sessions
-we include a dictionary duck-type based on `zict.Func`.
+To save and restore metadata between Python sessions, we provide two support
+classes. Choose from these alternatives:
+
+======================================  ======================================
+class                                   storage model
+======================================  ======================================
+:class:`~bluesky.utils.PersistentDict`  Directory of files backed by ``zict``.  
+:class:`~bluesky.utils.StoredDict`      Single YAML file.
+======================================  ======================================
 
 .. autosummary::
    :nosignatures:
@@ -26,7 +33,7 @@ we include a dictionary duck-type based on `zict.Func`.
 
    PersistentDict
    PersistentDict.directory
-
+   StoredDict
 
 
 Internal exceptions
