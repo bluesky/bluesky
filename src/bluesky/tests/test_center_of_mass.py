@@ -14,6 +14,6 @@ from bluesky.callbacks.fitting import center_of_mass
         [[0, 1, 1, 1, 0], (2.0,)],
     ],
 )
-def test_center_of_mass(arr, labels, index, expected):
+def test_center_of_mass(arr, expected):
     result = center_of_mass(np.array(arr))
     assert result == expected, f"{result=}"
