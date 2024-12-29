@@ -61,13 +61,7 @@ def get_ps(x, y, shift=0.5):
     return ps
 
 
-@pytest.mark.parametrize(
-    "Imax, com", 
-    [
-        [0, 0],
-        [1, 0]
-    ]
-)
+@pytest.mark.parametrize("Imax, com", [[0, 0], [1, 0]])
 def test_peak_statistics(Imax, com, RE):
     """peak statistics calculation on simple gaussian function"""
     x = "motor"

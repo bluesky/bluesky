@@ -10,7 +10,7 @@ from bluesky.callbacks.fitting import center_of_mass
         # example from the source code
         [[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 1, 1, 0]], (2.0, 1.5)],
         # signal is all zero, does not raise ZeroDivisionError or other
-        [[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],  None],
+        [[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], None],
         [[0, 1, 1, 1, 0], (2.0,)],
     ],
 )

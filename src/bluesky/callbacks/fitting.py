@@ -298,7 +298,7 @@ class PeakStats(CollectThenCompute):
         fields["max"] = (x[argmax_y], y_orig[argmax_y])
         com = center_of_mass(y)
         if com is None:
-            fields["cen"] = (x.min() + x.max())/2  # midway value
+            fields["cen"] = (x.min() + x.max()) / 2  # midway value
             fields["com"] = fields["cen"]
         else:
             (fields["com"],) = np.interp(com, np.arange(len(x)), x)
