@@ -1851,9 +1851,9 @@ class DefaultDuringTask(DuringTask):
 
 class ProcessQtEventsDuringTask(DuringTask):
     """This class runs the Qt main loop while waiting for the plan to finish.
-    
-    Differently from "DefaultDuringTask", this class directly invokes the 
-    QApplication "processEvents" method, which effectively acts as a 
+
+    Differently from "DefaultDuringTask", this class directly invokes the
+    QApplication "processEvents" method, which effectively acts as a
     "kicker" for the Qt event loop. This happens "in-process", and assumes that
     the Qt loop is in the main thread, while the Bluesky event loop is in the
     background thread.
@@ -1873,7 +1873,7 @@ class ProcessQtEventsDuringTask(DuringTask):
     logic implemented by the Qt application to handle the interruption via the
     Bluesky public API.
     """
-    
+
     def __init__(self, refresh_rate: float = 0.03) -> None:
 
         self.refresh_rate = refresh_rate
@@ -1885,7 +1885,7 @@ class ProcessQtEventsDuringTask(DuringTask):
                 from matplotlib.backends.qt_compat import QtWidgets
 
                 self.app = QtWidgets.QApplication.instance()
-    
+
     def block(self, blocking_event):
         if self.app is None:
             # We are not using matplotlib + Qt, or there is no active
@@ -1898,7 +1898,7 @@ class ProcessQtEventsDuringTask(DuringTask):
                 if done:
                     break
 
-    
+
 
 def _rearrange_into_parallel_dicts(readings):
     data = {}
