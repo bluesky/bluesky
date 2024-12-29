@@ -61,12 +61,20 @@ def get_ps(x, y, shift=0.5):
     return ps
 
 
-def test_peak_statistics(RE):
+@pytest.mark.parametrize(
+    "Imax, com", 
+    [
+        [0, 0],
+        [1, 0]
+    ]
+)
+def test_peak_statistics(Imax, com, RE):
     """peak statistics calculation on simple gaussian function"""
     x = "motor"
     y = "det"
     ps = PeakStats(x, y)
     RE.subscribe(ps)
+    det.Imax.put(Imax)
     RE(scan([det], motor, -5, 5, 100))
 
     fields = ["x", "y", "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg"]
@@ -74,9 +82,10 @@ def test_peak_statistics(RE):
         assert hasattr(ps, field), f"{field} is not an attribute of ps"
 
     np.allclose(ps.cen, 0, atol=1e-6)
-    np.allclose(ps.com, 0, atol=1e-6)
-    fwhm_gauss = 2 * np.sqrt(2 * np.log(2))  # theoretical value with std=1
-    assert np.allclose(ps.fwhm, fwhm_gauss, atol=1e-2)
+    np.allclose(ps.com, com, atol=1e-6)
+    if ps.fwhm is not None:
+        fwhm_gauss = 2 * np.sqrt(2 * np.log(2))  # theoretical value with std=1
+        assert np.allclose(ps.fwhm, fwhm_gauss, atol=1e-2)
 
 
 def test_peak_statistics_compare_chx(RE):
