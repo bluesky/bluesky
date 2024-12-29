@@ -6,7 +6,7 @@
     Added
     -----
 
-    * Add ``StoredDict`` as an alternative to ``PersistentDict`` in  TODO_URL
+    * Add ``StoredDict`` as an alternative to ``PersistentDict`` by @prjemian in https://github.com/bluesky/bluesky/pull/1861
 
 v1.13.1 (2024-12-12)
 ====================
