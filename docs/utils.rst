@@ -83,3 +83,4 @@ waiting for the plan to complete in the background thread
    DuringTask.block
 
    DefaultDuringTask
+   ProcessQtEventsDuringTask
