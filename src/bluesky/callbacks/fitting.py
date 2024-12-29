@@ -297,7 +297,10 @@ class PeakStats(CollectThenCompute):
         fields["min"] = (x[argmin_y], y_orig[argmin_y])
         fields["max"] = (x[argmax_y], y_orig[argmax_y])
         com = center_of_mass(y)
-        if com is not None:
+        if com is None:
+            fields["cen"] = (x.min() + x.max())/2  # midway value
+            fields["com"] = fields["cen"]
+        else:
             (fields["com"],) = np.interp(com, np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
         crossings = np.where(np.diff((y > mid).astype(int)))[0]
