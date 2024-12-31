@@ -1241,11 +1241,14 @@ def make_decorator(wrapper):
 
     Example of a decorator:
     >>> some_decorator = make_decorator(some_wrapper)  # returns decorator
-    >>> customized_count = some_decorator(count)  # returns generator func
+    >>> customized_count = some_decorator()(count)  # returns generator func
     >>> plan = customized_count([det])  # returns a generator instance
 
     This turns a 'wrapper' into a decorator, which accepts a generator
-    function and returns a generator function.
+    function and returns a generator function. Additional arguments
+    given to ``some_decorator(arg0, kwarg0=...)(count)`` will be
+    passed to the wrapper as ``some_wrapper(plan, arg0, kwarg0=...)``.
+
     """
 
     @wraps(wrapper)
