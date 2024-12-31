@@ -22,8 +22,10 @@ dependencies = [
     "msgpack-numpy",
     "numpy",
     "opentelemetry-api",
+    "pyyaml",
     "toolz",
     "tqdm>=4.44",
+    "types-PyYAML",
     "typing-extensions>=4.0.0;python_version<'3.11'",
     "dataclasses;python_version<'3.7'",
 ]
@@ -66,7 +68,6 @@ dev = [
     "pytest",
     "pytest-cov",
     "pytest-faulthandler",
-    "pyyaml",
     "pyzmq",
     "requests",
     "ruff",
