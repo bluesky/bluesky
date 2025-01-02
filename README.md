@@ -1,7 +1,7 @@
 [![CI](https://github.com/bluesky/bluesky/actions/workflows/ci.yml/badge.svg)](https://github.com/bluesky/bluesky/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/bluesky/bluesky/branch/main/graph/badge.svg)](https://codecov.io/gh/bluesky/bluesky)
 [![PyPI](https://img.shields.io/pypi/v/bluesky.svg)](https://pypi.org/project/bluesky)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 
 # Bluesky — An Experiment Specification & Orchestration Engine
 

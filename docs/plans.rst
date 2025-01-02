@@ -157,7 +157,6 @@ Examples:
           yield from bluesky.plans.count(detectors, num, delay, md=md)
 
 .. autosummary::
-   :toctree: generated
    :nosignatures:
 
    count
@@ -244,7 +243,6 @@ pseudo-axis. It's all the same to the plans. Examples:
           yield from bluesky.plans.scan(*args, **kwargs)
 
 .. autosummary::
-   :toctree: generated
    :nosignatures:
 
    scan
@@ -328,7 +326,6 @@ incorporating these trajectories, use our general N-dimensional scan plan,
     RE(scan_nd([det], (traj1 + traj2) * traj3))
 
 .. autosummary::
-   :toctree: generated
    :nosignatures:
 
    scan
@@ -389,7 +386,6 @@ A square spiral:
 
 
 .. autosummary::
-   :toctree: generated
    :nosignatures:
 
    spiral
@@ -447,7 +443,6 @@ sample more densely through the peak. As the peak flattens, it lengthens its
 stride again.
 
 .. autosummary::
-   :toctree: generated
    :nosignatures:
 
    adaptive_scan
@@ -457,7 +452,6 @@ Misc.
 -----
 
 .. autosummary::
-   :toctree: generated
    :nosignatures:
 
    tweak
