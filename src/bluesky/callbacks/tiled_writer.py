@@ -13,7 +13,6 @@ from event_model.documents import (
     StreamDatum,
     StreamResource,
 )
-from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
 from tiled.client.container import Container
@@ -125,7 +124,7 @@ class _RunWriter(CallbackBase):
             desc_node = self.root_node[desc_name]
 
         # Update (add new values to) variable fields of the metadata
-        metadata = deep_update(dict(desc_node.metadata), var_fields)
+        metadata = copy.deepcopy(dict(desc_node.metadata), var_fields)
         desc_node.update_metadata(metadata)
 
         # Keep specifications for external and internal data_keys for faster access
