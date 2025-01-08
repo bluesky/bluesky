@@ -13,7 +13,6 @@ from event_model.documents import (
     StreamDatum,
     StreamResource,
 )
-from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
 from tiled.client.container import Container
@@ -23,6 +22,7 @@ from tiled.structures.table import TableStructure
 from tiled.utils import safe_json_dump
 
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
+from ..utils import deep_update
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
 
