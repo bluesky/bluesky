@@ -16,6 +16,7 @@ from bluesky.utils import (
     AsyncInput,
     CallbackRegistry,
     Msg,
+    deep_update,
     ensure_generator,
     is_movable,
     is_plan,
@@ -599,3 +600,10 @@ def test_async_input_does_not_block_event_loop(RE, capsys):
             pytest.fail("Should have timed out waiting for input")
 
     RE(plan())
+
+
+def test_deep_update():
+    D1 = {"a": 1, "b": {"c": 3, "d": 4}, "f": [0]}
+    D2 = {"b": {"e": 5}, "f": {"g": 0}}
+    result = deep_update(D1, D2)
+    assert result == {"a": 1, "b": {"c": 3, "d": 4, "e": 5}, "f": {"g": 0}}
