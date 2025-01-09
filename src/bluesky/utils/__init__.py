@@ -2012,7 +2012,7 @@ def is_plan(bs_plan):
     return inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False)
 
 
-def deep_update(primary: dict, updates: dict) -> dict:
+def deep_update(primary: Mapping, updates: Mapping) -> Mapping:
     """Recursively update nested dictionaries without copying them
     For example, if:
     primary = {'a':1, 'b':{'c':3, 'd':4}} and
