@@ -15,7 +15,7 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Generator, Iterable, Mapping
+from collections.abc import AsyncIterable, AsyncIterator, Generator, Iterable, Mapping, MutableMapping
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
