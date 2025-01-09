@@ -2023,7 +2023,7 @@ def deep_update(primary: Mapping, updates: Mapping) -> Mapping:
 
     for key, val in updates.items():
         pri_val = primary.get(key)
-        if isinstance(val, Mapping) and isinstance(pri_val, Mapping):
+        if isinstance(val, Mapping) and isinstance(pri_val, MutableMapping):
             primary[key] = deep_update(pri_val, val)
         else:
             primary[key] = val
