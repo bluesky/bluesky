@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -1096,7 +1096,7 @@ While the RunEngine executes a plan, it is passed the <a class="reference extern
 and is responsible for blocking until the Event is set.  This function can do
 other things (such as run the Qt event loop) during that time.  The required
 signature is</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">block</span><span class="p">(</span><span class="n">ev</span><span class="p">:</span> <span class="n">Threading</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">block</span><span class="p">(</span><span class="n">ev</span><span class="p">:</span> <span class="n">Threading</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="s2">&quot;Returns when ev is set&quot;</span>
 </pre></div>
 </div>
@@ -1111,7 +1111,7 @@ been broken, but due to the way were stopping the event loop to pause
 the scan it was passing tests.</p>
 <p>Instead of directly passing the values passed into <a class="reference external" href="https://docs.python.org/3/library/asyncio-task.html#asyncio.wait" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">asyncio.wait()</span></code></a>, we
 now expect that the iterable passed in is callables with the signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">fut_fac</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">awaitable</span><span class="p">:</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">fut_fac</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">awaitable</span><span class="p">:</span>
     <span class="s1">&#39;This must work multiple times&#39;</span>
 </pre></div>
 </div>
@@ -1704,15 +1704,15 @@ differences.</p>
 <li><p>No <code class="docutils literal notranslate"><span class="pre">gs.DETS</span></code>. Just use your own variable for detectors. Instead of:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># OLD ALTERNATIVE, NO LONGER SUPPORTED</span>
 
-<span class="kn">from</span> <span class="nn">bluesky.global_state</span> <span class="kn">import</span> <span class="n">gs</span>
-<span class="kn">from</span> <span class="nn">bluesky.spec_api</span> <span class="kn">import</span> <span class="n">ct</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.global_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">gs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.spec_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ct</span>
 
 <span class="n">gs</span><span class="o">.</span><span class="n">DETS</span> <span class="o">=</span> <span class="c1"># a list of some detectors</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">ct</span><span class="p">())</span>
 </pre></div>
 </div>
 <p>do:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
 
 <span class="n">dets</span> <span class="o">=</span> <span class="c1"># a list of some detectors</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">))</span>
@@ -1745,7 +1745,7 @@ run (“baseline” readings), a list of signals to concurrent monitor, and
 a list of “flyers” to run concurrently were configured like so:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># OLD ALTERNATIVE, NO LONGER SUPPORTED</span>
 
-<span class="kn">from</span> <span class="nn">bluesky.spec_api</span> <span class="kn">import</span> <span class="n">ct</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.spec_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ct</span>
 
 <span class="n">gs</span><span class="o">.</span><span class="n">BASELINE_DEVICES</span> <span class="o">=</span> <span class="c1"># a list of devices to read at start and end</span>
 <span class="n">gs</span><span class="o">.</span><span class="n">MONTIORS</span> <span class="o">=</span> <span class="c1"># a list of signals to monitor concurrently</span>
@@ -1763,10 +1763,10 @@ was not desirable!</p>
 <p>This scheme has been replaced by the
 <a class="reference internal" href="plans.html#supplemental-data"><span class="std std-ref">supplemental data</span></a>, which can be
 used to globally modify <em>all</em> plans, including user-defined ones.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
 
 <span class="c1"># one-time configuration</span>
-<span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">SupplementalData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">SupplementalData</span>
 <span class="n">sd</span> <span class="o">=</span> <span class="n">SupplementalData</span><span class="p">()</span>
 <span class="n">RE</span><span class="o">.</span><span class="n">preprocessors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sd</span><span class="p">)</span>
 
@@ -1788,10 +1788,10 @@ counterparts, <a class="reference internal" href="generated/bluesky.plans.count.
 required explicit, detailed instructions to do so. Now, a best-effort
 table and plot can be made for <em>all</em> plans, including user-defined ones,
 by invoking this simple configuration:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
 
 <span class="c1"># one-time configuration</span>
-<span class="kn">from</span> <span class="nn">bluesky.callbacks.best_effort</span> <span class="kn">import</span> <span class="n">BestEffortCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.callbacks.best_effort</span><span class="w"> </span><span class="kn">import</span> <span class="n">BestEffortCallback</span>
 <span class="n">bec</span> <span class="o">=</span> <span class="n">BestEffortCallback</span><span class="p">()</span>
 <span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">bec</span><span class="p">)</span>
 

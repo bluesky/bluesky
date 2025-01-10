@@ -29,7 +29,7 @@
   <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -530,30 +530,63 @@
                 <article class="bd-article">
                   
   <h1>Source code for event_model.documents.event_descriptor</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NotRequired</span><span class="p">,</span> <span class="n">TypedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NotRequired</span><span class="p">,</span> <span class="n">TypedDict</span>
 
-<span class="kn">from</span> <span class="nn">.generate.type_wrapper</span> <span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">add_extra_schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.generate.type_wrapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">add_extra_schema</span>
 
 <span class="n">Dtype</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;boolean&quot;</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">LimitsRange</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RdsRange</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;RDS (Read different than set) parameters range.</span>
+
+
+<span class="sd">    https://tango-controls.readthedocs.io/en/latest/development/device-api/attribute-alarms.html#the-read-different-than-set-rds-alarm</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">time_difference</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">float</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;ms since last update to fail after if set point and &quot;</span>
+                <span class="s2">&quot;read point are not within `value_difference` of each other.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">value_difference</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
+        <span class="n">Annotated</span><span class="p">[</span>
+            <span class="nb">float</span><span class="p">,</span>
+            <span class="n">Field</span><span class="p">(</span>
+                <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">&quot;Allowed difference in value between set point and read point &quot;</span>
+                    <span class="s2">&quot;after `time_difference`.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LimitsRange</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
     <span class="n">low</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
     <span class="n">high</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">Limits</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Limits</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Epics limits:</span>
+<span class="sd">    Epics and tango limits:</span>
 <span class="sd">    see 3.4.1 https://epics.anl.gov/base/R3-14/12-docs/AppDevGuide/node4.html</span>
+<span class="sd">    and</span>
+<span class="sd">    https://tango-controls.readthedocs.io/en/latest/development/device-api/attribute-alarms.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">control</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Control limits.&quot;</span><span class="p">)]]</span>
     <span class="n">display</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Display limits.&quot;</span><span class="p">)]]</span>
     <span class="n">warning</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Warning limits.&quot;</span><span class="p">)]]</span>
     <span class="n">alarm</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Alarm limits.&quot;</span><span class="p">)]]</span>
+    <span class="n">hysteresis</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hysteresis.&quot;</span><span class="p">)]]</span>
+    <span class="n">rds</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="n">RdsRange</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;RDS parameters.&quot;</span><span class="p">)]]</span>
 
 
 <span class="n">_ConstrainedDtype</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span>
@@ -569,7 +602,7 @@
 
 <div class="viewcode-block" id="DataKey">
 <a class="viewcode-back" href="../../../hardware.html#bluesky.protocols.DataKey">[docs]</a>
-<span class="k">class</span> <span class="nc">DataKey</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataKey</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Describes the objects in the data property of Event documents&quot;&quot;&quot;</span>
 
     <span class="n">limits</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="n">Limits</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Epics limits.&quot;</span><span class="p">)]]</span>
@@ -643,7 +676,7 @@
 
 
 
-<span class="k">class</span> <span class="nc">PerObjectHint</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PerObjectHint</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The &#39;interesting&#39; data keys for this device.&quot;&quot;&quot;</span>
 
     <span class="n">fields</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
@@ -663,7 +696,7 @@
     <span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">Configuration</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Configuration</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span>
         <span class="n">Annotated</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The actual measurement data&quot;</span><span class="p">)]</span>
     <span class="p">]</span>
@@ -698,7 +731,7 @@
 
 
 <span class="nd">@add_extra_schema</span><span class="p">(</span><span class="n">EVENT_DESCRIPTOR_EXTRA_SCHEMA</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">EventDescriptor</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventDescriptor</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Document to describe the data captured in the associated event</span>
 <span class="sd">    documents&quot;&quot;&quot;</span>
 

@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -649,8 +649,8 @@ by the user and the plan. (More on this in the <a class="reference internal" hre
 detector(s) and motor(s) used. (User-defined plans may also do this; see
 <a class="reference internal" href="tutorial.html#tutorial-plan-metadata"><span class="std std-ref">this section</span></a> of the tutorial.)</p>
 <p>The command:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>  <span class="c1"># simulated detector, motor</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>  <span class="c1"># simulated detector, motor</span>
 
 <span class="c1"># Scan &#39;motor&#39; from -3 to 3 in 10 steps, taking readings from &#39;det&#39;.</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">purpose</span><span class="o">=</span><span class="s1">&#39;calibration&#39;</span><span class="p">,</span>

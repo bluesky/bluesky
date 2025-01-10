@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -649,10 +649,10 @@ will include the custom metadata:</p>
 </div>
 <p>If <code class="docutils literal notranslate"><span class="pre">plan</span></code> generates more that one run, all the runs will get this metadata.
 For example, this plan generates three different runs.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span><span class="p">,</span> <span class="n">scan</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">,</span> <span class="n">motor</span>  <span class="c1"># simulated detectors, motor</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span><span class="p">,</span> <span class="n">scan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span> <span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">,</span> <span class="n">motor</span>  <span class="c1"># simulated detectors, motor</span>
 
-<span class="k">def</span> <span class="nf">plan</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">():</span>
     <span class="k">yield from</span> <span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">])</span>
     <span class="k">yield from</span> <span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">])</span>
@@ -667,7 +667,7 @@ For example, this plan generates three different runs.</p>
 <section id="through-a-plan">
 <h3>2. Through a plan<a class="headerlink" href="#through-a-plan" title="Link to this heading">#</a></h3>
 <p>Revisiting the previous example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plan</span><span class="p">():</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">():</span>
     <span class="k">yield from</span> <span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">])</span>
     <span class="k">yield from</span> <span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">])</span>
@@ -676,7 +676,7 @@ For example, this plan generates three different runs.</p>
 <p>we can pass different metadata for each run. Every
 <a class="reference internal" href="plans.html#preassembled-plans"><span class="std std-ref">built-in pre-assembled plan</span></a> accepts a parameter
 <code class="docutils literal notranslate"><span class="pre">md</span></code>, which you can use to inject metadata that applies only to that plan.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plan</span><span class="p">():</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">():</span>
     <span class="k">yield from</span> <span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;purpose&#39;</span><span class="p">:</span> <span class="s1">&#39;calibration&#39;</span><span class="p">})</span>  <span class="c1"># one</span>
     <span class="k">yield from</span> <span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;purpose&#39;</span><span class="p">:</span> <span class="s1">&#39;good data&#39;</span><span class="p">})</span>  <span class="c1"># two</span>
     <span class="k">yield from</span> <span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;purpose&#39;</span><span class="p">:</span> <span class="s1">&#39;sanity check&#39;</span><span class="p">})</span>  <span class="c1"># three</span>
@@ -719,7 +719,7 @@ three as purpose=test.</p>
 <p>If you define your own plans, it is best practice have them take a keyword only
 argument <code class="docutils literal notranslate"><span class="pre">md=None</span></code>.  This allows the hard-coded meta-data to be over-ridden
 later:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">md</span> <span class="o">=</span> <span class="n">md</span> <span class="ow">or</span> <span class="p">{}</span>  <span class="c1"># handle the default case</span>
     <span class="c1"># putting unpacking **md at the end means it &quot;wins&quot;</span>
     <span class="c1"># and if the user calls</span>
@@ -860,7 +860,7 @@ dictionary interface. The simplest is just a plain Python dictionary.</p>
 directory of files on disk backed by <code class="docutils literal notranslate"><span class="pre">zict</span></code>.  Any changes made to <code class="docutils literal notranslate"><span class="pre">RE.md</span></code>
 are synced to the file, so the contents of <code class="docutils literal notranslate"><span class="pre">RE.md</span></code> can persist between
 sessions.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="n">PersistentDict</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PersistentDict</span>
 <span class="n">RE</span><span class="o">.</span><span class="n">md</span> <span class="o">=</span> <span class="n">PersistentDict</span><span class="p">(</span><span class="s1">&#39;some/path/here&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -877,7 +877,7 @@ your metadata from <cite>~historydict.HistoryDict</cite> to
 <a class="reference internal" href="generated/bluesky.utils.PersistentDict.html#bluesky.utils.PersistentDict" title="bluesky.utils.PersistentDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">PersistentDict</span></code></a>. First, update your configuration to
 make <code class="docutils literal notranslate"><span class="pre">RE.md</span></code> a <a class="reference internal" href="generated/bluesky.utils.PersistentDict.html#bluesky.utils.PersistentDict" title="bluesky.utils.PersistentDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">PersistentDict</span></code></a> as shown above. Then,
 migrate like so:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="n">get_history</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_history</span>
 <span class="n">old_md</span> <span class="o">=</span> <span class="n">get_history</span><span class="p">()</span>
 <span class="n">RE</span><span class="o">.</span><span class="n">md</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">old_md</span><span class="p">)</span>
 </pre></div>
@@ -953,7 +953,7 @@ in the persistent metadata from the previous run, it defaults to 1.</p>
 For example, to ensure that a run will not be executed unless the parameter
 ‘sample_number’ is specified, define a function that accepts a dictionary
 argument and raises if ‘sample_number’ is not found.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ensure_sample_number</span><span class="p">(</span><span class="n">md</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">ensure_sample_number</span><span class="p">(</span><span class="n">md</span><span class="p">):</span>
     <span class="k">if</span> <span class="s1">&#39;sample_number&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">md</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You forgot the sample number.&quot;</span><span class="p">)</span>
 </pre></div>

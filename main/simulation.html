@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -599,11 +599,11 @@ analyzes its actions.</p>
 <h3>Summarize<a class="headerlink" href="#summarize" title="Link to this heading">#</a></h3>
 <p>The simulator <a class="reference internal" href="generated/bluesky.simulators.summarize_plan.html#bluesky.simulators.summarize_plan" title="bluesky.simulators.summarize_plan"><code class="xref py py-func docutils literal notranslate"><span class="pre">summarize_plan()</span></code></a> print a summary of what a plan would do if
 executed by the RunEngine.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="kn">from</span> <span class="nn">bluesky.simulators</span> <span class="kn">import</span> <span class="n">summarize_plan</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize_plan</span>
 
-<span class="gp">In [2]: </span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
+<span class="gp">In [2]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
 
-<span class="gp">In [3]: </span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span>
+<span class="gp">In [3]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span>
 
 <span class="gp">In [4]: </span><span class="n">summarize_plan</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="p">,</span><span class="mi">3</span><span class="p">))</span>
 <span class="go">=================================== Open Run ===================================</span>
@@ -622,42 +622,42 @@ have adaptive logic because their contents are determined dynamically during
 plan executation.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="nb">list</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="p">,</span><span class="mi">3</span><span class="p">))</span>
 <span class="gh">Out[5]: </span>
-<span class="go">[Msg(&#39;stage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;bbce7405-77c2-4328-bad7-3bc94ede41ab&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;stage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;bbce7405-77c2-4328-bad7-3bc94ede41ab&#39;}, run=None),</span>
+<span class="go">[Msg(&#39;stage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;55a1727e-b747-4abf-9e7b-25dc117edd92&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;stage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;55a1727e-b747-4abf-9e7b-25dc117edd92&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;open_run&#39;, obj=None, args=(), kwargs={&#39;detectors&#39;: [&#39;det&#39;], &#39;motors&#39;: (&#39;motor&#39;,), &#39;num_points&#39;: 3, &#39;num_intervals&#39;: 2, &#39;plan_args&#39;: {&#39;detectors&#39;: [&quot;SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;])&quot;], &#39;num&#39;: 3, &#39;args&#39;: [&quot;SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;])&quot;, 1, 3], &#39;per_step&#39;: &#39;None&#39;}, &#39;plan_name&#39;: &#39;scan&#39;, &#39;hints&#39;: {&#39;dimensions&#39;: [([&#39;motor&#39;], &#39;primary&#39;)]}, &#39;plan_pattern&#39;: &#39;inner_product&#39;, &#39;plan_pattern_module&#39;: &#39;bluesky.plan_patterns&#39;, &#39;plan_pattern_args&#39;: {&#39;num&#39;: 3, &#39;args&#39;: [&quot;SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;])&quot;, 1, 3]}}, run=None),</span>
 <span class="go"> Msg(&#39;checkpoint&#39;, obj=None, args=(), kwargs={}, run=None),</span>
-<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(1.0),), kwargs={&#39;group&#39;: &#39;set-1a1e7a&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-1a1e7a&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-5e92a5&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-5e92a5&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-5e92a5&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None}, run=None),</span>
+<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(1.0),), kwargs={&#39;group&#39;: &#39;set-9b189c&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-9b189c&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-495820&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-495820&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-495820&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None}, run=None),</span>
 <span class="go"> Msg(&#39;create&#39;, obj=None, args=(), kwargs={&#39;name&#39;: &#39;primary&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;save&#39;, obj=None, args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;checkpoint&#39;, obj=None, args=(), kwargs={}, run=None),</span>
-<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(2.0),), kwargs={&#39;group&#39;: &#39;set-107e0b&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-107e0b&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-1e0f1e&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-1e0f1e&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-1e0f1e&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None}, run=None),</span>
+<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(2.0),), kwargs={&#39;group&#39;: &#39;set-c8acdf&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-c8acdf&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-724ef1&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-724ef1&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-724ef1&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None}, run=None),</span>
 <span class="go"> Msg(&#39;create&#39;, obj=None, args=(), kwargs={&#39;name&#39;: &#39;primary&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;save&#39;, obj=None, args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;checkpoint&#39;, obj=None, args=(), kwargs={}, run=None),</span>
-<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(3.0),), kwargs={&#39;group&#39;: &#39;set-66127e&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-66127e&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-592669&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-592669&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-592669&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None}, run=None),</span>
+<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(3.0),), kwargs={&#39;group&#39;: &#39;set-1458e9&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-1458e9&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-4fe88b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-4fe88b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-4fe88b&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None}, run=None),</span>
 <span class="go"> Msg(&#39;create&#39;, obj=None, args=(), kwargs={&#39;name&#39;: &#39;primary&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;save&#39;, obj=None, args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;close_run&#39;, obj=None, args=(), kwargs={&#39;exit_status&#39;: None, &#39;reason&#39;: None}, run=None),</span>
-<span class="go"> Msg(&#39;unstage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;77bd242d-f692-451a-b7d3-ecfe2490bf44&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;unstage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;77bd242d-f692-451a-b7d3-ecfe2490bf44&#39;}, run=None)]</span>
+<span class="go"> Msg(&#39;unstage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;6223150b-7ccd-484a-a020-fd42d2372e44&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;unstage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;6223150b-7ccd-484a-a020-fd42d2372e44&#39;}, run=None)]</span>
 </pre></div>
 </div>
 </section>
@@ -667,7 +667,7 @@ plan executation.</p>
 1000. The <a class="reference internal" href="generated/bluesky.simulators.check_limits.html#bluesky.simulators.check_limits" title="bluesky.simulators.check_limits"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_limits()</span></code></a> simulator can verify whether or not a plan will
 violate these limits, saving you from discovering this part way through a long
 experiment.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [6]: </span><span class="kn">from</span> <span class="nn">bluesky.simulators</span> <span class="kn">import</span> <span class="n">check_limits</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [6]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_limits</span>
 
 <span class="gp">In [7]: </span><span class="n">check_limits</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="p">,</span><span class="mi">3</span><span class="p">))</span>  <span class="c1"># no problem here</span>
 

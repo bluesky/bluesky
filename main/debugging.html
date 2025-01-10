@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -582,7 +582,7 @@ need to route logs to multiple destinations may wish to skip ahead to
 <section id="log-warnings">
 <h3>Log warnings<a class="headerlink" href="#log-warnings" title="Link to this heading">#</a></h3>
 <p>This is the recommended standard setup.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.log</span> <span class="kn">import</span> <span class="n">config_bluesky_logging</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">config_bluesky_logging</span>
 <span class="n">config_bluesky_logging</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -597,7 +597,7 @@ To follow the RunEngine’s progress through the plan, crank up the verbosity of
 the logging.</p>
 <p>This will display each message from the plan just before the RunEngine
 processes it, giving a clear indication of when plan execution is stuck.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.log</span> <span class="kn">import</span> <span class="n">config_bluesky_logging</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">config_bluesky_logging</span>
 <span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -606,7 +606,7 @@ processes it, giving a clear indication of when plan execution is stuck.</p>
 <h3>Log to a file<a class="headerlink" href="#log-to-a-file" title="Link to this heading">#</a></h3>
 <p>This will direct all log messages to a file instead of the terminal (standard
 out).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.log</span> <span class="kn">import</span> <span class="n">config_bluesky_logging</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">config_bluesky_logging</span>
 <span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;/tmp/bluesky.log&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -735,12 +735,12 @@ following diagram:</p>
 <p>As an illustrative example, we will set up two handlers using the Python
 logging framework directly, ignoring bluesky’s convenience function.</p>
 <p>Suppose we set up a handler aimed at a file:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="n">file_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">&#39;bluesky.log&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>And another aimed at <a class="reference external" href="https://www.elastic.co/products/logstash">Logstash</a>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logstash</span>  <span class="c1"># requires python-logstash package</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logstash</span>  <span class="c1"># requires python-logstash package</span>
 <span class="n">logstash_handler</span> <span class="o">=</span> <span class="n">logstash</span><span class="o">.</span><span class="n">TCPLogstashHandler</span><span class="p">(</span><span class="o">&lt;</span><span class="n">host</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">port</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>

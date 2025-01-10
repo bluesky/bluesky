@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -616,17 +616,17 @@ the RunEngine and processed like any other data.</p></li>
 <p>To “fly” one or more “flyable” devices during a plan, bluesky provides a
 <cite>preprocessor &lt;preprocessors&gt;</cite>. It is available as a wrapper,
 <code class="xref py py-func docutils literal notranslate"><span class="pre">fly_during_wrapper()</span></code></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>  <span class="c1"># simulated hardware</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
-<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">fly_during_wrapper</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>  <span class="c1"># simulated hardware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">fly_during_wrapper</span>
 
 <span class="n">RE</span><span class="p">(</span><span class="n">fly_during_wrapper</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="p">[</span><span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span><span class="p">]))</span>
 </pre></div>
 </div>
 <p>and as a decorator, <code class="xref py py-func docutils literal notranslate"><span class="pre">fly_during_decorator()</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>  <span class="c1"># simulated hardware</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
-<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">fly_during_wrapper</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>  <span class="c1"># simulated hardware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">fly_during_wrapper</span>
 
 <span class="c1"># Define a new plan for future use.</span>
 <span class="n">fly_and_count</span> <span class="o">=</span> <span class="n">fly_during_decorator</span><span class="p">([</span><span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span><span class="p">])(</span><span class="n">count</span><span class="p">)</span>
@@ -636,7 +636,7 @@ the RunEngine and processed like any other data.</p></li>
 </div>
 <p>Alternatively, if you are using <a class="reference internal" href="plans.html#supplemental-data"><span class="std std-ref">Supplemental Data</span></a>, simply
 append to or extend its list of flyers to kick off during every run:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">flyer1</span><span class="p">,</span> <span class="n">flyer2</span>
 
 <span class="c1"># Assume sd is an instance of the SupplementalData set up as</span>
 <span class="c1"># descripted in the documentation linked above.</span>
@@ -650,18 +650,18 @@ append to or extend its list of flyers to kick off during every run:</p>
 <p>To monitor some device during a plan, bluesky provides a
 <cite>preprocessor &lt;preprocessors&gt;</cite>. It
 is available as a wrapper, <code class="xref py py-func docutils literal notranslate"><span class="pre">monitor_during_wrapper()</span></code></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">det1</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
-<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">monitor_during_wrapper</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">det1</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">monitor_during_wrapper</span>
 
 <span class="c1"># Record any updates from det1 while &#39;counting&#39; det 5 times.</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">monitor_during_wrapper</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="p">[</span><span class="n">det1</span><span class="p">]))</span>
 </pre></div>
 </div>
 <p>and as a decorator, <code class="xref py py-func docutils literal notranslate"><span class="pre">monitor_during_decorator()</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">det1</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
-<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">monitor_during_wrapper</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">det1</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">monitor_during_wrapper</span>
 
 <span class="c1"># Define a new plan for future use.</span>
 <span class="n">monitor_and_count</span> <span class="o">=</span> <span class="n">monitor_during_decorator</span><span class="p">([</span><span class="n">det1</span><span class="p">])(</span><span class="n">count</span><span class="p">)</span>
@@ -671,7 +671,7 @@ is available as a wrapper, <code class="xref py py-func docutils literal notrans
 </div>
 <p>Alternatively, if you are using <a class="reference internal" href="plans.html#supplemental-data"><span class="std std-ref">Supplemental Data</span></a>, simply
 append to or extend its list of signals to monitor:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det1</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det1</span>
 
 <span class="c1"># Assume sd is an instance of the SupplementalData set up as</span>
 <span class="c1"># descripted in the documentation linked above.</span>

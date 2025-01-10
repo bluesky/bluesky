@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -671,8 +671,8 @@ documentation.</p>
 <section id="time-series-count">
 <h3>Time series (“count”)<a class="headerlink" href="#time-series-count" title="Link to this heading">#</a></h3>
 <p>Examples:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
 
 <span class="c1"># a single reading of the detector &#39;det&#39;</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]))</span>
@@ -691,7 +691,7 @@ documentation.</p>
 </pre></div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We&#39;ll use the &#39;noisy_det&#39; example detector for a more interesting plot.</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">noisy_det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">noisy_det</span>
 
 <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">noisy_det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
 </pre></div>
@@ -728,7 +728,7 @@ the general case, which would grow wordy.</p>
 <p>Another is to write a custom plan that wraps <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a> and sets the
 exposure time. This plan can encode the details that bluesky in general
 can’t know.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">count_with_time</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">exposure_time</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">count_with_time</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">exposure_time</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="c1"># Assume all detectors have one exposure time component called</span>
     <span class="c1"># &#39;exposure_time&#39; that fully specifies its exposure.</span>
     <span class="k">for</span> <span class="n">detector</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">:</span>
@@ -750,8 +750,8 @@ can’t know.</p>
 <h3>Scans over one dimension<a class="headerlink" href="#scans-over-one-dimension" title="Link to this heading">#</a></h3>
 <p>The “dimension” might be a physical motor position, a temperature, or a
 pseudo-axis. It’s all the same to the plans. Examples:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span><span class="p">,</span> <span class="n">rel_scan</span><span class="p">,</span> <span class="n">list_scan</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span><span class="p">,</span> <span class="n">rel_scan</span><span class="p">,</span> <span class="n">list_scan</span>
 
 <span class="c1"># scan a motor from 1 to 5, taking 5 equally-spaced readings of &#39;det&#39;</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
@@ -791,13 +791,13 @@ to them first. For situations where a <code class="docutils literal notranslate"
 right tool for the job, it is of course always possible to add a <code class="docutils literal notranslate"><span class="pre">delay</span></code>
 parameter yourself by writing a custom plan. Here is one approach, using a
 <a class="reference internal" href="#per-step-hook"><span class="std std-ref">per_step hook</span></a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bluesky.plans</span>
-<span class="kn">import</span> <span class="nn">bluesky.plan_stubs</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plans</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span>
 
-<span class="k">def</span> <span class="nf">scan_with_delay</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scan_with_delay</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="s2">&quot;Accepts all the normal &#39;scan&#39; parameters, plus an optional delay.&quot;</span>
 
-    <span class="k">def</span> <span class="nf">one_nd_step_with_delay</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">one_nd_step_with_delay</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
         <span class="s2">&quot;This is a copy of bluesky.plan_stubs.one_nd_step with a sleep added.&quot;</span>
         <span class="n">motors</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
         <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">move_per_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">)</span>
@@ -839,8 +839,8 @@ parameter yourself by writing a custom plan. Here is one approach, using a
 common cases of moving multiple motors in coordination (i.e. moving X and Y
 along a diagonal) or in a grid. The key examples are reproduced here. Again,
 see the section linked for further explanation.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">motor3</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">scan</span><span class="p">,</span> <span class="n">grid_scan</span><span class="p">,</span> <span class="n">list_scan</span><span class="p">,</span> <span class="n">list_grid_scan</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">motor3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span><span class="p">,</span> <span class="n">grid_scan</span><span class="p">,</span> <span class="n">list_scan</span><span class="p">,</span> <span class="n">list_grid_scan</span>
 
 <span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span>
         <span class="n">motor1</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span>  <span class="c1"># scan motor1 from -1.5 to 1.5</span>
@@ -870,9 +870,9 @@ movement as an “outer product” of trajectories. The general case, moving som
 motors together in an “inner product” against another motor (or motors) in an
 “outer product,” can be addressed using a <code class="docutils literal notranslate"><span class="pre">cycler</span></code>.  Notice what happens when
 we add or multiply <code class="docutils literal notranslate"><span class="pre">cycler</span></code> objects.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
 
-<span class="gp">In [2]: </span><span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">motor3</span>
+<span class="gp">In [2]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">motor3</span>
 
 <span class="gp">In [3]: </span><span class="n">traj1</span> <span class="o">=</span> <span class="n">cycler</span><span class="p">(</span><span class="n">motor1</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 
@@ -995,9 +995,9 @@ incorporating these trajectories, use our general N-dimensional scan plan,
 <h3>Spiral trajectories<a class="headerlink" href="#spiral-trajectories" title="Link to this heading">#</a></h3>
 <p>We provide two-dimensional scans that trace out spiral trajectories.</p>
 <p>A simple spiral:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.simulators</span> <span class="kn">import</span> <span class="n">plot_raster_path</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">spiral</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_raster_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">spiral</span>
 
 <span class="n">plan</span> <span class="o">=</span> <span class="n">spiral</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x_range</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
               <span class="n">y_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">nth</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
@@ -1008,9 +1008,9 @@ incorporating these trajectories, use our general N-dimensional scan plan,
 <img alt="_images/plans-3.png" class="plot-directive" src="_images/plans-3.png" />
 </figure>
 <p>A fermat spiral:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.simulators</span> <span class="kn">import</span> <span class="n">plot_raster_path</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">spiral_fermat</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_raster_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">spiral_fermat</span>
 
 <span class="n">plan</span> <span class="o">=</span> <span class="n">spiral_fermat</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                      <span class="n">x_range</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y_range</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tilt</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
@@ -1021,9 +1021,9 @@ incorporating these trajectories, use our general N-dimensional scan plan,
 <img alt="_images/plans-4.png" class="plot-directive" src="_images/plans-4.png" />
 </figure>
 <p>A square spiral:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.simulators</span> <span class="kn">import</span> <span class="n">plot_raster_path</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
-<span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">spiral_square</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_raster_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">spiral_square</span>
 
 <span class="n">plan</span> <span class="o">=</span> <span class="n">spiral_square</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                      <span class="n">x_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">y_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">x_num</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">y_num</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
@@ -1064,8 +1064,8 @@ over flat regions can concentrate readings in areas of high variation by
 computing the local slope aiming for a target delta y between consecutive
 points.</p>
 <p>This is a basic example of the power of adaptive plan logic.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">adaptive_scan</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">motor</span><span class="p">,</span> <span class="n">det</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">adaptive_scan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor</span><span class="p">,</span> <span class="n">det</span>
 
 <span class="n">RE</span><span class="p">(</span><span class="n">adaptive_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="s1">&#39;det&#39;</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span>
                  <span class="n">start</span><span class="o">=-</span><span class="mi">15</span><span class="p">,</span>
@@ -1378,7 +1378,7 @@ processed by the RunEngine.</p>
 <p>Preprocessors can make arbirary modifcations to a plan, and can get quite
 devious. For example, the <a class="reference internal" href="generated/bluesky.preprocessors.relative_set_wrapper.html#bluesky.preprocessors.relative_set_wrapper" title="bluesky.preprocessors.relative_set_wrapper"><code class="xref py py-func docutils literal notranslate"><span class="pre">relative_set_wrapper()</span></code></a> rewrites all positions
 to be relative to the initial position.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">rel_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">rel_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
     <span class="n">absolute</span> <span class="o">=</span> <span class="n">scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
     <span class="n">relative</span> <span class="o">=</span> <span class="n">relative_set_wrapper</span><span class="p">(</span><span class="n">absolute</span><span class="p">,</span> <span class="p">[</span><span class="n">motor</span><span class="p">])</span>
     <span class="k">yield from</span> <span class="n">relative</span>
@@ -1390,10 +1390,10 @@ like <code class="docutils literal notranslate"><span class="pre">scan(...)</spa
 <code class="docutils literal notranslate"><span class="pre">relative_set_decorator</span></code> that operate on a generator
 <em>function</em> itself, like <code class="xref py py-func docutils literal notranslate"><span class="pre">scan()</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using a decorator to modify a generator function</span>
-<span class="k">def</span> <span class="nf">rel_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
 
     <span class="nd">@relative_set_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>  <span class="c1"># unfamiliar syntax? -- see box below</span>
-    <span class="k">def</span> <span class="nf">inner_relative_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_scan</span><span class="p">():</span>
         <span class="k">yield from</span> <span class="n">scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
 
     <span class="k">yield from</span> <span class="n">inner_relative_scan</span><span class="p">()</span>
@@ -1410,7 +1410,7 @@ have clear names.</p>
 function to another function.</p>
 <p>This:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@g</span>
-<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
     <span class="k">pass</span>
 
 <span class="n">f</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -1525,9 +1525,9 @@ processors (catalogued above) in the
 <p>We provide a hook for customizing step (2). This enables you to write a
 variation of an existing plan without starting from scratch.</p>
 <p>For one-dimensional plans, the default inner loop is:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plan_stubs</span> <span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">trigger_and_read</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">trigger_and_read</span>
 
-<span class="k">def</span> <span class="nf">one_1d_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_1d_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inner loop of a 1D step scan</span>
 
@@ -1544,16 +1544,16 @@ used in its place:</p>
 </pre></div>
 </div>
 <p>For convenience, this could be wrapped into the definition of a new plan:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">custom_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">custom_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="k">yield from</span> <span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">md</span>
                     <span class="n">per_step</span><span class="o">=</span><span class="n">custom_step</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For multi-dimensional plans, the default inner loop is:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="n">short_uid</span>
-<span class="kn">from</span> <span class="nn">bluesky.plan_stubs</span> <span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">wait</span><span class="p">,</span> <span class="n">trigger_and_read</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">short_uid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">wait</span><span class="p">,</span> <span class="n">trigger_and_read</span>
 
-<span class="k">def</span> <span class="nf">one_nd_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_nd_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inner loop of an N-dimensional step scan</span>
 
@@ -1568,7 +1568,7 @@ used in its place:</p>
 <span class="sd">    pos_cache : dict</span>
 <span class="sd">        mapping motors to their last-set positions</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">move</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">move</span><span class="p">():</span>
         <span class="k">yield from</span> <span class="n">checkpoint</span><span class="p">()</span>
         <span class="n">grp</span> <span class="o">=</span> <span class="n">short_uid</span><span class="p">(</span><span class="s1">&#39;set&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">motor</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>

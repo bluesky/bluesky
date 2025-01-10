@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -602,7 +602,7 @@ interactively? Skip to the <a class="reference internal" href="#interactive-paus
 <span class="o">~/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Repos</span><span class="o">/</span><span class="n">bluesky</span><span class="o">/</span><span class="n">bluesky</span><span class="o">/</span><span class="n">run_engine</span><span class="o">.</span><span class="n">py</span> <span class="ow">in</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">metadata_kw</span><span class="p">)</span>
     <span class="mi">670</span>
     <span class="mi">671</span>             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span><span class="p">:</span>
-<span class="o">--&gt;</span> <span class="mi">672</span>                 <span class="k">raise</span> <span class="n">RunEngineInterrupted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pause_msg</span><span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+<span class="o">--&gt;</span> <span class="mi">672</span>                 <span class="k">raise</span> <span class="n">RunEngineInterrupted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pause_msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
     <span class="mi">673</span>
     <span class="mi">674</span>         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uids</span><span class="p">)</span>
 
@@ -651,7 +651,7 @@ to complete before execution is paused.</p>
 <span class="o">~/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Repos</span><span class="o">/</span><span class="n">bluesky</span><span class="o">/</span><span class="n">bluesky</span><span class="o">/</span><span class="n">run_engine</span><span class="o">.</span><span class="n">py</span> <span class="ow">in</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">metadata_kw</span><span class="p">)</span>
     <span class="mi">670</span>
     <span class="mi">671</span>             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span><span class="p">:</span>
-<span class="o">--&gt;</span> <span class="mi">672</span>                 <span class="k">raise</span> <span class="n">RunEngineInterrupted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pause_msg</span><span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+<span class="o">--&gt;</span> <span class="mi">672</span>                 <span class="k">raise</span> <span class="n">RunEngineInterrupted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pause_msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
     <span class="mi">673</span>
     <span class="mi">674</span>         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uids</span><span class="p">)</span>
 
@@ -811,8 +811,8 @@ from scratch to monitor anything at all.</p>
 <p>This defines a suspender and installs it on the RunEngine. With this, plans
 will be automatically suspended when the <code class="docutils literal notranslate"><span class="pre">beam_current</span></code> signal goes below 2
 and resumed once it exceeds 3.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ophyd</span> <span class="kn">import</span> <span class="n">EpicsSignal</span>
-<span class="kn">from</span> <span class="nn">bluesky.suspenders</span> <span class="kn">import</span> <span class="n">SuspendFloor</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd</span><span class="w"> </span><span class="kn">import</span> <span class="n">EpicsSignal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.suspenders</span><span class="w"> </span><span class="kn">import</span> <span class="n">SuspendFloor</span>
 
 <span class="n">beam_current</span> <span class="o">=</span> <span class="n">EpicsSignal</span><span class="p">(</span><span class="s1">&#39;...PV string...&#39;</span><span class="p">)</span>
 <span class="n">sus</span> <span class="o">=</span> <span class="n">SuspendFloor</span><span class="p">(</span><span class="n">beam_current</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">resume_thresh</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
@@ -893,9 +893,9 @@ monitor, or adding a subscription.</p>
 but it can also be incorporated into a plan. The plan can pause the RunEngine,
 requiring the user to type <code class="docutils literal notranslate"><span class="pre">RE.resume()</span></code> to continue or <code class="docutils literal notranslate"><span class="pre">RE.stop()</span></code>
 (or similar) to clean up and stop.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bluesky.plan_stubs</span> <span class="k">as</span> <span class="nn">bps</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
 
-<span class="k">def</span> <span class="nf">pausing_plan</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pausing_plan</span><span class="p">():</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">some_plan</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Type RE.resume() to go again or RE.stop() to stop.&quot;</span><span class="p">)</span>
@@ -1033,14 +1033,14 @@ take no arguments.</p>
 <p>Since the user does not have control of the prompt, calls to
 <code class="docutils literal notranslate"><span class="pre">RE.request_pause</span></code> must be planned in advance. Here is a example that pauses
 the plan after 5 seconds.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plan_stubs</span> <span class="kn">import</span> <span class="n">null</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">null</span>
 
-<span class="k">def</span> <span class="nf">loop_forever</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">loop_forever</span><span class="p">():</span>
     <span class="s2">&quot;a silly plan&quot;</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">null</span><span class="p">()</span>
 
-<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
 <span class="c1"># Request a pause 5 seconds from now.</span>
 <span class="n">loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">RE</span><span class="o">.</span><span class="n">request_pause</span><span class="p">)</span>
@@ -1084,10 +1084,10 @@ Event document for that descriptor is created. The data payload
 <code class="docutils literal notranslate"><span class="pre">'resume'</span></code>. The associated time notes when the interruptions/resume was
 processed.</p>
 <p>To see this in action, try this example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.plans</span> <span class="kn">import</span> <span class="n">count</span>
-<span class="kn">from</span> <span class="nn">bluesky.preprocessors</span> <span class="kn">import</span> <span class="n">pchain</span>
-<span class="kn">from</span> <span class="nn">bluesky.plan_stubs</span> <span class="kn">import</span> <span class="n">pause</span>
-<span class="kn">from</span> <span class="nn">ophyd.sim</span> <span class="kn">import</span> <span class="n">det</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">pchain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">pause</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span>
 
 <span class="n">RE</span><span class="o">.</span><span class="n">record_interruptions</span> <span class="o">=</span> <span class="kc">True</span>
 

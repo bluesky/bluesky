@@ -29,7 +29,7 @@
   <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -536,28 +536,28 @@
 <span class="sd">    tests/interactive/best_effort_cb.py</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">threading</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">weakref</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Mapping</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pformat</span>
-<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">weakref</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pformat</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
-<span class="kn">from</span> <span class="nn">matplotlib.axis</span> <span class="kn">import</span> <span class="n">Axis</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.axis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Axis</span>
 
-<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">LiveTable</span><span class="p">,</span> <span class="n">make_class_safe</span>
-<span class="kn">from</span> <span class="nn">.fitting</span> <span class="kn">import</span> <span class="n">PeakStats</span>
-<span class="kn">from</span> <span class="nn">.mpl_plotting</span> <span class="kn">import</span> <span class="n">LiveGrid</span><span class="p">,</span> <span class="n">LivePlot</span><span class="p">,</span> <span class="n">LiveScatter</span><span class="p">,</span> <span class="n">QtAwareCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiveTable</span><span class="p">,</span> <span class="n">make_class_safe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.fitting</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeakStats</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.mpl_plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiveGrid</span><span class="p">,</span> <span class="n">LivePlot</span><span class="p">,</span> <span class="n">LiveScatter</span><span class="p">,</span> <span class="n">QtAwareCallback</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -565,10 +565,10 @@
 <div class="viewcode-block" id="BestEffortCallback">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.html#bluesky.callbacks.best_effort.BestEffortCallback">[docs]</a>
 <span class="nd">@make_class_safe</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">BestEffortCallback</span><span class="p">(</span><span class="n">QtAwareCallback</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BestEffortCallback</span><span class="p">(</span><span class="n">QtAwareCallback</span><span class="p">):</span>
 <div class="viewcode-block" id="BestEffortCallback.__init__">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.html#bluesky.callbacks.best_effort.BestEffortCallback.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fig_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">table_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">calc_derivative_and_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fig_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">table_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">calc_derivative_and_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="c1"># internal state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span> <span class="o">=</span> <span class="kc">None</span>
@@ -604,66 +604,66 @@
 
 <div class="viewcode-block" id="BestEffortCallback.enable_heading">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_heading.html#bluesky.callbacks.best_effort.BestEffortCallback.enable_heading">[docs]</a>
-    <span class="k">def</span> <span class="nf">enable_heading</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_heading</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Print timestamp and IDs at the top of a run.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_heading_enabled</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="BestEffortCallback.disable_heading">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_heading.html#bluesky.callbacks.best_effort.BestEffortCallback.disable_heading">[docs]</a>
-    <span class="k">def</span> <span class="nf">disable_heading</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable_heading</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Opposite of enable_heading()&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_heading_enabled</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="BestEffortCallback.enable_table">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_table.html#bluesky.callbacks.best_effort.BestEffortCallback.enable_table">[docs]</a>
-    <span class="k">def</span> <span class="nf">enable_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Print hinted readings from the &#39;primary&#39; stream in a LiveTable.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_table_enabled</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="BestEffortCallback.disable_table">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_table.html#bluesky.callbacks.best_effort.BestEffortCallback.disable_table">[docs]</a>
-    <span class="k">def</span> <span class="nf">disable_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Opposite of enable_table()&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_table_enabled</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="BestEffortCallback.enable_baseline">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_baseline.html#bluesky.callbacks.best_effort.BestEffortCallback.enable_baseline">[docs]</a>
-    <span class="k">def</span> <span class="nf">enable_baseline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_baseline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Print hinted fields from the &#39;baseline&#39; stream.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_baseline_enabled</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="BestEffortCallback.disable_baseline">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_baseline.html#bluesky.callbacks.best_effort.BestEffortCallback.disable_baseline">[docs]</a>
-    <span class="k">def</span> <span class="nf">disable_baseline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable_baseline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Opposite of enable_baseline()&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_baseline_enabled</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="BestEffortCallback.enable_plots">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_plots.html#bluesky.callbacks.best_effort.BestEffortCallback.enable_plots">[docs]</a>
-    <span class="k">def</span> <span class="nf">enable_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Plot hinted fields from all streams not in ``noplot_streams``.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_plots_enabled</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="BestEffortCallback.disable_plots">
 <a class="viewcode-back" href="../../../generated/bluesky.callbacks.best_effort.BestEffortCallback.disable_plots.html#bluesky.callbacks.best_effort.BestEffortCallback.disable_plots">[docs]</a>
-    <span class="k">def</span> <span class="nf">disable_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Do not plot anything.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_plots_enabled</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_table_enabled</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_baseline_enabled</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plots_enabled</span><span class="p">):</span>
             <span class="k">return</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span> <span class="o">=</span> <span class="n">doc</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">plan_hints</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hints&quot;</span><span class="p">,</span> <span class="p">{})</span>
@@ -715,7 +715,7 @@
             <span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Persistent Unique Scan ID: &#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]))</span>  <span class="c1"># noqa: UP030</span>
 
-    <span class="k">def</span> <span class="nf">_set_up_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">columns</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_up_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">columns</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Using the descriptor doc&quot;&quot;&quot;</span>
         <span class="n">plot_data</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -904,7 +904,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;we do not support 3D+ in BEC yet (and it should have bailed above)&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">descriptor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">descriptor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">doc</span>
         <span class="n">stream_name</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;primary&quot;</span><span class="p">)</span>  <span class="c1"># fall back for old docs</span>
 
@@ -949,7 +949,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_table</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_table</span><span class="p">(</span><span class="s2">&quot;descriptor&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="n">descriptor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">]]</span>
         <span class="k">if</span> <span class="n">descriptor</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;primary&quot;</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -989,7 +989,7 @@
             <span class="k">if</span> <span class="n">peak_stats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">peak_stats</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_table</span><span class="p">(</span><span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
 
@@ -1019,7 +1019,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stream_names_seen</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
@@ -1032,7 +1032,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_baseline_toggle</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">plot_prune_fifo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_lines</span><span class="p">,</span> <span class="n">x_signal</span><span class="p">,</span> <span class="n">y_signal</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_prune_fifo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_lines</span><span class="p">,</span> <span class="n">x_signal</span><span class="p">,</span> <span class="n">y_signal</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find the plot with axes x_signal and y_signal.  Replot with only the last *num_lines* lines.</span>
 
@@ -1076,28 +1076,28 @@
 
 
 
-<span class="k">class</span> <span class="nc">PeakResults</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PeakResults</span><span class="p">:</span>
     <span class="n">ATTRS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;com&quot;</span><span class="p">,</span> <span class="s2">&quot;cen&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;fwhm&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ATTRS</span><span class="p">:</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="p">{})</span>
 
-    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ATTRS</span><span class="p">:</span>
             <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ps_dict</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ps_dict</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">y_key</span><span class="p">,</span> <span class="n">ps</span> <span class="ow">in</span> <span class="n">ps_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ATTRS</span><span class="p">:</span>
                 <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)[</span><span class="n">y_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ps</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ATTRS</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Keys are: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ATTRS</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># This is a proper eval-able repr, but with some manually-tweaked</span>
         <span class="c1"># whitespace to make it easier to parse.</span>
         <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1111,7 +1111,7 @@
         <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">LivePlotPlusPeaks</span><span class="p">(</span><span class="n">LivePlot</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LivePlotPlusPeaks</span><span class="p">(</span><span class="n">LivePlot</span><span class="p">):</span>
     <span class="c1"># Track state of axes, which may share instances of LivePlotPlusPeaks.</span>
     <span class="n">__labeled</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Axis</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakKeyDictionary</span><span class="p">()</span>  <span class="c1"># map ax to True/False</span>
     <span class="n">__visible</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Axis</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakKeyDictionary</span><span class="p">()</span>  <span class="c1"># map ax to True/False</span>
@@ -1119,13 +1119,13 @@
         <span class="n">weakref</span><span class="o">.</span><span class="n">WeakKeyDictionary</span><span class="p">()</span>
     <span class="p">)</span>  <span class="c1"># map ax to list of instances</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">peak_results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">peak_results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__setup_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__setup_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">peak_results</span> <span class="o">=</span> <span class="n">peak_results</span>
 
-        <span class="k">def</span> <span class="nf">setup</span><span class="p">():</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
             <span class="c1"># Run this code in start() so that it runs on the correct thread.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">__setup_lock</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__setup_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
@@ -1138,7 +1138,7 @@
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">__visible</span><span class="p">[</span><span class="n">ax</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
-                <span class="k">def</span> <span class="nf">toggle</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">toggle</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">__visible</span><span class="p">[</span><span class="n">ax</span><span class="p">]</span> <span class="o">=</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">__visible</span><span class="p">[</span><span class="n">ax</span><span class="p">]</span>
                         <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__instances</span><span class="p">[</span><span class="n">ax</span><span class="p">]:</span>
@@ -1153,7 +1153,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__setup</span> <span class="o">=</span> <span class="n">setup</span>
 
-    <span class="k">def</span> <span class="nf">check_visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__visible</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">]:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__arts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">plot_annotations</span><span class="p">()</span>
@@ -1166,7 +1166,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">plot_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">styles</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">cycler</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="s2">&quot;kr&quot;</span><span class="p">))</span>
         <span class="n">vlines</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">style</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">styles</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;cen&quot;</span><span class="p">,</span> <span class="s2">&quot;com&quot;</span><span class="p">]):</span>
@@ -1180,16 +1180,16 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__labeled</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__arts</span> <span class="o">=</span> <span class="n">vlines</span>
 
-    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__setup</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_visibility</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">hinted_fields</span><span class="p">(</span><span class="n">descriptor</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">hinted_fields</span><span class="p">(</span><span class="n">descriptor</span><span class="p">):</span>
     <span class="c1"># Figure out which columns to put in the table.</span>
     <span class="n">obj_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">descriptor</span><span class="p">[</span><span class="s2">&quot;object_keys&quot;</span><span class="p">])</span>
     <span class="c1"># We will see if these objects hint at whether</span>

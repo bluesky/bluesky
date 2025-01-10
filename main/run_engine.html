@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -564,10 +564,10 @@ run loop, not Document generation or hardware clean up.</p>
 <section id="minimal-runengine">
 <h2>Minimal RunEngine<a class="headerlink" href="#minimal-runengine" title="Link to this heading">#</a></h2>
 <p>A minimal (run-able) RunEngine is</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
-<span class="kn">import</span> <span class="nn">datetime</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span>
-<span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">Msg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">Msg</span>
 
 <span class="n">function_map</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;print&#39;</span><span class="p">:</span>
                 <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span>
@@ -575,7 +575,7 @@ run loop, not Document generation or hardware clean up.</p>
                 <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])}</span>
 
 
-<span class="k">def</span> <span class="nf">RE_v0</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">RE_v0</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
         <span class="n">func</span> <span class="o">=</span> <span class="n">function_map</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
         <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -602,11 +602,11 @@ iterate over a generator, it runs until the next <code class="docutils literal n
 statement, suspends, and yields the value to the code which is iterating
 over it.</p>
 <p>Switching to generators requires we change our minimal RE to</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="n">ensure_generator</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_generator</span>
 
 
 
-<span class="k">def</span> <span class="nf">RE_v1</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">RE_v1</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
     <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
     <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -628,7 +628,7 @@ over it.</p>
 <p>but we can also do more sophisticated things like</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">function_map</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">adding_plan</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">adding_plan</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1"> = ??&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1"> = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">ret</span><span class="p">))</span>
@@ -654,7 +654,7 @@ value. If the generator does not handle the exception (or raises a
 different exception) then it is (re)raised by <code class="docutils literal notranslate"><span class="pre">throw</span></code>.</p>
 <p>We want to be able to capture any exceptions raised by the <code class="docutils literal notranslate"><span class="pre">RE</span></code>
 and pass those back to the plan.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">RE_v2</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">RE_v2</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
     <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
     <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
@@ -677,7 +677,7 @@ and pass those back to the plan.</p>
 </div>
 <p>We can now write plans that handle exception from the RE, in this case
 reporting that the addition failed due to a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">safe_adding_plan</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">safe_adding_plan</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1"> = ??&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
@@ -711,26 +711,26 @@ canceled.</p>
 <code class="docutils literal notranslate"><span class="pre">_run</span></code> loop very soon. An way to do this, while maintaining
 the API we have above is to write a callable class instead of a
 function.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">RunEngine_v3</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RunEngine_v3</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span>
 
-    <span class="k">def</span> <span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;print&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">,</span>
             <span class="s1">&#39;sum&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sum</span><span class="p">,</span>
             <span class="s1">&#39;sleep&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">}</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
         <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
@@ -778,11 +778,11 @@ function call.</p>
 which is a super handy debugging tool to see exactly what messages are
 being processed by the RunEngine. It can be set to any callable which
 takes a single <code class="docutils literal notranslate"><span class="pre">Msg</span></code> as input (ex <code class="docutils literal notranslate"><span class="pre">print</span></code>)</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 
 
-<span class="k">class</span> <span class="nc">RunEngine_v4</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RunEngine_v4</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># map messages to coro</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;print&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">,</span>
@@ -802,7 +802,7 @@ takes a single <code class="docutils literal notranslate"><span class="pre">Msg<
         <span class="c1"># All flags and caches are defined here with a comment. Good luck.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># asyncio.Task associated with call to self._run</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">plan</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">)</span>
 
@@ -812,7 +812,7 @@ takes a single <code class="docutils literal notranslate"><span class="pre">Msg<
                 <span class="k">raise</span> <span class="n">exc</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
         <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
@@ -838,15 +838,15 @@ takes a single <code class="docutils literal notranslate"><span class="pre">Msg<
                 <span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
 
 
@@ -861,22 +861,22 @@ takes a single <code class="docutils literal notranslate"><span class="pre">Msg<
 complexity as now the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> must keep track of a stack of plans
 rather than a single plan, cache <code class="docutils literal notranslate"><span class="pre">Msg</span></code> as they go by and expose enough
 API to control the behavior.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">deque</span>
-<span class="kn">import</span> <span class="nn">asyncio</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 
-<span class="kn">import</span> <span class="nn">datetime</span>
-<span class="kn">import</span> <span class="nn">functools</span>
-<span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">AsyncInput</span><span class="p">,</span> <span class="n">FailedPause</span><span class="p">,</span> <span class="n">InvalidCommand</span><span class="p">,</span> <span class="n">Msg</span><span class="p">,</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">AsyncInput</span><span class="p">,</span> <span class="n">FailedPause</span><span class="p">,</span> <span class="n">InvalidCommand</span><span class="p">,</span> <span class="n">Msg</span><span class="p">,</span>
                            <span class="n">ensure_generator</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">bluesky.run_engine</span> <span class="kn">import</span> <span class="n">RunEngineStateMachine</span><span class="p">,</span> <span class="n">PropertyMachine</span>
-<span class="kn">from</span> <span class="nn">bluesky._vendor.super_state_machine.errors</span> <span class="kn">import</span> <span class="n">TransitionError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.run_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngineStateMachine</span><span class="p">,</span> <span class="n">PropertyMachine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky._vendor.super_state_machine.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransitionError</span>
 
 
-<span class="k">class</span> <span class="nc">RunEngine_v5</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RunEngine_v5</span><span class="p">:</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">PropertyMachine</span><span class="p">(</span><span class="n">RunEngineStateMachine</span><span class="p">)</span>
     <span class="n">_UNCACHEABLE_COMMANDS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pause&#39;</span><span class="p">,</span> <span class="p">]</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># map messages to coro</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;print&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">,</span>
@@ -910,7 +910,7 @@ API to control the behavior.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">([</span><span class="kc">None</span><span class="p">])</span>  <span class="c1"># resps to send into the plans</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># True if paused, aborted, or failed</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
         <span class="c1"># First thing&#39;s first: if we are in the wrong state, raise.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">is_idle</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;The RunEngine is in a </span><span class="si">%s</span><span class="s2"> state&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
@@ -931,7 +931,7 @@ API to control the behavior.</p>
             <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">exc</span>
 
-    <span class="k">def</span> <span class="nf">_clear_call_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_call_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
@@ -942,23 +942,23 @@ API to control the behavior.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span>
 
     <span class="nd">@rewindable</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
         <span class="n">cur_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resumable</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span> <span class="o">!=</span> <span class="n">cur_state</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">resumable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resumable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;i.e., can the plan in progress by rewound&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">pending_cancel_exception</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;running&#39;</span>
@@ -1082,20 +1082,20 @@ API to control the behavior.</p>
         <span class="k">if</span> <span class="n">pending_cancel_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">pending_cancel_exception</span>
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">))</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Process a &#39;input&#39; Msg. Expected Msg:</span>
 
@@ -1108,7 +1108,7 @@ API to control the behavior.</p>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">async_input</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Request the run engine to pause</span>
 
 <span class="sd">        Expected message object is:</span>
@@ -1120,7 +1120,7 @@ API to control the behavior.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">request_pause</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">request_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">request_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Command the Run Engine to pause.</span>
 
@@ -1162,7 +1162,7 @@ API to control the behavior.</p>
         <span class="c1"># still be processed)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Resume a paused plan from the last checkpoint.</span>
 
 <span class="sd">        Returns</span>
@@ -1184,7 +1184,7 @@ API to control the behavior.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_resume_event_loop</span><span class="p">()</span>
         <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="k">def</span> <span class="nf">_rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;Clean up in preparation for resuming from a pause or suspension.</span>
 
 <span class="sd">        Returns</span>
@@ -1200,7 +1200,7 @@ API to control the behavior.</p>
         <span class="c1"># the paired &#39;save&#39;.</span>
         <span class="k">return</span> <span class="n">new_plan</span>
 
-    <span class="k">def</span> <span class="nf">_resume_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resume_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># may be called by &#39;resume&#39; or &#39;abort&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;running&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_last_sigint_time</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1214,7 +1214,7 @@ API to control the behavior.</p>
                 <span class="k">raise</span> <span class="n">exc</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Instruct the RunEngine to create a checkpoint so that we can rewind</span>
 <span class="sd">        to this point if necessary</span>
 
@@ -1231,7 +1231,7 @@ API to control the behavior.</p>
             <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">request_pause</span><span class="p">(</span><span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_reset_checkpoint_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_checkpoint_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
 
@@ -1240,7 +1240,7 @@ API to control the behavior.</p>
     <span class="n">_reset_checkpoint_state_coro</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">coroutine</span><span class="p">(</span><span class="n">_reset_checkpoint_state</span><span class="p">)</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_clear_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear a set checkpoint</span>
 
 <span class="sd">        Expected message object is:</span>
@@ -1253,7 +1253,7 @@ API to control the behavior.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_teed_sequence_counters</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;Set rewindable state of RunEngine</span>
 
 <span class="sd">        Expected message object is:</span>
@@ -1268,7 +1268,7 @@ API to control the behavior.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rewindable</span>
 
     <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_null</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_null</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A no-op message, mainly for debugging and testing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1279,7 +1279,7 @@ API to control the behavior.</p>
 <span class="n">RE_v5</span><span class="o">.</span><span class="n">msg_hook</span> <span class="o">=</span> <span class="nb">print</span>
 
 
-<span class="k">def</span> <span class="nf">pausing_plan</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pausing_plan</span><span class="p">():</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;pause&#39;</span><span class="p">)</span>

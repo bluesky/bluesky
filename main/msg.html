@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -558,14 +558,14 @@
 <p>A <em>plan</em> is a sequence of atomic operations describing a data acquisition
 procedure. Each operation is represented by a <code class="docutils literal notranslate"><span class="pre">bluesky.Msg</span></code> (“message”)
 object. A plan may be implemented as a simple list of messages:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">Msg</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">Msg</span>
 
 <span class="c1"># (Behold, the most boring data acquisition ever conducted!)</span>
 <span class="n">plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)]</span>
 </pre></div>
 </div>
 <p>or as a generator the yields messages one at time:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plan</span><span class="p">():</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">():</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">)</span>
     <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)</span>
 </pre></div>
@@ -601,7 +601,7 @@ The run key is used by Run Engine to associate each message with one of the open
 manage the state of each open run, and route run data to a separate set of callbacks
 (see documentation on Multi-Run Plans).</p>
 <p>To execute the plan, the <a class="reference internal" href="run_engine.html"><span class="doc">RunEngine</span></a> consumes it, one message at a time.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">very_simple_run_engine</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">very_simple_run_engine</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
         <span class="c1"># Process the msg.</span>
 </pre></div>
@@ -756,7 +756,7 @@ argument <cite>group=&lt;GROUP&gt;</cite> is done.</p>
 <p>Instruct the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> to wait for this <code class="docutils literal notranslate"><span class="pre">asyncio.Future</span></code> object to be
 done. This allows for external arbitrary control of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>.
 Ex</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">asyncio.futures</span> <span class="kn">import</span> <span class="n">Future</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asyncio.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
 <span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">()</span>
 <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give false</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;wait_for&#39;</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
@@ -767,10 +767,10 @@ Ex</p>
 </div>
 <p>Returns a set of the tasks that were waited on.
 Ex</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">asyncio.futures</span> <span class="kn">import</span> <span class="n">Future</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asyncio.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
 <span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">()</span>
 <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give false</span>
-<span class="k">def</span> <span class="nf">plan</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">()</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;wait_for&#39;</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
     <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
         <span class="c1"># will give the exception raised</span>
@@ -995,7 +995,7 @@ following methods.</p>
 </dl>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">RunEngine</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># to list commands</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">commands</span>
@@ -1025,7 +1025,7 @@ commands.</p>
 </dl>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">RunEngine</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Print a very verbose list of currently registered commands</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">print_command_registry</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

@@ -29,7 +29,7 @@
   <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -530,30 +530,30 @@
                 <article class="bd-article">
                   
   <h1>Source code for bluesky.plan_stubs</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">import</span> <span class="nn">operator</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">typing</span>
-<span class="kn">import</span> <span class="nn">uuid</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">operator</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
 
-<span class="kn">from</span> <span class="nn">bluesky.suspenders</span> <span class="kn">import</span> <span class="n">SuspenderBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.suspenders</span><span class="w"> </span><span class="kn">import</span> <span class="n">SuspenderBase</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># cytools is a drop-in replacement for toolz, implemented in Cython</span>
-    <span class="kn">from</span> <span class="nn">cytools</span> <span class="kn">import</span> <span class="n">partition</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">cytools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partition</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">toolz</span> <span class="kn">import</span> <span class="n">partition</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">toolz</span><span class="w"> </span><span class="kn">import</span> <span class="n">partition</span>
 
-<span class="kn">from</span> <span class="nn">event_model</span> <span class="kn">import</span> <span class="n">ComposeEvent</span>
-<span class="kn">from</span> <span class="nn">event_model.documents</span> <span class="kn">import</span> <span class="n">EventDescriptor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComposeEvent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDescriptor</span>
 
-<span class="kn">from</span> <span class="nn">.protocols</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Configurable</span><span class="p">,</span>
     <span class="n">Flyable</span><span class="p">,</span>
     <span class="n">Locatable</span><span class="p">,</span>
@@ -569,7 +569,7 @@
     <span class="n">Triggerable</span><span class="p">,</span>
     <span class="n">check_supports</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CustomPlanMetadata</span><span class="p">,</span>
     <span class="n">Msg</span><span class="p">,</span>
     <span class="n">MsgGenerator</span><span class="p">,</span>
@@ -582,7 +582,7 @@
     <span class="n">separate_devices</span><span class="p">,</span>
     <span class="n">short_uid</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">short_uid</span> <span class="k">as</span> <span class="n">_short_uid</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -591,7 +591,7 @@
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">declare_stream</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">declare_stream</span><span class="p">(</span>
     <span class="o">*</span><span class="n">objs</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">collect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">EventDescriptor</span><span class="p">,</span> <span class="n">ComposeEvent</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -623,7 +623,7 @@
 <div class="viewcode-block" id="create">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.create.html#bluesky.plan_stubs.create">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;primary&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;primary&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Bundle future readings into a new Event document.</span>
 
@@ -649,7 +649,7 @@
 <div class="viewcode-block" id="save">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.save.html#bluesky.plan_stubs.save">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">save</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Close a bundle of readings and emit a completed Event document.</span>
 
@@ -669,7 +669,7 @@
 <div class="viewcode-block" id="drop">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.drop.html#bluesky.plan_stubs.drop">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">drop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">drop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Drop a bundle of readings without emitting a completed Event document.</span>
 
@@ -690,7 +690,7 @@
 <div class="viewcode-block" id="read">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.read.html#bluesky.plan_stubs.read">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Reading</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Reading</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Take a reading and add it to the current bundle of readings.</span>
 
@@ -713,11 +713,11 @@
 
 
 <span class="nd">@typing</span><span class="o">.</span><span class="n">overload</span>
-<span class="k">def</span> <span class="nf">locate</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">squeeze</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Location</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># type: ignore[overload-overlap]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">squeeze</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Location</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># type: ignore[overload-overlap]</span>
 <span class="nd">@typing</span><span class="o">.</span><span class="n">overload</span>
-<span class="k">def</span> <span class="nf">locate</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">squeeze</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Location</span><span class="p">]:</span> <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">squeeze</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Location</span><span class="p">]:</span> <span class="o">...</span>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">locate</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">,</span> <span class="n">squeeze</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">,</span> <span class="n">squeeze</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Locate some Movables and return their locations.</span>
 
@@ -739,7 +739,7 @@
 <div class="viewcode-block" id="monitor">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.monitor.html#bluesky.plan_stubs.monitor">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">monitor</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">monitor</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Asynchronously monitor for new values and emit Event documents.</span>
 
@@ -769,7 +769,7 @@
 <div class="viewcode-block" id="unmonitor">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.unmonitor.html#bluesky.plan_stubs.unmonitor">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">unmonitor</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unmonitor</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Stop monitoring.</span>
 
@@ -793,7 +793,7 @@
 <div class="viewcode-block" id="null">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.null.html#bluesky.plan_stubs.null">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">null</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">null</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Yield a no-op Message. (Primarily for debugging and testing.)</span>
 
@@ -809,7 +809,7 @@
 <div class="viewcode-block" id="abs_set">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.abs_set.html#bluesky.plan_stubs.abs_set">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">abs_set</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">abs_set</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -860,7 +860,7 @@
 <div class="viewcode-block" id="rel_set">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.rel_set.html#bluesky.plan_stubs.rel_set">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">rel_set</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_set</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -898,7 +898,7 @@
 <span class="sd">    :func:`bluesky.plan_stubs.abs_set`</span>
 <span class="sd">    :func:`bluesky.plan_stubs.wait`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">.preprocessors</span> <span class="kn">import</span> <span class="n">relative_set_wrapper</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">relative_set_wrapper</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">relative_set_wrapper</span><span class="p">(</span><span class="n">abs_set</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="n">wait</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)))</span></div>
 
@@ -909,7 +909,7 @@
 <div class="viewcode-block" id="mv">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.mv.html#bluesky.plan_stubs.mv">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">mv</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mv</span><span class="p">(</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -961,7 +961,7 @@
 <div class="viewcode-block" id="mvr">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.mvr.html#bluesky.plan_stubs.mvr">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">mvr</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mvr</span><span class="p">(</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -996,10 +996,10 @@
     <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">partition</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>  <span class="c1"># noqa: B007</span>
         <span class="n">objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
-    <span class="kn">from</span> <span class="nn">.preprocessors</span> <span class="kn">import</span> <span class="n">relative_set_decorator</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">relative_set_decorator</span>
 
     <span class="nd">@relative_set_decorator</span><span class="p">(</span><span class="n">objs</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_mvr</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_mvr</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">mv</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_mvr</span><span class="p">())</span></div>
@@ -1012,7 +1012,7 @@
 <div class="viewcode-block" id="rd">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.rd.html#bluesky.plan_stubs.rd">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">rd</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rd</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a single-value non-triggered object</span>
 
 <span class="sd">    This is a helper plan to get the scalar value out of a Device</span>
@@ -1109,7 +1109,7 @@
             <span class="s2">&quot;kind of the components of this device or by reading one of its components&quot;</span>
         <span class="p">)</span>
 
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">er</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">er</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>  <span class="c1"># type: ignore</span></div>
 
@@ -1118,7 +1118,7 @@
 <div class="viewcode-block" id="stop">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.stop.html#bluesky.plan_stubs.stop">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Stoppable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Stoppable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Stop a device.</span>
 
@@ -1137,7 +1137,7 @@
 <div class="viewcode-block" id="trigger">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.trigger.html#bluesky.plan_stubs.trigger">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">trigger</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">trigger</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Triggerable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1176,7 +1176,7 @@
 <div class="viewcode-block" id="sleep">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.sleep.html#bluesky.plan_stubs.sleep">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">sleep</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sleep</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Tell the RunEngine to sleep, while asynchronously doing other processing.</span>
 
@@ -1200,7 +1200,7 @@
 <div class="viewcode-block" id="wait">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.wait.html#bluesky.plan_stubs.wait">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">error_on_timeout</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">wait</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">error_on_timeout</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Wait for all statuses in a group to report being finished.</span>
 
@@ -1231,7 +1231,7 @@
 <div class="viewcode-block" id="checkpoint">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.checkpoint.html#bluesky.plan_stubs.checkpoint">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">checkpoint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">checkpoint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    If interrupted, rewind to this point.</span>
 
@@ -1251,7 +1251,7 @@
 <div class="viewcode-block" id="clear_checkpoint">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.clear_checkpoint.html#bluesky.plan_stubs.clear_checkpoint">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">clear_checkpoint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">clear_checkpoint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Designate that it is not safe to resume. If interrupted or paused, abort.</span>
 
@@ -1271,7 +1271,7 @@
 <div class="viewcode-block" id="pause">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.pause.html#bluesky.plan_stubs.pause">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">pause</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pause</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Pause and wait for the user to resume.</span>
 
@@ -1292,7 +1292,7 @@
 <div class="viewcode-block" id="deferred_pause">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.deferred_pause.html#bluesky.plan_stubs.deferred_pause">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">deferred_pause</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">deferred_pause</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Pause at the next checkpoint.</span>
 
@@ -1313,7 +1313,7 @@
 <div class="viewcode-block" id="input_plan">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.input_plan.html#bluesky.plan_stubs.input_plan">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">input_plan</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">input_plan</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Prompt the user for text input.</span>
 
@@ -1336,7 +1336,7 @@
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Preparable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Preparable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Prepare a device.</span>
 
@@ -1372,7 +1372,7 @@
 <div class="viewcode-block" id="kickoff">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.kickoff.html#bluesky.plan_stubs.kickoff">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">kickoff</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kickoff</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1418,7 +1418,7 @@
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">kickoff_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kickoff_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Kickoff one or more fly-scanning devices.</span>
 
@@ -1461,7 +1461,7 @@
 <div class="viewcode-block" id="complete">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.complete.html#bluesky.plan_stubs.complete">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">complete</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1514,7 +1514,7 @@
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">complete_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">complete_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Tell one or more flyable objects, &#39;stop collecting, whenever you are ready&#39;.</span>
 
@@ -1563,7 +1563,7 @@
 <div class="viewcode-block" id="collect">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.collect.html#bluesky.plan_stubs.collect">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">collect</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1600,7 +1600,7 @@
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">collect_while_completing</span><span class="p">(</span><span class="n">flyers</span><span class="p">,</span> <span class="n">dets</span><span class="p">,</span> <span class="n">flush_period</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">collect_while_completing</span><span class="p">(</span><span class="n">flyers</span><span class="p">,</span> <span class="n">dets</span><span class="p">,</span> <span class="n">flush_period</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Collect data from one or more fly-scanning devices and emit documents, then collect and emit</span>
 <span class="sd">    data from one or more Collectable detectors until all are done.</span>
@@ -1639,7 +1639,7 @@
 <div class="viewcode-block" id="configure">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.configure.html#bluesky.plan_stubs.configure">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">configure</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">configure</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Configurable</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -1673,7 +1673,7 @@
 <div class="viewcode-block" id="stage">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.stage.html#bluesky.plan_stubs.stage">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">stage</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">stage</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1723,7 +1723,7 @@
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">stage_all</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">stage_all</span><span class="p">(</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
@@ -1761,7 +1761,7 @@
 <div class="viewcode-block" id="unstage">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.unstage.html#bluesky.plan_stubs.unstage">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">unstage</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unstage</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1811,7 +1811,7 @@
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">unstage_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unstage_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &#39;Unstage&#39; one or more devices (i.e., put them in standby, &#39;disarm&#39; them).</span>
 
@@ -1846,7 +1846,7 @@
 <div class="viewcode-block" id="subscribe">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.subscribe.html#bluesky.plan_stubs.subscribe">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Subscribe the stream of emitted documents.</span>
 
@@ -1878,7 +1878,7 @@
 <div class="viewcode-block" id="unsubscribe">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.unsubscribe.html#bluesky.plan_stubs.unsubscribe">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">unsubscribe</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Remove a subscription.</span>
 
@@ -1903,7 +1903,7 @@
 <div class="viewcode-block" id="install_suspender">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.install_suspender.html#bluesky.plan_stubs.install_suspender">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">install_suspender</span><span class="p">(</span><span class="n">suspender</span><span class="p">:</span> <span class="n">SuspenderBase</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">install_suspender</span><span class="p">(</span><span class="n">suspender</span><span class="p">:</span> <span class="n">SuspenderBase</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Install a suspender during a plan.</span>
 
@@ -1928,7 +1928,7 @@
 <div class="viewcode-block" id="remove_suspender">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.remove_suspender.html#bluesky.plan_stubs.remove_suspender">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">remove_suspender</span><span class="p">(</span><span class="n">suspender</span><span class="p">:</span> <span class="n">SuspenderBase</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">remove_suspender</span><span class="p">(</span><span class="n">suspender</span><span class="p">:</span> <span class="n">SuspenderBase</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Remove a suspender during a plan.</span>
 
@@ -1953,7 +1953,7 @@
 <div class="viewcode-block" id="open_run">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.open_run.html#bluesky.plan_stubs.open_run">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">open_run</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">open_run</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Mark the beginning of a new &#39;run&#39;. Emit a RunStart document.</span>
 
@@ -1983,7 +1983,7 @@
 <div class="viewcode-block" id="close_run">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.close_run.html#bluesky.plan_stubs.close_run">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Mark the end of the current &#39;run&#39;. Emit a RunStop document.</span>
 
@@ -2015,7 +2015,7 @@
 <div class="viewcode-block" id="wait_for">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.wait_for.html#bluesky.plan_stubs.wait_for">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">wait_for</span><span class="p">(</span><span class="n">futures</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">Any</span><span class="p">]]],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">wait_for</span><span class="p">(</span><span class="n">futures</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">Any</span><span class="p">]]],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).</span>
 
@@ -2042,7 +2042,7 @@
 <div class="viewcode-block" id="trigger_and_read">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.trigger_and_read.html#bluesky.plan_stubs.trigger_and_read">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">trigger_and_read</span><span class="p">(</span><span class="n">devices</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;primary&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">trigger_and_read</span><span class="p">(</span><span class="n">devices</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;primary&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Trigger and read a list of detectors and bundle readings into one Event.</span>
 
@@ -2064,7 +2064,7 @@
 <span class="sd">    msg : Msg</span>
 <span class="sd">        messages to &#39;trigger&#39;, &#39;wait&#39; and &#39;read&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">.preprocessors</span> <span class="kn">import</span> <span class="n">contingency_wrapper</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">contingency_wrapper</span>
 
     <span class="c1"># If devices is empty, don&#39;t emit &#39;create&#39;/&#39;save&#39; messages.</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">devices</span><span class="p">:</span>
@@ -2072,7 +2072,7 @@
     <span class="n">devices</span> <span class="o">=</span> <span class="n">separate_devices</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>  <span class="c1"># remove redundant entries</span>
     <span class="n">rewindable</span> <span class="o">=</span> <span class="n">all_safe_rewind</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>  <span class="c1"># if devices can be re-triggered</span>
 
-    <span class="k">def</span> <span class="nf">inner_trigger_and_read</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_trigger_and_read</span><span class="p">():</span>
         <span class="n">grp</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">&quot;trigger&quot;</span><span class="p">)</span>
         <span class="n">no_wait</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">:</span>
@@ -2084,7 +2084,7 @@
             <span class="k">yield from</span> <span class="n">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">grp</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">read_plan</span><span class="p">():</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">read_plan</span><span class="p">():</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># collect and return readings to give plan access to them</span>
             <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">:</span>
                 <span class="n">reading</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">read</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
@@ -2092,17 +2092,17 @@
                     <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">reading</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">ret</span>
 
-        <span class="k">def</span> <span class="nf">standard_path</span><span class="p">():</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">standard_path</span><span class="p">():</span>
             <span class="k">yield from</span> <span class="n">save</span><span class="p">()</span>
 
-        <span class="k">def</span> <span class="nf">exception_path</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">exception_path</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
             <span class="k">yield from</span> <span class="n">drop</span><span class="p">()</span>
             <span class="k">raise</span> <span class="n">exp</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">contingency_wrapper</span><span class="p">(</span><span class="n">read_plan</span><span class="p">(),</span> <span class="n">except_plan</span><span class="o">=</span><span class="n">exception_path</span><span class="p">,</span> <span class="n">else_plan</span><span class="o">=</span><span class="n">standard_path</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span>
 
-    <span class="kn">from</span> <span class="nn">.preprocessors</span> <span class="kn">import</span> <span class="n">rewindable_wrapper</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.preprocessors</span><span class="w"> </span><span class="kn">import</span> <span class="n">rewindable_wrapper</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">rewindable_wrapper</span><span class="p">(</span><span class="n">inner_trigger_and_read</span><span class="p">(),</span> <span class="n">rewindable</span><span class="p">))</span></div>
 
@@ -2111,7 +2111,7 @@
 <div class="viewcode-block" id="broadcast_msg">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.broadcast_msg.html#bluesky.plan_stubs.broadcast_msg">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">broadcast_msg</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">broadcast_msg</span><span class="p">(</span>
     <span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">objs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
@@ -2149,7 +2149,7 @@
 <div class="viewcode-block" id="repeater">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.repeater.html#bluesky.plan_stubs.repeater">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">repeater</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">repeater</span><span class="p">(</span>
     <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="n">gen_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">MsgGenerator</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
@@ -2191,7 +2191,7 @@
 <div class="viewcode-block" id="caching_repeater">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.caching_repeater.html#bluesky.plan_stubs.caching_repeater">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">caching_repeater</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">plan</span><span class="p">:</span> <span class="n">MsgGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">caching_repeater</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">plan</span><span class="p">:</span> <span class="n">MsgGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate n chained copies of the messages in a plan.</span>
 
@@ -2228,7 +2228,7 @@
 <div class="viewcode-block" id="one_shot">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.one_shot.html#bluesky.plan_stubs.one_shot">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">one_shot</span><span class="p">(</span><span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">take_reading</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TakeReading</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_shot</span><span class="p">(</span><span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">take_reading</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TakeReading</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Inner loop of a count.</span>
 
 <span class="sd">    This is the default function for ``per_shot`` in count plans.</span>
@@ -2261,7 +2261,7 @@
 <div class="viewcode-block" id="one_1d_step">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.one_1d_step.html#bluesky.plan_stubs.one_1d_step">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">one_1d_step</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_1d_step</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -2301,7 +2301,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">take_reading</span> <span class="o">=</span> <span class="n">trigger_and_read</span> <span class="k">if</span> <span class="n">take_reading</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">take_reading</span>
 
-    <span class="k">def</span> <span class="nf">move</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">move</span><span class="p">():</span>
         <span class="n">grp</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">&quot;set&quot;</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;checkpoint&quot;</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp</span><span class="p">)</span>
@@ -2315,7 +2315,7 @@
 <div class="viewcode-block" id="move_per_step">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.move_per_step.html#bluesky.plan_stubs.move_per_step">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">move_per_step</span><span class="p">(</span><span class="n">step</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">pos_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">move_per_step</span><span class="p">(</span><span class="n">step</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">pos_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inner loop of an N-dimensional step scan without any readings</span>
 
@@ -2347,7 +2347,7 @@
 <div class="viewcode-block" id="one_nd_step">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.one_nd_step.html#bluesky.plan_stubs.one_nd_step">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">one_nd_step</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_nd_step</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">step</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">pos_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -2390,7 +2390,7 @@
 <div class="viewcode-block" id="repeat">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.repeat.html#bluesky.plan_stubs.repeat">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span> <span class="nf">repeat</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">repeat</span><span class="p">(</span>
     <span class="n">plan</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">MsgGenerator</span><span class="p">],</span>
     <span class="n">num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">delay</span><span class="p">:</span> <span class="n">ScalarOrIterableFloat</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -2448,7 +2448,7 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;num=</span><span class="si">%r</span><span class="s2"> but delays only provides </span><span class="si">%r</span><span class="s2"> entries&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">num_delays</span><span class="p">))</span>  <span class="c1"># noqa: UP031</span>
         <span class="n">delay</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">repeated_plan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">repeated_plan</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
             <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>  <span class="c1"># Intercept the flow in its earliest moment.</span>
             <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;checkpoint&quot;</span><span class="p">)</span>
@@ -2462,7 +2462,7 @@
                     <span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c1"># num specifies a number of iterations less than delay</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;num=</span><span class="si">%r</span><span class="s2"> but delays only provides </span><span class="si">%r</span><span class="s2"> entries&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span> <span class="kn">from</span> <span class="nn">stop</span>  <span class="c1"># noqa: UP031</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;num=</span><span class="si">%r</span><span class="s2"> but delays only provides </span><span class="si">%r</span><span class="s2"> entries&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">stop</span>  <span class="c1"># noqa: UP031</span>
             <span class="k">if</span> <span class="n">d</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">now</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">d</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Sleep if and only if time is left to do it.</span>

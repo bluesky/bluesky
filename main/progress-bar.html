@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -596,7 +596,7 @@ trigger. (In bluesky jargon, the progress bar is notified any time the
 RunEngine processes a ‘wait’ command).</p>
 <p>The progress bar is not set up by default. It must be attached to a RunEngine.
 This need only be done once (say, in a startup file).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="n">ProgressBarManager</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressBarManager</span>
 
 <span class="n">RE</span><span class="o">.</span><span class="n">waiting_hook</span> <span class="o">=</span> <span class="n">ProgressBarManager</span><span class="p">()</span>
 </pre></div>

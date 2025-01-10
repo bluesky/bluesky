@@ -29,7 +29,7 @@
   <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -530,12 +530,12 @@
                 <article class="bd-article">
                   
   <h1>Source code for bluesky.callbacks.olog</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
-<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pformat</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pformat</span>
 
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">CallbackBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallbackBase</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -575,7 +575,7 @@
 
 <div class="viewcode-block" id="logbook_cb_factory">
 <a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.olog.logbook_cb_factory">[docs]</a>
-<span class="k">def</span> <span class="nf">logbook_cb_factory</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">logbook_cb_factory</span><span class="p">(</span>
     <span class="n">logbook_func</span><span class="p">,</span> <span class="n">desc_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">long_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">desc_dispatch</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">long_dispatch</span><span class="o">=</span><span class="kc">None</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a logbook run_start callback</span>
@@ -607,7 +607,7 @@
 <span class="sd">        Mappings between &#39;plan_name&#39; to jinja2 templates to use for the</span>
 <span class="sd">        description and attachments respectively.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">jinja2</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">jinja2</span>
 
     <span class="n">env</span> <span class="o">=</span> <span class="n">jinja2</span><span class="o">.</span><span class="n">Environment</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">long_template</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -633,7 +633,7 @@
     <span class="n">desc_dispatch</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">desc_msg</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">desc_dispatch</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
     <span class="n">long_dispatch</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">long_msg</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">long_dispatch</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
 
-    <span class="k">def</span> <span class="nf">lbcb</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lbcb</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="c1"># This only applies to &#39;start&#39; Documents.</span>
         <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;start&quot;</span><span class="p">:</span>
             <span class="k">return</span>
@@ -650,7 +650,7 @@
 
 
 
-<span class="k">def</span> <span class="nf">call_str</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">call_template</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">call_str</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">call_template</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a start document generate an evalable call scring</span>
 
 <span class="sd">    The default template assumes that `plan_args` and `plan_name`</span>
@@ -666,7 +666,7 @@
 
 <span class="sd">        If not provided defaults to `CALL_TEMPLATE`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">jinja2</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">jinja2</span>
 
     <span class="n">env</span> <span class="o">=</span> <span class="n">jinja2</span><span class="o">.</span><span class="n">Environment</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">call_template</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -675,7 +675,7 @@
     <span class="k">return</span> <span class="n">call_renderer</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">OlogCallback</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OlogCallback</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Example callback to customize the logbook.</span>
 
 <span class="sd">    This callback publishes the most recent IPython command (which of course</span>
@@ -690,16 +690,16 @@
 <span class="sd">    &gt;&gt;&gt; gs.RE.logbook = None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logbook</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logbook</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logbook</span> <span class="o">=</span> <span class="n">logbook</span>
-        <span class="kn">from</span> <span class="nn">pyOlog</span> <span class="kn">import</span> <span class="n">SimpleOlogClient</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">pyOlog</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleOlogClient</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SimpleOlogClient</span><span class="p">()</span>
         <span class="c1"># Check at init time we are in an IPython session.</span>
-        <span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">get_ipython</span>  <span class="c1"># noqa: F401</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">IPython</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ipython</span>  <span class="c1"># noqa: F401</span>
 
-    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
-        <span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">get_ipython</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">IPython</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ipython</span>
 
         <span class="n">commands</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">history_manager</span><span class="o">.</span><span class="n">get_range</span><span class="p">())</span>
         <span class="n">document_content</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="se">\n\n</span><span class="s2">RunStart Document</span><span class="se">\n</span><span class="s2">-----------------</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>  <span class="c1"># noqa: UP031</span>

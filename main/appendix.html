@@ -30,7 +30,7 @@
   <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -574,7 +574,7 @@ They are used by bluesky but not <em>unique</em> Wherever possible, we to bluesk
 <p>This is a very brief primer on the Python syntax <code class="docutils literal notranslate"><span class="pre">yield</span></code> and <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>,
 a feature of the core language that we will use extensively.</p>
 <p>A Python <em>function</em> returns once:</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">():</span>
 <span class="gp">   ...: </span>    <span class="k">return</span> <span class="mi">1</span>
 <span class="gp">   ...: </span>
 
@@ -585,7 +585,7 @@ a feature of the core language that we will use extensively.</p>
 <p>A Python <em>generator</em> is like a function with multiple exit points. Calling a
 generator produces an <em>iterator</em> that yields one value at a time. After
 each <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement, its execution is suspended.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">():</span>
 <span class="gp">   ...: </span>    <span class="k">yield</span> <span class="mi">1</span>
 <span class="gp">   ...: </span>    <span class="k">yield</span> <span class="mi">2</span>
 <span class="gp">   ...: </span>
@@ -615,7 +615,7 @@ each <code class="docutils literal notranslate"><span class="pre">yield</span></
 </pre></div>
 </div>
 <p>To examine what is happening when, we can add prints.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [9]: </span><span class="k">def</span> <span class="nf">verbose_f</span><span class="p">():</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [9]: </span><span class="k">def</span><span class="w"> </span><span class="nf">verbose_f</span><span class="p">():</span>
 <span class="gp">   ...: </span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;before 1&quot;</span><span class="p">)</span>
 <span class="gp">   ...: </span>    <span class="k">yield</span> <span class="mi">1</span>
 <span class="gp">   ...: </span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;before 2&quot;</span><span class="p">)</span>
@@ -640,14 +640,14 @@ value. This is a useful feature of generators: they can express “lazy”
 execution.</p>
 <p>Generators can delegate to other generators using <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>. This is
 syntax we commonly use to combine plans.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [13]: </span><span class="k">def</span> <span class="nf">double_f</span><span class="p">():</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [13]: </span><span class="k">def</span><span class="w"> </span><span class="nf">double_f</span><span class="p">():</span>
 <span class="gp">   ....: </span>    <span class="k">yield from</span> <span class="n">f</span><span class="p">()</span>
 <span class="gp">   ....: </span>    <span class="k">yield from</span> <span class="n">f</span><span class="p">()</span>
 <span class="gp">   ....: </span>
 </pre></div>
 </div>
 <p>The above is equivalent to:</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [14]: </span><span class="k">def</span> <span class="nf">double_f</span><span class="p">():</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [14]: </span><span class="k">def</span><span class="w"> </span><span class="nf">double_f</span><span class="p">():</span>
 <span class="gp">   ....: </span>    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">f</span><span class="p">():</span>
 <span class="gp">   ....: </span>        <span class="k">yield</span> <span class="n">val</span>
 <span class="gp">   ....: </span>    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">f</span><span class="p">():</span>

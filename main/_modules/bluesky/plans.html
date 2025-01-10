@@ -29,7 +29,7 @@
   <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
@@ -530,31 +530,31 @@
                 <article class="bd-article">
                   
   <h1>Source code for bluesky.plans</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">collections</span>
-<span class="kn">import</span> <span class="nn">inspect</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">zip_longest</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">zip_longest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">Cycler</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cycler</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># cytools is a drop-in replacement for toolz, implemented in Cython</span>
-    <span class="kn">from</span> <span class="nn">cytools</span> <span class="kn">import</span> <span class="n">partition</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">cytools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partition</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">toolz</span> <span class="kn">import</span> <span class="n">partition</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">toolz</span><span class="w"> </span><span class="kn">import</span> <span class="n">partition</span>
 
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">plan_patterns</span><span class="p">,</span> <span class="n">utils</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">plan_stubs</span> <span class="k">as</span> <span class="n">bps</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">preprocessors</span> <span class="k">as</span> <span class="n">bpp</span>
-<span class="kn">from</span> <span class="nn">.protocols</span> <span class="kn">import</span> <span class="n">Flyable</span><span class="p">,</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">NamedMovable</span><span class="p">,</span> <span class="n">Readable</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">plan_patterns</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">plan_stubs</span> <span class="k">as</span> <span class="n">bps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprocessors</span> <span class="k">as</span> <span class="n">bpp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flyable</span><span class="p">,</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">NamedMovable</span><span class="p">,</span> <span class="n">Readable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CustomPlanMetadata</span><span class="p">,</span>
     <span class="n">Msg</span><span class="p">,</span>
     <span class="n">MsgGenerator</span><span class="p">,</span>
@@ -582,12 +582,12 @@
 <span class="n">PerStep</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">PerStep1D</span><span class="p">,</span> <span class="n">PerStepND</span><span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">_check_detectors_type_input</span><span class="p">(</span><span class="n">detectors</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_detectors_type_input</span><span class="p">(</span><span class="n">detectors</span><span class="p">):</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;The input argument must be either as a list or a tuple of Readable objects.&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">derive_default_hints</span><span class="p">(</span><span class="n">motors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">derive_default_hints</span><span class="p">(</span><span class="n">motors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">]:</span>
     <span class="n">x_fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">motor</span> <span class="ow">in</span> <span class="n">motors</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">get_hinted_fields</span><span class="p">(</span><span class="n">motor</span><span class="p">)]</span>
 
     <span class="n">default_dimensions</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x_fields</span><span class="p">,</span> <span class="s2">&quot;primary&quot;</span><span class="p">)]</span> <span class="k">if</span> <span class="n">x_fields</span> <span class="k">else</span> <span class="p">[]</span>
@@ -597,7 +597,7 @@
 
 <div class="viewcode-block" id="count">
 <a class="viewcode-back" href="../../generated/bluesky.plans.count.html#bluesky.plans.count">[docs]</a>
-<span class="k">def</span> <span class="nf">count</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">delay</span><span class="p">:</span> <span class="n">ScalarOrIterableFloat</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -655,7 +655,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_count</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_count</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">predeclare</span><span class="p">:</span>
             <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">msg_per_step</span><span class="p">,</span> <span class="n">detectors</span><span class="p">),</span> <span class="n">num</span><span class="o">=</span><span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="n">delay</span><span class="p">))</span>
@@ -666,7 +666,7 @@
 
 <div class="viewcode-block" id="list_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.list_scan.html#bluesky.plans.list_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">list_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
     <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -764,7 +764,7 @@
 
 <div class="viewcode-block" id="rel_list_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_list_scan.html#bluesky.plans.rel_list_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_list_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_list_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -815,7 +815,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_relative_list_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_list_scan</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">list_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="n">per_step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_relative_list_scan</span><span class="p">())</span></div>
@@ -824,7 +824,7 @@
 
 <div class="viewcode-block" id="list_grid_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.list_grid_scan.html#bluesky.plans.list_grid_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">list_grid_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">snake_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -904,7 +904,7 @@
 
 <div class="viewcode-block" id="rel_list_grid_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_list_grid_scan.html#bluesky.plans.rel_list_grid_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_list_grid_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_list_grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">snake_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -960,14 +960,14 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_relative_list_grid_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_list_grid_scan</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">list_grid_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">snake_axes</span><span class="o">=</span><span class="n">snake_axes</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="n">per_step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_relative_list_grid_scan</span><span class="p">())</span></div>
 
 
 
-<span class="k">def</span> <span class="nf">_scan_1d</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_scan_1d</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
     <span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
@@ -1037,14 +1037,14 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_scan</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
             <span class="k">yield from</span> <span class="n">per_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_scan</span><span class="p">())</span>
 
 
-<span class="k">def</span> <span class="nf">_rel_scan_1d</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_rel_scan_1d</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
@@ -1085,7 +1085,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>
-    <span class="k">def</span> <span class="nf">inner_relative_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_scan</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">_scan_1d</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="n">per_step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_relative_scan</span><span class="p">())</span>
@@ -1093,7 +1093,7 @@
 
 <div class="viewcode-block" id="log_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.log_scan.html#bluesky.plans.log_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">log_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
     <span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
@@ -1165,7 +1165,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_log_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_log_scan</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">predeclare</span><span class="p">:</span>
             <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
@@ -1177,7 +1177,7 @@
 
 <div class="viewcode-block" id="rel_log_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_log_scan.html#bluesky.plans.rel_log_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_log_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_log_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
@@ -1218,7 +1218,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>
-    <span class="k">def</span> <span class="nf">inner_relative_log_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_log_scan</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">log_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="n">per_step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_relative_log_scan</span><span class="p">())</span></div>
@@ -1227,7 +1227,7 @@
 
 <div class="viewcode-block" id="adaptive_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.adaptive_scan.html#bluesky.plans.adaptive_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">adaptive_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">adaptive_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">target_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
@@ -1304,7 +1304,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">adaptive_core</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adaptive_core</span><span class="p">():</span>
         <span class="n">next_pos</span> <span class="o">=</span> <span class="n">start</span>
         <span class="n">step</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_step</span> <span class="o">-</span> <span class="n">min_step</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
         <span class="n">past_I</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1359,7 +1359,7 @@
 
 <div class="viewcode-block" id="rel_adaptive_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_adaptive_scan.html#bluesky.plans.rel_adaptive_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_adaptive_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_adaptive_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">target_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
@@ -1410,7 +1410,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>
-    <span class="k">def</span> <span class="nf">inner_relative_adaptive_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_adaptive_scan</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="k">yield from</span> <span class="n">adaptive_scan</span><span class="p">(</span>
                 <span class="n">detectors</span><span class="p">,</span>
@@ -1433,7 +1433,7 @@
 
 <div class="viewcode-block" id="tune_centroid">
 <a class="viewcode-back" href="../../generated/bluesky.plans.tune_centroid.html#bluesky.plans.tune_centroid">[docs]</a>
-<span class="k">def</span> <span class="nf">tune_centroid</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">tune_centroid</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">signal</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
@@ -1540,7 +1540,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">_tune_core</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_tune_core</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">next_pos</span> <span class="o">=</span> <span class="n">start</span>
         <span class="n">step</span> <span class="o">=</span> <span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">peak_position</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1589,7 +1589,7 @@
 
 <div class="viewcode-block" id="scan_nd">
 <a class="viewcode-back" href="../../generated/bluesky.plans.scan_nd.html#bluesky.plans.scan_nd">[docs]</a>
-<span class="k">def</span> <span class="nf">scan_nd</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scan_nd</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">cycler</span><span class="p">:</span> <span class="n">Cycler</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -1657,7 +1657,7 @@
         <span class="c1"># Ensure that the user-defined per-step has the expected signature.</span>
         <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">per_step</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">_verify_1d_step</span><span class="p">(</span><span class="n">sig</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_verify_1d_step</span><span class="p">(</span><span class="n">sig</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">False</span>
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">p_name</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="ow">in</span> <span class="n">zip_longest</span><span class="p">([</span><span class="s2">&quot;detectors&quot;</span><span class="p">,</span> <span class="s2">&quot;motor&quot;</span><span class="p">,</span> <span class="s2">&quot;step&quot;</span><span class="p">],</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
@@ -1674,7 +1674,7 @@
 
             <span class="k">return</span> <span class="kc">True</span>
 
-        <span class="k">def</span> <span class="nf">_verify_nd_step</span><span class="p">(</span><span class="n">sig</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_verify_nd_step</span><span class="p">(</span><span class="n">sig</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">False</span>
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">p_name</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="ow">in</span> <span class="n">zip_longest</span><span class="p">([</span><span class="s2">&quot;detectors&quot;</span><span class="p">,</span> <span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="s2">&quot;pos_cache&quot;</span><span class="p">],</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
@@ -1705,7 +1705,7 @@
             <span class="p">(</span><span class="n">motor</span><span class="p">,)</span> <span class="o">=</span> <span class="n">cycler</span><span class="o">.</span><span class="n">keys</span>
             <span class="n">user_per_step</span> <span class="o">=</span> <span class="n">per_step</span>
 
-            <span class="k">def</span> <span class="nf">adapter</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">adapter</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
                 <span class="c1"># one_nd_step &#39;step&#39; parameter is a dict; one_id_step &#39;step&#39;</span>
                 <span class="c1"># parameter is a value</span>
                 <span class="p">(</span><span class="n">step</span><span class="p">,)</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
@@ -1725,7 +1725,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="n">motors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_scan_nd</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_scan_nd</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">predeclare</span><span class="p">:</span>
             <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">motors</span><span class="p">,</span> <span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">cycler</span><span class="p">):</span>
@@ -1735,7 +1735,7 @@
 
 
 
-<span class="k">def</span> <span class="nf">inner_product_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">inner_product_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -1751,7 +1751,7 @@
 
 <div class="viewcode-block" id="scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.scan.html#bluesky.plans.scan">[docs]</a>
-<span class="k">def</span> <span class="nf">scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1863,7 +1863,7 @@
 
 <div class="viewcode-block" id="grid_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.grid_scan.html#bluesky.plans.grid_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">grid_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
     <span class="n">snake_axes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Iterable</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1949,7 +1949,7 @@
 
     <span class="k">if</span> <span class="n">snake_axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 
-        <span class="k">def</span> <span class="nf">_set_snaking</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_set_snaking</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Returns the tuple `chunk` with modified &#39;snake&#39; value&quot;&quot;&quot;</span>
             <span class="n">_motor</span><span class="p">,</span> <span class="n">_start</span><span class="p">,</span> <span class="n">_stop</span><span class="p">,</span> <span class="n">_num</span><span class="p">,</span> <span class="n">_snake</span> <span class="o">=</span> <span class="n">chunk</span>
             <span class="k">return</span> <span class="n">_motor</span><span class="p">,</span> <span class="n">_start</span><span class="p">,</span> <span class="n">_stop</span><span class="p">,</span> <span class="n">_num</span><span class="p">,</span> <span class="n">value</span>
@@ -2043,7 +2043,7 @@
 
 <div class="viewcode-block" id="rel_grid_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_grid_scan.html#bluesky.plans.rel_grid_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_grid_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">snake_axes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Iterable</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2096,14 +2096,14 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_rel_grid_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_rel_grid_scan</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">grid_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">snake_axes</span><span class="o">=</span><span class="n">snake_axes</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="n">per_step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_rel_grid_scan</span><span class="p">())</span></div>
 
 
 
-<span class="k">def</span> <span class="nf">relative_inner_product_scan</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">relative_inner_product_scan</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -2119,7 +2119,7 @@
 
 <div class="viewcode-block" id="rel_scan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_scan.html#bluesky.plans.rel_scan">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -2168,7 +2168,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">(</span><span class="n">motors</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inner_rel_scan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_rel_scan</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">num</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="n">per_step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner_rel_scan</span><span class="p">())</span></div>
@@ -2177,7 +2177,7 @@
 
 <div class="viewcode-block" id="tweak">
 <a class="viewcode-back" href="../../generated/bluesky.plans.tweak.html#bluesky.plans.tweak">[docs]</a>
-<span class="k">def</span> <span class="nf">tweak</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">tweak</span><span class="p">(</span>
     <span class="n">detector</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
     <span class="n">target_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
@@ -2222,15 +2222,15 @@
     <span class="n">_md</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">md</span> <span class="ow">or</span> <span class="p">{})</span>
     <span class="n">d</span> <span class="o">=</span> <span class="n">detector</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">clear_output</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">clear_output</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="c1"># Define a no-op for clear_output.</span>
-        <span class="k">def</span> <span class="nf">clear_output</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">clear_output</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="k">pass</span>
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">([</span><span class="n">detector</span><span class="p">,</span> <span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">tweak_core</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tweak_core</span><span class="p">():</span>
         <span class="k">nonlocal</span> <span class="n">step</span>
 
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -2266,7 +2266,7 @@
 
 <div class="viewcode-block" id="spiral_fermat">
 <a class="viewcode-back" href="../../generated/bluesky.plans.spiral_fermat.html#bluesky.plans.spiral_fermat">[docs]</a>
-<span class="k">def</span> <span class="nf">spiral_fermat</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">spiral_fermat</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">x_motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
     <span class="n">y_motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
@@ -2375,7 +2375,7 @@
 
 <div class="viewcode-block" id="rel_spiral_fermat">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_spiral_fermat.html#bluesky.plans.rel_spiral_fermat">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_spiral_fermat</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_spiral_fermat</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">x_motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="n">y_motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
@@ -2430,7 +2430,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">([</span><span class="n">x_motor</span><span class="p">,</span> <span class="n">y_motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">([</span><span class="n">x_motor</span><span class="p">,</span> <span class="n">y_motor</span><span class="p">])</span>
-    <span class="k">def</span> <span class="nf">inner_relative_spiral_fermat</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_spiral_fermat</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="k">yield from</span> <span class="n">spiral_fermat</span><span class="p">(</span>
                 <span class="n">detectors</span><span class="p">,</span>
@@ -2455,7 +2455,7 @@
 
 <div class="viewcode-block" id="spiral">
 <a class="viewcode-back" href="../../generated/bluesky.plans.spiral.html#bluesky.plans.spiral">[docs]</a>
-<span class="k">def</span> <span class="nf">spiral</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">spiral</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">x_motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
     <span class="n">y_motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
@@ -2562,7 +2562,7 @@
 
 <div class="viewcode-block" id="rel_spiral">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_spiral.html#bluesky.plans.rel_spiral">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_spiral</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_spiral</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">x_motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="n">y_motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
@@ -2614,7 +2614,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">([</span><span class="n">x_motor</span><span class="p">,</span> <span class="n">y_motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">([</span><span class="n">x_motor</span><span class="p">,</span> <span class="n">y_motor</span><span class="p">])</span>
-    <span class="k">def</span> <span class="nf">inner_relative_spiral</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_spiral</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="k">yield from</span> <span class="n">spiral</span><span class="p">(</span>
                 <span class="n">detectors</span><span class="p">,</span>
@@ -2639,7 +2639,7 @@
 
 <div class="viewcode-block" id="spiral_square">
 <a class="viewcode-back" href="../../generated/bluesky.plans.spiral_square.html#bluesky.plans.spiral_square">[docs]</a>
-<span class="k">def</span> <span class="nf">spiral_square</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">spiral_square</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">x_motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
     <span class="n">y_motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
@@ -2740,7 +2740,7 @@
 
 <div class="viewcode-block" id="rel_spiral_square">
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_spiral_square.html#bluesky.plans.rel_spiral_square">[docs]</a>
-<span class="k">def</span> <span class="nf">rel_spiral_square</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_spiral_square</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">x_motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="n">y_motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
@@ -2790,7 +2790,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">reset_positions_decorator</span><span class="p">([</span><span class="n">x_motor</span><span class="p">,</span> <span class="n">y_motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">relative_set_decorator</span><span class="p">([</span><span class="n">x_motor</span><span class="p">,</span> <span class="n">y_motor</span><span class="p">])</span>
-    <span class="k">def</span> <span class="nf">inner_relative_spiral</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_spiral</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="k">yield from</span> <span class="n">spiral_square</span><span class="p">(</span>
                 <span class="n">detectors</span><span class="p">,</span>
@@ -2813,7 +2813,7 @@
 
 <div class="viewcode-block" id="ramp_plan">
 <a class="viewcode-back" href="../../generated/bluesky.plans.ramp_plan.html#bluesky.plans.ramp_plan">[docs]</a>
-<span class="k">def</span> <span class="nf">ramp_plan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ramp_plan</span><span class="p">(</span>
     <span class="n">go_plan</span><span class="p">:</span> <span class="n">MsgGenerator</span><span class="p">,</span>
     <span class="n">monitor_sig</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
     <span class="n">inner_plan_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">MsgGenerator</span><span class="p">],</span>
@@ -2875,7 +2875,7 @@
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">monitor_during_decorator</span><span class="p">((</span><span class="n">monitor_sig</span><span class="p">,))</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="n">_md</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">polling_plan</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">polling_plan</span><span class="p">():</span>
         <span class="n">fail_time</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># sort out if we should watch the clock</span>
@@ -2907,7 +2907,7 @@
 
 <div class="viewcode-block" id="fly">
 <a class="viewcode-back" href="../../generated/bluesky.plans.fly.html#bluesky.plans.fly">[docs]</a>
-<span class="k">def</span> <span class="nf">fly</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fly</span><span class="p">(</span>
     <span class="n">flyers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Flyable</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2944,7 +2944,7 @@
 
 
 
-<span class="k">def</span> <span class="nf">x2x_scan</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">x2x_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">motor1</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
     <span class="n">motor2</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
