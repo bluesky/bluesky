@@ -15,7 +15,7 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Generator, Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Generator, Iterable, Mapping, MutableMapping
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
@@ -2010,3 +2010,22 @@ def is_plan(bs_plan):
     """
 
     return inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False)
+
+
+def deep_update(primary: MutableMapping, updates: Mapping) -> MutableMapping:
+    """Recursively update nested dictionaries without copying them
+    For example, if:
+    primary = {'a':1, 'b':{'c':3, 'd':4}} and
+    updates = {'b':{'e':5}},
+    the rusult will be:
+    {'a':1, 'b':{'c':3, 'd':4, 'e':5}}
+    """
+
+    for key, val in updates.items():
+        pri_val = primary.get(key)
+        if isinstance(val, Mapping) and isinstance(pri_val, MutableMapping):
+            primary[key] = deep_update(pri_val, val)
+        else:
+            primary[key] = val
+
+    return primary
