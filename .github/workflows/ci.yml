@@ -43,14 +43,14 @@ jobs:
     needs: check
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/_dist.yml
-  
+
   pypi:
     if: github.ref_type == 'tag'
     needs: dist
     uses: ./.github/workflows/_pypi.yml
     permissions:
       id-token: write
-  
+
   release:
     if: github.ref_type == 'tag'
     needs: [dist, docs]
