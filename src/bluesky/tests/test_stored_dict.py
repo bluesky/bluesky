@@ -125,6 +125,7 @@ def test_set_exceptions(md, xcept, text, md_file):
     context = does_not_raise() if xcept is None else pytest.raises(xcept)
     with context as reason:
         sdict.update(md)
+        sdict.flush()
     assert text in str(reason), f"{reason=}"
 
 
