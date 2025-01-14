@@ -1961,6 +1961,111 @@ def test_wait_with_timeout(set_finished, RE):
             RE(plan())
 
 
+def test_set_finished_before_watch(RE):
+    from ophyd import StatusBase
+    from ophyd.device import Device
+
+    class MockDevice(Device):
+        def stage(self):
+            status = StatusBase()
+            status.set_finished()
+            return status
+
+    class WatchDevice(Device):
+        def stage(self):
+            return StatusBase()
+
+    mock_device = MockDevice(name="mock_device")
+    watch_device = WatchDevice(name="watch_device")
+
+    def plan():
+        yield Msg("stage", mock_device, group="test_group")
+        yield Msg("stage", watch_device, group="watch_group")
+        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+
+    RE(plan())
+
+
+def test_watch_finished_before_set_return_when_set_finishes(RE):
+    from ophyd import StatusBase
+    from ophyd.device import Device
+
+    status = StatusBase()
+
+    class MockDevice(Device):
+        def stage(self):
+            return status
+
+    class WatchDevice(Device):
+        def stage(self):
+            watch_status = StatusBase()
+            watch_status.set_finished()
+            watch_status.add_callback(status.set_finished)
+            return watch_status
+
+    mock_device = MockDevice(name="mock_device")
+    watch_device = WatchDevice(name="watch_device")
+
+    def plan():
+        yield Msg("stage", mock_device, group="test_group")
+        yield Msg("stage", watch_device, group="watch_group")
+        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+
+    RE(plan())
+
+
+def test_watch_failed_before_set_raises_immediately(RE):
+    from ophyd import StatusBase
+    from ophyd.device import Device
+
+    class MockDevice(Device):
+        def stage(self):
+            return StatusBase()
+
+    class WatchDevice(Device):
+        def stage(self):
+            status = StatusBase()
+            status.set_exception(Exception("Watch device failed"))
+            return status
+
+    mock_device = MockDevice(name="mock_device")
+    watch_device = WatchDevice(name="watch_device")
+
+    def plan():
+        yield Msg("stage", mock_device, group="test_group")
+        yield Msg("stage", watch_device, group="watch_group")
+        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+
+    with pytest.raises(FailedStatus):
+        RE(plan())
+
+
+def test_set_failed_before_watch_raises_immediately(RE):
+    from ophyd import StatusBase
+    from ophyd.device import Device
+
+    class MockDevice(Device):
+        def stage(self):
+            status = StatusBase()
+            status.set_exception(Exception("Watch device failed"))
+            return status
+
+    class WatchDevice(Device):
+        def stage(self):
+            return StatusBase()
+
+    mock_device = MockDevice(name="mock_device")
+    watch_device = WatchDevice(name="watch_device")
+
+    def plan():
+        yield Msg("stage", mock_device, group="test_group")
+        yield Msg("stage", watch_device, group="watch_group")
+        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+
+    with pytest.raises(FailedStatus):
+        RE(plan())
+
+
 async def passing_coroutine():
     await asyncio.sleep(0.001)
     return 1080
