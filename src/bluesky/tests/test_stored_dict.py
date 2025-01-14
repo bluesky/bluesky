@@ -43,7 +43,6 @@ def md_file():
         yield path
 
 
-
 def test_StoredDict(md_file):
     """Test the StoredDict class."""
     assert md_file.exists()
