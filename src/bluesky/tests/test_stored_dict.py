@@ -80,7 +80,7 @@ def test_StoredDict(md_file):
     # Change the only value.
     sdict["a"] = 2
     sdict.flush()
-    luftpause()
+    luftpause(0.1)  # TODO: increased time by 10x
     assert len(file_splitlines(md_file)) == 4  # Still.
 
     # Add another key.
