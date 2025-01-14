@@ -13,9 +13,9 @@ import yaml
 from ..utils import StoredDict
 
 
-def file_by_lines(filename) -> list:
+def file_splitlines(filename) -> list:
     """Cautious file handling (as needed for Windows)."""
-    with open(md_file) as f:
+    with open(filename) as f:
         buffer = f.read().splitlines()
     return buffer
 
@@ -47,21 +47,21 @@ def md_file():
 def test_StoredDict(md_file):
     """Test the StoredDict class."""
     assert md_file.exists()
-    assert len(open(md_file).read().splitlines()) == 0  # empty
+    assert len(file_splitlines(md_file)) == 0  # empty
 
     sdict = StoredDict(md_file, delay=0.2, title="unit testing")
     assert sdict is not None
     assert len(sdict) == 0
     assert sdict._delay == 0.2
     assert sdict._title == "unit testing"
-    assert len(open(md_file).read().splitlines()) == 0  # still empty
+    assert len(file_splitlines(md_file)) == 0  # still empty
     assert sdict._sync_key == f"sync_agent_{id(sdict):x}"
     assert not sdict.sync_in_progress
 
     # Write an empty dictionary.
     sdict.flush()
     luftpause()
-    buf = open(md_file).read().splitlines()
+    buf = file_splitlines(md_file)
     assert len(buf) == 4, f"{buf=}"
     assert buf[-1] == "{}"  # The empty dict.
     assert buf[0].startswith("# ")
@@ -76,19 +76,19 @@ def test_StoredDict(md_file):
     assert time.time() >= sdict._sync_deadline
     luftpause()
     assert not sdict.sync_in_progress
-    assert len(open(md_file).read().splitlines()) == 4
+    assert len(file_splitlines(md_file)) == 4
 
     # Change the only value.
     sdict["a"] = 2
     sdict.flush()
     luftpause()
-    assert len(open(md_file).read().splitlines()) == 4  # Still.
+    assert len(file_splitlines(md_file)) == 4  # Still.
 
     # Add another key.
     sdict["bee"] = "bumble"
     sdict.flush()
     luftpause()
-    assert len(open(md_file).read().splitlines()) == 5
+    assert len(file_splitlines(md_file)) == 5
 
     # Test _delayed_sync_to_storage.
     sdict["bee"] = "queen"
