@@ -19,7 +19,7 @@ def load_config_yaml(path) -> dict:
     return iconfig
 
 
-def luftpause(delay=0.01):
+def luftpause(delay=0.02):
     """A brief wait for content to flush to storage."""
     time.sleep(max(0, delay))
 
