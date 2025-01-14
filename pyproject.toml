@@ -207,31 +207,3 @@ commands =
     tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """
-
-[tool.ruff]
-src = ["src", "tests"]
-line-length = 115
-lint.select = [
-    "B",  # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4", # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",  # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
-]
-lint.ignore = ["UP031"] # Ignore %-format strings until #1848 is done
-exclude = [
-    "docs/source/conf.py",
-    "docs/source/examples",
-    "src/bluesky/_vendor"
-]
-
-[tool.vendoring]
-destination = "src/bluesky/_vendor/"
-requirements = "src/bluesky/_vendor/vendor.txt"
-namespace = "bluesky._vendor"
-protected-files = ["__init__.py", "README.rst", "vendor.txt"]
-
-[tool.vendoring.license.fallback-urls]
-super_state_machine = "https://github.com/beregond/super_state_machine/blob/master/LICENSE"
