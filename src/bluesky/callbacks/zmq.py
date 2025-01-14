@@ -190,9 +190,7 @@ class Proxy:
     def start(self):
         if self.closed:
             raise RuntimeError(
-                "This Proxy has already been started and "
-                "interrupted. Create a fresh instance with "
-                f"{repr(self)}"
+                f"This Proxy has already been started and interrupted. Create a fresh instance with {repr(self)}"
             )
         try:
             self.zmq.device(self.zmq.FORWARDER, self._frontend, self._backend)

@@ -77,10 +77,7 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         )
 
     def __repr__(self):
-        return (
-            f"Msg({self.command!r}, obj={self.obj!r}, "
-            f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
-        )
+        return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
@@ -605,7 +602,7 @@ def normalize_subs_input(subs):
         for func in funcs:
             if not callable(func):
                 raise ValueError(
-                    "subs values must be functions or lists of functions. The offending entry is\n " f"{func}"
+                    f"subs values must be functions or lists of functions. The offending entry is\n {func}"
                 )
     return normalized
 
@@ -1947,7 +1944,7 @@ class Plan:
         self._stack = traceback.format_stack()
         self._stack = self._stack[:-2]
         self._stack += [
-            f"RuntimeWarning: plan `{f.__name__}` was never iterated" ", did you mean to use `yield from`?"
+            f"RuntimeWarning: plan `{f.__name__}` was never iterated, did you mean to use `yield from`?"
         ]
 
     def __iter__(self):
