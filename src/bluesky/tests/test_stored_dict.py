@@ -13,13 +13,20 @@ import yaml
 from ..utils import StoredDict
 
 
+def file_by_lines(filename) -> list:
+    """Cautious file handling (as needed for Windows)."""
+    with open(md_file) as f:
+        buffer = f.read().splitlines()
+    return buffer
+
+
 def load_config_yaml(path) -> dict:
     """Load YAMLfile."""
     iconfig = yaml.load(open(path).read(), yaml.Loader)
     return iconfig
 
 
-def luftpause(delay=0.02):
+def luftpause(delay=0.01):
     """A brief wait for content to flush to storage."""
     time.sleep(max(0, delay))
 
@@ -27,13 +34,14 @@ def luftpause(delay=0.02):
 @pytest.fixture
 def md_file():
     """Provide a temporary file (deleted on close)."""
-    tfile = tempfile.NamedTemporaryFile(
+    with tempfile.NamedTemporaryFile(
         prefix="re_md_",
         suffix=".yml",
         delete=False,
-    )
-    path = pathlib.Path(tfile.name)
-    yield path
+    ) as tfile:
+        path = pathlib.Path(tfile.name)
+        yield path
+
 
 
 def test_StoredDict(md_file):
