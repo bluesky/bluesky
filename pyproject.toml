@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -112,7 +112,7 @@ name = "danielballan"
 
 
 [tool.setuptools_scm]
-write_to = "src/bluesky/_version.py"
+version_file = "src/bluesky/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
@@ -146,8 +146,48 @@ source = ["src", "**/site-packages/"]
 
 # tox must currently be configured via an embedded ini string
 # See: https://github.com/tox-dev/tox/issues/999
+
+[tool.ruff]
+src = ["src", "tests"]
+line-length = 115
+exclude = [
+    "docs/source/conf.py",
+    "docs/source/examples",
+    "src/bluesky/_vendor"
+]
+
+
+[tool.ruff.lint]
+select = [
+    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+]
+ignore = ["UP031"] # Ignore %-format strings until #1848 is done
+
+[tool.ruff.lint.per-file-ignores]
+# By default, private member access is allowed in tests
+# See https://github.com/DiamondLightSource/python-copier-template/issues/154
+# Remove this line to forbid private member access in tests
+"tests/**/*" = ["SLF001"]
+
+
+[tool.vendoring]
+destination = "src/bluesky/_vendor/"
+requirements = "src/bluesky/_vendor/vendor.txt"
+namespace = "bluesky._vendor"
+protected-files = ["__init__.py", "README.rst", "vendor.txt"]
+
+[tool.vendoring.license.fallback-urls]
+super_state_machine = "https://github.com/beregond/super_state_machine/blob/master/LICENSE"
+
 [tool.tox]
 legacy_tox_ini = """
+
 [tox]
 skipsdist=True
 
@@ -162,7 +202,7 @@ allowlist_externals =
     sphinx-build
     sphinx-autobuild
 commands =
-    pre-commit: pre-commit run --all-files {posargs}
+    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: mypy src {posargs}
     tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
