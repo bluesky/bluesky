@@ -33,7 +33,7 @@ def md_file():
         delete=False,
     )
     path = pathlib.Path(tfile.name)
-    yield pathlib.Path(tfile.name)
+    yield path
 
     if path.exists():
         path.unlink()  # delete the file
