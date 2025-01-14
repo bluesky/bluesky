@@ -986,11 +986,11 @@ class StoredDict(collections.abc.MutableMapping):
 
     def __setitem__(self, key, value):
         """Write to the dictionary."""
-        outermost_frame = inspect.getouterframes(inspect.currentframe())[-1]
-        if "sphinx-build" in outermost_frame.filename:
-            # Seems that Sphinx is building the documentation.
-            # Ignore all the objects it tries to add.
-            return
+        # outermost_frame = inspect.getouterframes(inspect.currentframe())[-1]
+        # if "sphinx-build" in outermost_frame.filename:
+        #     # Seems that Sphinx is building the documentation.
+        #     # Ignore all the objects it tries to add.
+        #     return
 
         if self.test_serializable:
             json.dumps({key: value})
