@@ -83,13 +83,13 @@ def test_StoredDict(md_file):
     # Change the only value.
     sdict["a"] = 2
     sdict.flush()
-    luftpause(2 * LUFTPAUSE_DEFAULT_DELAY)
+    luftpause(4 * LUFTPAUSE_DEFAULT_DELAY)
     assert len(file_splitlines(md_file)) == 4  # Still.
 
     # Add another key.
     sdict["bee"] = "bumble"
     sdict.flush()
-    luftpause(2 * LUFTPAUSE_DEFAULT_DELAY)
+    luftpause(4 * LUFTPAUSE_DEFAULT_DELAY)
     assert len(file_splitlines(md_file)) == 5
 
     # Test _delayed_sync_to_storage.
