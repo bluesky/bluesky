@@ -12,6 +12,9 @@ import yaml
 
 from ..utils import StoredDict
 
+STOREDDICT_SYNC_LOOP_PERIOD = 0.005
+LUFTPAUSE_DEFAULT_DELAY = 2 * STOREDDICT_SYNC_LOOP_PERIOD
+
 
 def file_splitlines(filename) -> list:
     """Cautious file handling (as needed for Windows)."""
@@ -26,7 +29,7 @@ def load_config_yaml(path) -> dict:
     return iconfig
 
 
-def luftpause(delay=0.01):
+def luftpause(delay=LUFTPAUSE_DEFAULT_DELAY):
     """A brief wait for content to flush to storage."""
     time.sleep(max(0, delay))
 
@@ -80,13 +83,13 @@ def test_StoredDict(md_file):
     # Change the only value.
     sdict["a"] = 2
     sdict.flush()
-    luftpause(0.02)
+    luftpause(2*LUFTPAUSE_DEFAULT_DELAY)
     assert len(file_splitlines(md_file)) == 4  # Still.
 
     # Add another key.
     sdict["bee"] = "bumble"
     sdict.flush()
-    luftpause(0.02)
+    luftpause(2*LUFTPAUSE_DEFAULT_DELAY)
     assert len(file_splitlines(md_file)) == 5
 
     # Test _delayed_sync_to_storage.
