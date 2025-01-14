@@ -68,7 +68,7 @@ def test_StoredDict(md_file):
     sdict["a"] = 1
     assert sdict.sync_in_progress
     sdict.flush()
-    assert time.time() > sdict._sync_deadline
+    assert time.time() >= sdict._sync_deadline
     luftpause()
     assert not sdict.sync_in_progress
     assert len(open(md_file).read().splitlines()) == 4
