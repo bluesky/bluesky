@@ -35,9 +35,6 @@ def md_file():
     path = pathlib.Path(tfile.name)
     yield path
 
-    # if path.exists():
-    #     path.unlink()  # delete the file
-
 
 def test_StoredDict(md_file):
     """Test the StoredDict class."""
