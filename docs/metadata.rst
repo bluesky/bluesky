@@ -383,10 +383,9 @@ of ``RE.md`` can persist between sessions.
 
 .. rubric:: PersistentDict
 
-Bluesky formerly recommended using :class:`~bluesky.utils.PersistentDict` --- a
-Python dictionary backed by a zict directory. This approach proved
-problematic with the file names created by zict, especially when multiple, 
-simultaneous bluesky sessions are writing to the same directory.
+Bluesky formerly recommended using :class:`~bluesky.utils.PersistentDict`. This
+approach proved problematic when multiple, simultaneous bluesky sessions write
+to the same directory.
 
 .. code-block:: python
 
