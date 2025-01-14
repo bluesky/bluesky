@@ -1933,9 +1933,7 @@ class RunEngine:
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
         ) is key_absence_sentinel:
             ims_msg = (
-                "Cannot bundle readings without "
-                "an open run. That is, 'create' must "
-                "be preceded by 'open_run'."
+                "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
             raise IllegalMessageSequence(ims_msg)
         return await current_run.create(msg)
@@ -1961,9 +1959,7 @@ class RunEngine:
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
         ) is key_absence_sentinel:
             ims_msg = (
-                "Cannot bundle readings without "
-                "an open run. That is, 'create' must "
-                "be preceded by 'open_run'."
+                "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
