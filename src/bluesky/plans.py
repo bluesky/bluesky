@@ -190,9 +190,7 @@ def list_scan(
 
     if not length_check:
         raise ValueError(
-            "The lengths of all lists in *args must be the same. "
-            "However the lengths in args are : "
-            f"{lengths}"
+            f"The lengths of all lists in *args must be the same. However the lengths in args are : {lengths}"
         )
 
     md_args = list(chain(*((repr(motor), pos_list) for motor, pos_list in partition(2, args))))
@@ -1137,7 +1135,7 @@ def scan_nd(
             # inner_product_scan was renamed scan).
             dims = len(list(cycler.keys))
             if dims != 1:
-                raise TypeError("Signature of per_step assumes 1D trajectory " f"but {dims} motors are specified.")
+                raise TypeError(f"Signature of per_step assumes 1D trajectory but {dims} motors are specified.")
             (motor,) = cycler.keys
             user_per_step = per_step
 
@@ -1375,7 +1373,7 @@ def grid_scan(
 
     # Check that the same motor is not listed multiple times. This indicates an error in the script.
     if len(set(motors)) != len(motors):
-        raise ValueError(f"Some motors are listed multiple times in the argument list 'args': " f"'{motors}'")
+        raise ValueError(f"Some motors are listed multiple times in the argument list 'args': '{motors}'")
 
     if snake_axes is not None:
 
@@ -1390,11 +1388,11 @@ def grid_scan(
 
             # Check if the list of axes (motors) contains repeated entries.
             if len(set(snake_axes)) != len(snake_axes):
-                raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: " f"'{snake_axes}'")
+                raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: '{snake_axes}'")
 
             # Check if the snaking is enabled for the slowest motor.
             if len(motors) and (motors[0] in snake_axes):
-                raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: " f"'{snake_axes}'")
+                raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: '{snake_axes}'")
 
             # Check that all motors in the chunk_args are controlled in the scan.
             #   It is very likely that the script running the plan has a bug.

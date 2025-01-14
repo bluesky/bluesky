@@ -116,7 +116,7 @@ async def check_limits_async(plan):
                 await maybe_await(obj.check_value(msg.args[0]))
             else:
                 warn(  # noqa: B028
-                    f"{obj.name} has no check_value() method" f" to check if {msg.args[0]} is within its limits."
+                    f"{obj.name} has no check_value() method to check if {msg.args[0]} is within its limits."
                 )
                 ignore.append(obj)
 

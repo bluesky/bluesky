@@ -236,9 +236,9 @@ class LivePlot(QtAwareCallback):
 
     def stop(self, doc):
         if not self.x_data:
-            print("LivePlot did not get any data that corresponds to the " f"x axis. {self.x}")
+            print(f"LivePlot did not get any data that corresponds to the x axis. {self.x}")
         if not self.y_data:
-            print("LivePlot did not get any data that corresponds to the " f"y axis. {self.y}")
+            print(f"LivePlot did not get any data that corresponds to the y axis. {self.y}")
         if len(self.y_data) != len(self.x_data):
             print(
                 "LivePlot has a different number of elements for x ({}) and y ({})".format(  # noqa: UP032
