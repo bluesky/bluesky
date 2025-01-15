@@ -51,6 +51,7 @@ def test_model_dump_json(md_instance):
 def test_chainmap(md_instance):
     additional_md = Md(key4='additional')
     combined_md = ChainMap(md_instance.model_dump(), additional_md.model_dump())
+    combined_md = Md(**combined_md)
     assert combined_md['key1'] == 'initial'
     assert combined_md['key4'] == 'additional'
 
