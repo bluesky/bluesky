@@ -1,0 +1,23 @@
+﻿bluesky.utils.DuringTask
+========================
+
+.. currentmodule:: bluesky.utils
+
+.. autoclass:: DuringTask
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DuringTask.__init__
+      ~DuringTask.block
+   
+   
+
+   
+   
+   

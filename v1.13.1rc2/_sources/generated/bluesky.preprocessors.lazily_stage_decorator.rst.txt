@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.lazily\_stage\_decorator
+==============================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: lazily_stage_decorator

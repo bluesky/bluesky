@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.collect
+===================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.collect

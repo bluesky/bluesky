@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.unmonitor
+=====================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.unmonitor
