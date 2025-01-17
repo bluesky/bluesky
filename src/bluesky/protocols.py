@@ -19,7 +19,7 @@ from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict, Unpack
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
@@ -352,7 +352,7 @@ T_co = TypeVar("T_co", contravariant=True)
 @runtime_checkable
 class Movable(Protocol[T_co]):
     @abstractmethod
-    def set(self, value: T_co) -> Status:
+    def set(self, *args: Unpack[tuple[T_co]]) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
