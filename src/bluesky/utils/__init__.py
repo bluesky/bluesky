@@ -1054,7 +1054,7 @@ class StoredDict(collections.abc.MutableMapping):
             if isinstance(title, str) and len(title) > 0:
                 f.write(f"# {title}\n")
             f.write(f"# Dictionary contents written: {datetime.datetime.now()}\n\n")
-            f.write(yaml.dump(contents, indent=2))
+            f.write(yaml.dump(contents.copy(), indent=2))
 
     @staticmethod
     def load(file):
