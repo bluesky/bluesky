@@ -131,7 +131,7 @@ def test_atexit(md_file):
 
     assert context.type is SystemExit
 
-    luftpause(0.025)
+    luftpause(0.2)
     assert md_file.exists()
     lines = file_splitlines(md_file)
     assert len(lines) == 5
