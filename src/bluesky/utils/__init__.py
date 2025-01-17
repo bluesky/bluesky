@@ -967,6 +967,7 @@ class StoredDict(collections.abc.MutableMapping):
     def __delitem__(self, key):
         """Delete dictionary value by key."""
         del self._cache[key]
+        self._queue_storage()
 
     def __getitem__(self, key):
         """Get dictionary value by key."""
@@ -990,13 +991,7 @@ class StoredDict(collections.abc.MutableMapping):
             json.dumps({key: value})
 
         self._cache[key] = value  # Store the new (or revised) content.
-
-        # Reset the deadline.
-        self._sync_deadline = time.time() + self._delay
-
-        if not self.sync_in_progress:
-            # Start the sync_agent (thread).
-            self._delayed_sync_to_storage()
+        self._queue_storage()
 
     def _delayed_sync_to_storage(self):
         """
@@ -1018,6 +1013,15 @@ class StoredDict(collections.abc.MutableMapping):
         thred = threading.Thread(target=sync_agent)
         thred.start()
 
+    def _queue_storage(self):
+        """Set timer to store the revised dict."""
+        # Reset the deadline.
+        self._sync_deadline = time.time() + self._delay
+
+        if not self.sync_in_progress:
+            # Start the sync_agent (thread).
+            self._delayed_sync_to_storage()
+
     def flush(self):
         """Force a write of the dictionary to disk"""
         if not self.sync_in_progress:
@@ -1032,6 +1036,7 @@ class StoredDict(collections.abc.MutableMapping):
         Pairs are returned in LIFO (last-in, first-out) order.
         Raises KeyError if the dict is empty.
         """
+        # self._queue_storage()  will be called by self.__delitem__()
         return self._cache.popitem()
 
     def reload(self):

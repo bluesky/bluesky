@@ -13,7 +13,7 @@ import yaml
 from ..utils import StoredDict
 
 STOREDDICT_SYNC_LOOP_PERIOD = 0.005
-LUFTPAUSE_DEFAULT_DELAY = 2 * STOREDDICT_SYNC_LOOP_PERIOD
+LUFTPAUSE_DELAY = 4 * STOREDDICT_SYNC_LOOP_PERIOD
 
 
 def file_splitlines(filename) -> list:
@@ -29,7 +29,7 @@ def load_config_yaml(path) -> dict:
     return iconfig
 
 
-def luftpause(delay=LUFTPAUSE_DEFAULT_DELAY):
+def luftpause(delay=LUFTPAUSE_DELAY):
     """A brief wait for content to flush to storage."""
     time.sleep(max(0, delay))
 
@@ -38,11 +38,12 @@ def luftpause(delay=LUFTPAUSE_DEFAULT_DELAY):
 def md_file():
     """Provide a temporary file (deleted on close)."""
     with tempfile.NamedTemporaryFile(
-        prefix="re_md_",
+        prefix=".re_md_",
         suffix=".yml",
         delete=False,
     ) as tfile:
         path = pathlib.Path(tfile.name)
+        assert path.exists(), f"temporary file: {path}"
         yield path
 
 
@@ -51,10 +52,10 @@ def test_StoredDict(md_file):
     assert md_file.exists()
     assert len(file_splitlines(md_file)) == 0  # empty
 
-    sdict = StoredDict(md_file, delay=0.2, title="unit testing")
+    sdict = StoredDict(md_file, delay=LUFTPAUSE_DELAY, title="unit testing")
     assert sdict is not None
     assert len(sdict) == 0
-    assert sdict._delay == 0.2
+    assert sdict._delay == LUFTPAUSE_DELAY
     assert sdict._title == "unit testing"
     assert len(file_splitlines(md_file)) == 0  # still empty
     assert sdict._sync_key == f"sync_agent_{id(sdict):x}"
@@ -83,13 +84,13 @@ def test_StoredDict(md_file):
     # Change the only value.
     sdict["a"] = 2
     sdict.flush()
-    luftpause(4 * LUFTPAUSE_DEFAULT_DELAY)
+    luftpause()
     assert len(file_splitlines(md_file)) == 4  # Still.
 
     # Add another key.
     sdict["bee"] = "bumble"
     sdict.flush()
-    luftpause(4 * LUFTPAUSE_DEFAULT_DELAY)
+    luftpause()
     assert len(file_splitlines(md_file)) == 5
 
     # Test _delayed_sync_to_storage.
@@ -150,3 +151,43 @@ def test_repr(md_file):
     sdict["a"] = 1
     assert repr(sdict) == "<StoredDict {'a': 1}>"
     assert str(sdict) == "<StoredDict {'a': 1}>"
+
+
+def test_delitem(md_file):
+    assert len(file_splitlines(md_file)) == 0  # empty
+    d = StoredDict(md_file, delay=LUFTPAUSE_DELAY)
+    assert len(file_splitlines(md_file)) == 0
+
+    d[0] = 1
+    d.flush()
+    luftpause()
+    lines = file_splitlines(md_file)
+    assert len(lines) == 4
+    assert lines[-1] == "0: 1"
+
+    del d[0]
+    d.flush()
+    luftpause()
+    lines = file_splitlines(md_file)
+    assert len(lines) == 4
+    assert lines[-1] == "{}"
+
+
+def test_popitem(md_file):
+    assert len(file_splitlines(md_file)) == 0  # empty
+    d = StoredDict(md_file, delay=LUFTPAUSE_DELAY)
+    assert len(file_splitlines(md_file)) == 0
+
+    d.update({"a": 1, "b": "two"})
+    d.flush()
+    luftpause()
+    lines = file_splitlines(md_file)
+    assert len(lines) == 5
+    assert lines[-1] == "b: two"
+
+    assert d.pop("b") == "two"
+    d.flush()
+    luftpause()
+    lines = file_splitlines(md_file)
+    assert len(lines) == 4
+    assert lines[-1] == "a: 1"
