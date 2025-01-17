@@ -9,6 +9,7 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
+from collections.abc import Callable, Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
@@ -2334,10 +2335,10 @@ class RunEngine:
         done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
-            error_on_timeout = True
         else:
             group = msg.kwargs["group"]
-            error_on_timeout = msg.kwargs.get("error_on_timeout", True)
+        error_on_timeout = msg.kwargs.get("error_on_timeout", True)
+        watch = msg.kwargs.get("watch", ())
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:
@@ -2357,6 +2358,9 @@ class RunEngine:
                     # bar.
                     self._call_waiting_hook(status_objs)
                 await self._wait_for(Msg("wait_for", None, futs, timeout=msg.kwargs.get("timeout", None)))
+                # Monitor the status objects for any failures and raise an exception if any are detected.
+                self._watch_status_objs(watch)
+
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
                 self._groups[group] = futs
@@ -2377,6 +2381,11 @@ class RunEngine:
                         self._call_waiting_hook(None)
                         self._seen_wait_and_move_on_keys.remove(group)
             return done
+
+    def _watch_status_objs(self, group_names: Sequence[str]):
+        for watch_item in group_names:
+            for status in self._status_objs[watch_item]:
+                status.add_callback(self._manage_failed_status(self._pardon_failures))
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """
@@ -2400,6 +2409,19 @@ class RunEngine:
                 except Exception as e:
                     self._exception = e
         p_event.set()
+
+    def _manage_failed_status(self, pardon_failures) -> Callable[[Status], None]:
+        def inner(status: Status):
+            if pardon_failures.is_set() or status.success:
+                return
+            with self._state_lock:
+                try:
+                    exc = status.exception(timeout=0)
+                    raise FailedStatus(status) from exc
+                except Exception as e:
+                    self._exception = e
+
+        return inner
 
     async def _sleep(self, msg):
         """
