@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import atexit
 import collections.abc
 import datetime
 import inspect
@@ -963,6 +964,9 @@ class StoredDict(collections.abc.MutableMapping):
 
         self._cache = {}
         self.reload()
+
+        # Write to storage (as needed) when process exits.
+        atexit.register(self.flush)
 
     def __delitem__(self, key):
         """Delete dictionary value by key."""
