@@ -427,9 +427,9 @@ class RunBundler:
                     f"{readable_obj} has async read() method and the callback "
                     "passed to subscribe() was not called with Dict[str, Reading]"
                 )
-            assert (
-                readings is not None
-            ), "The callback passed to subscribe() was not called with Dict[str, Reading]"
+            if readings is not None:
+                doc_logger.error("The callback passed to subscribe() was not called with Dict[str, Reading]")
+                return
             now = ttime.time()
             if any(r["timestamp"] - now > timestamp_cutoff_delay for r in readings.values()):  # type: ignore
                 doc_logger.debug("WARNING: The timestamps in the readings are too old.")
