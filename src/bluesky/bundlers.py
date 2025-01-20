@@ -428,8 +428,7 @@ class RunBundler:
                     "passed to subscribe() was not called with Dict[str, Reading]"
                 )
             if readings is not None:
-                doc_logger.error("The callback passed to subscribe() was not called with Dict[str, Reading]")
-                return
+                raise ValueError("The callback passed to subscribe() was not called with Dict[str, Reading]")
             now = ttime.time()
             if any(r["timestamp"] - now > timestamp_cutoff_delay for r in readings.values()):  # type: ignore
                 doc_logger.debug("WARNING: The timestamps in the readings are too old.")
