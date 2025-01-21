@@ -40,7 +40,7 @@ dev = [
     "cloudpickle",
     "copier",
     "coverage",
-    "dask<=2025",    # Needed to pass CI/CD tests; Remove once tiled is updated for dask 2025+.
+    "dask",
     "databroker",
     "doct",
     "doctr",
