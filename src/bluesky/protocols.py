@@ -309,7 +309,7 @@ class Readable(HasName, Protocol[T]):
 @runtime_checkable
 class Collectable(HasName, Protocol):
     @abstractmethod
-    def describe_collect(self) -> SyncOrAsync[Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]]:
+    def describe_collect(self) -> SyncOrAsync[dict[str, DataKey | dict[str, DataKey]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
         Since a flyer can potentially return more than one event stream, this is either
