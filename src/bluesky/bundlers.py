@@ -81,7 +81,7 @@ class RunBundler:
         self._read_cache: deque[dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache: deque[Asset | StreamAsset] = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output  # noqa: C408
-        self._describe_collect_cache: ObjDict[DataKey | dict[str, DataKey]] = dict()   # noqa: C408  # cache of all obj.describe() output
+        self._describe_collect_cache: dict[Any, dict[str, DataKey] | dict[str, dict[str, DataKey]]] = dict()   # noqa: C408  # cache of all obj.describe() output
 
         self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()  # noqa: C408
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values  # noqa: C408
@@ -660,7 +660,7 @@ class RunBundler:
 
     def _format_datakeys_with_stream_name(
         self,
-        describe_collect_dict: dict[str, DataKey | dict[str, DataKey]],
+        describe_collect_dict: dict[str, DataKey] | dict[str, dict[str, DataKey]],
         message_stream_name: Optional[str] = None,
     ) -> list[tuple[str, dict[str, DataKey]]]:
         """
@@ -699,7 +699,7 @@ class RunBundler:
     async def _cache_describe_collect(self, obj: Collectable):
         "Read the object's describe and cache it."
         obj = check_supports(obj, Collectable)
-        c: dict[str, DataKey | dict[str, DataKey]] = await maybe_await(obj.describe_collect())
+        c: dict[str, DataKey] | dict[str, dict[str, DataKey]] = await maybe_await(obj.describe_collect())
         self._describe_collect_cache[obj] = c
 
     async def _describe_collect(self, collect_object: Flyable):
