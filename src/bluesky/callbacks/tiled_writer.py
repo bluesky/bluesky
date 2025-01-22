@@ -220,7 +220,7 @@ class _RunWriter(CallbackBase):
         self._datum_cache[doc["datum_id"]] = copy.copy(doc)
 
     def resource(self, doc: Resource):
-        self._resource_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
+        self._resource_cache[doc["uid"]] = copy.copy(doc)
 
     def stream_resource(self, doc: StreamResource):
         self._stream_resource_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
@@ -232,11 +232,11 @@ class _RunWriter(CallbackBase):
             sres_node = self._sres_nodes[sres_uid]
             handler = self._handlers[sres_uid]
 
-        elif sres_uid in self._docs_cache.keys():
+        elif sres_uid in self._stream_resource_cache.keys():
             if not desc_uid:
                 raise RuntimeError("Descriptor uid must be specified to initialise a Stream Resource node")
 
-            sres_doc = self._docs_cache.pop(sres_uid)
+            sres_doc = self._stream_resource_cache.pop(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
             # Initialise a bluesky handler (consolidator) for the StreamResource
