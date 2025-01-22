@@ -1,7 +1,7 @@
 import importlib.metadata
 from collections.abc import Iterable, Iterator
 from random import randint, sample
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 
 import packaging.version
 import pytest
@@ -10,6 +10,7 @@ from event_model.documents.event_descriptor import DataKey
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import Resource
 from event_model.documents.stream_datum import StreamRange
+from event_model.documents.stream_resource import StreamResource
 
 from bluesky import Msg
 from bluesky.protocols import (
@@ -43,7 +44,7 @@ class ExternalAssetDevice:
         self.compose_stream_resource = ComposeStreamResource()
         if DRAFT_0_STREAM_RESOURCE:
             self.stream_resource_compose_datum_pairs = tuple(
-                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
+                self.compose_stream_resource("", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
             )
         else:
             self.stream_resource_compose_datum_pairs = tuple(
@@ -73,7 +74,7 @@ class ExternalAssetDevice:
 
         self.new_random_width = self.sequence_counter_at_chunks[0]
 
-    def collect_resources(self) -> Iterator[Resource]:
+    def collect_resources(self) -> Iterator[tuple[Literal["stream_resource"], StreamResource]]:
         for stream_resource, _ in self.stream_resource_compose_datum_pairs:
             yield ("stream_resource", stream_resource)
 
@@ -124,7 +125,7 @@ class ExternalAssetDevice:
             # New stream_resource half way through the run
             if DRAFT_0_STREAM_RESOURCE:
                 self.stream_resource_compose_datum_pairs = tuple(
-                    self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})
+                    self.compose_stream_resource("", f"non_existent_{det}.hdf5", det, {})
                     for det in self.detectors
                 )
             else:
@@ -148,7 +149,7 @@ class ExternalAssetDevice:
         def data():
             return {"det4": ["a"] * self.new_random_width}
 
-        return [PartialEventPage(timestamps=timestamps(), data=data())]
+        return [PartialEventPage(timestamps=timestamps(), data=data(), time=[1] * self.new_random_width)]
 
 
 def kickoff(self, *_, **__):
