@@ -411,16 +411,16 @@ class RunEngine:
 
     def __init__(
         self,
-        md: dict | None=None,
+        md: typing.Optional[dict] = None,
         *,
-        loop: asyncio.AbstractEventLoop | None=None,
-        preprocessors: list | None=None,
-        context_managers: list | None=None,
-        md_validator: typing.Callable | None=None,
-        md_normalizer: typing.Callable | None=None,
-        scan_id_source: typing.Callable | None=default_scan_id_source,
-        during_task: DuringTask | None=None,
-        call_returns_result: bool=False,
+        loop: typing.Optional[asyncio.AbstractEventLoop] = None,
+        preprocessors: typing.Optional[list] = None,
+        context_managers: typing.Optional[list] = None,
+        md_validator: typing.Optional[typing.Callable] = None,
+        md_normalizer: typing.Optional[typing.Callable] = None,
+        scan_id_source: typing.Optional[typing.Callable] = default_scan_id_source,
+        during_task: typing.Optional[DuringTask] = None,
+        call_returns_result: bool = False,
     ):
         if loop is None:
             loop = asyncio.new_event_loop()

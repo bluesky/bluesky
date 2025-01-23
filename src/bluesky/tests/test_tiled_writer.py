@@ -1,6 +1,6 @@
 import os
 from collections.abc import Iterator
-from typing import Optional, Awaitable
+from typing import Optional, Union
 
 import h5py
 import numpy as np
@@ -63,7 +63,7 @@ class Named(HasName):
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
-    def _get_hdf5_stream(self, data_key: str, index: int) -> tuple[StreamResource | None, StreamDatum]:
+    def _get_hdf5_stream(self, data_key: str, index: int) -> tuple[Optional[StreamResource], StreamDatum]:
         file_path = os.path.join(self.root, "dataset.h5")
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
@@ -111,7 +111,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         return stream_resource, stream_datum
 
-    def _get_tiff_stream(self, data_key: str, index: int) -> tuple[StreamResource | None, StreamDatum]:
+    def _get_tiff_stream(self, data_key: str, index: int) -> tuple[Optional[StreamResource], StreamDatum]:
         file_path = self.root
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
@@ -171,7 +171,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             ),
         }
 
-    def describe_collect(self) -> dict[str, DataKey] | dict[str, dict[str, DataKey]]:
+    def describe_collect(self) -> Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]:
         return self.describe()
 
     def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:

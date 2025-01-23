@@ -56,7 +56,7 @@ ObjDict = dict[Any, dict[str, T]]
 ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
 
 
-def _describe_collect_dict_is_valid(describe_collect_dict: Any | dict[str, Any]) -> TypeGuard[dict[str, DataKey]]:
+def _describe_collect_dict_is_valid(describe_collect_dict: Union[Any, dict[str, Any]]) -> TypeGuard[dict[str, DataKey]]:
     """
     Check if the describe_collect dictionary contains valid DataKeys.
     """
@@ -70,7 +70,7 @@ def _describe_collect_dict_is_valid(describe_collect_dict: Any | dict[str, Any])
     return True
 
 class RunBundler:
-    def __init__(self, md: dict | None, record_interruptions: bool, emit: Callable, emit_sync: Callable, log: LoggerAdapter, *, strict_pre_declare: bool):
+    def __init__(self, md: Optional[dict], record_interruptions: bool, emit: Callable, emit_sync: Callable, log: LoggerAdapter, *, strict_pre_declare: bool):
         # if create can YOLO implicitly create a stream
         self._strict_pre_declare = strict_pre_declare
         # state stolen from the RE
@@ -79,9 +79,9 @@ class RunBundler:
         self._run_start_uid = None  # The (future) runstart uid
         self._objs_read: deque[HasName] = deque()  # objects read in one Event
         self._read_cache: deque[dict[str, Reading]] = deque()  # cache of obj.read() in one Event
-        self._asset_docs_cache: deque[Asset | StreamAsset] = deque()  # cache of obj.collect_asset_docs()
+        self._asset_docs_cache: deque[Union[Asset, StreamAsset]] = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output  # noqa: C408
-        self._describe_collect_cache: dict[Any, dict[str, DataKey] | dict[str, dict[str, DataKey]]] = dict()   # noqa: C408  # cache of all obj.describe() output
+        self._describe_collect_cache: dict[Any, Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]] = dict()   # noqa: C408  # cache of all obj.describe() output
 
         self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()  # noqa: C408
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values  # noqa: C408
@@ -660,7 +660,7 @@ class RunBundler:
 
     def _format_datakeys_with_stream_name(
         self,
-        describe_collect_dict: dict[str, DataKey] | dict[str, dict[str, DataKey]],
+        describe_collect_dict: Union[dict[str, DataKey], dict[str, dict[str, DataKey]]],
         message_stream_name: Optional[str] = None,
     ) -> list[tuple[str, dict[str, DataKey]]]:
         """
@@ -670,7 +670,7 @@ class RunBundler:
             `{message_stream_name: describe_collect_dict}.items()`.
         If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
         """
-        def _has_nested_structure(describe_collect_dict: Any | dict[str, Any]) -> TypeGuard[dict[str, dict[str, DataKey]]]:
+        def _has_nested_structure(describe_collect_dict: Union[Any, dict[str, Any]]) -> TypeGuard[dict[str, dict[str, DataKey]]]:
             return all(_describe_collect_dict_is_valid(v) for v in describe_collect_dict.values())
 
         if describe_collect_dict:
@@ -699,7 +699,7 @@ class RunBundler:
     async def _cache_describe_collect(self, obj: Collectable):
         "Read the object's describe and cache it."
         obj = check_supports(obj, Collectable)
-        c: dict[str, DataKey] | dict[str, dict[str, DataKey]] = await maybe_await(obj.describe_collect())
+        c: Union[dict[str, DataKey], dict[str, dict[str, DataKey]]] = await maybe_await(obj.describe_collect())
         self._describe_collect_cache[obj] = c
 
     async def _describe_collect(self, collect_object: Flyable):
@@ -808,7 +808,7 @@ class RunBundler:
 
     # message strem name here?
     async def _pack_external_assets(
-        self, asset_docs: Iterable[Asset | StreamAsset], message_stream_name: Optional[str]
+        self, asset_docs: Iterable[Union[Asset, StreamAsset]], message_stream_name: Optional[str]
     ):
         """Packs some external asset documents with relevant information from the run."""
 
@@ -943,7 +943,7 @@ class RunBundler:
         return payload
 
     async def _collect_event_pages(
-        self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool, message_stream_name: str | None
+        self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool, message_stream_name: Optional[str]
     ):
         payload = []
 
@@ -989,7 +989,7 @@ class RunBundler:
         Where there must be at least one collect object. If multiple are used
         they must obey the WritesStreamAssets protocol.
         """
-        stream_name: str | None = None
+        stream_name: Optional[str] = None
 
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
@@ -1031,7 +1031,7 @@ class RunBundler:
             self._uncollected.discard(obj)
 
         # Get the provided message stream name for singly nested scans
-        message_stream_name: str | None = msg.kwargs.get("name", None)
+        message_stream_name: Optional[str] = msg.kwargs.get("name", None)
 
         # Retrive the stream names from pre-declared streams
         declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])
@@ -1156,3 +1156,4 @@ class RunBundler:
                 continue
 
         await self._cache_read_config(obj)
+
