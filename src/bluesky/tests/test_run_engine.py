@@ -1515,13 +1515,13 @@ def test_status_propagates_exception_through_run_engine(RE: RunEngine):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg("set", dummy1, 1, group="test"), Msg("wait", group="test")])
 
-    traceback: list[FrameSummary] = extract_tb(exc.tb)
-    assert traceback[0].filename == __file__
-    assert traceback[0].line == 'RE([Msg("set", dummy1, 1, group="test"), Msg("wait", group="test")])'
-    assert traceback[-1].name == "set"
-    assert traceback[-1].line == "1/0"
+        traceback: list[FrameSummary] = extract_tb(exc.__traceback__)  # type: ignore[attr-defined]
+        assert traceback[0].filename == __file__
+        assert traceback[0].line == "RE([Msg('set', dummy1, 1, group='test'),"
+        assert traceback[-1].name == "set"
+        assert traceback[-1].line == "1/0"
 
-    assert isinstance(exc.type, ZeroDivisionError)
+        assert isinstance(exc.args[0], ZeroDivisionError)  # type: ignore[attr-defined]
 
 
 def test_colliding_streams(RE, hw):
