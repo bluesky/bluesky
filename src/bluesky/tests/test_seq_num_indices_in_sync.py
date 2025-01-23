@@ -1,14 +1,13 @@
 import importlib.metadata
 from collections.abc import Iterable, Iterator
 from random import randint, sample
-from typing import Optional, Union, Literal
+from typing import Literal, Optional, Union
 
 import packaging.version
 import pytest
 from event_model import ComposeStreamResource, EventModelValueError
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.event_page import PartialEventPage
-from event_model.documents.resource import Resource
 from event_model.documents.stream_datum import StreamRange
 from event_model.documents.stream_resource import StreamResource
 
@@ -125,8 +124,7 @@ class ExternalAssetDevice:
             # New stream_resource half way through the run
             if DRAFT_0_STREAM_RESOURCE:
                 self.stream_resource_compose_datum_pairs = tuple(
-                    self.compose_stream_resource("", f"non_existent_{det}.hdf5", det, {})
-                    for det in self.detectors
+                    self.compose_stream_resource("", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
                 )
             else:
                 self.stream_resource_compose_datum_pairs = tuple(

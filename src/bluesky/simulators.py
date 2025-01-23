@@ -2,12 +2,12 @@ from collections.abc import Generator, Sequence
 from itertools import dropwhile
 from time import time
 from typing import (
-    cast,
     Any,
     Callable,
     Literal,
     Optional,
     Union,
+    cast,
 )
 from warnings import warn
 

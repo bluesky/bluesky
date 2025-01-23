@@ -135,7 +135,7 @@ def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) ->
         uid = f"{data_key}-uid"
         if self.counter == 0:
             # Backward compatibility test, ignore typing errors
-            stream_resource = StreamResource( # type: ignore[typeddict-item]
+            stream_resource = StreamResource(  # type: ignore[typeddict-item]
                 resource_kwargs={"dataset": f"/{data_key}/data"},
                 data_key=data_key,
                 root="/root",

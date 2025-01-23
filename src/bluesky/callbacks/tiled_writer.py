@@ -11,8 +11,8 @@ from event_model.documents import (
     RunStart,
     RunStop,
     StreamDatum,
-    StreamResource,
     StreamRange,
+    StreamResource,
 )
 from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
@@ -82,9 +82,9 @@ class _RunWriter(CallbackBase):
         else:
             doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[str(doc.get("spec"))]
         if "parameters" not in doc.keys():
-            doc["parameters"] = doc.pop("resource_kwargs", {}) # type: ignore
+            doc["parameters"] = doc.pop("resource_kwargs", {})  # type: ignore
         if "uri" not in doc.keys():
-            file_path = doc.pop("root", "").strip("/") + "/" + doc.pop("resource_path", "").strip("/") # type: ignore
+            file_path = doc.pop("root", "").strip("/") + "/" + doc.pop("resource_path", "").strip("/")  # type: ignore
             doc["uri"] = "file://localhost/" + file_path
 
         return doc
@@ -207,7 +207,13 @@ class _RunWriter(CallbackBase):
                     descriptor = doc["descriptor"]  # From Event document
                     indices = StreamRange(start=doc["seq_num"] - 1, stop=doc["seq_num"])
                     seq_nums = StreamRange(start=doc["seq_num"], stop=doc["seq_num"] + 1)
-                    stream_datum_doc = StreamDatum(uid=uid, stream_resource=stream_resource, descriptor=descriptor, indices=indices, seq_nums=seq_nums)
+                    stream_datum_doc = StreamDatum(
+                        uid=uid,
+                        stream_resource=stream_resource,
+                        descriptor=descriptor,
+                        indices=indices,
+                        seq_nums=seq_nums,
+                    )
                     # Update the Resource document (add data_key as in StreamResource)
                     if stream_datum_doc["stream_resource"] in self._stream_resource_cache.keys():
                         self._stream_resource_cache[stream_datum_doc["stream_resource"]]["data_key"] = data_key

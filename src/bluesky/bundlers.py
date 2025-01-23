@@ -1,10 +1,10 @@
 import asyncio
-from logging import LoggerAdapter
 import inspect
 import time as ttime
 from collections import defaultdict, deque
 from collections.abc import Iterable
-from typing import Any, Callable, Optional, Union, Literal, TypeGuard, cast
+from logging import LoggerAdapter
+from typing import Any, Callable, Literal, Optional, TypeGuard, Union, cast
 
 from event_model import (
     ComposeDescriptorBundle,
@@ -24,7 +24,6 @@ from event_model.documents.event import Event
 from .log import doc_logger
 from .protocols import (
     Asset,
-    StreamAsset,
     Callback,
     Collectable,
     Configurable,
@@ -34,6 +33,7 @@ from .protocols import (
     HasName,
     Readable,
     Reading,
+    StreamAsset,
     Subscribable,
     SyncOrAsync,
     T,
@@ -56,7 +56,9 @@ ObjDict = dict[Any, dict[str, T]]
 ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
 
 
-def _describe_collect_dict_is_valid(describe_collect_dict: Union[Any, dict[str, Any]]) -> TypeGuard[dict[str, DataKey]]:
+def _describe_collect_dict_is_valid(
+    describe_collect_dict: Union[Any, dict[str, Any]],
+) -> TypeGuard[dict[str, DataKey]]:
     """
     Check if the describe_collect dictionary contains valid DataKeys.
     """
@@ -69,8 +71,18 @@ def _describe_collect_dict_is_valid(describe_collect_dict: Union[Any, dict[str, 
             return False
     return True
 
+
 class RunBundler:
-    def __init__(self, md: Optional[dict], record_interruptions: bool, emit: Callable, emit_sync: Callable, log: LoggerAdapter, *, strict_pre_declare: bool):
+    def __init__(
+        self,
+        md: Optional[dict],
+        record_interruptions: bool,
+        emit: Callable,
+        emit_sync: Callable,
+        log: LoggerAdapter,
+        *,
+        strict_pre_declare: bool,
+    ):
         # if create can YOLO implicitly create a stream
         self._strict_pre_declare = strict_pre_declare
         # state stolen from the RE
@@ -81,7 +93,7 @@ class RunBundler:
         self._read_cache: deque[dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache: deque[Union[Asset, StreamAsset]] = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output  # noqa: C408
-        self._describe_collect_cache: dict[Any, Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]] = dict()   # noqa: C408  # cache of all obj.describe() output
+        self._describe_collect_cache: dict[Any, Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]] = dict()  # noqa: C408  # cache of all obj.describe() output
 
         self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()  # noqa: C408
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values  # noqa: C408
@@ -265,8 +277,8 @@ class RunBundler:
         for obj in objs:
             if collect:
                 data_keys = self._describe_collect_cache[obj]
-                streams_and_data_keys = (
-                    self._format_nested_datakeys_with_stream_name(data_keys, message_stream_name=stream_name)
+                streams_and_data_keys = self._format_nested_datakeys_with_stream_name(
+                    data_keys, message_stream_name=stream_name
                 )
 
                 # ensure that there is only one stream and it is the stream we have provided.
@@ -670,7 +682,10 @@ class RunBundler:
             `{message_stream_name: describe_collect_dict}.items()`.
         If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
         """
-        def _has_nested_structure(describe_collect_dict: Union[Any, dict[str, Any]]) -> TypeGuard[dict[str, dict[str, DataKey]]]:
+
+        def _has_nested_structure(
+            describe_collect_dict: Union[Any, dict[str, Any]],
+        ) -> TypeGuard[dict[str, dict[str, DataKey]]]:
             return all(_describe_collect_dict_is_valid(v) for v in describe_collect_dict.values())
 
         if describe_collect_dict:
@@ -741,11 +756,9 @@ class RunBundler:
         )
 
         # Make sure you can't use identical data keys in multiple streams
-        # TODO: Verify that this is correct
         # TODO: Does `DataKey` have a `__eq__` method implemented?
-        # Data structure here is assumed to be dict[stream_name, dictionary of data_keys]
-        # but it's not clear to me what the keys of the sub-dictionary are
-        duplicates: dict[str, dict[str, DataKey]] = defaultdict(lambda: dict())
+        # Data structure is assumed to be dict[stream_name, dictionary of data_keys]
+        duplicates: dict[str, dict[str, DataKey]] = defaultdict(lambda: {})
         for stream, data_keys in describe_collect_items:
             for name, data_key in data_keys.items():
                 for other_stream, other_data_keys in describe_collect_items:
@@ -840,8 +853,8 @@ class RunBundler:
 
                 if not external_data_keys or stream_resource_doc["data_key"] not in external_data_keys:
                     raise RuntimeError(
-                        f"Receieved a `stream_resource` with data_key {stream_resource_doc['data_key']} that is not in the "
-                        f"descriptor 'STREAM:' data_keys {external_data_keys}"
+                        f"Receieved a `stream_resource` with data_key {stream_resource_doc['data_key']} "
+                        f"that is not in the descriptor 'STREAM:' data_keys {external_data_keys}"
                     )
 
             elif name == DocumentNames.stream_datum.value:
@@ -849,7 +862,8 @@ class RunBundler:
                 if stream_datum_doc["descriptor"]:
                     raise RuntimeError(
                         f"Received a `stream_datum` {stream_datum_doc['uid']} with a `descriptor` uid already "
-                        f"filled in, with the value {stream_datum_doc['descriptor']} this should be an empty string."
+                        f"filled in, with the value {stream_datum_doc['descriptor']} this should be an empty "
+                        f"string."
                     )
                 if not descriptor_doc:
                     raise RuntimeError(f"`descriptor` not made for stream {message_stream_name}.")
@@ -857,7 +871,9 @@ class RunBundler:
 
                 stream_datum_doc["descriptor"] = descriptor_doc["uid"]
                 if message_stream_name is None:
-                    raise RuntimeError("`message_stream_name` was never set before StreamDatum document was emitted.")
+                    raise RuntimeError(
+                        "`message_stream_name` was never set before StreamDatum document was emitted."
+                    )
                 stream_datum_previous_indices_difference = await self._pack_seq_nums_into_stream_datum(
                     stream_datum_doc,
                     message_stream_name,
@@ -943,7 +959,11 @@ class RunBundler:
         return payload
 
     async def _collect_event_pages(
-        self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool, message_stream_name: Optional[str]
+        self,
+        collect_obj: EventPageCollectable,
+        local_descriptors,
+        return_payload: bool,
+        message_stream_name: Optional[str],
     ):
         payload = []
 
@@ -1093,7 +1113,9 @@ class RunBundler:
             # If the single collect object is singly nested, gather descriptors
             if collect_obj not in self._local_descriptors:
                 if stream_name is None:
-                    raise RuntimeError("Expected stream_name to be set before calling collect() on a singly nested device.")
+                    raise RuntimeError(
+                        "Expected stream_name to be set before calling collect() on a singly nested device."
+                    )
                 objs = self._descriptor_objs[stream_name]
                 data_keys = objs[collect_obj]
                 local_descriptors[frozenset(data_keys)] = self._descriptors[stream_name]
@@ -1156,4 +1178,3 @@ class RunBundler:
                 continue
 
         await self._cache_read_config(obj)
-

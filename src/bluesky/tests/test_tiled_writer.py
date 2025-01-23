@@ -74,7 +74,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         stream_resource = None
         if self.counter == 0:
             # Backward compatibility test, ignore typing errors
-            stream_resource = StreamResource( # type: ignore[typeddict-unknown-key]
+            stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
                 parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape)},
                 data_key=data_key,
                 root=self.root,
@@ -120,7 +120,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             stream_resource = None
             if self.counter == 0:
                 # Backward compatibility test, ignore typing errors
-                stream_resource = StreamResource( # type: ignore[typeddict-unknown-key]
+                stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
                     parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
