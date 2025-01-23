@@ -1517,7 +1517,7 @@ def test_status_propagates_exception_through_run_engine(RE: RunEngine):
 
     traceback: list[FrameSummary] = extract_tb(exc.tb)
     assert traceback[0].filename == __file__
-    assert traceback[0].line == "RE([Msg('set', dummy1, 1, group='test'),"
+    assert traceback[0].line == "RE([Msg(\"set\", dummy1, 1, group=\"test\"), Msg(\"wait\", group=\"test\")])"
     assert traceback[-1].name == "set"
     assert traceback[-1].line == "1/0"
 

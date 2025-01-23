@@ -277,7 +277,7 @@ class RunBundler:
         for obj in objs:
             if collect:
                 data_keys = self._describe_collect_cache[obj]
-                streams_and_data_keys = self._format_nested_datakeys_with_stream_name(
+                streams_and_data_keys = self._format_datakeys_with_stream_name(
                     data_keys, message_stream_name=stream_name
                 )
 
