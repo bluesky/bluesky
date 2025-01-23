@@ -11,9 +11,9 @@ from event_model.documents import (
     RunStart,
     RunStop,
     StreamDatum,
-    StreamRange,
     StreamResource,
 )
+from event_model.documents.stream_datum import StreamRange
 from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
