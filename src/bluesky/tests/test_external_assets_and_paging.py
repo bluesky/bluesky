@@ -6,6 +6,7 @@ import pytest
 from event_model.documents import Datum
 from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey
+from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
@@ -133,7 +134,8 @@ def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) ->
     for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
         uid = f"{data_key}-uid"
         if self.counter == 0:
-            stream_resource = StreamResource(
+            # Backward compatibility test, ignore typing errors
+            stream_resource = StreamResource( # type: ignore[typeddict-item]
                 resource_kwargs={"dataset": f"/{data_key}/data"},
                 data_key=data_key,
                 root="/root",
@@ -201,6 +203,7 @@ def collect_old_pv(self) -> Iterator[PartialEvent]:
             yield PartialEvent(
                 data={f"{stream}-{pv}": i for pv in ["pv1", "pv2"]},
                 timestamps={f"{stream}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
+                time=100 + i,
             )
 
 
@@ -262,7 +265,7 @@ class OldPvAndDatumCollectable(Named, EventCollectable, WritesExternalAssets):
     collect_asset_docs = collect_asset_docs_datum
 
 
-def describe_collect_pv(self: Named) -> dict[str, dict[str, DataKey]]:
+def describe_collect_pv(self: Named) -> dict[str, DataKey]:
     """New style describe collect with 2 PVs"""
     return {f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[]) for pv in ["pv1", "pv2"]}
 
@@ -273,14 +276,16 @@ def collect_pv(self: Named) -> Iterator[PartialEvent]:
         yield PartialEvent(
             data={f"{self.name}-{pv}": i for pv in ["pv1", "pv2"]},
             timestamps={f"{self.name}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
+            time=100 + i,
         )
 
 
-def collect_pages_pv(self: Named) -> Iterator[PartialEvent]:
+def collect_pages_pv(self: Named) -> Iterator[PartialEventPage]:
     """Same as collect_pv but in EventPage form"""
-    yield PartialEvent(
+    yield PartialEventPage(
         data={f"{self.name}-{pv}": [0, 1] for pv in ["pv1", "pv2"]},
         timestamps={f"{self.name}-{pv}": [100, 101] for pv in ["pv1", "pv2"]},
+        time=[100, 101],
     )
 
 
