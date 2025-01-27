@@ -2,6 +2,7 @@ import asyncio
 import threading
 import time as ttime
 from collections import defaultdict
+from types import SimpleNamespace
 
 import pytest
 
@@ -368,7 +369,7 @@ def test_fly_during():
     assert processed_plan == expected
 
 
-def test_lazily_stage(hw):
+def test_lazily_stage(hw: SimpleNamespace):
     det1, det2 = hw.det1, hw.det2
 
     def plan():

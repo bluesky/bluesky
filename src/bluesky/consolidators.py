@@ -96,14 +96,13 @@ class ConsolidatorBase:
         # 3. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
         #    and make a best effort to convert it to a numpy spec like '<u8'.
         # 4. If unable to do any of the above, pass through whatever string is in 'dtype'.
-        self.dtype = np.dtype(
-            data_desc.get("dtype_numpy")  # standard location
-            or data_desc.get(
-                "dtype_str",  # legacy location
-                # try to guess numpy dtype from JSON type
-                DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
-            )
+        dtype_spec = (
+            data_desc.get("dtype_numpy")  # Try dtype_numpy first
+            or str(data_desc.get("dtype_str", ""))  # Then try dtype_str
+            or DTYPE_LOOKUP.get(data_desc["dtype"])  # Then try mapping from JSON type
+            or data_desc["dtype"]  # Finally fall back to raw dtype string
         )
+        self.dtype = np.dtype(dtype_spec)
         self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
         if 0 in self.chunk_shape:
             raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
@@ -119,7 +118,7 @@ class ConsolidatorBase:
         return sres["mimetype"]
 
     @property
-    def shape(self) -> tuple[int]:
+    def shape(self) -> tuple[int, ...]:
         """Native shape of the data stored in assets
 
         This includes the leading (0-th) dimension corresponding to the number of rows, including skipped rows, if

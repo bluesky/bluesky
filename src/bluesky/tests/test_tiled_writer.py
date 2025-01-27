@@ -1,6 +1,6 @@
 import os
 from collections.abc import Iterator
-from typing import Optional
+from typing import Optional, Union
 
 import h5py
 import numpy as np
@@ -63,7 +63,7 @@ class Named(HasName):
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
-    def _get_hdf5_stream(self, data_key: str, index: int) -> tuple[StreamResource, StreamDatum]:
+    def _get_hdf5_stream(self, data_key: str, index: int) -> tuple[Optional[StreamResource], StreamDatum]:
         file_path = os.path.join(self.root, "dataset.h5")
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
@@ -73,7 +73,8 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         stream_resource = None
         if self.counter == 0:
-            stream_resource = StreamResource(
+            # Backward compatibility test, ignore typing errors
+            stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
                 parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape)},
                 data_key=data_key,
                 root=self.root,
@@ -110,7 +111,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         return stream_resource, stream_datum
 
-    def _get_tiff_stream(self, data_key: str, index: int) -> tuple[StreamResource, StreamDatum]:
+    def _get_tiff_stream(self, data_key: str, index: int) -> tuple[Optional[StreamResource], StreamDatum]:
         file_path = self.root
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
@@ -118,7 +119,8 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             data_shape = tuple(data_desc["shape"])
             stream_resource = None
             if self.counter == 0:
-                stream_resource = StreamResource(
+                # Backward compatibility test, ignore typing errors
+                stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
                     parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
@@ -169,7 +171,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             ),
         }
 
-    def describe_collect(self) -> dict[str, DataKey]:
+    def describe_collect(self) -> Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]:
         return self.describe()
 
     def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:
