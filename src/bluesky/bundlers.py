@@ -427,7 +427,7 @@ class RunBundler:
                     f"{readable_obj} has async read() method and the callback "
                     "passed to subscribe() was not called with Dict[str, Reading]"
                 )
-            if readings is not None:
+            if readings is None:
                 raise ValueError("The callback passed to subscribe() was not called with Dict[str, Reading]")
             now = ttime.time()
             if any(r["timestamp"] - now > timestamp_cutoff_delay for r in readings.values()):  # type: ignore
