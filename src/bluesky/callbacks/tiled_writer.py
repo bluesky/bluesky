@@ -78,13 +78,17 @@ class _RunWriter(CallbackBase):
 
         doc = copy.copy(doc)
         if ("mimetype" not in doc.keys()) and ("spec" not in doc.keys()):
-            raise RuntimeError("StreamResource document is missing a mimetype or spec")
+            raise RuntimeError("StreamResource document is missing a 'mimetype' or 'spec'")
         else:
             doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[str(doc.get("spec"))]
         if "parameters" not in doc.keys():
-            doc["parameters"] = doc.pop("resource_kwargs", {})  # type: ignore
+            doc["parameters"] = doc.pop("resource_kwargs", {})
         if "uri" not in doc.keys():
-            file_path = doc.pop("root", "").strip("/") + "/" + doc.pop("resource_path", "").strip("/")  # type: ignore
+            if "root" not in doc.keys():
+                raise RuntimeError("StreamResource document is missing a 'root' path")
+            if "resource_path" not in doc.keys():
+                raise RuntimeError("StreamResource document is missing a 'resource_path'")
+            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
             doc["uri"] = "file://localhost/" + file_path
 
         return doc
@@ -108,12 +112,10 @@ class _RunWriter(CallbackBase):
             raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
 
         desc_name = doc["name"]
-        metadata = dict(doc)
+        # Copy the document items, excluding the variable fields
+        metadata = {k: v for k, v in doc.items() if k not in ("uid", "time", "configuration")}
 
-        # Remove variable fields of the metadata and encapsulate them into sub-dictionaries with uids as the keys
-        del metadata["uid"]
-        del metadata["time"]
-        del metadata["configuration"]
+        # Encapsulate variable fields into sub-dictionaries with uids as the keys
         uid = doc["uid"]
         conf_dict = {uid: doc.get("configuration", {})}
         time_dict = {uid: doc["time"]}

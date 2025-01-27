@@ -3,6 +3,7 @@ import inspect
 import time as ttime
 from collections import defaultdict, deque
 from collections.abc import Iterable
+from itertools import combinations
 from logging import LoggerAdapter
 from typing import Any, Callable, Literal, Optional, Union, cast
 
@@ -64,12 +65,10 @@ def _describe_collect_dict_is_valid(
     """
     if not isinstance(describe_collect_dict, dict):
         return False
-    for value in describe_collect_dict.values():
-        if not isinstance(value, dict):
-            return False
-        if not isinstance(value.get("source", None), str):
-            return False
-    return True
+    return all(
+        isinstance(value, dict) and isinstance(value.get("source", None), str)
+        for value in describe_collect_dict.values()
+    )
 
 
 class RunBundler:
@@ -762,18 +761,18 @@ class RunBundler:
         )
 
         # Make sure you can't use identical data keys in multiple streams
-        # TODO: Does `DataKey` have a `__eq__` method implemented?
-        # Data structure is assumed to be dict[stream_name, dictionary of data_keys]
-        duplicates: dict[str, dict[str, DataKey]] = defaultdict(lambda: {})
-        for stream, data_keys in describe_collect_items:
-            for name, data_key in data_keys.items():
-                for other_stream, other_data_keys in describe_collect_items:
-                    for other_name, other_data_key in other_data_keys.items():
-                        if stream != other_stream and name == other_name and data_key == other_data_key:
-                            duplicates[stream][name] = data_key
+        # Data structure is assumed to be dict[stream_name, dictionary of key -> data_key]
+        duplicates: dict[str, dict[str, DataKey]] = defaultdict(dict)
+        for (
+            (stream1, data_keys1),
+            (stream2, data_keys2),
+        ) in combinations(describe_collect_items, 2):
+            for common_key in data_keys1.keys() & data_keys2.keys():
+                duplicates[stream1][common_key] = data_keys1[common_key]
+                duplicates[stream2][common_key] = data_keys2[common_key]
         if len(duplicates) > 0:
             raise RuntimeError(
-                f"Can't use identical data keys in multiple streams: {duplicates}",
+                "Can't use identical data keys in multiple streams:",
                 f"Data keys: {list(duplicates.values())}",
                 f"streams: {duplicates.keys()}",
             )
