@@ -64,32 +64,36 @@ class _RunWriter(CallbackBase):
         self._desc_nodes: dict[str, Container] = {}  # references to descriptor containers by their uid's
         self._sres_nodes: dict[str, BaseClient] = {}
         self._datum_cache: dict[str, Datum] = {}
-        self._resource_cache: dict[str, Resource] = {}
         self._stream_resource_cache: dict[str, StreamResource] = {}
         self._handlers: dict[str, ConsolidatorBase] = {}
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
-    def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
+    def _convert_resource_to_stream_resource(self, doc: Union[Resource, StreamResource]) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+        or Resource documents that are converted to StreamResources.
 
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
+        # If the document already adheres to StreamResource schema, return it
+        if "mimetype" in doc.keys() and "parameters" in doc.keys() and "uri" in doc.keys():
+            return copy.copy(doc)
 
+        # At this point, we assume that the document has a Resource or an old StreamResource schema
+        # but we need to check that the required fields are present
+        if "spec" not in doc.keys():
+            raise RuntimeError("Resource or StreamResource document is missing a 'spec'")
+        if "root" not in doc.keys():
+            raise RuntimeError("Resource or StreamResource document is missing a 'root' path")
+        if "resource_path" not in doc.keys():
+            raise RuntimeError("Resource or StreamResource document is missing a 'resource_path'")
+
+        # Convert the Resource (or old StreamResource) document to a StreamResource document
         doc = copy.copy(doc)
-        if ("mimetype" not in doc.keys()) and ("spec" not in doc.keys()):
-            raise RuntimeError("StreamResource document is missing a 'mimetype' or 'spec'")
-        else:
-            doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[str(doc.get("spec"))]
-        if "parameters" not in doc.keys():
-            doc["parameters"] = doc.pop("resource_kwargs", {})
-        if "uri" not in doc.keys():
-            if "root" not in doc.keys():
-                raise RuntimeError("StreamResource document is missing a 'root' path")
-            if "resource_path" not in doc.keys():
-                raise RuntimeError("StreamResource document is missing a 'resource_path'")
-            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
-            doc["uri"] = "file://localhost/" + file_path
+        doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
+        doc["parameters"] = doc.pop("resource_kwargs", {})
+        file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
+        doc["uri"] = "file://localhost/" + file_path
 
         return doc
 
@@ -228,10 +232,11 @@ class _RunWriter(CallbackBase):
         self._datum_cache[doc["datum_id"]] = copy.copy(doc)
 
     def resource(self, doc: Resource):
-        self._resource_cache[doc["uid"]] = copy.copy(doc)
+        self._stream_resource_cache[doc["uid"]] = self._convert_resource_to_stream_resource(doc)
 
     def stream_resource(self, doc: StreamResource):
-        self._stream_resource_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
+        # Backwards compatibility: old StreamResource schema is converted to the new one (event-model<1.20.0)
+        self._stream_resource_cache[doc["uid"]] = self._convert_resource_to_stream_resource(doc)
 
     def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> tuple[BaseClient, ConsolidatorBase]:
         """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""

@@ -98,7 +98,7 @@ class ConsolidatorBase:
         # 4. If unable to do any of the above, pass through whatever string is in 'dtype'.
         dtype_spec = (
             data_desc.get("dtype_numpy")  # Try dtype_numpy first
-            or str(data_desc.get("dtype_str", ""))  # Then try dtype_str
+            or data_desc.get("dtype_str", "")  # Then try dtype_str
             or DTYPE_LOOKUP.get(data_desc["dtype"])  # Then try mapping from JSON type
             or data_desc["dtype"]  # Finally fall back to raw dtype string
         )

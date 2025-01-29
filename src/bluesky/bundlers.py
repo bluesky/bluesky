@@ -682,12 +682,12 @@ class RunBundler:
         If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
         """
 
-        def _has_nested_structure_and_valid_substructure(
+        def _contains_message_stream_name(
             describe_collect_dict: Union[Any, dict[str, Any]],
         ) -> bool:  # TODO: change to TypeGuard[dict[str, dict[str, DataKey]]] after python 3.9
-            if not isinstance(describe_collect_dict, dict):
-                return False
-            return all(_describe_collect_dict_is_valid(v) for v in describe_collect_dict.values())
+            return isinstance(describe_collect_dict, dict) and all(
+                _describe_collect_dict_is_valid(v) for v in describe_collect_dict.values()
+            )
 
         if describe_collect_dict:
             if _describe_collect_dict_is_valid(describe_collect_dict):
@@ -695,7 +695,7 @@ class RunBundler:
                 flat_describe_collect_dict = cast(dict[str, DataKey], describe_collect_dict)
                 return [(message_stream_name or "primary", flat_describe_collect_dict)]
             # Validate that all of the values nested values are DataKeys
-            elif _has_nested_structure_and_valid_substructure(describe_collect_dict):
+            elif _contains_message_stream_name(describe_collect_dict):
                 # We have Dict[str, Dict[str, DataKey]] so return its items
                 # TODO: remove cast after python 3.9 is no longer supported
                 nested_describe_collect_dict = cast(dict[str, dict[str, DataKey]], describe_collect_dict)
