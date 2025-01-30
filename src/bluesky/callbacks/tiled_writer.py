@@ -79,14 +79,13 @@ class _RunWriter(CallbackBase):
         if "mimetype" in doc.keys():
             return copy.copy(doc)
 
-        # At this point, we assume that the document has a Resource or an old StreamResource schema
-        # but we need to check that the required fields are present
-        if "spec" not in doc.keys():
-            raise RuntimeError("Resource or StreamResource document is missing a 'spec'")
-        if "root" not in doc.keys():
-            raise RuntimeError("Resource or StreamResource document is missing a 'root' path")
-        if "resource_path" not in doc.keys():
-            raise RuntimeError("Resource or StreamResource document is missing a 'resource_path'")
+        # The document is a `Resource` or a < v1.20 `StreamResource`.
+        # Both are converted to latest version `StreamResource`.
+        for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
+            if expected_key not in doc:
+                raise RuntimeError(
+                    f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'"
+                )
 
         # Convert the Resource (or old StreamResource) document to a StreamResource document
         doc = copy.copy(doc)
