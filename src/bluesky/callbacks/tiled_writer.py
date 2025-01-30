@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 from typing import Any, Optional, Union
 
 import pandas as pd
@@ -25,6 +26,22 @@ from tiled.utils import safe_json_dump
 
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
+
+
+def build_summary(start_doc, stop_doc, stream_names):
+    summary = {
+        "uid": start_doc["uid"],
+        "scan_id": start_doc.get("scan_id"),
+        "timestamp": start_doc["time"],
+        "datetime": datetime.fromtimestamp(start_doc["time"]).isoformat(),
+        "plan_name": start_doc.get("plan_name"),
+        "stream_names": stream_names,
+    }
+    if stop_doc is None:
+        summary["duration"] = None
+    else:
+        summary["duration"] = stop_doc["time"] - start_doc["time"]
+    return summary
 
 
 class TiledWriter:
@@ -84,9 +101,7 @@ class _RunWriter(CallbackBase):
         # Both are converted to latest version `StreamResource`.
         for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
             if expected_key not in doc:
-                raise RuntimeError(
-                    f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'"
-                )
+                raise RuntimeError(f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'")
 
         # Convert the Resource (or old StreamResource) document to a StreamResource document
         doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
@@ -107,7 +122,9 @@ class _RunWriter(CallbackBase):
         if self.root_node is None:
             raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
 
-        metadata = {"stop": doc, **dict(self.root_node.metadata)}
+        stream_names = list(self.root_node.keys())
+        summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
+        metadata = {"stop": dict(doc), "summary": summary, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc: EventDescriptor):
