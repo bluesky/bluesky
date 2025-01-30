@@ -89,7 +89,6 @@ class _RunWriter(CallbackBase):
                 )
 
         # Convert the Resource (or old StreamResource) document to a StreamResource document
-        doc = copy.copy(doc)
         doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
         doc["parameters"] = doc.pop("resource_kwargs", {})
         file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
