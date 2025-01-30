@@ -88,8 +88,12 @@ class ConsolidatorBase:
 
         # Find data shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
-        self.datum_shape = tuple(data_desc["shape"])
-        self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
+        self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
+        if len(self.datum_shape) == 0:
+            raise RuntimeError(
+                "Expected a non-empty shape for the data key. "
+                "The first dimension is reserved for the number of frames per event."
+            )
         # Get data type. From highest precedent to lowest:
         # 1. Try 'dtype_numpy', optional in the document schema.
         # 2. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
@@ -119,7 +123,7 @@ class ConsolidatorBase:
         return sres["mimetype"]
 
     @property
-    def shape(self) -> tuple[int]:
+    def shape(self) -> tuple[int, ...]:
         """Native shape of the data stored in assets
 
         This includes the leading (0-th) dimension corresponding to the number of rows, including skipped rows, if
@@ -144,14 +148,19 @@ class ConsolidatorBase:
             # Generate a list with repeated b summing up to A; append the remainder if necessary
             return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) or (0,)
 
+        # Number of indices needs to be multiplied by the number of frames per index
+        num_chunks = self._num_rows * self.datum_shape[0]
+        # Retain the shape of the signal coming from the device
+        raw_signal_shape = self.datum_shape[1:]
+        shape = (num_chunks, *raw_signal_shape)
         if len(self.chunk_shape) == 0:
-            return (self._num_rows,), *[(d,) for d in self.datum_shape]
+            return (num_chunks,), *[(d,) for d in raw_signal_shape]
 
         elif len(self.chunk_shape) == 1:
-            return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+            return list_summands(num_chunks, self.chunk_shape[0]), *[(d,) for d in raw_signal_shape]
 
-        elif len(self.chunk_shape) == len(self.shape):
-            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
+        elif len(self.chunk_shape) == len(shape):
+            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, shape)])
 
         else:
             raise ValueError(
