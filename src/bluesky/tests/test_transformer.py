@@ -28,4 +28,4 @@ def test_no_transform(transform_cell, cell):
 def test_transform(transform_cell, cell):
     new_cell = transform_cell(cell)
 
-    assert f'RE({cell.lstrip("< ").strip()})\n' == new_cell
+    assert f"RE({cell.lstrip('< ').strip()})\n" == new_cell

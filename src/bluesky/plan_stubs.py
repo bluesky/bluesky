@@ -4,15 +4,9 @@ import time
 import typing
 import uuid
 import warnings
-from collections.abc import Awaitable, Hashable, Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Union,
-)
+from typing import Any, Literal, Optional, Union
 
 from cycler import cycler
 
@@ -33,7 +27,6 @@ from .protocols import (
     Locatable,
     Location,
     Movable,
-    NamedMovable,
     PartialEvent,
     Preparable,
     Readable,
@@ -263,7 +256,7 @@ def null() -> MsgGenerator:
 @plan
 def abs_set(
     obj: Movable,
-    *args,
+    *args: Any,
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
@@ -311,7 +304,7 @@ def abs_set(
 @plan
 def rel_set(
     obj: Movable,
-    *args,
+    *args: Any,
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
@@ -352,9 +345,11 @@ def rel_set(
     return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
+# The format (device1, value1, device2, value2, ...)
+# is not currently able to be represented in python's type system
 @plan
 def mv(
-    *args: tuple[Union[Movable, NamedMovable, Any], ...],
+    *args: Union[Movable, Any],
     group: Optional[Hashable] = None,
     **kwargs,
 ) -> MsgGenerator[tuple[Status, ...]]:
@@ -403,7 +398,7 @@ mov = mv  # synonym
 
 @plan
 def mvr(
-    *args: tuple[Union[Movable, NamedMovable, Any], ...], group: Optional[Hashable] = None, **kwargs
+    *args: Union[Movable, Any], group: Optional[Hashable] = None, **kwargs
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -626,7 +621,7 @@ def sleep(time: float) -> MsgGenerator:
 
 
 @plan
-def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, move_on: bool = False):
+def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, error_on_timeout: bool = True):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -634,13 +629,20 @@ def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, m
     ----------
     group : string (or any hashable object), optional
         Identifier given to `abs_set`, `rel_set`, `trigger`; None by default
+    timeout : float, optional
+        The maximum duration, in seconds, to wait for all objects in the group to complete.
+        If the timeout expires and `error_on_timeout` is set to True, a TimeoutError is raised.
 
+    error_on_timeout : bool, Defaults to True
+        Specifies the behavior when the timeout is reached:
+        - If True, a TimeoutError is raised if the operations do not complete within the specified timeout.
+        - If False, the method returns once all objects are done.
     Yields
     ------
     msg : Msg
-        Msg('wait', None, group=group, move_on=move_on, timeout=timeout)
+        Msg('wait', None, group=group, error_on_timeout=error_on_timeout, timeout=timeout)
     """
-    return (yield Msg("wait", None, group=group, move_on=move_on, timeout=timeout))
+    return (yield Msg("wait", None, group=group, error_on_timeout=error_on_timeout, timeout=timeout))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -1026,7 +1028,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     yield from complete_all(*flyers, group=group, wait=False)
     done = False
     while not done:
-        done = yield from wait(group=group, timeout=flush_period, move_on=True)
+        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False)
         yield from collect(*dets, name=stream_name)
 
 

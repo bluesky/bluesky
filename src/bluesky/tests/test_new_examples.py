@@ -111,8 +111,8 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
         (trigger, ("det",), {"group": "A"}, [Msg("trigger", "det", group="A")]),
         (sleep, (2,), {}, [Msg("sleep", None, 2)]),
-        (wait, (), {}, [Msg("wait", None, move_on=False, group=None, timeout=None)]),
-        (wait, ("A",), {}, [Msg("wait", None, group="A", move_on=False, timeout=None)]),
+        (wait, (), {}, [Msg("wait", None, error_on_timeout=True, group=None, timeout=None)]),
+        (wait, ("A",), {}, [Msg("wait", None, group="A", error_on_timeout=True, timeout=None)]),
         (checkpoint, (), {}, [Msg("checkpoint")]),
         (clear_checkpoint, (), {}, [Msg("clear_checkpoint")]),
         (pause, (), {}, [Msg("pause", None, defer=False)]),
@@ -702,7 +702,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det]))
     expected = [
         Msg("trigger", det),
-        Msg("wait", move_on=False),
+        Msg("wait", error_on_timeout=True),
         Msg("create", name="primary"),
         Msg("read", det),
         Msg("save"),
@@ -715,7 +715,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det], "custom"))
     expected = [
         Msg("trigger", det),
-        Msg("wait", move_on=False),
+        Msg("wait", error_on_timeout=True),
         Msg("create", name="custom"),
         Msg("read", det),
         Msg("save"),

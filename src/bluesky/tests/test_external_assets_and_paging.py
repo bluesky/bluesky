@@ -384,8 +384,7 @@ def test_collect_stream_true_raises(RE):
     with pytest.raises(
         RuntimeError,
         match=re.escape(
-            "Collect now emits EventPages (stream=False), "
-            "so emitting Events (stream=True) is no longer supported"
+            "Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported"
         ),
     ):
         RE(collect_plan(OldPvCollectable("det"), pre_declare=False, stream=True))

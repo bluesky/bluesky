@@ -415,9 +415,9 @@ class RunBundler:
         def emit_event(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
-                assert (
-                    not args and not kwargs
-                ), "If subscribe callback called with readings, args and kwargs are not supported."
+                assert not args and not kwargs, (
+                    "If subscribe callback called with readings, args and kwargs are not supported."
+                )
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
@@ -540,7 +540,7 @@ class RunBundler:
 
         # do have the descriptor cached
         elif frozenset(d_objs) != objs_read:
-            raise RuntimeError(f"Mismatched objects read, expected {frozenset(d_objs)!s}, " f"got {objs_read!s}")
+            raise RuntimeError(f"Mismatched objects read, expected {frozenset(d_objs)!s}, got {objs_read!s}")
 
         # Resource and Datum documents
         indices_generated = await self._pack_external_assets(self._asset_docs_cache, message_stream_name=desc_key)
@@ -725,9 +725,9 @@ class RunBundler:
         def is_data_key(obj: Any) -> bool:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
-        assert all(
-            not is_data_key(value) for value in describe_collect.values()
-        ), "Single nested data keys should be pre-decalred"
+        assert all(not is_data_key(value) for value in describe_collect.values()), (
+            "Single nested data keys should be pre-decalred"
+        )
 
         # Make sure you can't use identidal data keys in multiple streams
         duplicates: dict[str, DataKey] = defaultdict(dict)
@@ -753,7 +753,7 @@ class RunBundler:
                 objs_read = self._descriptor_objs[stream_name]
                 if stream_data_keys != objs_read[collect_object]:
                     raise RuntimeError(
-                        "Mismatched objects read, " f"expected {stream_data_keys!s}, " f"got {objs_read!s}"
+                        f"Mismatched objects read, expected {stream_data_keys!s}, got {objs_read!s}"
                     )
             local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
 
@@ -1015,9 +1015,9 @@ class RunBundler:
         # If a stream name was provided in the message, check the stream has been declared
         # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
-            assert (
-                message_stream_name in declared_stream_names
-            ), "If a message stream name is provided declare stream needs to be called first."
+            assert message_stream_name in declared_stream_names, (
+                "If a message stream name is provided declare stream needs to be called first."
+            )
             stream_name = message_stream_name
         elif declared_stream_names:
             assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations

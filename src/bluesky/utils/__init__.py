@@ -31,7 +31,6 @@ from weakref import WeakKeyDictionary, ref
 import msgpack
 import msgpack_numpy
 import numpy as np
-import zict
 from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
@@ -78,10 +77,7 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         )
 
     def __repr__(self):
-        return (
-            f"Msg({self.command!r}, obj={self.obj!r}, "
-            f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
-        )
+        return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
@@ -606,7 +602,7 @@ def normalize_subs_input(subs):
         for func in funcs:
             if not callable(func):
                 raise ValueError(
-                    "subs values must be functions or lists of functions. The offending entry is\n " f"{func}"
+                    f"subs values must be functions or lists of functions. The offending entry is\n {func}"
                 )
     return normalized
 
@@ -824,6 +820,14 @@ class PersistentDict(collections.abc.MutableMapping):
     """
 
     def __init__(self, directory):
+        try:
+            import zict
+        except ImportError as e:
+            raise RuntimeError(
+                "In order to use PersistentDict you must install zict. "
+                "zict v3 has the limitation that only one Python process "
+                "can reliably work with the data files at a time."
+            ) from e
         self._directory = directory
         self._file = zict.File(directory)
         self._func = zict.Func(self._dump, self._load, self._file)
@@ -1234,11 +1238,14 @@ def make_decorator(wrapper):
 
     Example of a decorator:
     >>> some_decorator = make_decorator(some_wrapper)  # returns decorator
-    >>> customized_count = some_decorator(count)  # returns generator func
+    >>> customized_count = some_decorator()(count)  # returns generator func
     >>> plan = customized_count([det])  # returns a generator instance
 
     This turns a 'wrapper' into a decorator, which accepts a generator
-    function and returns a generator function.
+    function and returns a generator function. Additional arguments
+    given to ``some_decorator(arg0, kwarg0=...)(count)`` will be
+    passed to the wrapper as ``some_wrapper(plan, arg0, kwarg0=...)``.
+
     """
 
     @wraps(wrapper)
@@ -1937,7 +1944,7 @@ class Plan:
         self._stack = traceback.format_stack()
         self._stack = self._stack[:-2]
         self._stack += [
-            f"RuntimeWarning: plan `{f.__name__}` was never iterated" ", did you mean to use `yield from`?"
+            f"RuntimeWarning: plan `{f.__name__}` was never iterated, did you mean to use `yield from`?"
         ]
 
     def __iter__(self):

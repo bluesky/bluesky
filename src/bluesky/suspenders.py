@@ -679,7 +679,7 @@ class SuspendWhenChanged(SuspenderBase):
         if not self.tripped:
             return ""
 
-        just = f"Signal {self._sig.name}" f', got "{self._sig.get()}"' f', expected "{self.expected_value}"'
+        just = f'Signal {self._sig.name}, got "{self._sig.get()}", expected "{self.expected_value}"'
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
         return ": ".join(s for s in (just, self._tripped_message) if s)

@@ -2,6 +2,21 @@
  Release History
 =================
 
+v1.13.1 (2024-12-12)
+====================
+
+Changed
+-------
+* ``zict`` is no longer a default dependency.  There is a breaking API change
+  between zict2 and zict3 that fixed a race condition between multiple threads
+  using the same instance but broke using multiple instances in the same
+  process or multiple processes sharing the same files.  ``PersistentDict`` is
+  not being removed, but is strongly discouraged for new use.  To get the old pinning use
+  ```pip install bluesky[old_persistentdict]`` or install ``zict<3``.
+
+
+
+
 v1.13.0a4 (2024-07-08)
 ======================
 
