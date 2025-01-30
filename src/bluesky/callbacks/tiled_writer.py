@@ -75,9 +75,10 @@ class _RunWriter(CallbackBase):
 
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
+        doc = copy.copy(doc)
         # If the document already adheres to StreamResource schema, return it
-        if "mimetype" in doc.keys():
-            return copy.copy(doc)
+        if "mimetype" in doc:
+            return doc
 
         # The document is a `Resource` or a < v1.20 `StreamResource`.
         # Both are converted to latest version `StreamResource`.
