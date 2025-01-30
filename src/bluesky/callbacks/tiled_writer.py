@@ -84,9 +84,7 @@ class _RunWriter(CallbackBase):
         # Both are converted to latest version `StreamResource`.
         for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
             if expected_key not in doc:
-                raise RuntimeError(
-                    f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'"
-                )
+                raise RuntimeError(f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'")
 
         # Convert the Resource (or old StreamResource) document to a StreamResource document
         doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
