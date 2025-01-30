@@ -89,27 +89,32 @@ class _RunWriter(CallbackBase):
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
     def _convert_resource_to_stream_resource(self, doc: Union[Resource, StreamResource]) -> StreamResource:
-        """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+        """Make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
+
+        Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
         or Resource documents that are converted to StreamResources.
-
-        Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
+
         doc = copy.copy(doc)
-        # If the document already adheres to StreamResource schema, return it
-        if "mimetype" in doc:
-            return doc
 
-        # The document is a `Resource` or a < v1.20 `StreamResource`.
-        # Both are converted to latest version `StreamResource`.
-        for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
-            if expected_key not in doc:
-                raise RuntimeError(f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'")
+        if "mimetype" not in doc:
+            # The document is a `Resource` or a < v1.20 `StreamResource`.
+            # Both are converted to latest version `StreamResource`.
+            for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
+                if expected_key not in doc:
+                    raise RuntimeError(
+                        f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'"
+                    )
 
-        # Convert the Resource (or old StreamResource) document to a StreamResource document
-        doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
-        doc["parameters"] = doc.pop("resource_kwargs", {})
-        file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
-        doc["uri"] = "file://localhost/" + file_path
+            # Convert the Resource (or old StreamResource) document to a StreamResource document
+            doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
+            doc["parameters"] = doc.pop("resource_kwargs", {})
+            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
+            doc["uri"] = "file://localhost/" + file_path
+
+        # Ensure that the internal path within HDF5 files is referenced with "dataset" parameter
+        if doc["mimetype"] == "application/x-hdf5":
+            doc["parameters"]["dataset"] = doc["parameters"].pop("path", doc["parameters"].pop("dataset", ""))
 
         return doc
 
