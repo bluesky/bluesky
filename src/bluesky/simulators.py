@@ -7,6 +7,7 @@ from typing import (
     Literal,
     Optional,
     Union,
+    cast,
 )
 from warnings import warn
 
@@ -151,11 +152,11 @@ class RunEngineSimulator:
 
     GROUP_ANY = "any"
 
-    def __init__(self):
-        self.message_handlers = []
-        self.callbacks = {}
-        self.next_callback_token = 0
-        self.return_value: Any
+    def __init__(self) -> None:
+        self.message_handlers: list[_MessageHandler] = []
+        self.callbacks: dict[int, tuple[Callable[[str, dict], None], str]] = {}
+        self.next_callback_token: int = 0
+        self.return_value: Any = None
 
     def add_handler_for_callback_subscribes(self):
         """Add a handler that registers all the callbacks from subscribe messages so we can call them later.
@@ -200,7 +201,7 @@ class RunEngineSimulator:
             commands = [commands]
 
         self.message_handlers.insert(
-            index if index != END else len(self.message_handlers),
+            cast(int, index if index != END else len(self.message_handlers)),
             _MessageHandler(
                 lambda msg: msg.command in commands
                 and (
