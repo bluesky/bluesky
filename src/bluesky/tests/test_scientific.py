@@ -5,6 +5,8 @@ from ophyd.sim import SynGauss, det, motor
 from bluesky.callbacks.fitting import PeakStats
 from bluesky.plans import scan
 
+FWHM_GAUSS = 2 * np.sqrt(2 * np.log(2))  # theoretical value with std=1
+
 
 def get_ps(x, y, shift=0.5):
     """peak status calculation from CHX algorithm."""
@@ -61,22 +63,34 @@ def get_ps(x, y, shift=0.5):
     return ps
 
 
-def test_peak_statistics(RE):
+@pytest.mark.parametrize(
+    "Imax, center, fwhm",
+    [
+        [-1, 0, FWHM_GAUSS],
+        [0, 0, None],
+        [1, 0, FWHM_GAUSS],
+    ],
+)
+def test_peak_statistics(Imax, center, fwhm, RE):
     """peak statistics calculation on simple gaussian function"""
     x = "motor"
     y = "det"
     ps = PeakStats(x, y)
     RE.subscribe(ps)
+    det.Imax.put(Imax)
     RE(scan([det], motor, -5, 5, 100))
 
     fields = ["x", "y", "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg"]
     for field in fields:
         assert hasattr(ps, field), f"{field} is not an attribute of ps"
 
-    np.allclose(ps.cen, 0, atol=1e-6)
-    np.allclose(ps.com, 0, atol=1e-6)
-    fwhm_gauss = 2 * np.sqrt(2 * np.log(2))  # theoretical value with std=1
-    assert np.allclose(ps.fwhm, fwhm_gauss, atol=1e-2)
+    np.allclose(ps.cen, center, atol=1e-6)
+    np.allclose(ps.com, center, atol=1e-6)
+    if fwhm is None:
+        # FWHM is None when no peak was detected.
+        assert ps.fwhm is None
+    else:
+        assert np.allclose(ps.fwhm, fwhm, atol=1e-2)
 
 
 def test_peak_statistics_compare_chx(RE):
