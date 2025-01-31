@@ -175,7 +175,7 @@ class ConsolidatorBase:
         Chunking along the trailing dimensions is always preserved as in the original (single) array.
         """
 
-        def list_summands(A, b, repeat=1):
+        def list_summands(A: int, b: int, repeat: int = 1) -> tuple[int, ...]:
             # Generate a list with repeated b summing up to A; append the remainder if necessary
             # e.g. list_summands(13, 3) = [3, 3, 3, 3, 1]
             # if `repeat = n`, n > 1, copy and repeat the entire result n times
