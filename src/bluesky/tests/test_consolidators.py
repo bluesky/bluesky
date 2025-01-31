@@ -81,10 +81,10 @@ def stream_datum_factory():
 
 
 shape_testdata = [
-    # ("test_img", True, (5, 10, 15)),
-    # ("test_cube", True, (5, 10, 15, 3)),
-    # ("test_arr", True, (5,)),
-    # ("test_num", True, (5,)),
+    ("test_img", True, (5, 10, 15)),
+    ("test_cube", True, (5, 10, 15, 3)),
+    ("test_arr", True, (5,)),
+    ("test_num", True, (5,)),
     ("test_img", False, (50, 15)),
     ("test_cube", False, (50, 15, 3)),
     ("test_arr", False, (5,)),
