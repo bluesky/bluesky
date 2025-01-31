@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.13.1rc3.dev2+ge32b637e documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.13.1rc3.dev3+g88c403ff documentation</title>
   
   
   
@@ -38,14 +38,14 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=2ab50059"></script>
+    <script src="../../_static/documentation_options.js?v=3305bdd3"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev2+ge32b637e';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev3+g88c403ff';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -53,7 +53,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.13.1rc3.dev2+ge32b637e" />
+  <meta name="docsearch:version" content="1.13.1rc3.dev3+g88c403ff" />
   </head>
   
   
@@ -578,6 +578,7 @@
     <span class="n">AsyncInput</span><span class="p">,</span>
     <span class="n">CallbackRegistry</span><span class="p">,</span>
     <span class="n">DefaultDuringTask</span><span class="p">,</span>
+    <span class="n">DuringTask</span><span class="p">,</span>
     <span class="n">FailedPause</span><span class="p">,</span>
     <span class="n">FailedStatus</span><span class="p">,</span>
     <span class="n">IllegalMessageSequence</span><span class="p">,</span>
@@ -949,16 +950,16 @@
 <a class="viewcode-back" href="../../generated/bluesky.run_engine.RunEngine.html#bluesky.run_engine.RunEngine.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">md</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">preprocessors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">context_managers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">md_validator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">md_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">scan_id_source</span><span class="o">=</span><span class="n">default_scan_id_source</span><span class="p">,</span>
-        <span class="n">during_task</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">call_returns_result</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">loop</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractEventLoop</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">preprocessors</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">context_managers</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">md_validator</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">md_normalizer</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">scan_id_source</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_scan_id_source</span><span class="p">,</span>
+        <span class="n">during_task</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">DuringTask</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">call_returns_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">if</span> <span class="n">loop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">new_event_loop</span><span class="p">()</span>
@@ -969,7 +970,7 @@
         <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>  <span class="c1"># noqa: UP036</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_loop_for_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;loop&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_loop_for_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loop_for_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractEventLoop</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c1"># When set, RunEngine.__call__ should stop blocking.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_blocking_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
 
@@ -1038,23 +1039,27 @@
         <span class="c1"># All flags and caches are defined here with a comment. Good luck.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_call_returns_result</span> <span class="o">=</span> <span class="n">call_returns_result</span>  <span class="c1"># should __call__ return UIDs or plan value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">RunBundler</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># a mapping of open run -&gt; bundlers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata_per_call</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># for all runs generated by one __call__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata_per_call</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># for all runs generated by one __call__</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># pause at next &#39;checkpoint&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># stored and then raised in the _run loop</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># True if paused, aborted, or failed</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_staged</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># objects staged, not yet unstaged</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_objs_seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># all objects seen</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movable_objs_touched</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># objects we moved at any point</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>  <span class="c1"># run start uids generated by __call__  # noqa: C408</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_suspenders</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># set holding suspenders</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_groups</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>  <span class="c1"># sets of Events to wait for</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_status_objs</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>  <span class="c1"># status objects to wait for</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_callback_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># ids from CallbackRegistry</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_seen_wait_and_move_on_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># group ids that have been passed to _wait_and_move_on</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># history of processed msgs for rewinding</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># if the RE is allowed to replay msgs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># stack of generators to work off of</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># resps to send into the plans</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_staged</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># objects staged, not yet unstaged</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objs_seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># all objects seen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movable_objs_touched</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># objects we moved at any point</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>  <span class="c1"># run start uids generated by __call__  # noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_suspenders</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># set holding suspenders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_groups</span><span class="p">:</span> <span class="n">defaultdict</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>  <span class="c1"># sets of Events to wait for</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status_objs</span><span class="p">:</span> <span class="n">defaultdict</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span>
+            <span class="nb">set</span>
+        <span class="p">)</span>  <span class="c1"># status objects to wait for</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_callback_ids</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># ids from CallbackRegistry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_seen_wait_and_move_on_keys</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">set</span><span class="p">()</span>
+        <span class="p">)</span>  <span class="c1"># group ids that have been passed to _wait_and_move_on</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># history of processed msgs for rewinding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># if the RE is allowed to replay msgs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># stack of generators to work off of</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># resps to send into the plans</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_exit_status</span> <span class="o">=</span> <span class="s2">&quot;success&quot;</span>  <span class="c1"># optimistic default</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># reason for abort</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># asyncio.Task associated with call to self._run</span>
@@ -2487,9 +2492,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_close_run_trace</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_close_run_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
-        <span class="n">exit_status</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">exit_status</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;exit_status&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exit_status</span>
-        <span class="n">reason</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">reason</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;reason&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_close_run_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Msg</span><span class="p">):</span>
+        <span class="n">exit_status</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exit_status</span><span class="p">)</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">_span</span><span class="p">:</span> <span class="n">Span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_tracing_spans</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
             <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="n">exit_status</span><span class="p">)</span>

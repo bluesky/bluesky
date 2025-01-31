@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.bundlers &#8212; bluesky 1.13.1rc3.dev2+ge32b637e documentation</title>
+    <title>bluesky.bundlers &#8212; bluesky 1.13.1rc3.dev3+g88c403ff documentation</title>
   
   
   
@@ -38,14 +38,14 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=2ab50059"></script>
+    <script src="../../_static/documentation_options.js?v=3305bdd3"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/bundlers';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev2+ge32b637e';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev3+g88c403ff';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -53,7 +53,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.13.1rc3.dev2+ge32b637e" />
+  <meta name="docsearch:version" content="1.13.1rc3.dev3+g88c403ff" />
   </head>
   
   
@@ -535,7 +535,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ttime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">combinations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoggerAdapter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">event_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ComposeDescriptorBundle</span><span class="p">,</span>
@@ -554,6 +556,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">doc_logger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Asset</span><span class="p">,</span>
     <span class="n">Callback</span><span class="p">,</span>
     <span class="n">Collectable</span><span class="p">,</span>
     <span class="n">Configurable</span><span class="p">,</span>
@@ -563,6 +566,7 @@
     <span class="n">HasName</span><span class="p">,</span>
     <span class="n">Readable</span><span class="p">,</span>
     <span class="n">Reading</span><span class="p">,</span>
+    <span class="n">StreamAsset</span><span class="p">,</span>
     <span class="n">Subscribable</span><span class="p">,</span>
     <span class="n">SyncOrAsync</span><span class="p">,</span>
     <span class="n">T</span><span class="p">,</span>
@@ -585,12 +589,35 @@
 <span class="n">ExternalAssetDoc</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Datum</span><span class="p">,</span> <span class="n">Resource</span><span class="p">,</span> <span class="n">StreamDatum</span><span class="p">,</span> <span class="n">StreamResource</span><span class="p">]</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_describe_collect_dict_is_valid</span><span class="p">(</span>
+    <span class="n">describe_collect_dict</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># TODO: change to TypeGuard[dict[str, DataKey]] after python 3.9</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if the describe_collect dictionary contains valid DataKeys.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">describe_collect_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">)</span>
+
+
 <div class="viewcode-block" id="RunBundler">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.html#bluesky.bundlers.RunBundler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RunBundler</span><span class="p">:</span>
 <div class="viewcode-block" id="RunBundler.__init__">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.html#bluesky.bundlers.RunBundler.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">md</span><span class="p">,</span> <span class="n">record_interruptions</span><span class="p">,</span> <span class="n">emit</span><span class="p">,</span> <span class="n">emit_sync</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">strict_pre_declare</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">record_interruptions</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">emit</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">emit_sync</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">log</span><span class="p">:</span> <span class="n">LoggerAdapter</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">strict_pre_declare</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="c1"># if create can YOLO implicitly create a stream</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_strict_pre_declare</span> <span class="o">=</span> <span class="n">strict_pre_declare</span>
         <span class="c1"># state stolen from the RE</span>
@@ -599,9 +626,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># The (future) runstart uid</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">HasName</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># objects read in one Event</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.read() in one Event</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.collect_asset_docs()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Asset</span><span class="p">,</span> <span class="n">StreamAsset</span><span class="p">]]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.collect_asset_docs()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># cache of all obj.describe() output  # noqa: C408</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408  # cache of all obj.describe() output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408  # cache of all obj.describe() output</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.describe_configuration()  # noqa: C408</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config_values_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.read_configuration() values  # noqa: C408</span>
@@ -618,7 +645,7 @@
         <span class="c1"># a cache of stream_resource uid to the data_keys that stream_resource collects for</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># objects after kickoff(), before collect()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">HasName</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># objects after kickoff(), before collect()</span>
         <span class="c1"># we expect the RE to take care of the composition</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_md</span> <span class="o">=</span> <span class="n">md</span>
         <span class="c1"># this is state on the RE, mirror it here rather than refer to</span>
@@ -634,7 +661,7 @@
 
 <div class="viewcode-block" id="RunBundler.open_run">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.open_run.html#bluesky.bundlers.RunBundler.open_run">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">open_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">open_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Msg</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span> <span class="o">=</span> <span class="n">new_uid</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interruptions_desc_uid</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># uid for a special Event Desc.</span>
@@ -674,7 +701,7 @@
 
 <div class="viewcode-block" id="RunBundler.close_run">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.close_run.html#bluesky.bundlers.RunBundler.close_run">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Instruct the RunEngine to write the RunStop document</span>
 
 <span class="sd">        Expected message object is::</span>
@@ -698,8 +725,8 @@
         <span class="n">reason</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="n">exit_status</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="s2">&quot;success&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;success&quot;</span>
 
+        <span class="n">exit_status</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;abort&quot;</span><span class="p">,</span> <span class="s2">&quot;fail&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="s2">&quot;success&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;success&quot;</span>
         <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compose_stop</span><span class="p">(</span>
             <span class="n">exit_status</span><span class="o">=</span><span class="n">exit_status</span><span class="p">,</span>
             <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
@@ -792,8 +819,8 @@
         <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">collect</span><span class="p">:</span>
                 <span class="n">data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
-                <span class="n">streams_and_data_keys</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_format_datakeys_with_stream_name</span><span class="p">(</span><span class="n">data_keys</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span>
+                <span class="n">streams_and_data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_datakeys_with_stream_name</span><span class="p">(</span>
+                    <span class="n">data_keys</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="o">=</span><span class="n">stream_name</span>
                 <span class="p">)</span>
 
                 <span class="c1"># ensure that there is only one stream and it is the stream we have provided.</span>
@@ -1230,9 +1257,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span></div>
 
 
-    <span class="c1"># Could we have a look at changing this now? we use one of each use can in</span>
-    <span class="c1"># seperate places so it could be two seperate methods for each dictionary type.</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_maybe_format_datakeys_with_stream_name</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_datakeys_with_stream_name</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">describe_collect_dict</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]],</span>
         <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1245,25 +1270,31 @@
 <span class="sd">        If the `message_stream_name` is None then return the `describe_collect_dict.items()`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">has_str_source</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-            <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_contains_message_stream_name</span><span class="p">(</span>
+            <span class="n">describe_collect_dict</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># TODO: change to TypeGuard[dict[str, dict[str, DataKey]]] after python 3.9</span>
+            <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="n">_describe_collect_dict_is_valid</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">describe_collect_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">describe_collect_dict</span><span class="p">:</span>
-            <span class="n">first_value</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">has_str_source</span><span class="p">(</span><span class="n">first_value</span><span class="p">):</span>
-                <span class="c1"># We have Dict[str, DataKey], so return just this</span>
-                <span class="c1"># If stream name not given then default to &quot;primary&quot;</span>
-                <span class="k">return</span> <span class="p">[(</span><span class="n">message_stream_name</span> <span class="ow">or</span> <span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">describe_collect_dict</span><span class="p">)]</span>
-            <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_str_source</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">first_value</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">_describe_collect_dict_is_valid</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="p">):</span>
+                <span class="c1"># TODO: remove cast after python 3.9 is no longer supported</span>
+                <span class="n">flat_describe_collect_dict</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="n">describe_collect_dict</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">[(</span><span class="n">message_stream_name</span> <span class="ow">or</span> <span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">flat_describe_collect_dict</span><span class="p">)]</span>
+            <span class="c1"># Validate that all of the values nested values are DataKeys</span>
+            <span class="k">elif</span> <span class="n">_contains_message_stream_name</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="p">):</span>
                 <span class="c1"># We have Dict[str, Dict[str, DataKey]] so return its items</span>
-                <span class="k">if</span> <span class="n">message_stream_name</span> <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="p">)</span> <span class="o">!=</span> <span class="p">[</span><span class="n">message_stream_name</span><span class="p">]:</span>
+                <span class="c1"># TODO: remove cast after python 3.9 is no longer supported</span>
+                <span class="n">nested_describe_collect_dict</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]],</span> <span class="n">describe_collect_dict</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">message_stream_name</span> <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="n">nested_describe_collect_dict</span><span class="p">)</span> <span class="o">!=</span> <span class="p">[</span><span class="n">message_stream_name</span><span class="p">]:</span>
                     <span class="c1"># The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],</span>
                     <span class="c1"># this is only acceptable if the only key in the parent dict is message_stream_name</span>
 
                     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Expected a single stream </span><span class="si">{</span><span class="n">message_stream_name</span><span class="si">!r}</span><span class="s2">, got </span><span class="si">{</span><span class="n">describe_collect_dict</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
-                <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">describe_collect_dict</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">nested_describe_collect_dict</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Invalid describe_collect return: </span><span class="si">{</span><span class="n">describe_collect_dict</span><span class="si">}</span><span class="s2"> when collect &quot;</span>
@@ -1276,7 +1307,7 @@
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Collectable</span><span class="p">):</span>
         <span class="s2">&quot;Read the object&#39;s describe and cache it.&quot;</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">)</span>
-        <span class="n">c</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_collect</span><span class="p">())</span>
+        <span class="n">c</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_collect</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collect_object</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">):</span>
@@ -1305,29 +1336,31 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">collect_object</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">describe_collect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">collect_object</span><span class="p">]</span>
-        <span class="n">describe_collect_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_maybe_format_datakeys_with_stream_name</span><span class="p">(</span><span class="n">describe_collect</span><span class="p">))</span>
+        <span class="n">describe_collect_items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_datakeys_with_stream_name</span><span class="p">(</span><span class="n">describe_collect</span><span class="p">)</span>
 
-        <span class="n">local_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">local_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># Check that singly nested stuff should have been pre-declared</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">is_data_key</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">}</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="ow">not</span> <span class="n">is_data_key</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">describe_collect</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="p">(</span>
-            <span class="s2">&quot;Single nested data keys should be pre-decalred&quot;</span>
+            <span class="s2">&quot;Single nested data keys should be pre-declared&quot;</span>
         <span class="p">)</span>
 
-        <span class="c1"># Make sure you can&#39;t use identidal data keys in multiple streams</span>
-        <span class="n">duplicates</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">stream</span><span class="p">,</span> <span class="n">data_keys</span> <span class="ow">in</span> <span class="n">describe_collect</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">stuff</span> <span class="ow">in</span> <span class="n">data_keys</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">for</span> <span class="n">other_stream</span><span class="p">,</span> <span class="n">other_data_keys</span> <span class="ow">in</span> <span class="n">describe_collect</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="k">for</span> <span class="n">other_key</span><span class="p">,</span> <span class="n">other_stuff</span> <span class="ow">in</span> <span class="n">other_data_keys</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                        <span class="k">if</span> <span class="n">stream</span> <span class="o">!=</span> <span class="n">other_stream</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">==</span> <span class="n">other_key</span> <span class="ow">and</span> <span class="n">stuff</span> <span class="o">==</span> <span class="n">other_stuff</span><span class="p">:</span>
-                            <span class="n">duplicates</span><span class="p">[</span><span class="n">stream</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">stuff</span>
+        <span class="c1"># Make sure you can&#39;t use identical data keys in multiple streams</span>
+        <span class="c1"># Data structure is assumed to be dict[stream_name, dictionary of key -&gt; data_key]</span>
+        <span class="n">duplicates</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">stream1</span><span class="p">,</span> <span class="n">data_keys1</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">stream2</span><span class="p">,</span> <span class="n">data_keys2</span><span class="p">),</span>
+        <span class="p">)</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">describe_collect_items</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">common_key</span> <span class="ow">in</span> <span class="n">data_keys1</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">data_keys2</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">duplicates</span><span class="p">[</span><span class="n">stream1</span><span class="p">][</span><span class="n">common_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_keys1</span><span class="p">[</span><span class="n">common_key</span><span class="p">]</span>
+                <span class="n">duplicates</span><span class="p">[</span><span class="n">stream2</span><span class="p">][</span><span class="n">common_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_keys2</span><span class="p">[</span><span class="n">common_key</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">duplicates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Can&#39;t use identical data keys in multiple streams: </span><span class="si">{</span><span class="n">duplicates</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Can&#39;t use identical data keys in multiple streams:&quot;</span><span class="p">,</span>
                 <span class="sa">f</span><span class="s2">&quot;Data keys: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">duplicates</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="sa">f</span><span class="s2">&quot;streams: </span><span class="si">{</span><span class="n">duplicates</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1381,7 +1414,7 @@
 
     <span class="c1"># message strem name here?</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_pack_external_assets</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">asset_docs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ExternalAssetDoc</span><span class="p">]],</span> <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">asset_docs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Asset</span><span class="p">,</span> <span class="n">StreamAsset</span><span class="p">]],</span> <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Packs some external asset documents with relevant information from the run.&quot;&quot;&quot;</span>
 
@@ -1396,36 +1429,48 @@
 
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">asset_docs</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">resource</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
-                <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span>
+                <span class="n">resource_doc</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Resource</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Run start uid was never set before Resource document was emitted.&quot;</span><span class="p">)</span>
+                <span class="n">resource_doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span>
             <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">stream_resource</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
-                <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span>
+                <span class="n">stream_resource_doc</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">StreamResource</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Run start uid was never set before StreamResource document was emitted.&quot;</span><span class="p">)</span>
+                <span class="n">stream_resource_doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span>
 
-                <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Received `stream_resource` with uid </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> twice.&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">stream_resource_doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Received `stream_resource` with uid </span><span class="si">{</span><span class="n">stream_resource_doc</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> twice.&quot;</span><span class="p">)</span>
 
-                <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data_key&quot;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">[</span><span class="n">stream_resource_doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">stream_resource_doc</span><span class="p">[</span><span class="s2">&quot;data_key&quot;</span><span class="p">]</span>
 
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">external_data_keys</span> <span class="ow">or</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data_key&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">external_data_keys</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">external_data_keys</span> <span class="ow">or</span> <span class="n">stream_resource_doc</span><span class="p">[</span><span class="s2">&quot;data_key&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">external_data_keys</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Receieved a `stream_resource` with data_key </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data_key&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> that is not in the &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;descriptor &#39;STREAM:&#39; data_keys </span><span class="si">{</span><span class="n">external_data_keys</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Receieved a `stream_resource` with data_key </span><span class="si">{</span><span class="n">stream_resource_doc</span><span class="p">[</span><span class="s1">&#39;data_key&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;that is not in the descriptor &#39;STREAM:&#39; data_keys </span><span class="si">{</span><span class="n">external_data_keys</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
 
             <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">stream_datum</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">]:</span>
+                <span class="n">stream_datum_doc</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">StreamDatum</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">stream_datum_doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">]:</span>
                     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Received a `stream_datum` </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> with a `descriptor` uid already &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;filled in, with the value </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;descriptor&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> this should be an empty string.&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Received a `stream_datum` </span><span class="si">{</span><span class="n">stream_datum_doc</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> with a `descriptor` uid already &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;filled in, with the value </span><span class="si">{</span><span class="n">stream_datum_doc</span><span class="p">[</span><span class="s1">&#39;descriptor&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> this should be an empty &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;string.&quot;</span>
                     <span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">descriptor_doc</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;`descriptor` not made for stream </span><span class="si">{</span><span class="n">message_stream_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-                <span class="n">data_keys_received</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">]])</span>
+                <span class="n">data_keys_received</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stream_resource_data_keys</span><span class="p">[</span><span class="n">stream_datum_doc</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">]])</span>
 
-                <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+                <span class="n">stream_datum_doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">descriptor_doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">message_stream_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="s2">&quot;`message_stream_name` was never set before StreamDatum document was emitted.&quot;</span>
+                    <span class="p">)</span>
                 <span class="n">stream_datum_previous_indices_difference</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pack_seq_nums_into_stream_datum</span><span class="p">(</span>
-                    <span class="n">doc</span><span class="p">,</span>
-                    <span class="n">message_stream_name</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
-                    <span class="n">stream_datum_previous_indices_difference</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">stream_datum_doc</span><span class="p">,</span>
+                    <span class="n">message_stream_name</span><span class="p">,</span>
+                    <span class="n">stream_datum_previous_indices_difference</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DocumentNames</span><span class="o">.</span><span class="n">datum</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
                 <span class="o">...</span>
@@ -1453,7 +1498,7 @@
 
         <span class="k">return</span> <span class="n">stream_datum_previous_indices_difference</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_external_data_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_external_data_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the external data keys from the descriptor data_keys dictionary&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data_keys</span> <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;external&quot;</span> <span class="ow">in</span> <span class="n">data_keys</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data_keys</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;external&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;STREAM:&quot;</span><span class="p">)]</span>
 
@@ -1507,7 +1552,11 @@
         <span class="k">return</span> <span class="n">payload</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_collect_event_pages</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">collect_obj</span><span class="p">:</span> <span class="n">EventPageCollectable</span><span class="p">,</span> <span class="n">local_descriptors</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">message_stream_name</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">collect_obj</span><span class="p">:</span> <span class="n">EventPageCollectable</span><span class="p">,</span>
+        <span class="n">local_descriptors</span><span class="p">,</span>
+        <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">):</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -1544,7 +1593,7 @@
 
 <div class="viewcode-block" id="RunBundler.collect">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.collect.html#bluesky.bundlers.RunBundler.collect">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Collect data cached by a flyer and emit documents.</span>
 
@@ -1555,7 +1604,7 @@
 <span class="sd">        Where there must be at least one collect object. If multiple are used</span>
 <span class="sd">        they must obey the WritesStreamAssets protocol.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">stream_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_is_open</span><span class="p">:</span>
             <span class="c1"># sanity check -- &#39;kickoff&#39; should catch this and make this</span>
@@ -1582,7 +1631,7 @@
 
         <span class="c1"># Get references to get_index methods if we have more than one collect object</span>
         <span class="c1"># raise error if collect_objects don&#39;t obey WritesStreamAssests protocol</span>
-        <span class="n">indices</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="kc">None</span><span class="p">],</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">indices</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">WritesStreamAssets</span><span class="p">)</span><span class="o">.</span><span class="n">get_index</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">collect_objects</span><span class="p">]</span>
 
@@ -1597,7 +1646,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_uncollected</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
         <span class="c1"># Get the provided message stream name for singly nested scans</span>
-        <span class="n">message_stream_name</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">message_stream_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="c1"># Retrive the stream names from pre-declared streams</span>
         <span class="n">declared_stream_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_declared_stream_names</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">),</span> <span class="p">[])</span>
@@ -1653,11 +1702,15 @@
         <span class="c1"># Make event pages for an object which is EventCollectable or EventPageCollectable</span>
         <span class="c1"># objects that are EventCollectable will now group the Events and Emit an Event Page</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">collect_objects</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">WritesStreamAssets</span><span class="p">):</span>
-            <span class="n">local_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">local_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="n">collect_obj</span> <span class="o">=</span> <span class="n">collect_objects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
             <span class="c1"># If the single collect object is singly nested, gather descriptors</span>
             <span class="k">if</span> <span class="n">collect_obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_descriptors</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="s2">&quot;Expected stream_name to be set before calling collect() on a singly nested device.&quot;</span>
+                    <span class="p">)</span>
                 <span class="n">objs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
                 <span class="n">data_keys</span> <span class="o">=</span> <span class="n">objs</span><span class="p">[</span><span class="n">collect_obj</span><span class="p">]</span>
                 <span class="n">local_descriptors</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">data_keys</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
