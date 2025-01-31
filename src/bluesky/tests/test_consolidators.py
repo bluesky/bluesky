@@ -136,30 +136,52 @@ def test_tiff_shape(
 
 
 chunk_testdata = [
-    ("test_img", True, (), ((5,), (10,), (15,))),
-    ("test_img", True, (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
-    ("test_img", True, (2,), ((2, 2, 1), (10,), (15,))),
-    ("test_img", True, (5, 10, 15), ((5,), (10,), (15,))),
-    ("test_img", True, (10, 10, 15), ((5,), (10,), (15,))),
-    ("test_img", True, (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
-    ("test_cube", True, (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
-    ("test_arr", True, (), ((5,),)),
-    ("test_arr", True, (2,), ((2, 2, 1),)),
-    ("test_num", True, (), ((5,),)),
-    ("test_num", True, (2,), ((2, 2, 1),)),
-    ("test_img", False, (), ((50,), (15,))),
-    ("test_img", False, (10, 15), ((10, 10, 10, 10, 10), (15,))),
-    ("test_img", False, (7,), ((7, 3, 7, 3, 7, 3, 7, 3, 7, 3), (15,))),
+    ("test_img", True, False, (), ((5,), (10,), (15,))),
+    ("test_img", True, False, (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_img", True, False, (2,), ((2, 2, 1), (10,), (15,))),
+    ("test_img", True, False, (5, 10, 15), ((5,), (10,), (15,))),
+    ("test_img", True, False, (10, 10, 15), ((5,), (10,), (15,))),
+    ("test_img", True, False, (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
+    ("test_cube", True, False, (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
+    ("test_arr", True, False, (), ((5,),)),
+    ("test_arr", True, False, (2,), ((2, 2, 1),)),
+    ("test_num", True, False, (), ((5,),)),
+    ("test_num", True, False, (2,), ((2, 2, 1),)),
+    ("test_img", False, False, (), ((50,), (15,))),
+    ("test_img", False, False, (10, 15), ((10, 10, 10, 10, 10), (15,))),
+    ("test_img", False, False, (7,), ((7, 3, 7, 3, 7, 3, 7, 3, 7, 3), (15,))),
+    ("test_img", True, True, (), ((5,), (10,), (15,))),
+    ("test_img", True, True, (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_img", True, True, (2,), ((2, 2, 1), (10,), (15,))),
+    ("test_img", True, True, (5, 10, 15), ((5,), (10,), (15,))),
+    ("test_img", True, True, (10, 10, 15), ((5,), (10,), (15,))),
+    ("test_img", True, True, (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
+    ("test_cube", True, True, (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
+    ("test_arr", True, True, (), ((5,),)),
+    ("test_arr", True, True, (2,), ((2, 2, 1),)),
+    ("test_num", True, True, (), ((5,),)),
+    ("test_num", True, True, (2,), ((2, 2, 1),)),
+    ("test_img", False, True, (), ((50,), (15,))),
+    ("test_img", False, True, (10, 15), ((10, 10, 10, 10, 10), (15,))),
+    ("test_img", False, True, (7,), ((7, 7, 7, 7, 7, 7, 7, 1), (15,))),
 ]
 
 
-@pytest.mark.parametrize("data_key, stackable, chunk_shape, expected", chunk_testdata)
+@pytest.mark.parametrize("data_key, stackable, join_chunks, chunk_shape, expected", chunk_testdata)
 def test_chunks(
-    descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, stackable, chunk_shape, expected
+    descriptor,
+    hdf5_stream_resource_factory,
+    stream_datum_factory,
+    data_key,
+    stackable,
+    join_chunks,
+    chunk_shape,
+    expected,
 ):
     stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=chunk_shape)
     cons = HDF5Consolidator(stream_resource, descriptor)
     cons.stackable = stackable
+    cons.join_chunks = join_chunks
     assert cons.chunks == ((0,), *expected[1:])
     for i in range(5):
         doc = stream_datum_factory(data_key, i, i, i + 1)
