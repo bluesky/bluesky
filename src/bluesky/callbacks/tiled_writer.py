@@ -1,6 +1,6 @@
 import copy
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import pandas as pd
 from event_model import RunRouter, unpack_datum_page, unpack_event_page
@@ -94,8 +94,7 @@ class _RunWriter(CallbackBase):
         Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
         or Resource documents that are converted to StreamResources.
         """
-
-        doc = copy.copy(doc)
+        stream_resource_doc = cast(StreamResource, doc)
 
         if "mimetype" not in doc:
             # The document is a `Resource` or a < v1.20 `StreamResource`.
@@ -107,14 +106,17 @@ class _RunWriter(CallbackBase):
                     )
 
             # Convert the Resource (or old StreamResource) document to a StreamResource document
-            doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
-            doc["parameters"] = doc.pop("resource_kwargs", {})
-            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
-            doc["uri"] = "file://localhost/" + file_path
+            resource_dict = cast(dict, doc)
+            stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
+            stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
+            file_path = resource_dict.pop("root").strip("/") + "/" + resource_dict.pop("resource_path").strip("/")
+            stream_resource_doc["uri"] = "file://localhost/" + file_path
 
         # Ensure that the internal path within HDF5 files is referenced with "dataset" parameter
-        if doc["mimetype"] == "application/x-hdf5":
-            doc["parameters"]["dataset"] = doc["parameters"].pop("path", doc["parameters"].pop("dataset", ""))
+        if stream_resource_doc["mimetype"] == "application/x-hdf5":
+            stream_resource_doc["parameters"]["dataset"] = stream_resource_doc["parameters"].pop(
+                "path", stream_resource_doc["parameters"].pop("dataset", "")
+            )
 
         return doc
 
@@ -131,7 +133,7 @@ class _RunWriter(CallbackBase):
 
         stream_names = list(self.root_node.keys())
         summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
-        metadata = {"stop": dict(doc), "summary": summary, **dict(self.root_node.metadata)}
+        metadata = {"stop": doc, "summary": summary, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc: EventDescriptor):
@@ -256,7 +258,7 @@ class _RunWriter(CallbackBase):
             self.event(_doc)
 
     def datum(self, doc: Datum):
-        self._docs_cache[doc["datum_id"]] = copy.copy(doc)
+        self._datum_cache[doc["datum_id"]] = copy.copy(doc)
 
     def datum_page(self, doc: DatumPage):
         for _doc in unpack_datum_page(doc):

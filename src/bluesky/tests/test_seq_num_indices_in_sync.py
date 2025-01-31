@@ -43,7 +43,8 @@ class ExternalAssetDevice:
         self.compose_stream_resource = ComposeStreamResource()
         if DRAFT_0_STREAM_RESOURCE:
             self.stream_resource_compose_datum_pairs = tuple(
-                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
+                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})  # type: ignore[arg-type]
+                for det in self.detectors
             )
         else:
             self.stream_resource_compose_datum_pairs = tuple(
@@ -124,7 +125,7 @@ class ExternalAssetDevice:
             # New stream_resource half way through the run
             if DRAFT_0_STREAM_RESOURCE:
                 self.stream_resource_compose_datum_pairs = tuple(
-                    self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})
+                    self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})  # type: ignore[arg-type]
                     for det in self.detectors
                 )
             else:
