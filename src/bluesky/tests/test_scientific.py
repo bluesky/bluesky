@@ -135,15 +135,16 @@ def test_peak_statistics_with_derivatives(RE):
     assert len(ps.derivative_stats.y) == num_points - 1
     assert np.allclose(np.diff(ps.y_data), ps.derivative_stats.y, atol=1e-10)
 
+
 @pytest.mark.parametrize("com,background", [(1, -1), (1, 1)])
 def test_peak_statistics_with_non_zero_background_and_non_symmetry_scan(RE, com, background):
     """peak statistics calculation on a gaussian function with a non zero background and a non symmetrical scan"""
 
     ps = PeakStats("x", "y")
-    
+
     ps.start({})
     ps.event({"data": {"x": 0, "y": background}})
-    ps.event({"data": {"x": 1, "y": background+1}})
+    ps.event({"data": {"x": 1, "y": background + 1}})
     ps.event({"data": {"x": 2, "y": background}})
     ps.event({"data": {"x": 3, "y": background}})
     ps.stop({})
