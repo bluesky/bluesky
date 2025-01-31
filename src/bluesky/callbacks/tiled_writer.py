@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import pandas as pd
 from event_model import RunRouter
@@ -76,9 +76,10 @@ class _RunWriter(CallbackBase):
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
         doc = copy.copy(doc)
+        stream_resource_doc = cast(StreamResource, doc)
         # If the document already adheres to StreamResource schema, return it
         if "mimetype" in doc:
-            return doc
+            return stream_resource_doc
 
         # The document is a `Resource` or a < v1.20 `StreamResource`.
         # Both are converted to latest version `StreamResource`.
@@ -87,12 +88,13 @@ class _RunWriter(CallbackBase):
                 raise RuntimeError(f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'")
 
         # Convert the Resource (or old StreamResource) document to a StreamResource document
-        doc["mimetype"] = MIMETYPE_LOOKUP[doc.pop("spec")]
-        doc["parameters"] = doc.pop("resource_kwargs", {})
-        file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
-        doc["uri"] = "file://localhost/" + file_path
+        resource_dict = cast(dict, doc)
+        stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
+        stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
+        file_path = resource_dict.pop("root").strip("/") + "/" + resource_dict.pop("resource_path").strip("/")
+        stream_resource_doc["uri"] = "file://localhost/" + file_path
 
-        return doc
+        return stream_resource_doc
 
     def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
