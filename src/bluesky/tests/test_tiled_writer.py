@@ -273,9 +273,10 @@ def test_stream_datum_collectable(RE, client, tmp_path):
     assert arrs[2].read() is not None
 
 
-def test_handling_non_stream_resource(RE, client, tmp_path):
+@pytest.mark.parametrize("frames_per_event", [1, 5, 10])
+def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     det = SynSignalWithRegistry(
-        func=lambda: np.random.randint(0, 255, (1, 10, 15), dtype="uint8"),
+        func=lambda: np.random.randint(0, 255, (frames_per_event, 10, 15), dtype="uint8"),
         dtype_numpy=np.dtype("uint8").str,
         name="img",
         labels={"detectors"},
@@ -290,7 +291,7 @@ def test_handling_non_stream_resource(RE, client, tmp_path):
     intr = client.values().last()["primary"]["internal"]["events"]
     conf = client.values().last()["primary"]["config"]["img"]
 
-    assert extr.shape == (3, 1, 10, 15)
+    assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
     assert set(intr.columns) == {"seq_num", "ts_img"}
     assert len(intr.read()) == 3
