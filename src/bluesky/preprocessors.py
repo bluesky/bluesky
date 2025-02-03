@@ -5,7 +5,16 @@ from functools import wraps
 
 from bluesky.protocols import Locatable
 
-from .plan_stubs import close_run, declare_stream, mv, open_run, pause, stage_all, trigger_and_read, unstage_all
+from .plan_stubs import (
+    close_run,
+    declare_stream,
+    mv,
+    open_run,
+    pause,
+    stage_all,
+    trigger_and_read,
+    unstage_all,
+)
 from .utils import (
     Msg,
     RunEngineControlException,
@@ -18,9 +27,7 @@ from .utils import (
     separate_devices,
     single_gen,
 )
-from .utils import (
-    short_uid as _short_uid,
-)
+from .utils import short_uid as _short_uid
 
 
 def plan_mutator(plan, msg_proc):
@@ -280,7 +287,7 @@ def pchain(*args):
     """Like `itertools.chain` but using `yield from`
 
     This ensures than `.send` works as expected and the underlying
-    plans get the return values
+    plans get the return values. Provides cleanup for Interruptions.
 
     Parameters
     ----------
@@ -293,8 +300,13 @@ def pchain(*args):
         The messages from each plan in turn
     """
     rets = deque()
-    for p in args:
-        rets.append((yield from p))
+    try:
+        for p in args:
+            rets.append((yield from p))
+    except RunEngineControlException as e:
+        for p in args:
+            p.close()
+        raise e
     return tuple(rets)
 
 
@@ -557,7 +569,13 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
 
 
 def contingency_wrapper(
-    plan, *, except_plan=None, else_plan=None, final_plan=None, pause_for_debug=False, auto_raise=True
+    plan,
+    *,
+    except_plan=None,
+    else_plan=None,
+    final_plan=None,
+    pause_for_debug=False,
+    auto_raise=True,
 ):
     """try...except...else...finally helper
 
@@ -1120,7 +1138,10 @@ def relative_set_wrapper(plan, devices=None):
         seen = msg.obj in initial_positions
         if (msg.command == "set") and eligible and not seen:
             return (
-                pchain(__read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents), single_gen(msg)),
+                pchain(
+                    __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
+                    single_gen(msg),
+                ),
                 None,
             )
         else:
@@ -1158,7 +1179,10 @@ def reset_positions_wrapper(plan, devices=None):
         seen = msg.obj in initial_positions
         if (msg.command == "set") and eligible and not seen:
             return (
-                pchain(__read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents), single_gen(msg)),
+                pchain(
+                    __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
+                    single_gen(msg),
+                ),
                 None,
             )
         else:
