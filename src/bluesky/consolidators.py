@@ -141,30 +141,30 @@ class ConsolidatorBase:
         If `chunk_shape` is an empty tuple -- assume the dataset is stored as a single chunk for all existing and
         new elements. Usually, however, `chunk_shape` is a tuple of int, in which case, we assume fixed-sized
         chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
-        is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
+        is a tuple with less than `self.shape` elements -- assume it defines the chunk sizes along the leading
+        dimensions.
         """
 
         def list_summands(A, b):
             # Generate a list with repeated b summing up to A; append the remainder if necessary
             return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) or (0,)
 
-        # Number of indices needs to be multiplied by the number of frames per index
-        num_chunks = self._num_rows * self.datum_shape[0]
-        # Retain the shape of the signal coming from the device
-        raw_signal_shape = self.datum_shape[1:]
-        shape = (num_chunks, *raw_signal_shape)
-        if len(self.chunk_shape) == 0:
-            return (num_chunks,), *[(d,) for d in raw_signal_shape]
+        # Calculate total shape based on number of rows and datum shape
+        total_shape = self.shape
 
-        elif len(self.chunk_shape) == 1:
-            return list_summands(num_chunks, self.chunk_shape[0]), *[(d,) for d in raw_signal_shape]
+        # If chunk shape is less than or equal to the total shape dimensions, chunk each specified dimension
+        # starting from the leading dimension
+        if len(self.chunk_shape) <= len(total_shape):
+            return tuple(
+                list_summands(ddim, cdim)
+                for ddim, cdim in zip(total_shape[: len(self.chunk_shape)], self.chunk_shape)
+            ) + tuple((d,) for d in total_shape[len(self.chunk_shape) :])
 
-        elif len(self.chunk_shape) == len(shape):
-            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, shape)])
-
+        # If chunk shape is greater than the total shape dimensions, raise an error
         else:
             raise ValueError(
-                f"The shape of chunks, {self.chunk_shape}, is not consistent with the shape of data, {self.shape}."
+                f"The shape of chunks, {self.chunk_shape}, should be less than or equal to the shape of data, "
+                f"{total_shape}."
             )
 
     @property
