@@ -1,10 +1,12 @@
 import re
-from typing import Dict, Iterator, Optional
+from collections.abc import Iterator
+from typing import Optional
 
 import pytest
 from event_model.documents import Datum
 from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey
+from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
@@ -77,7 +79,7 @@ class Named(HasName):
         self.counter = 0
 
 
-def describe_datum(self: Named) -> Dict[str, DataKey]:
+def describe_datum(self: Named) -> dict[str, DataKey]:
     """Describe a single data key backed with Resource"""
     return {f"{self.name}-datum": DataKey(source="file", dtype="number", shape=[1000, 1500], external="OLD:")}
 
@@ -100,7 +102,7 @@ def collect_asset_docs_datum(self) -> Iterator[Asset]:
     yield "datum", datum
 
 
-def read_datum(self: Named) -> Dict[str, Reading]:
+def read_datum(self: Named) -> dict[str, Reading]:
     """Read a single reference to a Datum"""
     return {f"{self.name}-datum": {"value": "RESOURCEUID/1", "timestamp": 456}}
 
@@ -113,7 +115,7 @@ class DatumReadable(Named, Readable, WritesExternalAssets):
     collect_asset_docs = collect_asset_docs_datum
 
 
-def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
+def describe_stream_datum(self: Named) -> dict[str, DataKey]:
     """Describe 2 datasets which will be backed by StreamResources"""
     return {
         f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1000, 1500], external="STREAM:"),
@@ -132,7 +134,8 @@ def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) ->
     for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
         uid = f"{data_key}-uid"
         if self.counter == 0:
-            stream_resource = StreamResource(
+            # Backward compatibility test, ignore typing errors
+            stream_resource = StreamResource(  # type: ignore[typeddict-item]
                 resource_kwargs={"dataset": f"/{data_key}/data"},
                 data_key=data_key,
                 root="/root",
@@ -153,17 +156,17 @@ def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) ->
     self.counter += index
 
 
-def read_empty(self) -> Dict[str, Reading]:
+def read_empty(self) -> dict[str, Reading]:
     """Produce an empty event"""
     return {}
 
 
-def describe_pv(self: Named) -> Dict[str, DataKey]:
+def describe_pv(self: Named) -> dict[str, DataKey]:
     """Describe a single data_key backed by a PV value"""
     return {f"{self.name}-pv": DataKey(source="pv", dtype="number", shape=[])}
 
 
-def read_pv(self: Named) -> Dict[str, Reading]:
+def read_pv(self: Named) -> dict[str, Reading]:
     """Read a single data_key from a PV"""
     return {f"{self.name}-pv": Reading(value=5.8, timestamp=123)}
 
@@ -185,7 +188,7 @@ class PvAndStreamDatumReadable(Named, Readable, WritesStreamAssets):
     get_index = get_index
 
 
-def describe_collect_old_pv(self) -> Dict[str, Dict[str, DataKey]]:
+def describe_collect_old_pv(self) -> dict[str, dict[str, DataKey]]:
     """Doubly nested old describe format with 2 pvs in each stream"""
     return {
         stream: {f"{stream}-{pv}": DataKey(source="pv", dtype="number", shape=[]) for pv in ["pv1", "pv2"]}
@@ -200,6 +203,7 @@ def collect_old_pv(self) -> Iterator[PartialEvent]:
             yield PartialEvent(
                 data={f"{stream}-{pv}": i for pv in ["pv1", "pv2"]},
                 timestamps={f"{stream}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
+                time=100 + i,
             )
 
 
@@ -261,7 +265,7 @@ class OldPvAndDatumCollectable(Named, EventCollectable, WritesExternalAssets):
     collect_asset_docs = collect_asset_docs_datum
 
 
-def describe_collect_pv(self: Named) -> Dict[str, Dict[str, DataKey]]:
+def describe_collect_pv(self: Named) -> dict[str, DataKey]:
     """New style describe collect with 2 PVs"""
     return {f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[]) for pv in ["pv1", "pv2"]}
 
@@ -272,14 +276,16 @@ def collect_pv(self: Named) -> Iterator[PartialEvent]:
         yield PartialEvent(
             data={f"{self.name}-{pv}": i for pv in ["pv1", "pv2"]},
             timestamps={f"{self.name}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
+            time=100 + i,
         )
 
 
-def collect_pages_pv(self: Named) -> Iterator[PartialEvent]:
+def collect_pages_pv(self: Named) -> Iterator[PartialEventPage]:
     """Same as collect_pv but in EventPage form"""
-    yield PartialEvent(
+    yield PartialEventPage(
         data={f"{self.name}-{pv}": [0, 1] for pv in ["pv1", "pv2"]},
         timestamps={f"{self.name}-{pv}": [100, 101] for pv in ["pv1", "pv2"]},
+        time=[100, 101],
     )
 
 
@@ -383,8 +389,7 @@ def test_collect_stream_true_raises(RE):
     with pytest.raises(
         RuntimeError,
         match=re.escape(
-            "Collect now emits EventPages (stream=False), "
-            "so emitting Events (stream=True) is no longer supported"
+            "Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported"
         ),
     ):
         RE(collect_plan(OldPvCollectable("det"), pre_declare=False, stream=True))
@@ -409,7 +414,7 @@ def test_new_style_with_steam_name_requires_pre_declare(RE):
 def test_new_style_with_no_stream_name_and_no_pre_declare_does_not_try_and_make_a_stream(RE):
     with pytest.raises(
         AssertionError,
-        match=re.escape("Single nested data keys should be pre-decalred"),
+        match=re.escape("Single nested data keys should be pre-declared"),
     ):
         RE(collect_plan(StreamDatumReadableCollectable(name="det"), pre_declare=False))
 
@@ -497,7 +502,7 @@ def test_pv_collectable(RE, cls):
 def test_new_collect_needs_predeclare(RE):
     with pytest.raises(
         AssertionError,
-        match="Single nested data keys should be pre-decalred",
+        match="Single nested data keys should be pre-declared",
     ):
         RE(collect_plan(PvCollectable(name="det"), pre_declare=False))
 

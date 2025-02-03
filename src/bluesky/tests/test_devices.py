@@ -1,6 +1,5 @@
 import itertools
 from time import time
-from typing import Dict, List
 from unittest.mock import ANY
 
 import pytest
@@ -34,12 +33,12 @@ if ophyd:
 class SigNew:
     def __init__(self, name: str) -> None:
         self.name = name
-        self._callbacks: List[Callback] = []
+        self._callbacks: list[Callback] = []
 
-    def read(self) -> Dict[str, Reading]:
+    def read(self) -> dict[str, Reading]:
         return {self.name: dict(value=0, timestamp=0)}  # noqa: C408
 
-    def describe(self) -> Dict[str, Descriptor]:
+    def describe(self) -> dict[str, Descriptor]:
         return {self.name: dict(source="", dtype="number", shape=[])}  # noqa: C408
 
     def subscribe(self, function: Callback) -> None:

@@ -9,7 +9,6 @@ import asyncio
 import collections
 import warnings
 from operator import attrgetter
-from typing import List
 
 import numpy as np
 from IPython.core.magic import Magics, line_magic, magics_class
@@ -37,14 +36,14 @@ class MetaclassForClassProperties(MetaHasTraits, type):
     def positioners(self):
         if self._positioners:
             warnings.warn(
-                "BlueskyMagics.positioners is deprecated. " "Please use the newer labels feature.", stacklevel=1
+                "BlueskyMagics.positioners is deprecated. Please use the newer labels feature.", stacklevel=1
             )
         return self._positioners
 
     @positioners.setter
     def positioners(self, val):
         warnings.warn(
-            "BlueskyMagics.positioners is deprecated. " "Please use the newer labels feature.", stacklevel=1
+            "BlueskyMagics.positioners is deprecated. Please use the newer labels feature.", stacklevel=1
         )
         self._positioners = val
 
@@ -52,19 +51,17 @@ class MetaclassForClassProperties(MetaHasTraits, type):
     def detectors(self):
         if self._detectors:
             warnings.warn(
-                "BlueskyMagics.detectors is deprecated. " "Please use the newer labels feature.", stacklevel=1
+                "BlueskyMagics.detectors is deprecated. Please use the newer labels feature.", stacklevel=1
             )
         return self._detectors
 
     @detectors.setter
     def detectors(self, val):
-        warnings.warn(
-            "BlueskyMagics.detectors is deprecated. " "Please use the newer labels feature.", stacklevel=1
-        )
+        warnings.warn("BlueskyMagics.detectors is deprecated. Please use the newer labels feature.", stacklevel=1)
         self._detectors = val
 
-    _positioners: List[Movable] = []
-    _detectors: List[Readable] = []
+    _positioners: list[Movable] = []
+    _detectors: list[Readable] = []
 
 
 @magics_class

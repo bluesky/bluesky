@@ -190,7 +190,7 @@ def test_live_plotter(RE, hw):
 
         del plt
     except ImportError as ie:
-        pytest.skip("Skipping live plot test because matplotlib is not installed." f"Error was: {ie}")
+        pytest.skip(f"Skipping live plot test because matplotlib is not installed.Error was: {ie}")
 
     my_plotter = LivePlot("det", "motor")
     assert RE.state == "idle"
@@ -219,7 +219,7 @@ def test_md_historydict(RE, hw):
     try:
         import historydict
     except ImportError as ie:
-        pytest.skip("Skipping test because historydict cannot be imported. " f"Error was {ie}")
+        pytest.skip(f"Skipping test because historydict cannot be imported. Error was {ie}")
     _md(historydict.HistoryDict(":memory:"), RE, hw)
 
 

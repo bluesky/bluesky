@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Iterator, Optional, Tuple
+from collections.abc import Iterator
+from typing import Optional, Union
 
 import h5py
 import numpy as np
@@ -9,9 +10,6 @@ import tifffile as tf
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
-from tiled.catalog import in_memory
-from tiled.client import Context, from_context
-from tiled.server.app import build_app
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
@@ -28,26 +26,27 @@ from bluesky.protocols import (
 
 @pytest.fixture
 def catalog(tmp_path):
-    catalog = in_memory(writable_storage=str(tmp_path))
-    yield catalog
+    tiled_catalog = pytest.importorskip("tiled.catalog")
+    yield tiled_catalog.in_memory(writable_storage=str(tmp_path))
 
 
 @pytest.fixture
 def app(catalog):
-    app = build_app(catalog)
-    yield app
+    tsa = pytest.importorskip("tiled.server.app")
+    yield tsa.build_app(catalog)
 
 
 @pytest.fixture
 def context(app):
-    with Context.from_app(app) as context:
+    tc = pytest.importorskip("tiled.client")
+    with tc.Context.from_app(app) as context:
         yield context
 
 
 @pytest.fixture
 def client(context):
-    client = from_context(context)
-    yield client
+    tc = pytest.importorskip("tiled.client")
+    yield tc.from_context(context)
 
 
 class Named(HasName):
@@ -64,7 +63,7 @@ class Named(HasName):
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources/StreamDatums and can be read or collected"""
 
-    def _get_hdf5_stream(self, data_key: str, index: int) -> Tuple[StreamResource, StreamDatum]:
+    def _get_hdf5_stream(self, data_key: str, index: int) -> tuple[Optional[StreamResource], StreamDatum]:
         file_path = os.path.join(self.root, "dataset.h5")
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
@@ -74,7 +73,8 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         stream_resource = None
         if self.counter == 0:
-            stream_resource = StreamResource(
+            # Backward compatibility test, ignore typing errors
+            stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
                 parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape)},
                 data_key=data_key,
                 root=self.root,
@@ -111,7 +111,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         return stream_resource, stream_datum
 
-    def _get_tiff_stream(self, data_key: str, index: int) -> Tuple[StreamResource, StreamDatum]:
+    def _get_tiff_stream(self, data_key: str, index: int) -> tuple[Optional[StreamResource], StreamDatum]:
         file_path = self.root
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
@@ -119,7 +119,8 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             data_shape = tuple(data_desc["shape"])
             stream_resource = None
             if self.counter == 0:
-                stream_resource = StreamResource(
+                # Backward compatibility test, ignore typing errors
+                stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
                     parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif"},
                     data_key=data_key,
                     root=self.root,
@@ -144,21 +145,33 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
         return stream_resource, stream_datum
 
-    def describe(self) -> Dict[str, DataKey]:
+    def describe(self) -> dict[str, DataKey]:
         """Describe datasets which will be backed by StreamResources"""
         return {
             f"{self.name}-sd1": DataKey(
-                source="file", dtype="number", dtype_numpy="float64", shape=[1], external="STREAM:"
+                source="file",
+                dtype="number",
+                dtype_numpy=np.dtype("float64").str,
+                shape=[1],
+                external="STREAM:",
             ),
             f"{self.name}-sd2": DataKey(
-                source="file", dtype="array", dtype_numpy="float64", shape=[10, 15], external="STREAM:"
+                source="file",
+                dtype="array",
+                dtype_numpy=np.dtype("float64").str,
+                shape=[10, 15],
+                external="STREAM:",
             ),
             f"{self.name}-sd3": DataKey(
-                source="file", dtype="array", dtype_numpy="uint8", shape=[5, 7, 4], external="STREAM:"
+                source="file",
+                dtype="array",
+                dtype_numpy=np.dtype("uint8").str,
+                shape=[5, 7, 4],
+                external="STREAM:",
             ),
         }
 
-    def describe_collect(self) -> Dict[str, DataKey]:
+    def describe_collect(self) -> Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]:
         return self.describe()
 
     def collect_asset_docs(self, index: Optional[int] = None) -> Iterator[StreamAsset]:
@@ -182,7 +195,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         """Report how many frames were written"""
         return self.counter
 
-    def read(self) -> Dict[str, Reading]:
+    def read(self) -> dict[str, Reading]:
         """Produce an empty event"""
         return {}
 
@@ -238,7 +251,7 @@ def test_stream_datum_collectable(RE, client, tmp_path):
 def test_handling_non_stream_resource(RE, client, tmp_path):
     det = SynSignalWithRegistry(
         func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
-        dtype_numpy="uint8",
+        dtype_numpy=np.dtype("uint8").str,
         name="img",
         labels={"detectors"},
         save_func=tf.imwrite,

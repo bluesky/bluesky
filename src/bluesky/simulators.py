@@ -1,15 +1,13 @@
+from collections.abc import Generator, Sequence
 from itertools import dropwhile
 from time import time
 from typing import (
     Any,
     Callable,
-    Generator,
-    List,
     Literal,
     Optional,
-    Sequence,
-    Tuple,
     Union,
+    cast,
 )
 from warnings import warn
 
@@ -119,7 +117,7 @@ async def check_limits_async(plan):
                 await maybe_await(obj.check_value(msg.args[0]))
             else:
                 warn(  # noqa: B028
-                    f"{obj.name} has no check_value() method" f" to check if {msg.args[0]} is within its limits."
+                    f"{obj.name} has no check_value() method to check if {msg.args[0]} is within its limits."
                 )
                 ignore.append(obj)
 
@@ -154,11 +152,11 @@ class RunEngineSimulator:
 
     GROUP_ANY = "any"
 
-    def __init__(self):
-        self.message_handlers = []
-        self.callbacks = {}
-        self.next_callback_token = 0
-        self.return_value: Any
+    def __init__(self) -> None:
+        self.message_handlers: list[_MessageHandler] = []
+        self.callbacks: dict[int, tuple[Callable[[str, dict], None], str]] = {}
+        self.next_callback_token: int = 0
+        self.return_value: Any = None
 
     def add_handler_for_callback_subscribes(self):
         """Add a handler that registers all the callbacks from subscribe messages so we can call them later.
@@ -203,7 +201,7 @@ class RunEngineSimulator:
             commands = [commands]
 
         self.message_handlers.insert(
-            index if index != END else len(self.message_handlers),
+            cast(int, index if index != END else len(self.message_handlers)),
             _MessageHandler(
                 lambda msg: msg.command in commands
                 and (
@@ -332,7 +330,7 @@ class RunEngineSimulator:
     def add_callback_handler_for_multiple(
         self,
         command: str,
-        docs: Sequence[Sequence[Tuple[str, dict]]],
+        docs: Sequence[Sequence[tuple[str, dict]]],
         msg_filter: Optional[Callable[[Msg], bool]] = None,
     ):
         """Add a handler to fire callbacks in sequence when a matching command is encountered.
@@ -372,7 +370,7 @@ class RunEngineSimulator:
             if callback_docname == "all" or callback_docname == document_name:
                 callback_func(document_name, document)
 
-    def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> List[Msg]:
+    def simulate_plan(self, gen: Generator[Msg, Any, Any]) -> list[Msg]:
         """Simulate the RunEngine executing the plan.
 
         After executing the plan return_value is populated with the return value of the plan.
@@ -409,7 +407,7 @@ class RunEngineSimulator:
 
 
 def assert_message_and_return_remaining(
-    messages: List[Msg],
+    messages: list[Msg],
     predicate: Callable[[Msg], bool],
     group: Optional[str] = None,
 ):

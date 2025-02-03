@@ -507,9 +507,7 @@ def chunk_outer_product_args(args, pattern=None):
         pattern = classify_outer_product_args_pattern(args)
     else:
         if not isinstance(pattern, OuterProductArgsPattern):
-            raise ValueError(
-                "The parameter 'pattern' must have type OuterProductArgsPattern: " f"{type(pattern)} "
-            )
+            raise ValueError(f"The parameter 'pattern' must have type OuterProductArgsPattern: {type(pattern)} ")
 
     args = list(args)
 
@@ -523,7 +521,7 @@ def chunk_outer_product_args(args, pattern=None):
         args.insert(4, False)
     else:
         raise RuntimeError(
-            f"Unsupported pattern: {pattern}. This is a bug. " f"You shouldn't have ended up on this branch."
+            f"Unsupported pattern: {pattern}. This is a bug. You shouldn't have ended up on this branch."
         )
 
     yield from partition(5, args)

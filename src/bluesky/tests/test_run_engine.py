@@ -7,12 +7,11 @@ import types
 from collections import defaultdict
 from functools import partial
 from traceback import FrameSummary, extract_tb
-from typing import List
 
 import pytest
 from event_model import DocumentNames
 
-from bluesky import Msg
+from bluesky import Msg, RunEngine
 from bluesky.plan_stubs import abs_set, checkpoint, declare_stream, pause, trigger_and_read, wait, wait_for
 from bluesky.plans import count, grid_scan
 from bluesky.preprocessors import (
@@ -1495,7 +1494,7 @@ def test_wait_with_timeout_can_be_repeated(RE):
 
 
 @requires_ophyd
-def test_status_propagates_exception_through_run_engine(RE):
+def test_status_propagates_exception_through_run_engine(RE: RunEngine):
     # just to make sure that 'pardon_failures' does not block *real* failures
     from ophyd import StatusBase
 
@@ -1516,13 +1515,13 @@ def test_status_propagates_exception_through_run_engine(RE):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg("set", dummy1, 1, group="test"), Msg("wait", group="test")])
 
-        traceback: List[FrameSummary] = extract_tb(exc.__traceback__)
+        traceback: list[FrameSummary] = extract_tb(exc.__traceback__)  # type: ignore[attr-defined]
         assert traceback[0].filename == __file__
         assert traceback[0].line == "RE([Msg('set', dummy1, 1, group='test'),"
         assert traceback[-1].name == "set"
         assert traceback[-1].line == "1/0"
 
-        assert isinstance(exc.args[0], ZeroDivisionError)
+        assert isinstance(exc.args[0], ZeroDivisionError)  # type: ignore[attr-defined]
 
 
 def test_colliding_streams(RE, hw):
