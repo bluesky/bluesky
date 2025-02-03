@@ -118,7 +118,7 @@ def stream_datum_factory():
     }
 
 
-# Expected shape of different data structures
+# Tuples of (data_key, expected_shape)
 shape_testdata = [
     # 5 events, 1 image per event, 10x15 pixels
     ("test_img", (5, 1, 10, 15)),
@@ -175,6 +175,7 @@ def test_tiff_shape(
     assert len(cons.assets) == 5
 
 
+# Tuples of (data_key, chunk_shape, expected_chunks)
 chunk_testdata = [
     ("test_img", (), ((5,), (1,), (10,), (15,))),
     ("test_img", (1, 1, 10, 15), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
