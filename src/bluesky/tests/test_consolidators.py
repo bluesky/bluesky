@@ -10,28 +10,66 @@ def descriptor():
     return {
         "data_keys": {
             "test_img": {
-                "shape": [10, 15],
+                "shape": [1, 10, 15],
+                "dtype": "array",
+                "dtype_numpy": "<f8",
+                "external": "STREAM:",
+                "object_name": "test_object",
+            },
+            "test_7_imgs": {
+                "shape": [7, 10, 15],
                 "dtype": "array",
                 "dtype_numpy": "<f8",
                 "external": "STREAM:",
                 "object_name": "test_object",
             },
             "test_cube": {
-                "shape": [10, 15, 3],
+                "shape": [1, 10, 15, 3],
+                "dtype": "array",
+                "dtype_numpy": "<f8",
+                "external": "STREAM:",
+                "object_name": "test_object",
+            },
+            "test_7_cubes": {
+                "shape": [7, 10, 15, 3],
                 "dtype": "array",
                 "dtype_numpy": "<f8",
                 "external": "STREAM:",
                 "object_name": "test_object",
             },
             "test_arr": {
-                "shape": [1],
+                "shape": [
+                    1,
+                    3,
+                ],
+                "dtype": "array",
+                "dtype_numpy": "<f8",
+                "external": "STREAM:",
+                "object_name": "test_object",
+            },
+            "test_7_arrs": {
+                "shape": [
+                    7,
+                    3,
+                ],
                 "dtype": "array",
                 "dtype_numpy": "<f8",
                 "external": "STREAM:",
                 "object_name": "test_object",
             },
             "test_num": {
-                "shape": [],
+                "shape": [
+                    1,
+                ],
+                "dtype": "number",
+                "dtype_numpy": "<f8",
+                "external": "STREAM:",
+                "object_name": "test_object",
+            },
+            "test_7_nums": {
+                "shape": [
+                    7,
+                ],
                 "dtype": "number",
                 "dtype_numpy": "<f8",
                 "external": "STREAM:",
@@ -80,11 +118,20 @@ def stream_datum_factory():
     }
 
 
+# Expected shape of different data structures
 shape_testdata = [
-    ("test_img", (5, 10, 15)),
-    ("test_cube", (5, 10, 15, 3)),
-    ("test_arr", (5,)),
-    ("test_num", (5,)),
+    # 5 events, 1 image per event, 10x15 pixels
+    ("test_img", (5, 1, 10, 15)),
+    ("test_7_imgs", (5, 7, 10, 15)),
+    # 5 events, 1 cube per event, 10x15x3 pixels
+    ("test_cube", (5, 1, 10, 15, 3)),
+    ("test_7_cubes", (5, 7, 10, 15, 3)),
+    # 5 events, 1 array per event, 1 element in array
+    ("test_arr", (5, 1, 3)),
+    ("test_7_arrs", (5, 7, 3)),
+    # 5 events, 1 number per event
+    ("test_num", (5, 1)),
+    ("test_7_nums", (5, 7)),
 ]
 
 
@@ -129,17 +176,41 @@ def test_tiff_shape(
 
 
 chunk_testdata = [
-    ("test_img", (), ((5,), (10,), (15,))),
-    ("test_img", (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
-    ("test_img", (2,), ((2, 2, 1), (10,), (15,))),
-    ("test_img", (5, 10, 15), ((5,), (10,), (15,))),
-    ("test_img", (10, 10, 15), ((5,), (10,), (15,))),
-    ("test_img", (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
-    ("test_cube", (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
-    ("test_arr", (), ((5,),)),
-    ("test_arr", (2,), ((2, 2, 1),)),
-    ("test_num", (), ((5,),)),
-    ("test_num", (2,), ((2, 2, 1),)),
+    ("test_img", (), ((5,), (1,), (10,), (15,))),
+    ("test_img", (1, 1, 10, 15), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_img", (2,), ((2, 2, 1), (1,), (10,), (15,))),
+    ("test_img", (5, 1, 10, 15), ((5,), (1,), (10,), (15,))),
+    ("test_img", (10, 1), ((5,), (1,), (10,), (15,))),
+    ("test_img", (3, 1, 4, 5), ((3, 2), (1,), (4, 4, 2), (5, 5, 5))),
+    ("test_7_imgs", (), ((5,), (7,), (10,), (15,))),
+    ("test_7_imgs", (1, 1), ((1, 1, 1, 1, 1), (1, 1, 1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_7_imgs", (2,), ((2, 2, 1), (7,), (10,), (15,))),
+    ("test_7_imgs", (5, 1, 10, 15), ((5,), (1, 1, 1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_7_imgs", (10, 5), ((5,), (5, 2), (10,), (15,))),
+    (
+        "test_7_imgs",
+        (3, 4, 5, 6),
+        (
+            (3, 2),
+            (4, 3),
+            (
+                5,
+                5,
+            ),
+            (6, 6, 3),
+        ),
+    ),
+    ("test_cube", (3, 1, 4, 5, 3), ((3, 2), (1,), (4, 4, 2), (5, 5, 5), (3,))),
+    ("test_7_cubes", (3, 4, 5, 6, 7), ((3, 2), (4, 3), (5, 5), (6, 6, 3), (3,))),
+    ("test_arr", (5, 1, 1), ((5,), (1,), (1, 1, 1))),
+    ("test_arr", (2,), ((2, 2, 1), (1,), (3,))),
+    ("test_7_arrs", (5, 1, 1), ((5,), (1, 1, 1, 1, 1, 1, 1), (1, 1, 1))),
+    ("test_7_arrs", (2,), ((2, 2, 1), (7,), (3,))),
+    ("test_num", (), ((5,), (1,))),
+    ("test_num", (2,), ((2, 2, 1), (1,))),
+    ("test_7_nums", (), ((5,), (7,))),
+    ("test_7_nums", (2,), ((2, 2, 1), (7,))),
+    ("test_7_nums", (2, 3), ((2, 2, 1), (3, 3, 1))),
 ]
 
 
