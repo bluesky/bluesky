@@ -147,6 +147,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     def describe(self) -> dict[str, DataKey]:
         """Describe datasets which will be backed by StreamResources"""
         return {
+            # Numerical data with 1 number per event
             f"{self.name}-sd1": DataKey(
                 source="file",
                 dtype="number",
@@ -156,18 +157,20 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 ],
                 external="STREAM:",
             ),
+            # 2-D data with 5 frames per event
             f"{self.name}-sd2": DataKey(
                 source="file",
                 dtype="array",
                 dtype_numpy=np.dtype("float64").str,
-                shape=[1, 10, 15],
+                shape=[5, 10, 15],
                 external="STREAM:",
             ),
+            # 3-D data with 10 frames per event
             f"{self.name}-sd3": DataKey(
                 source="file",
                 dtype="array",
                 dtype_numpy=np.dtype("uint8").str,
-                shape=[1, 5, 7, 4],
+                shape=[10, 5, 7, 4],
                 external="STREAM:",
             ),
         }
@@ -231,11 +234,32 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     arrs = client.values().last()["primary"]["external"].values()
 
     assert arrs[0].shape == (3, 1)
-    assert arrs[1].shape == (3, 1, 10, 15)
-    assert arrs[2].shape == (3, 1, 5, 7, 4)
+    assert arrs[1].shape == (3, 5, 10, 15)
+    assert arrs[2].shape == (3, 10, 5, 7, 4)
     assert arrs[0].read() is not None
     assert arrs[1].read() is not None
     assert arrs[2].read() is not None
+
+
+def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
+    det1 = StreamDatumReadableCollectable(name="det1", root=str(tmp_path))
+    det2 = StreamDatumReadableCollectable(name="det2", root=str(tmp_path))
+    tw = TiledWriter(client)
+    RE(bp.count([det1, det2], 3), tw)
+    arrs = client.values().last()["primary"]["external"].values()
+
+    assert arrs[0].shape == (3, 1)
+    assert arrs[1].shape == (3, 5, 10, 15)
+    assert arrs[2].shape == (3, 10, 5, 7, 4)
+    assert arrs[3].shape == (3, 1)
+    assert arrs[4].shape == (3, 5, 10, 15)
+    assert arrs[5].shape == (3, 10, 5, 7, 4)
+    assert arrs[0].read() is not None
+    assert arrs[1].read() is not None
+    assert arrs[2].read() is not None
+    assert arrs[3].read() is not None
+    assert arrs[4].read() is not None
+    assert arrs[5].read() is not None
 
 
 def test_stream_datum_collectable(RE, client, tmp_path):
