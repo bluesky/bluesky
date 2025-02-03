@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import pandas as pd
 from event_model import RunRouter
@@ -13,6 +13,7 @@ from event_model.documents import (
     StreamDatum,
     StreamResource,
 )
+from event_model.documents.stream_datum import StreamRange
 from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
@@ -62,29 +63,38 @@ class _RunWriter(CallbackBase):
         self.root_node: Union[None, Container] = None
         self._desc_nodes: dict[str, Container] = {}  # references to descriptor containers by their uid's
         self._sres_nodes: dict[str, BaseClient] = {}
-        self._docs_cache: dict[str, Union[Datum, Resource, StreamResource]] = {}
+        self._datum_cache: dict[str, Datum] = {}
+        self._stream_resource_cache: dict[str, StreamResource] = {}
         self._handlers: dict[str, ConsolidatorBase] = {}
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
-    def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
+    def _convert_resource_to_stream_resource(self, doc: Union[Resource, StreamResource]) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+        or Resource documents that are converted to StreamResources.
 
         Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
         """
-
         doc = copy.copy(doc)
-        if ("mimetype" not in doc.keys()) and ("spec" not in doc.keys()):
-            raise RuntimeError("StreamResource document is missing a mimetype or spec")
-        else:
-            doc["mimetype"] = doc.get("mimetype") or MIMETYPE_LOOKUP[doc.get("spec")]
-        if "parameters" not in doc.keys():
-            doc["parameters"] = doc.pop("resource_kwargs", {})
-        if "uri" not in doc.keys():
-            file_path = doc.pop("root").strip("/") + "/" + doc.pop("resource_path").strip("/")
-            doc["uri"] = "file://localhost/" + file_path
+        stream_resource_doc = cast(StreamResource, doc)
+        # If the document already adheres to StreamResource schema, return it
+        if "mimetype" in doc:
+            return stream_resource_doc
 
-        return doc
+        # The document is a `Resource` or a < v1.20 `StreamResource`.
+        # Both are converted to latest version `StreamResource`.
+        for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
+            if expected_key not in doc:
+                raise RuntimeError(f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'")
+
+        # Convert the Resource (or old StreamResource) document to a StreamResource document
+        resource_dict = cast(dict, doc)
+        stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
+        stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
+        file_path = resource_dict.pop("root").strip("/") + "/" + resource_dict.pop("resource_path").strip("/")
+        stream_resource_doc["uri"] = "file://localhost/" + file_path
+
+        return stream_resource_doc
 
     def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
@@ -97,7 +107,6 @@ class _RunWriter(CallbackBase):
         if self.root_node is None:
             raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
 
-        doc = dict(doc)
         metadata = {"stop": doc, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
@@ -106,12 +115,13 @@ class _RunWriter(CallbackBase):
             raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
 
         desc_name = doc["name"]
-        metadata = dict(doc)
+        # Copy the document items, excluding the variable fields
+        metadata = {k: v for k, v in doc.items() if k not in ("uid", "time", "configuration")}
 
-        # Remove variable fields of the metadata and encapsulate them into sub-dictionaries with uids as the keys
-        uid = metadata.pop("uid")
-        conf_dict = {uid: metadata.pop("configuration", {})}
-        time_dict = {uid: metadata.pop("time")}
+        # Encapsulate variable fields into sub-dictionaries with uids as the keys
+        uid = doc["uid"]
+        conf_dict = {uid: doc.get("configuration", {})}
+        time_dict = {uid: doc["time"]}
         var_fields = {"configuration": conf_dict, "time": time_dict}
 
         if desc_name not in self.root_node.keys():
@@ -129,12 +139,14 @@ class _RunWriter(CallbackBase):
         desc_node.update_metadata(metadata)
 
         # Keep specifications for external and internal data_keys for faster access
+        if not isinstance(metadata["data_keys"], dict):
+            raise RuntimeError("Expected data_keys to be a dictionary")
         self.data_keys_int.update({k: v for k, v in metadata["data_keys"].items() if "external" not in v.keys()})
         self.data_keys_ext.update({k: v for k, v in metadata["data_keys"].items() if "external" in v.keys()})
 
         # Write the configuration data: loop over all detectors
         conf_node = desc_node["config"]
-        for det_name, det_dict in conf_dict[uid].items():
+        for det_name, det_dict in doc.get("configuration", {}).items():
             df_dict = {"descriptor_uid": uid}
             df_dict.update(det_dict.get("data", {}))
             df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
@@ -192,31 +204,38 @@ class _RunWriter(CallbackBase):
                 continue
 
             if datum_id := doc["data"].get(data_key):
-                if datum_id in self._docs_cache.keys():
+                if datum_id in self._datum_cache.keys():
                     # Convert the Datum document to the StreamDatum format
-                    datum_doc = self._docs_cache.pop(datum_id)
-                    datum_doc["uid"] = datum_doc.pop("datum_id")
-                    datum_doc["stream_resource"] = datum_doc.pop("resource")
-                    datum_doc["descriptor"] = doc["descriptor"]  # From Event document
-                    datum_doc["indices"] = {"start": doc["seq_num"] - 1, "stop": doc["seq_num"]}
-                    datum_doc["seq_nums"] = {"start": doc["seq_num"], "stop": doc["seq_num"] + 1}
-
+                    datum_doc = self._datum_cache.pop(datum_id)
+                    uid = datum_doc["datum_id"]
+                    stream_resource = datum_doc["resource"]
+                    descriptor = doc["descriptor"]  # From Event document
+                    indices = StreamRange(start=doc["seq_num"] - 1, stop=doc["seq_num"])
+                    seq_nums = StreamRange(start=doc["seq_num"], stop=doc["seq_num"] + 1)
+                    stream_datum_doc = StreamDatum(
+                        uid=uid,
+                        stream_resource=stream_resource,
+                        descriptor=descriptor,
+                        indices=indices,
+                        seq_nums=seq_nums,
+                    )
                     # Update the Resource document (add data_key as in StreamResource)
-                    if datum_doc["stream_resource"] in self._docs_cache.keys():
-                        self._docs_cache[datum_doc["stream_resource"]]["data_key"] = data_key
+                    if stream_datum_doc["stream_resource"] in self._stream_resource_cache.keys():
+                        self._stream_resource_cache[stream_datum_doc["stream_resource"]]["data_key"] = data_key
 
-                    self.stream_datum(datum_doc)
+                    self.stream_datum(stream_datum_doc)
                 else:
                     raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
 
     def datum(self, doc: Datum):
-        self._docs_cache[doc["datum_id"]] = copy.copy(doc)
+        self._datum_cache[doc["datum_id"]] = copy.copy(doc)
 
     def resource(self, doc: Resource):
-        self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
+        self._stream_resource_cache[doc["uid"]] = self._convert_resource_to_stream_resource(doc)
 
     def stream_resource(self, doc: StreamResource):
-        self._docs_cache[doc["uid"]] = self._ensure_resource_backcompat(doc)
+        # Backwards compatibility: old StreamResource schema is converted to the new one (event-model<1.20.0)
+        self._stream_resource_cache[doc["uid"]] = self._convert_resource_to_stream_resource(doc)
 
     def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> tuple[BaseClient, ConsolidatorBase]:
         """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""
@@ -225,11 +244,11 @@ class _RunWriter(CallbackBase):
             sres_node = self._sres_nodes[sres_uid]
             handler = self._handlers[sres_uid]
 
-        elif sres_uid in self._docs_cache.keys():
+        elif sres_uid in self._stream_resource_cache.keys():
             if not desc_uid:
                 raise RuntimeError("Descriptor uid must be specified to initialise a Stream Resource node")
 
-            sres_doc = self._docs_cache.pop(sres_uid)
+            sres_doc = self._stream_resource_cache.pop(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
             # Initialise a bluesky handler (consolidator) for the StreamResource
