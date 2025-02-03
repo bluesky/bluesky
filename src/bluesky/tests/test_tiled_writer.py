@@ -149,7 +149,9 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
                 source="file",
                 dtype="number",
                 dtype_numpy=np.dtype("float64").str,
-                shape=[1,],
+                shape=[
+                    1,
+                ],
                 external="STREAM:",
             ),
             f"{self.name}-sd2": DataKey(
