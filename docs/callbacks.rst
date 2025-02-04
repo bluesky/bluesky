@@ -640,10 +640,10 @@ plans in :mod:`bluesky.plans` for examples.)
 
 .. ipython:: python
 
-    from ophyd.sim import det1, det2
+    from ophyd.sim import det, noisy_det
     from bluesky.plans import scan
 
-    dets = [det1, det2]
+    dets = [det, noisy_det]
 
     RE(scan(dets, motor, 1, 5, 5))  # automatically prints table, shows plot
 
