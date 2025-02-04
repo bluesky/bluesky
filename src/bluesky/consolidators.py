@@ -88,8 +88,12 @@ class ConsolidatorBase:
 
         # Find data shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
-        self.datum_shape = tuple(data_desc["shape"])
-        self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
+        self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
+        if len(self.datum_shape) == 0:
+            raise RuntimeError(
+                "Expected a non-empty shape for the data key. "
+                "The first dimension is reserved for the number of frames per event."
+            )
         # Get data type. From highest precedent to lowest:
         # 1. Try 'dtype_numpy', optional in the document schema.
         # 2. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
@@ -136,25 +140,30 @@ class ConsolidatorBase:
         If `chunk_shape` is an empty tuple -- assume the dataset is stored as a single chunk for all existing and
         new elements. Usually, however, `chunk_shape` is a tuple of int, in which case, we assume fixed-sized
         chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
-        is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
+        is a tuple with less than `self.shape` elements -- assume it defines the chunk sizes along the leading
+        dimensions.
         """
 
         def list_summands(A, b):
             # Generate a list with repeated b summing up to A; append the remainder if necessary
             return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) or (0,)
 
-        if len(self.chunk_shape) == 0:
-            return (self._num_rows,), *[(d,) for d in self.datum_shape]
+        # Calculate total shape based on number of rows and datum shape
+        total_shape = self.shape
 
-        elif len(self.chunk_shape) == 1:
-            return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+        # If chunk shape is less than or equal to the total shape dimensions, chunk each specified dimension
+        # starting from the leading dimension
+        if len(self.chunk_shape) <= len(total_shape):
+            return tuple(
+                list_summands(ddim, cdim)
+                for ddim, cdim in zip(total_shape[: len(self.chunk_shape)], self.chunk_shape)
+            ) + tuple((d,) for d in total_shape[len(self.chunk_shape) :])
 
-        elif len(self.chunk_shape) == len(self.shape):
-            return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
-
+        # If chunk shape is greater than the total shape dimensions, raise an error
         else:
             raise ValueError(
-                f"The shape of chunks, {self.chunk_shape}, is not consistent with the shape of data, {self.shape}."
+                f"The shape of chunks, {self.chunk_shape}, should be less than or equal to the shape of data, "
+                f"{total_shape}."
             )
 
     @property
