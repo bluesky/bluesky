@@ -142,7 +142,7 @@ class ConsolidatorBase:
         return sres["mimetype"]
 
     @property
-    def shape(self) -> tuple[int]:
+    def shape(self) -> tuple[int, ...]:
         """Native shape of the data stored in assets
 
         This includes the leading (0th) dimension corresponding to the number of rows, if the dataset is stackable,
