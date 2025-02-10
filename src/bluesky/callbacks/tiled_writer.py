@@ -89,29 +89,35 @@ class _RunWriter(CallbackBase):
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
     def _convert_resource_to_stream_resource(self, doc: Union[Resource, StreamResource]) -> StreamResource:
-        """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
-        or Resource documents that are converted to StreamResources.
+        """Make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
 
-        Will make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
+        Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
+        or Resource documents that are converted to StreamResources.
         """
         doc = copy.copy(doc)
         stream_resource_doc = cast(StreamResource, doc)
-        # If the document already adheres to StreamResource schema, return it
-        if "mimetype" in doc:
-            return stream_resource_doc
 
-        # The document is a `Resource` or a < v1.20 `StreamResource`.
-        # Both are converted to latest version `StreamResource`.
-        for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
-            if expected_key not in doc:
-                raise RuntimeError(f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'")
+        if "mimetype" not in doc:
+            # The document is a `Resource` or a < v1.20 `StreamResource`.
+            # Both are converted to latest version `StreamResource`.
+            for expected_key in ("spec", "root", "resource_path", "resource_kwargs"):
+                if expected_key not in doc:
+                    raise RuntimeError(
+                        f"`Resource` or `StreamResource` legacy document is missing a '{expected_key}'"
+                    )
 
-        # Convert the Resource (or old StreamResource) document to a StreamResource document
-        resource_dict = cast(dict, doc)
-        stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
-        stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
-        file_path = resource_dict.pop("root").strip("/") + "/" + resource_dict.pop("resource_path").strip("/")
-        stream_resource_doc["uri"] = "file://localhost/" + file_path
+            # Convert the Resource (or old StreamResource) document to a StreamResource document
+            resource_dict = cast(dict, doc)
+            stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
+            stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
+            file_path = resource_dict.pop("root").strip("/") + "/" + resource_dict.pop("resource_path").strip("/")
+            stream_resource_doc["uri"] = "file://localhost/" + file_path
+
+        # Ensure that the internal path within HDF5 files is referenced with "dataset" parameter
+        if stream_resource_doc["mimetype"] == "application/x-hdf5":
+            stream_resource_doc["parameters"]["dataset"] = stream_resource_doc["parameters"].pop(
+                "path", stream_resource_doc["parameters"].pop("dataset", "")
+            )
 
         return stream_resource_doc
 
@@ -122,20 +128,25 @@ class _RunWriter(CallbackBase):
             specs=[Spec("BlueskyRun", version="1.0")],
         )
 
+        # Create the backbone structure for the BlueskyRun container
+        self.root_node.create_container(key="config")
+        self.root_node.create_container(key="streams")
+        self.root_node.create_container(key="views")
+
     def stop(self, doc: RunStop):
         if self.root_node is None:
-            raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
+            raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
 
         stream_names = list(self.root_node.keys())
         summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
-        metadata = {"stop": dict(doc), "summary": summary, **dict(self.root_node.metadata)}
+        metadata = {"stop": doc, "summary": summary, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc: EventDescriptor):
         if self.root_node is None:
-            raise RuntimeError("RunWriter is properly initialized: no Start document has been recorded.")
+            raise RuntimeError("RunWriter is not roperly initialized: no Start document has been recorded.")
 
-        desc_name = doc["name"]
+        desc_name = doc["name"]  # Name of the descriptor/stream
         # Copy the document items, excluding the variable fields
         metadata = {k: v for k, v in doc.items() if k not in ("uid", "time", "configuration")}
 
@@ -145,12 +156,12 @@ class _RunWriter(CallbackBase):
         time_dict = {uid: doc["time"]}
         var_fields = {"configuration": conf_dict, "time": time_dict}
 
-        if desc_name not in self.root_node.keys():
+        if desc_name not in self.root_node["streams"].keys():
             # Create a new descriptor node; write only the fixed part of the metadata
-            desc_node = self.root_node.create_container(key=desc_name, metadata=metadata)
+            desc_node = self.root_node["streams"].create_container(key=desc_name, metadata=metadata)
         else:
             # Get existing descriptor node (with fixed and variable metadata saved before)
-            desc_node = self.root_node[desc_name]
+            desc_node = self.root_node["streams"][desc_name]
 
         # Update (add new values to) variable fields of the metadata
         metadata = deep_update(dict(desc_node.metadata), var_fields)
@@ -164,15 +175,15 @@ class _RunWriter(CallbackBase):
 
         # Write the configuration data: loop over all detectors
         if conf_dict[uid]:
-            if "config" not in desc_node.keys():
-                conf_node = desc_node.create_container(key="config")
+            if desc_name not in self.root_node["config"].keys():
+                conf_node = self.root_node["config"].create_container(key=desc_name)
             else:
-                conf_node = desc_node["config"]
-        for det_name, det_dict in conf_dict[uid].items():
+                conf_node = self.root_node["config"][desc_name]
+        for det_name, det_dict in doc.get("configuration", {}).items():
             df_dict = {"descriptor_uid": uid}
             df_dict.update(det_dict.get("data", {}))
             df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
-            df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
+            df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
             if det_name in conf_node.keys():
                 conf_node[det_name].append_partition(df, 0)
             else:
@@ -201,7 +212,7 @@ class _RunWriter(CallbackBase):
         df_dict = {"seq_num": doc["seq_num"]}
         df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
         df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
-        df = pd.DataFrame(df_dict, index=[0], columns=df_dict.keys())
+        df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
         if "internal" in parent_node.keys():
             parent_node["internal"].append_partition(df, 0)
         else:
@@ -218,6 +229,8 @@ class _RunWriter(CallbackBase):
                 metadata=data_keys_spec,
             )
             parent_node["internal"].write_partition(df, 0)
+            for k in df_dict.keys():
+                parent_node.create_array_view(f"./internal/{k}", key=k, resizable=True)
 
         # Process _external_ data: Loop over all referenced Datums
         for data_key in self.data_keys_ext.keys():
@@ -282,10 +295,7 @@ class _RunWriter(CallbackBase):
 
             # Initialise a bluesky handler (consolidator) for the StreamResource
             handler = consolidator_factory(sres_doc, dict(desc_node.metadata))
-
-            if "external" not in desc_node.keys():
-                desc_node.create_container(key="external")
-            sres_node = desc_node["external"].new(
+            sres_node = desc_node.new(
                 key=handler.data_key,
                 structure_family=StructureFamily.array,
                 data_sources=[handler.get_data_source()],
