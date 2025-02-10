@@ -90,6 +90,7 @@ class ConsolidatorBase:
 
     supported_mimetypes: set[str] = {"application/octet-stream"}
     stackable: bool = True
+    join_chunks: bool = True
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         self.mimetype = self.get_supported_mimetype(stream_resource)
@@ -166,27 +167,33 @@ class ConsolidatorBase:
         chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
         is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
 
-        If the consolidator is not stackable, the chunking along the leftmost dimensions is assumed to be preserved
-        in each appended data point, i.e. consecutive chunks do not join, e.g. (3,3,1) -> (3,3,1,3,3,1,3,3,1).
+        If the consolidator is NOT stackable, and `join_chunks = False`, the chunking along the leftmost dimensions
+        is assumed to be preserved in each appended data point, i.e. consecutive chunks do not join, e.g. for a 1d
+        array with chunks (3,3,1), the resulting chunking after 3 repeats is (3,3,1,3,3,1,3,3,1).
+        When `join_chunks = True` (default), the chunk size along the leftmost dimension is determined by the
+        chunk_shape parameter, as in the usual, stackable, case.
+        Chunking along the trailing dimensions is always preserved as in the original (single) array.
         """
 
-        def list_summands(A, b, repeat=1):
+        def list_summands(A: int, b: int, repeat: int = 1) -> tuple[int, ...]:
             # Generate a list with repeated b summing up to A; append the remainder if necessary
+            # e.g. list_summands(13, 3) = [3, 3, 3, 3, 1]
+            # if `repeat = n`, n > 1, copy and repeat the entire result n times
             return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) * repeat or (0,)
 
         if len(self.chunk_shape) == 0:
             return tuple((d,) for d in self.shape)
 
         elif len(self.chunk_shape) == 1:
-            if self.stackable:
-                return list_summands(self._num_rows, self.chunk_shape[0]), *[(d,) for d in self.datum_shape]
+            if self.stackable or (not self.stackable and self.join_chunks):
+                return list_summands(self.shape[0], self.chunk_shape[0]), *[(d,) for d in self.shape[1:]]
             else:
                 return list_summands(self.datum_shape[0], self.chunk_shape[0], repeat=self._num_rows), *[
                     (d,) for d in self.datum_shape[1:]
                 ]
 
         elif len(self.chunk_shape) == len(self.shape):
-            if self.stackable:
+            if self.stackable or (not self.stackable and self.join_chunks):
                 return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
             else:
                 return list_summands(self.datum_shape[0], self.chunk_shape[0], repeat=self._num_rows), *[
@@ -279,6 +286,7 @@ class ConsolidatorBase:
 class CSVConsolidator(ConsolidatorBase):
     supported_mimetypes: set[str] = {"text/csv;header=absent"}
     stackable: bool = False
+    join_chunks: bool = False
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
@@ -296,6 +304,7 @@ class HDF5Consolidator(ConsolidatorBase):
         super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
+        self.stackable = self._sres_parameters.get("stackable", True)
 
     @property
     def adapter_parameters(self) -> dict:
