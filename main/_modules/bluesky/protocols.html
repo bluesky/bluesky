@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.protocols &#8212; bluesky 1.13.1rc3.dev4+gea61fb99 documentation</title>
+    <title>bluesky.protocols &#8212; bluesky 1.13.1rc3.dev7+gc0de9ec9 documentation</title>
   
   
   
@@ -38,14 +38,14 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=cfbb7414"></script>
+    <script src="../../_static/documentation_options.js?v=62344bee"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/protocols';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev4+gea61fb99';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev7+gc0de9ec9';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -53,7 +53,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.13.1rc3.dev4+gea61fb99" />
+  <meta name="docsearch:version" content="1.13.1rc3.dev7+gc0de9ec9" />
   </head>
   
   
@@ -713,8 +713,12 @@
 
 
 
+<div class="viewcode-block" id="WritesStreamAssets">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">WritesStreamAssets</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="WritesStreamAssets.collect_asset_docs">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets.collect_asset_docs">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">collect_asset_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">StreamAsset</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the resource and datum documents describing data in external</span>
@@ -743,12 +747,17 @@
 <span class="sd">                &#39;resource&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;}</span>
 <span class="sd">            })</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="o">...</span>
+        <span class="o">...</span></div>
 
+
+<div class="viewcode-block" id="WritesStreamAssets.get_index">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets.get_index">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrive the current index of writer.&quot;&quot;&quot;</span>
-        <span class="o">...</span>
+        <span class="o">...</span></div>
+</div>
+
 
 
 <div class="viewcode-block" id="Configurable">
@@ -895,8 +904,12 @@
 
 
 
+<div class="viewcode-block" id="Collectable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Collectable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Collectable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Collectable.describe_collect">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Collectable.describe_collect">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;This is like ``describe()`` on readable devices, but with an extra layer of nesting.</span>
@@ -908,11 +921,17 @@
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="o">...</span>
+        <span class="o">...</span></div>
+</div>
 
 
+
+<div class="viewcode-block" id="EventCollectable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventCollectable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">EventCollectable</span><span class="p">(</span><span class="n">Collectable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="EventCollectable.collect">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventCollectable.collect">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield dictionaries that are partial Event documents.</span>
@@ -920,11 +939,17 @@
 <span class="sd">        They should contain the keys &#39;time&#39;, &#39;data&#39;, and &#39;timestamps&#39;.</span>
 <span class="sd">        A &#39;uid&#39; is added by the RunEngine.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="o">...</span>
+        <span class="o">...</span></div>
+</div>
 
 
+
+<div class="viewcode-block" id="EventPageCollectable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventPageCollectable">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">EventPageCollectable</span><span class="p">(</span><span class="n">Collectable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="EventPageCollectable.collect_pages">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventPageCollectable.collect_pages">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">collect_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">PartialEventPage</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield dictionaries that are partial EventPage documents.</span>
@@ -932,7 +957,9 @@
 <span class="sd">        They should contain the keys &#39;time&#39;, &#39;data&#39;, and &#39;timestamps&#39;.</span>
 <span class="sd">        A &#39;uid&#39; is added by the RunEngine.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="o">...</span>
+        <span class="o">...</span></div>
+</div>
+
 
 
 <span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">contravariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

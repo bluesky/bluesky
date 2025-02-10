@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; bluesky 1.13.1rc3.dev4+gea61fb99 documentation</title>
+    <title>Index &#8212; bluesky 1.13.1rc3.dev7+gc0de9ec9 documentation</title>
   
   
   
@@ -38,14 +38,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=cfbb7414"></script>
+    <script src="_static/documentation_options.js?v=62344bee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev4+gea61fb99';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1rc3.dev7+gc0de9ec9';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -53,7 +53,7 @@
     <link rel="search" title="Search" href="search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.13.1rc3.dev4+gea61fb99" />
+  <meta name="docsearch:version" content="1.13.1rc3.dev7+gc0de9ec9" />
   </head>
   
   
@@ -577,13 +577,15 @@
 </li>
       <li><a href="generated/bluesky.plan_stubs.abs_set.html#bluesky.plan_stubs.abs_set">abs_set() (in module bluesky.plan_stubs)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/bluesky.plans.adaptive_scan.html#bluesky.plans.adaptive_scan">adaptive_scan() (in module bluesky.plans)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="hardware.html#bluesky.protocols.Status.add_callback">add_callback() (bluesky.protocols.Status method)</a>
 </li>
       <li><a href="hardware.html#bluesky.protocols.ReadingOptional.alarm_severity">alarm_severity (bluesky.protocols.ReadingOptional attribute)</a>
+</li>
+      <li><a href="hardware.html#bluesky.protocols.Asset">Asset (in module bluesky.protocols)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -657,15 +659,25 @@
         <li><a href="generated/bluesky.plan_stubs.close_run.html#bluesky.plan_stubs.close_run">(in module bluesky.plan_stubs)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/bluesky.bundlers.RunBundler.collect.html#bluesky.bundlers.RunBundler.collect">collect() (bluesky.bundlers.RunBundler method)</a>
 
       <ul>
+        <li><a href="hardware.html#bluesky.protocols.EventCollectable.collect">(bluesky.protocols.EventCollectable method)</a>
+</li>
         <li><a href="generated/bluesky.plan_stubs.collect.html#bluesky.plan_stubs.collect">(in module bluesky.plan_stubs)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="hardware.html#bluesky.protocols.WritesExternalAssets.collect_asset_docs">collect_asset_docs() (bluesky.protocols.WritesExternalAssets method)</a>
+
+      <ul>
+        <li><a href="hardware.html#bluesky.protocols.WritesStreamAssets.collect_asset_docs">(bluesky.protocols.WritesStreamAssets method)</a>
+</li>
+      </ul></li>
+      <li><a href="hardware.html#bluesky.protocols.EventPageCollectable.collect_pages">collect_pages() (bluesky.protocols.EventPageCollectable method)</a>
+</li>
+      <li><a href="hardware.html#bluesky.protocols.Collectable">Collectable (class in bluesky.protocols)</a>
 </li>
       <li><a href="generated/bluesky.run_engine.RunEngine.commands.html#bluesky.run_engine.RunEngine.commands">commands (bluesky.run_engine.RunEngine property)</a>
 </li>
@@ -711,6 +723,8 @@
 </li>
       <li><a href="hardware.html#bluesky.protocols.Readable.describe">describe() (bluesky.protocols.Readable method)</a>
 </li>
+      <li><a href="hardware.html#bluesky.protocols.Collectable.describe_collect">describe_collect() (bluesky.protocols.Collectable method)</a>
+</li>
       <li><a href="hardware.html#bluesky.protocols.Configurable.describe_configuration">describe_configuration() (bluesky.protocols.Configurable method)</a>
 </li>
       <li><a href="callbacks.html#bluesky.callbacks.stream.LiveDispatcher.descriptor">descriptor() (bluesky.callbacks.stream.LiveDispatcher method)</a>
@@ -755,13 +769,17 @@
 </li>
       <li><a href="generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_heading.html#bluesky.callbacks.best_effort.BestEffortCallback.enable_heading">enable_heading() (bluesky.callbacks.best_effort.BestEffortCallback method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_plots.html#bluesky.callbacks.best_effort.BestEffortCallback.enable_plots">enable_plots() (bluesky.callbacks.best_effort.BestEffortCallback method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/bluesky.callbacks.best_effort.BestEffortCallback.enable_table.html#bluesky.callbacks.best_effort.BestEffortCallback.enable_table">enable_table() (bluesky.callbacks.best_effort.BestEffortCallback method)</a>
 </li>
       <li><a href="callbacks.html#bluesky.callbacks.stream.LiveDispatcher.event">event() (bluesky.callbacks.stream.LiveDispatcher method)</a>
+</li>
+      <li><a href="hardware.html#bluesky.protocols.EventCollectable">EventCollectable (class in bluesky.protocols)</a>
+</li>
+      <li><a href="hardware.html#bluesky.protocols.EventPageCollectable">EventPageCollectable (class in bluesky.protocols)</a>
 </li>
       <li><a href="hardware.html#bluesky.protocols.Status.exception">exception() (bluesky.protocols.Status method)</a>
 </li>
@@ -798,6 +816,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="debugging.html#bluesky.log.get_handler">get_handler() (in module bluesky.log)</a>
+</li>
+      <li><a href="hardware.html#bluesky.protocols.WritesStreamAssets.get_index">get_index() (bluesky.protocols.WritesStreamAssets method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -957,6 +977,8 @@
       <li><a href="generated/bluesky.utils.Msg.html#bluesky.utils.Msg">Msg (class in bluesky.utils)</a>
 </li>
       <li><a href="generated/bluesky.preprocessors.msg_mutator.html#bluesky.preprocessors.msg_mutator">msg_mutator() (in module bluesky.preprocessors)</a>
+</li>
+      <li><a href="generated/bluesky.utils.MsgGenerator.html#bluesky.utils.MsgGenerator">MsgGenerator (in module bluesky.utils)</a>
 </li>
       <li><a href="generated/bluesky.plan_stubs.mv.html#bluesky.plan_stubs.mv">mv() (in module bluesky.plan_stubs)</a>
 </li>
@@ -1224,6 +1246,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="hardware.html#bluesky.protocols.Stoppable">Stoppable (class in bluesky.protocols)</a>
 </li>
+      <li><a href="hardware.html#bluesky.protocols.StreamAsset">StreamAsset (in module bluesky.protocols)</a>
+</li>
       <li><a href="generated/bluesky.preprocessors.subs_decorator.html#bluesky.preprocessors.subs_decorator">subs_decorator() (in module bluesky.preprocessors)</a>
 </li>
       <li><a href="generated/bluesky.preprocessors.subs_wrapper.html#bluesky.preprocessors.subs_wrapper">subs_wrapper() (in module bluesky.preprocessors)</a>
@@ -1349,6 +1373,8 @@
       <li><a href="hardware.html#watch">watch()</a>
 </li>
       <li><a href="hardware.html#bluesky.protocols.WritesExternalAssets">WritesExternalAssets (class in bluesky.protocols)</a>
+</li>
+      <li><a href="hardware.html#bluesky.protocols.WritesStreamAssets">WritesStreamAssets (class in bluesky.protocols)</a>
 </li>
   </ul></td>
 </tr></table>
