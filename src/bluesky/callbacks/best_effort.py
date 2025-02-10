@@ -16,7 +16,7 @@ from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
-from typing import Any
+from typing import Any, Literal
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -240,6 +240,7 @@ class BestEffortCallback(QtAwareCallback):
                     ASPECT_RATIO_REF_VALUE = 2
                     for I_key, ax in zip(columns, axes):
                         data_aspect_ratio = np.abs(data_range[1] / data_range[0])
+                        aspect: Literal["auto", "equal"]
                         if 1 / ASPECT_RATIO_REF_VALUE < data_aspect_ratio < ASPECT_RATIO_REF_VALUE:
                             aspect = "equal"
                             ax.set_aspect(aspect, adjustable="box")
@@ -304,7 +305,7 @@ class BestEffortCallback(QtAwareCallback):
 
             fig_size = np.array(layout[::-1]) * 5
             figure.set_size_inches(*fig_size)
-            axes_grid = figure.subplots(*map(int, layout), **share_kwargs)
+            axes_grid = figure.subplots(*map(int, layout), **share_kwargs)  # type: ignore
             for ax in figure.axes[len(columns) :]:
                 ax.set_visible(False)
 
