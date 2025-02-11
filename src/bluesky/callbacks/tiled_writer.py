@@ -229,8 +229,8 @@ class _RunWriter(CallbackBase):
                 metadata=data_keys_spec,
             )
             parent_node["internal"].write_partition(df, 0)
-            for k in df_dict.keys():
-                parent_node.create_array_view(f"./internal/{k}", key=k, resizable=True)
+            # for k in df_dict.keys():
+            #     parent_node.create_array_view(f"./internal/{k}", key=k, resizable=True)
 
         # Process _external_ data: Loop over all referenced Datums
         for data_key in self.data_keys_ext.keys():
@@ -242,22 +242,34 @@ class _RunWriter(CallbackBase):
                     # Convert the Datum document to the StreamDatum format
                     datum_doc = self._datum_cache.pop(datum_id)
                     uid = datum_doc["datum_id"]
-                    stream_resource = datum_doc["resource"]
+                    sres_uid = datum_doc["resource"]
                     descriptor = doc["descriptor"]  # From Event document
                     indices = StreamRange(start=doc["seq_num"] - 1, stop=doc["seq_num"])
                     seq_nums = StreamRange(start=doc["seq_num"], stop=doc["seq_num"] + 1)
+
+                    # Update the Resource document (add data_key to match the StreamResource schema)
+                    # Save a copy of the StreamResource document; this allows to account for cases where one
+                    # Resource is used by several data streams with different data_keys and datum_kwargs.
+                    sres_uid_key = sres_uid + "-" + data_key
+                    if (
+                        sres_uid in self._stream_resource_cache.keys()
+                        and sres_uid_key not in self._stream_resource_cache.keys()
+                    ):
+                        sres_doc = copy.copy(self._stream_resource_cache[sres_uid])
+                        sres_doc["data_key"] = data_key
+                        sres_doc["parameters"].update(datum_doc.get("datum_kwargs", {}))
+                        self._stream_resource_cache[sres_uid_key] = sres_doc
+
+                    # Produce the StreamDatum document and process it as usual
                     stream_datum_doc = StreamDatum(
                         uid=uid,
-                        stream_resource=stream_resource,
+                        stream_resource=sres_uid_key,
                         descriptor=descriptor,
                         indices=indices,
                         seq_nums=seq_nums,
                     )
-                    # Update the Resource document (add data_key as in StreamResource)
-                    if stream_datum_doc["stream_resource"] in self._stream_resource_cache.keys():
-                        self._stream_resource_cache[stream_datum_doc["stream_resource"]]["data_key"] = data_key
-
                     self.stream_datum(stream_datum_doc)
+
                 else:
                     raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
 
@@ -290,7 +302,7 @@ class _RunWriter(CallbackBase):
             if not desc_uid:
                 raise RuntimeError("Descriptor uid must be specified to initialise a Stream Resource node")
 
-            sres_doc = self._stream_resource_cache.pop(sres_uid)
+            sres_doc = self._stream_resource_cache.get(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
             # Initialise a bluesky handler (consolidator) for the StreamResource
@@ -312,7 +324,8 @@ class _RunWriter(CallbackBase):
 
     def stream_datum(self, doc: StreamDatum):
         # Get the Stream Resource node and the associtaed handler (consolidator)
-        sres_node, handler = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
+        sres_uid = doc["stream_resource"] + "-" + doc["data_key"]
+        sres_node, handler = self.get_sres_node(sres_uid, desc_uid=doc["descriptor"])
         handler.consume_stream_datum(doc)
 
         # Update StreamResource node in Tiled
