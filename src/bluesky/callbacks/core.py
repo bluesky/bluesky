@@ -28,6 +28,11 @@ MIMETYPE_LOOKUP = defaultdict(
         "AD_TIFF": "multipart/related;type=image/tiff",
         "AD_HDF5_GERM": "application/x-hdf5",
         "PIZZABOX_ENC_FILE_TXT_PD": "text/csv",
+        "PANDA": "application/x-hdf5",
+        "ROI_HDF5_FLY": "application/x-hdf5",
+        "SIS_HDF51_FLY_STREAM_V1": "application/x-hdf5",
+        "XSP3_BULK": "application/x-hdf5;subtype=bulk",
+        "MERLIN_FLY_STREAM_V2": "application/x-hdf5",
     },
 )
 
