@@ -31,7 +31,7 @@ MIMETYPE_LOOKUP = defaultdict(
         "PANDA": "application/x-hdf5",
         "ROI_HDF5_FLY": "application/x-hdf5",
         "SIS_HDF51_FLY_STREAM_V1": "application/x-hdf5",
-        "XSP3_BULK": "application/x-hdf5;subtype=bulk",
+        "XSP3_BULK": "application/x-hdf5",
         "MERLIN_FLY_STREAM_V2": "application/x-hdf5",
     },
 )
