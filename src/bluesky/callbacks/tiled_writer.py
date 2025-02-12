@@ -183,23 +183,25 @@ class _RunWriter(CallbackBase):
             df_dict = {"descriptor_uid": uid}
             df_dict.update(det_dict.get("data", {}))
             df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
-            df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
-            if det_name in conf_node.keys():
-                conf_node[det_name].append_partition(df, 0)
-            else:
-                conf_node.new(
-                    structure_family=StructureFamily.table,
-                    data_sources=[
-                        DataSource(
-                            structure_family=StructureFamily.table,
-                            structure=TableStructure.from_pandas(df),
-                            mimetype="text/csv",
-                        ),
-                    ],
-                    key=det_name,
-                    metadata=det_dict["data_keys"],
-                )
-                conf_node[det_name].write_partition(df, 0)
+            conf_node.write_awkward([df_dict], key=det_name)
+
+            # df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
+            # if det_name in conf_node.keys():
+            #     conf_node[det_name].append_partition(df, 0)
+            # else:
+            #     conf_node.new(
+            #         structure_family=StructureFamily.table,
+            #         data_sources=[
+            #             DataSource(
+            #                 structure_family=StructureFamily.table,
+            #                 structure=TableStructure.from_pandas(df),
+            #                 mimetype="text/csv",
+            #             ),
+            #         ],
+            #         key=det_name,
+            #         metadata=det_dict["data_keys"],
+            #     )
+            #     conf_node[det_name].write_partition(df, 0)
 
         self._desc_nodes[uid] = desc_node
 
