@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 from datetime import datetime
 from typing import Any, Optional, Union, cast
 
@@ -28,6 +29,8 @@ from tiled.utils import safe_json_dump
 
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
+
+BULK_SIZE = 100
 
 
 def build_summary(start_doc, stop_doc, stream_names):
@@ -85,6 +88,8 @@ class _RunWriter(CallbackBase):
         self._datum_cache: dict[str, Datum] = {}
         self._stream_resource_cache: dict[str, StreamResource] = {}
         self._handlers: dict[str, ConsolidatorBase] = {}
+        self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        self._external_data_cache: dict[str, StreamDatum] = {}
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
@@ -136,6 +141,13 @@ class _RunWriter(CallbackBase):
     def stop(self, doc: RunStop):
         if self.root_node is None:
             raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
+
+        # Write the cached internal data
+        for desc_uid, data_cache in self._internal_data_cache.items():
+            if data_cache:
+                df = pd.DataFrame(data_cache, index=range(len(data_cache)), columns=data_cache[0].keys())
+                self._desc_nodes[desc_uid]["internal"].append_partition(df, 0)
+                data_cache.clear()
 
         stream_names = list(self.root_node.keys())
         summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
@@ -214,10 +226,17 @@ class _RunWriter(CallbackBase):
         df_dict = {"seq_num": doc["seq_num"]}
         df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
         df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
-        df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
         if "internal" in parent_node.keys():
-            parent_node["internal"].append_partition(df, 0)
+            # Do not add the data immediately; collect it in a cache and write in bulk
+            data_cache = self._internal_data_cache[doc["descriptor"]]
+            data_cache.append(df_dict)
+            if len(data_cache) >= BULK_SIZE:
+                df = pd.DataFrame(data_cache, index=range(len(data_cache)), columns=df_dict.keys())
+                parent_node["internal"].append_partition(df, 0)
+                data_cache.clear()
         else:
+            # Create a new internal data node and write the initial piece of data
+            df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
             parent_node.new(
                 structure_family=StructureFamily.table,
                 data_sources=[

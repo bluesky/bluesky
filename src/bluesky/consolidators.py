@@ -322,8 +322,10 @@ class HDF5Consolidator(ConsolidatorBase):
 
     def consume_stream_resource(self, stream_resource: StreamResource):
         """Add an Asset for a new StreamResource document"""
-        if stream_resource["parameters"] != self._sres_parameters:
-            raise ValueError("StreamResource parameters differ from the original StreamResource.")
+        if stream_resource["parameters"]["dataset"] != self._sres_parameters["dataset"]:
+            raise ValueError("All StreamResource documents must have the same dataset path.")
+        if stream_resource["parameters"]["chunk_shape"] != self._sres_parameters.get("chunk_shape", ()):
+            raise ValueError("All StreamResource documents must have the same chunk shape.")
 
         asset = Asset(
             data_uri=stream_resource["uri"], is_directory=False, parameter="data_uri", num=len(self.assets)

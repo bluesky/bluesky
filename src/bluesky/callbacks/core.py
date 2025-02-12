@@ -23,6 +23,7 @@ MIMETYPE_LOOKUP = defaultdict(
         "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
         "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
         "PIL100k_HDF5": "application/x-hdf5",
+        "XSP3": "application/x-hdf5",
         "XPS3": "application/x-hdf5",
         "XSP3_BULK": "application/x-hdf5",
         "XSP3_STEP": "application/x-hdf5",
