@@ -324,8 +324,7 @@ class _RunWriter(CallbackBase):
 
     def stream_datum(self, doc: StreamDatum):
         # Get the Stream Resource node and the associtaed handler (consolidator)
-        sres_uid = doc["stream_resource"] + "-" + doc["data_key"]
-        sres_node, handler = self.get_sres_node(sres_uid, desc_uid=doc["descriptor"])
+        sres_node, handler = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
         handler.consume_stream_datum(doc)
 
         # Update StreamResource node in Tiled
