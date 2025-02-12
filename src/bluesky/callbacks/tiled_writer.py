@@ -307,15 +307,27 @@ class _RunWriter(CallbackBase):
             sres_doc = self._stream_resource_cache.get(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
-            # Initialise a bluesky handler (consolidator) for the StreamResource
-            handler = consolidator_factory(sres_doc, dict(desc_node.metadata))
-            sres_node = desc_node.new(
-                key=handler.data_key,
-                structure_family=StructureFamily.array,
-                data_sources=[handler.get_data_source()],
-                metadata=sres_doc,
-                specs=[],
-            )
+            # Check if there already exists a Node and a Handler for this data_key
+            if sres_doc["data_key"] in desc_node.keys():
+                sres_node = desc_node[sres_doc["data_key"]]
+                # Find the id of the original cached StreamResource node in the tree
+                for id, node in self._sres_nodes.items():
+                    if node.uri == sres_node.uri:
+                        sres_uid_old = id
+                        sres_node = node  # Keep the reference to the same node
+                        break
+                handler = self._handlers[sres_uid_old]
+                handler.consume_stream_resource(sres_doc)
+            else:
+                # Initialise a bluesky handler (consolidator) for the StreamResource
+                handler = consolidator_factory(sres_doc, dict(desc_node.metadata))
+                sres_node = desc_node.new(
+                    key=handler.data_key,
+                    structure_family=StructureFamily.array,
+                    data_sources=[handler.get_data_source()],
+                    metadata=sres_doc,
+                    specs=[],
+                )
 
             self._handlers[sres_uid] = handler
             self._sres_nodes[sres_uid] = sres_node

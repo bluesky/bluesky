@@ -282,6 +282,11 @@ class ConsolidatorBase:
 
         return adapter_class.from_assets(self.assets, structure=self.structure, **self.adapter_parameters)
 
+    def consume_stream_resource(self, stream_resource: StreamResource):
+        """Consume an additional related StreamResource document for the same data_key"""
+
+        raise NotImplementedError("This method is not implemented in the base Consolidator class.")
+
 
 class CSVConsolidator(ConsolidatorBase):
     supported_mimetypes: set[str] = {"text/csv;header=absent"}
@@ -302,7 +307,7 @@ class HDF5Consolidator(ConsolidatorBase):
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
-        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
+        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri", num=0))
         self.swmr = self._sres_parameters.get("swmr", True)
         self.stackable = self._sres_parameters.get("stackable", False)
 
@@ -314,6 +319,16 @@ class HDF5Consolidator(ConsolidatorBase):
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
         return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+
+    def consume_stream_resource(self, stream_resource: StreamResource):
+        """Add an Asset for a new StreamResource document"""
+        if stream_resource["parameters"] != self._sres_parameters:
+            raise ValueError("StreamResource parameters differ from the original StreamResource.")
+
+        asset = Asset(
+            data_uri=stream_resource["uri"], is_directory=False, parameter="data_uri", num=len(self.assets)
+        )
+        self.assets.append(asset)
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):
