@@ -115,6 +115,7 @@ class _RunWriter(CallbackBase):
         self._handlers: dict[str, ConsolidatorBase] = {}
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}
+        self._node_exists: dict[str, bool] = defaultdict(lambda: False)  # Keep track of existing nodes
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
@@ -256,7 +257,7 @@ class _RunWriter(CallbackBase):
         df_dict = {"seq_num": doc["seq_num"]}
         df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
         df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
-        if "internal" in parent_node.keys():
+        if self._node_exists[f"{parent_node.item['id']}/internal"]:
             # Do not add the data immediately; collect it in a cache and write in bulk
             data_cache = self._internal_data_cache[doc["descriptor"]]
             data_cache.append(df_dict)
@@ -280,6 +281,7 @@ class _RunWriter(CallbackBase):
                 metadata=data_keys_spec,
             )
             parent_node["internal"].write_partition(df, 0)
+            self._node_exists[f"{parent_node.item['id']}/internal"] = True
             # for k in df_dict.keys():
             #     parent_node.create_array_view(f"./internal/{k}", key=k, resizable=True)
 
