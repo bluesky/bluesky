@@ -32,7 +32,9 @@ MIMETYPE_LOOKUP = defaultdict(
         "ROI_HDF5_FLY": "application/x-hdf5",
         "SIS_HDF51_FLY_STREAM_V1": "application/x-hdf5",
         "XSP3_BULK": "application/x-hdf5",
+        "XSP3": "application/x-hdf5",
         "MERLIN_FLY_STREAM_V2": "application/x-hdf5",
+        "TPX_HDF5": "application/x-hdf5",
     },
 )
 
