@@ -1,4 +1,5 @@
 import copy
+import itertools
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Optional, Union, cast
@@ -47,6 +48,30 @@ def build_summary(start_doc, stop_doc, stream_names):
     else:
         summary["duration"] = stop_doc["time"] - start_doc["time"]
     return summary
+
+
+def concatenate_stream_datums(*docs: StreamDatum):
+    """Concatenate consecutive StreamDatum documents into a single StreamDatum document"""
+
+    if len(docs) == 1:
+        return docs[0]
+
+    if len({doc["descriptor"] for doc in docs}) > 1:
+        raise ValueError("All StreamDatum documents must reference the same descriptor.")
+    if len({doc["stream_resource"] for doc in docs}) > 1:
+        raise ValueError("All StreamDatum documents must reference the same stream_resource.")
+    docs = sorted(docs, key=lambda doc: doc["indices"]["start"])
+    for d1, d2 in itertools.pairwise(docs):
+        if d1["indices"]["stop"] != d2["indices"]["start"]:
+            raise ValueError("StreamDatum documents must be consecutive.")
+
+    return StreamDatum(
+        uid=docs[-1]["uid"],
+        stream_resource=docs[-1]["stream_resource"],
+        descriptor=docs[-1]["descriptor"],
+        indices=StreamRange(start=docs[0]["indices"]["start"], stop=docs[-1]["indices"]["stop"]),
+        seq_nums=StreamRange(start=docs[0]["seq_nums"]["start"], stop=docs[-1]["seq_nums"]["stop"]),
+    )
 
 
 class TiledWriter:
@@ -149,6 +174,11 @@ class _RunWriter(CallbackBase):
                 self._desc_nodes[desc_uid]["internal"].append_partition(df, 0)
                 data_cache.clear()
 
+        # Write the cached external data
+        for doc in self._external_data_cache.values():
+            self.stream_datum(doc)
+
+        # Update the summary metadata with the stop document
         stream_names = list(self.root_node.keys())
         summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
         metadata = {"stop": doc, "summary": summary, **dict(self.root_node.metadata)}
@@ -264,7 +294,7 @@ class _RunWriter(CallbackBase):
                     datum_doc = self._datum_cache.pop(datum_id)
                     uid = datum_doc["datum_id"]
                     sres_uid = datum_doc["resource"]
-                    descriptor = doc["descriptor"]  # From Event document
+                    desc_uid = doc["descriptor"]  # From Event document
                     indices = StreamRange(start=doc["seq_num"] - 1, stop=doc["seq_num"])
                     seq_nums = StreamRange(start=doc["seq_num"], stop=doc["seq_num"] + 1)
 
@@ -285,12 +315,25 @@ class _RunWriter(CallbackBase):
                     stream_datum_doc = StreamDatum(
                         uid=uid,
                         stream_resource=sres_uid_key,
-                        descriptor=descriptor,
+                        descriptor=desc_uid,
                         indices=indices,
                         seq_nums=seq_nums,
                     )
-                    self.stream_datum(stream_datum_doc)
 
+                    # Try to concatenate and cache the StreamDatum document to process later
+                    if cached_stream_datum_doc := self._external_data_cache.pop(data_key, None):
+                        try:
+                            _doc = concatenate_stream_datums(cached_stream_datum_doc, stream_datum_doc)
+                            if _doc["indices"]["stop"] - _doc["indices"]["start"] > BULK_SIZE:
+                                # Write the (large) concatenated StreamDatum document immediately
+                                self.stream_datum(_doc)
+                            else:
+                                # Keep it in cache for further concatenation
+                                self._external_data_cache[data_key] = _doc
+                        except ValueError:
+                            # If concatenation fails, write the cached document and the new one separately
+                            self.stream_datum(cached_stream_datum_doc)
+                            self.stream_datum(stream_datum_doc)
                 else:
                     raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
 
