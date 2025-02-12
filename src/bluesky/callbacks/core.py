@@ -30,9 +30,14 @@ MIMETYPE_LOOKUP = defaultdict(
         "PIZZABOX_ENC_FILE_TXT_PD": "text/csv",
         "PANDA": "application/x-hdf5",
         "ROI_HDF5_FLY": "application/x-hdf5",
+        "ROI_HDF51_FLY": "application/x-hdf5",
         "SIS_HDF51_FLY_STREAM_V1": "application/x-hdf5",
-        "XSP3_BULK": "application/x-hdf5;subtype=bulk",
+        "XSP3_BULK": "application/x-hdf5",
+        "XSP3": "application/x-hdf5",
         "MERLIN_FLY_STREAM_V2": "application/x-hdf5",
+        "MERLIN_HDF5_BULK": "application/x-hdf5",
+        "TPX_HDF5": "application/x-hdf5",
+        "EIGER2_STREAM": "application/x-hdf5",
     },
 )
 
