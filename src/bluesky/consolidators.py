@@ -304,7 +304,7 @@ class HDF5Consolidator(ConsolidatorBase):
         super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
-        self.stackable = self._sres_parameters.get("stackable", True)
+        self.stackable = self._sres_parameters.get("stackable", False)
 
     @property
     def adapter_parameters(self) -> dict:
