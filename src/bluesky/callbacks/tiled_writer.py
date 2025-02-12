@@ -282,8 +282,6 @@ class _RunWriter(CallbackBase):
             )
             parent_node["internal"].write_partition(df, 0)
             self._node_exists[f"{parent_node.item['id']}/internal"] = True
-            # for k in df_dict.keys():
-            #     parent_node.create_array_view(f"./internal/{k}", key=k, resizable=True)
 
         # Process _external_ data: Loop over all referenced Datums
         for data_key in self.data_keys_ext.keys():
@@ -336,6 +334,8 @@ class _RunWriter(CallbackBase):
                             # If concatenation fails, write the cached document and the new one separately
                             self.stream_datum(cached_stream_datum_doc)
                             self.stream_datum(stream_datum_doc)
+                    else:
+                        self._external_data_cache[data_key] = stream_datum_doc
                 else:
                     raise RuntimeError(f"Datum {datum_id} is referenced before being declared.")
 
