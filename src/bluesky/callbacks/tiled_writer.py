@@ -176,8 +176,8 @@ class _RunWriter(CallbackBase):
                 data_cache.clear()
 
         # Write the cached external data
-        for doc in self._external_data_cache.values():
-            self.stream_datum(doc)
+        for stream_datum_doc in self._external_data_cache.values():
+            self.stream_datum(stream_datum_doc)
 
         # Update the summary metadata with the stop document
         stream_names = list(self.root_node.keys())

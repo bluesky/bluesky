@@ -280,7 +280,9 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
-        return adapter_class.from_assets(self.assets, structure=self.structure, **self.adapter_parameters)
+        return adapter_class.from_catalog(
+            self.get_data_source(), structure=self.structure, **self.adapter_parameters
+        )
 
     def consume_stream_resource(self, stream_resource: StreamResource):
         """Consume an additional related StreamResource document for the same data_key"""
@@ -331,6 +333,11 @@ class HDF5Consolidator(ConsolidatorBase):
             data_uri=stream_resource["uri"], is_directory=False, parameter="data_uri", num=len(self.assets)
         )
         self.assets.append(asset)
+
+    def get_adapter(self, adapters_by_mimetype=None):
+        from tiled.adapters.hdf5 import HDF5ArrayAdapter
+
+        return super().get_adapter(adapters_by_mimetype={self.mimetype: HDF5ArrayAdapter})
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):
