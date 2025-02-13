@@ -621,7 +621,13 @@ def sleep(time: float) -> MsgGenerator:
 
 
 @plan
-def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, error_on_timeout: bool = True):
+def wait(
+    group: Optional[Hashable] = None,
+    *,
+    timeout: Optional[float] = None,
+    error_on_timeout: bool = True,
+    watch: Sequence[str] = (),
+):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -637,12 +643,15 @@ def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, e
         Specifies the behavior when the timeout is reached:
         - If True, a TimeoutError is raised if the operations do not complete within the specified timeout.
         - If False, the method returns once all objects are done.
+    watch : set of watch groups, optional
+        Additional groups to monitor while waiting for the primary group. Raises an exception if any watched group
+        fails.
     Yields
     ------
     msg : Msg
         Msg('wait', None, group=group, error_on_timeout=error_on_timeout, timeout=timeout)
     """
-    return (yield Msg("wait", None, group=group, error_on_timeout=error_on_timeout, timeout=timeout))
+    return (yield Msg("wait", None, group=group, error_on_timeout=error_on_timeout, timeout=timeout, watch=watch))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -996,7 +1005,7 @@ def collect(
 
 
 @plan
-def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
+def collect_while_completing(flyers, dets, flush_period=None, stream_name=None, watch: Sequence[str] = ()):
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
     data from one or more Collectable detectors until all are done.
@@ -1012,8 +1021,8 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     stream_name: str, optional
         If not None, will collect for the named string specifically, else collect will be performed
         on all streams.
-
-
+    watch: set of watch groups, optional
+        Additional groups to monitor while collecting from flyers.
     Yields
     ------
     msg : Msg
@@ -1028,7 +1037,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     yield from complete_all(*flyers, group=group, wait=False)
     done = False
     while not done:
-        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False)
+        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False, watch=watch)
         yield from collect(*dets, name=stream_name)
 
 
