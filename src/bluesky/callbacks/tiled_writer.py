@@ -179,6 +179,13 @@ class _RunWriter(CallbackBase):
         for stream_datum_doc in self._external_data_cache.values():
             self.stream_datum(stream_datum_doc)
 
+        # Validate structure for some StreamResource nodes
+        for sres_uid, sres_node in self._sres_nodes.items():
+            handler = self._handlers[sres_uid]
+            if handler._sres_parameters.get("_validate", False):
+                handler.validate()
+                self._update_data_source_for_node(sres_node, handler.get_data_source())
+
         # Update the summary metadata with the stop document
         stream_names = list(self.root_node.keys())
         summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
@@ -402,22 +409,23 @@ class _RunWriter(CallbackBase):
 
         return sres_node, handler
 
-    def stream_datum(self, doc: StreamDatum):
-        # Get the Stream Resource node and the associtaed handler (consolidator)
-        sres_node, handler = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
-        handler.consume_stream_datum(doc)
-
-        # Update StreamResource node in Tiled
+    def _update_data_source_for_node(self, node: BaseClient, data_source: DataSource):
+        """Update StreamResource node in Tiled"""
         # NOTE: Assigning data_source.id in the object and passing it in http
         # params is superfluous, but it is currently required by Tiled.
-        sres_node.refresh()
-        data_source = handler.get_data_source()
-        data_source.id = sres_node.data_sources()[0].id  # ID of the existing DataSource record
-        endpoint = sres_node.uri.replace("/metadata/", "/data_source/", 1)
+        node.refresh()
+        data_source.id = node.data_sources()[0].id  # ID of the existing DataSource record
+        endpoint = node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
-            sres_node.context.http_client.put(
+            node.context.http_client.put(
                 endpoint,
                 content=safe_json_dump({"data_source": data_source}),
                 params={"data_source": data_source.id},
             )
         ).json()
+
+    def stream_datum(self, doc: StreamDatum):
+        # Get the Stream Resource node and the associtaed handler (consolidator)
+        sres_node, handler = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
+        handler.consume_stream_datum(doc)
+        self._update_data_source_for_node(sres_node, handler.get_data_source())

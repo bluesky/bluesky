@@ -3,6 +3,7 @@ import dataclasses
 import enum
 import os
 import re
+import warnings
 from typing import Any, Optional, Union
 
 import numpy as np
@@ -280,6 +281,7 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
+        # TODO: How to pass the `node` argument here?
         return adapter_class.from_catalog(
             self.get_data_source(), structure=self.structure, **self.adapter_parameters
         )
@@ -288,6 +290,40 @@ class ConsolidatorBase:
         """Consume an additional related StreamResource document for the same data_key"""
 
         raise NotImplementedError("This method is not implemented in the base Consolidator class.")
+
+    def validate(self, adapters_by_mimetype=None, raise_on_error=True):
+        """Validate the Consolidator's state against the expected structure"""
+
+        # User-provided adapters take precedence over defaults.
+        all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
+        adapter_class = all_adapters_by_mimetype[self.mimetype]
+
+        # TODO: How to pass the `node` argument here?
+        uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uri"]
+        structure = adapter_class.from_uris(uris, **self.adapter_parameters).structure()
+
+        if self.shape != structure.shape:
+            if raise_on_error:
+                raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
+            else:
+                warnings.warn(f"Fixing shape mismatch: {self.shape} != {structure.shape}", stacklevel=2)
+                self._num_rows = structure.shape[0]
+                self.datum_shape = structure.shape[1:]
+
+        if self.chunks != structure.chunks:
+            if raise_on_error:
+                raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
+            else:
+                warnings.warn(f"Fixing chunk shape mismatch: {self.chunks} != {structure.chunks}", stacklevel=2)
+                self.chunk_shape = structure.chunks[0]
+                # TODO: Possibly incomplete implementation
+
+        if self.data_type != structure.data_type:
+            if raise_on_error:
+                raise ValueError(f"Dtype mismatch: {self.data_type} != {structure.data_type}")
+            else:
+                warnings.warn(f"Fixing dtype mismatch: {self.data_type} != {structure.data_type}", stacklevel=2)
+                self.data_type = structure.data_type
 
 
 class CSVConsolidator(ConsolidatorBase):
