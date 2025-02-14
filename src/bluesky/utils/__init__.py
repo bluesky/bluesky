@@ -1927,8 +1927,10 @@ async def maybe_collect_asset_docs(
         async for doc in iterate_maybe_async(obj.collect_asset_docs(*args, **kwargs)):
             yield doc
 
+
 def _isawaitable(value: SyncOrAsync[T]) -> TypeIs[Awaitable[T]]:
     return inspect.isawaitable(value)
+
 
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
     if _isawaitable(ret):
