@@ -1,3 +1,4 @@
+import sys
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Iterator
 from typing import (
@@ -24,10 +25,10 @@ from typing_extensions import TypedDict, Unpack
 # Squashes warning
 Dtype = Dtype  # type: ignore
 
-try:
+if sys.version_info >= (3, 10):
     from typing import ParamSpec
-except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore
+else:
+    from typing_extensions import ParamSpec
 
 
 # TODO: these are not placed in Events by RE yet
