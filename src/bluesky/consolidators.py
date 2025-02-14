@@ -303,7 +303,7 @@ class ConsolidatorBase:
         structure = adapter_class.from_uris(*uris, **self.adapter_parameters).structure()
 
         if self.shape != structure.shape:
-            if fix_errors:
+            if not fix_errors:
                 raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
             else:
                 warnings.warn(f"Fixing shape mismatch: {self.shape} != {structure.shape}", stacklevel=2)
@@ -311,7 +311,7 @@ class ConsolidatorBase:
                 self.datum_shape = structure.shape[1:]
 
         if self.chunks != structure.chunks:
-            if fix_errors:
+            if not fix_errors:
                 raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
             else:
                 warnings.warn(f"Fixing chunk shape mismatch: {self.chunks} != {structure.chunks}", stacklevel=2)
@@ -319,7 +319,7 @@ class ConsolidatorBase:
                 # TODO: Possibly incomplete implementation
 
         if self.data_type != structure.data_type:
-            if fix_errors:
+            if not fix_errors:
                 raise ValueError(f"Dtype mismatch: {self.data_type} != {structure.data_type}")
             else:
                 warnings.warn(f"Fixing dtype mismatch: {self.data_type} != {structure.data_type}", stacklevel=2)
