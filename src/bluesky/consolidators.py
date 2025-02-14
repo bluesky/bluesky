@@ -320,7 +320,13 @@ class HDF5Consolidator(ConsolidatorBase):
         dataset: list[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+        params = {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+        if slice := self._sres_parameters.get("slice", False):
+            params["slice"] = slice
+        if squeeze := self._sres_parameters.get("squeeze", False):
+            params["squeeze"] = squeeze
+
+        return params
 
     def consume_stream_resource(self, stream_resource: StreamResource):
         """Add an Asset for a new StreamResource document"""
