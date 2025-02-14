@@ -183,7 +183,7 @@ class _RunWriter(CallbackBase):
         for sres_uid, sres_node in self._sres_nodes.items():
             handler = self._handlers[sres_uid]
             if handler._sres_parameters.get("_validate", False):
-                handler.validate()
+                handler.validate(fix_errors=True)
                 self._update_data_source_for_node(sres_node, handler.get_data_source())
 
         # Update the summary metadata with the stop document

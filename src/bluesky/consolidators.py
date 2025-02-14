@@ -291,7 +291,7 @@ class ConsolidatorBase:
 
         raise NotImplementedError("This method is not implemented in the base Consolidator class.")
 
-    def validate(self, adapters_by_mimetype=None, raise_on_error=True):
+    def validate(self, adapters_by_mimetype=None, fix_errors=False):
         """Validate the Consolidator's state against the expected structure"""
 
         # User-provided adapters take precedence over defaults.
@@ -300,10 +300,10 @@ class ConsolidatorBase:
 
         # TODO: How to pass the `node` argument here?
         uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uri"]
-        structure = adapter_class.from_uris(uris, **self.adapter_parameters).structure()
+        structure = adapter_class.from_uris(*uris, **self.adapter_parameters).structure()
 
         if self.shape != structure.shape:
-            if raise_on_error:
+            if fix_errors:
                 raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
             else:
                 warnings.warn(f"Fixing shape mismatch: {self.shape} != {structure.shape}", stacklevel=2)
@@ -311,7 +311,7 @@ class ConsolidatorBase:
                 self.datum_shape = structure.shape[1:]
 
         if self.chunks != structure.chunks:
-            if raise_on_error:
+            if fix_errors:
                 raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
             else:
                 warnings.warn(f"Fixing chunk shape mismatch: {self.chunks} != {structure.chunks}", stacklevel=2)
@@ -319,7 +319,7 @@ class ConsolidatorBase:
                 # TODO: Possibly incomplete implementation
 
         if self.data_type != structure.data_type:
-            if raise_on_error:
+            if fix_errors:
                 raise ValueError(f"Dtype mismatch: {self.data_type} != {structure.data_type}")
             else:
                 warnings.warn(f"Fixing dtype mismatch: {self.data_type} != {structure.data_type}", stacklevel=2)
@@ -356,7 +356,7 @@ class HDF5Consolidator(ConsolidatorBase):
         dataset: list[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        params = {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+        params = {"dataset": self._sres_parameters["dataset"], "swmr": self.swmr}
         if slice := self._sres_parameters.get("slice", False):
             params["slice"] = slice
         if squeeze := self._sres_parameters.get("squeeze", False):
