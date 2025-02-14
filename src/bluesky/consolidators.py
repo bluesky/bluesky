@@ -306,7 +306,7 @@ class ConsolidatorBase:
             if not fix_errors:
                 raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
             else:
-                warnings.warn(f"Fixing shape mismatch: {self.shape} != {structure.shape}", stacklevel=2)
+                warnings.warn(f"Fixing shape mismatch: {self.shape} -> {structure.shape}", stacklevel=2)
                 self._num_rows = structure.shape[0]
                 self.datum_shape = structure.shape[1:]
 
@@ -314,7 +314,9 @@ class ConsolidatorBase:
             if not fix_errors:
                 raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
             else:
-                warnings.warn(f"Fixing chunk shape mismatch: {self.chunks} != {structure.chunks}", stacklevel=2)
+                warnings.warn(
+                    f"Fixing chunk shape mismatch: {self.chunk_shape} -> {structure.chunks}", stacklevel=2
+                )
                 self.chunk_shape = structure.chunks[0]
                 # TODO: Possibly incomplete implementation
 
@@ -322,7 +324,7 @@ class ConsolidatorBase:
             if not fix_errors:
                 raise ValueError(f"Dtype mismatch: {self.data_type} != {structure.data_type}")
             else:
-                warnings.warn(f"Fixing dtype mismatch: {self.data_type} != {structure.data_type}", stacklevel=2)
+                warnings.warn(f"Fixing dtype mismatch: {self.data_type} -> {structure.data_type}", stacklevel=2)
                 self.data_type = structure.data_type
 
 
