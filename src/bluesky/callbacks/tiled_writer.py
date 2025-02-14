@@ -228,6 +228,8 @@ class _RunWriter(CallbackBase):
             df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
             conf_node.write_awkward([df_dict], key=det_name)
 
+            # TODO: clean-up AwkwardClient: better __repr__, .read(), etc.
+
             # df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
             # if det_name in conf_node.keys():
             #     conf_node[det_name].append_partition(df, 0)
@@ -306,7 +308,7 @@ class _RunWriter(CallbackBase):
                         sres_uid in self._stream_resource_cache.keys()
                         and sres_uid_key not in self._stream_resource_cache.keys()
                     ):
-                        sres_doc = copy.copy(self._stream_resource_cache[sres_uid])
+                        sres_doc = copy.deepcopy(self._stream_resource_cache[sres_uid])
                         sres_doc["data_key"] = data_key
                         sres_doc["parameters"].update(datum_doc.get("datum_kwargs", {}))
                         self._stream_resource_cache[sres_uid_key] = sres_doc
