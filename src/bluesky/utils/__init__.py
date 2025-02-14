@@ -15,7 +15,7 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Generator, Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
@@ -34,6 +34,7 @@ import numpy as np
 from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
+from typing_extensions import TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
@@ -1926,14 +1927,14 @@ async def maybe_collect_asset_docs(
         async for doc in iterate_maybe_async(obj.collect_asset_docs(*args, **kwargs)):
             yield doc
 
+def _isawaitable(value: SyncOrAsync[T]) -> TypeIs[Awaitable[T]]:
+    return inspect.isawaitable(value)
 
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
-    if inspect.isawaitable(ret):
+    if _isawaitable(ret):
         return await ret
     else:
-        # Mypy does not understand how to narrow type to non-awaitable in this
-        # instance, see https://github.com/python/mypy/issues/15520
-        return ret  # type: ignore
+        return ret
 
 
 class Plan:
