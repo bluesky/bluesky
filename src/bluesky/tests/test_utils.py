@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import operator
 import time
 import warnings
@@ -376,6 +377,8 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
         # Now delete all the callable objects one by one
         for n in range(len(obj_to_delete)):
             obj_to_delete[n] = None  # Overwriting the reference deletes the object
+
+            gc.collect()
 
             # Check the function composition
             if callable_type in [
