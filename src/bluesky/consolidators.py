@@ -105,6 +105,15 @@ class ConsolidatorBase:
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
+        # Check that the datum shape is consistent between the StreamResource and the Descriptor
+        if multiplier := self._sres_parameters.get("multiplier"):
+            self.datum_shape = self.datum_shape or (multiplier,)  # If datum_shape is not set
+            if self.datum_shape[0] != multiplier:
+                if self.datum_shape[0] == 1:
+                    self.datum_shape = (multiplier,) + self.datum_shape[1:]
+                else:
+                    self.datum_shape = (multiplier,) + self.datum_shape
+                    # TODO: Check consistency with chunk_shape
 
         # Determine data type. From highest precedent to lowest:
         # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
