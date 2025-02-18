@@ -30,6 +30,11 @@ if ophyd:
         x = Cpt(Signal, value=0)
 
 
+class LyingSignal(Signal):
+    # todo implement https://github.com/bluesky/bluesky/pull/1784#issuecomment-2560500722
+    pass
+
+
 class SigNew:
     def __init__(self, name: str) -> None:
         self.name = name
