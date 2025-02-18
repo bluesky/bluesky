@@ -132,6 +132,7 @@ class LiveFit(CallbackBase):
 def center_of_mass(input, labels=None, index=None):
     """
     Calculate the center of mass of the values of an array at labels.
+
     Parameters
     ----------
     input : ndarray
@@ -142,10 +143,13 @@ def center_of_mass(input, labels=None, index=None):
     index : int or sequence of ints, optional
         Labels for which to calculate centers-of-mass. If not specified,
         all labels greater than zero are used.  Only used with `labels`.
+
     Returns
     -------
     center_of_mass : tuple, or list of tuples
         Coordinates of centers-of-mass.
+    None when sum of signal is zero.
+
     Examples
     --------
     >>> a = np.array(([0,0,0,0],
@@ -166,6 +170,8 @@ def center_of_mass(input, labels=None, index=None):
     [(0.33333333333333331, 1.3333333333333333), (3.5, 2.5)]
     """
     normalizer = np.sum(input, labels, index)
+    if normalizer == 0:
+        return None
     grids = np.ogrid[[slice(0, i) for i in input.shape]]
 
     results = [np.sum(input * grids[dir].astype(float), labels, index) / normalizer for dir in range(input.ndim)]
@@ -290,7 +296,12 @@ class PeakStats(CollectThenCompute):
 
         fields["min"] = (x[argmin_y], y_orig[argmin_y])
         fields["max"] = (x[argmax_y], y_orig[argmax_y])
-        (fields["com"],) = np.interp(center_of_mass(y), np.arange(len(x)), x)
+        com = center_of_mass(y)
+        if com is None:
+            fields["cen"] = (x.min() + x.max()) / 2  # midway value
+            fields["com"] = fields["cen"]
+        else:
+            (fields["com"],) = np.interp(com, np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
         crossings = np.where(np.diff((y > mid).astype(int)))[0]
         _cen_list = []
