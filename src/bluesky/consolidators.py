@@ -316,18 +316,22 @@ class ConsolidatorBase:
                 raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
             else:
                 warnings.warn(f"Fixing shape mismatch: {self.shape} -> {structure.shape}", stacklevel=2)
-                self._num_rows = structure.shape[0]
-                self.datum_shape = structure.shape[1:]
+                if self.stackable:
+                    self._num_rows = structure.shape[0]
+                    self.datum_shape = structure.shape[1:]
+                else:
+                    # Estimate the number of frames_per_event (multiplier)
+                    multiplier = 1 if structure.shape[0] % structure.chunks[0][0] else structure.chunks[0][0]
+                    self._num_rows = structure.shape[0] // multiplier
+                    self.datum_shape = (multiplier,) + structure.shape[1:]
 
         if self.chunks != structure.chunks:
             if not fix_errors:
                 raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
             else:
-                warnings.warn(
-                    f"Fixing chunk shape mismatch: {self.chunk_shape} -> {structure.chunks}", stacklevel=2
-                )
-                self.chunk_shape = structure.chunks[0]
-                # TODO: Possibly incomplete implementation
+                _chunk_shape = tuple(c[0] for c in structure.chunks)
+                warnings.warn(f"Fixing chunk shape mismatch: {self.chunk_shape} -> {_chunk_shape}", stacklevel=2)
+                self.chunk_shape = _chunk_shape
 
         if self.data_type != structure.data_type:
             if not fix_errors:
