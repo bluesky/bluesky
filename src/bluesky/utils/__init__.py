@@ -1971,6 +1971,10 @@ class Plan:
         self._stack = None
         return self._iter.throw(typ, val, tb)
 
+    def close(self):
+        self._stack = None
+        return self._iter.close()
+
 
 def plan(bs_plan):
     """Decorator that warns user if a `yield from` is not called
