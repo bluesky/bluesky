@@ -702,7 +702,7 @@ def adaptive_scan(
     min_step : float
         smallest step for fast-changing regions
     max_step : float
-        largest step for slow-chaning regions
+        largest step for slow-changing regions
     target_delta : float
         desired fractional change in detector signal between steps
     backstep : bool
@@ -831,7 +831,7 @@ def rel_adaptive_scan(
     min_step : float
         smallest step for fast-changing regions
     max_step : float
-        largest step for slow-chaning regions
+        largest step for slow-changing regions
     target_delta : float
         desired fractional change in detector signal between steps
     backstep : bool
