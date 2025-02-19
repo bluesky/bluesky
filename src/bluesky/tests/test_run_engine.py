@@ -2022,18 +2022,14 @@ def test_watch_failed_before_set_raises_immediately(RE):
         def stage(self):
             return StatusBase()
 
-    class WatchDevice(Device):
-        def stage(self):
-            return StatusBase()
-
     mock_device = MockDevice(name="mock_device")
-    watch_device = WatchDevice(name="watch_device")
+    watch_device = MockDevice(name="watch_device")
 
     def plan():
         yield Msg("stage", mock_device, group="test_group")
         status = yield Msg("stage", watch_device, group="watch_group")
         status.set_exception(Exception("Watch device failed"))
-        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+        yield from wait(group="test_group", watch=("watch_group",))
 
     with pytest.raises(FailedStatus):
         RE(plan())

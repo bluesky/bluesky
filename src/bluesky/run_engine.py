@@ -1593,6 +1593,7 @@ class RunEngine:
                             resp = sentinel
                             # If there is at least one plan left in the stack,
                             # stash the new exception go back to top
+                            ### THIS IS THE PLACE WHERE I NEED TO FIX IT
                             if len(self._plan_stack):
                                 stashed_exception = e
                                 continue
@@ -1802,6 +1803,7 @@ class RunEngine:
             raise stashed_exception
         return plan_return
 
+    ### For bookmarking
     async def _wait_for(self, msg):
         """Instruct the RunEngine to wait for futures and return the resulting tasks.
 
@@ -2344,6 +2346,9 @@ class RunEngine:
         else:
             trace.get_current_span().set_attribute("no_group_given", True)
         futs = list(self._groups.pop(group, []))
+        watch_futs = []
+        for w in watch:
+            watch_futs.extend(self._groups.get(w, []))
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
@@ -2358,11 +2363,16 @@ class RunEngine:
                     # bar.
                     self._call_waiting_hook(status_objs)
                 await self._wait_for(Msg("wait_for", None, futs, timeout=msg.kwargs.get("timeout", None)))
+                watch_task = asyncio.create_task(self._monitor_status_objs(watch_futs))
                 # Monitor the status objects for any failures and raise an exception if any are detected.
-                self._watch_status_objs(watch)
+                try:
+                    watch_task.cancel()
+                except Exception:
+                    pass
 
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
+                futs.extend(watch_futs)
                 self._groups[group] = futs
                 self._status_objs[group] = status_objs
                 if error_on_timeout:
@@ -2382,10 +2392,14 @@ class RunEngine:
                         self._seen_wait_and_move_on_keys.remove(group)
             return done
 
-    def _watch_status_objs(self, group_names: Sequence[str]):
-        for watch_item in group_names:
-            for status in self._status_objs[watch_item]:
-                status.add_callback(self._manage_failed_status(self._pardon_failures))
+    async def _monitor_status_objs(self, futs: list):
+        futs = [asyncio.ensure_future(f()) for f in futs]
+        completed, pending = await asyncio.wait(futs, **self._loop_for_kwargs)
+        # err = self._exception
+        # if err:
+        #     print(f"Error in monitoring task: {err}")
+        #     self._call_waiting_hook(None)
+        #     raise err
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """

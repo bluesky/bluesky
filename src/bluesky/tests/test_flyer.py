@@ -11,6 +11,7 @@ from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
 from bluesky import Msg
 from bluesky.plan_stubs import (
     close_run,
+    collect,
     collect_while_completing,
     complete,
     complete_all,
@@ -635,8 +636,8 @@ def collect_data_during_multiple_scan(dets, motors, stream_name: str = "test_str
 
     yield from prepare(*dets, sum(grid_scan))
 
-    for scan in grid_scan:
-        yield from prepare(*motors, scan)
+    for i in range(len(grid_scan) - 1):
+        yield from prepare(*motors, grid_scan[i])
 
         yield from kickoff(*dets)
         yield from kickoff(*motors)
@@ -646,6 +647,10 @@ def collect_data_during_multiple_scan(dets, motors, stream_name: str = "test_str
         yield from collect_while_completing(
             motors, dets, flush_period=0.1, stream_name=stream_name, watch=dets_complete_group
         )
+        yield from prepare(*motors, grid_scan[i + 1])
+        yield from wait(dets_complete_group)
+        yield from collect(*dets, name=stream_name)
+
     yield from close_run()
 
 
