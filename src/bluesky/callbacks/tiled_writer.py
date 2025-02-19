@@ -116,6 +116,7 @@ class _RunWriter(CallbackBase):
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}
         self._node_exists: dict[str, bool] = defaultdict(lambda: False)  # Keep track of existing nodes
+        self._next_frame_index: dict[tuple[str, str], int] = defaultdict(lambda: 0)
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
@@ -259,6 +260,7 @@ class _RunWriter(CallbackBase):
 
     def event(self, doc: Event):
         parent_node = self._desc_nodes[doc["descriptor"]]
+        desc_name = parent_node.item["key"]  # Name of the descriptor/stream
 
         # Process _internal_ data -- those keys without 'external' flag or those that have been filled
         data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
@@ -266,7 +268,7 @@ class _RunWriter(CallbackBase):
         df_dict = {"seq_num": doc["seq_num"]}
         df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
         df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
-        if self._node_exists[f"{parent_node.item['id']}/internal"]:
+        if self._node_exists[f"{desc_name}/internal"]:
             # Do not add the data immediately; collect it in a cache and write in bulk
             data_cache = self._internal_data_cache[doc["descriptor"]]
             data_cache.append(df_dict)
@@ -290,7 +292,7 @@ class _RunWriter(CallbackBase):
                 metadata=data_keys_spec,
             )
             parent_node["internal"].write_partition(df, 0)
-            self._node_exists[f"{parent_node.item['id']}/internal"] = True
+            self._node_exists[f"{desc_name}/internal"] = True
 
         # Process _external_ data: Loop over all referenced Datums
         for data_key in self.data_keys_ext.keys():
@@ -304,8 +306,19 @@ class _RunWriter(CallbackBase):
                     uid = datum_doc["datum_id"]
                     sres_uid = datum_doc["resource"]
                     desc_uid = doc["descriptor"]  # From Event document
-                    indices = StreamRange(start=doc["seq_num"] - 1, stop=doc["seq_num"])
-                    seq_nums = StreamRange(start=doc["seq_num"], stop=doc["seq_num"] + 1)
+
+                    # Some Datums contain datum_kwargs and the 'frame' field, which indicates the last index of the
+                    # frame. This should take precedence over the seq_num field in the Event document. Keep the
+                    # last frame index in memory, since next Datums may refer to more than one frame (it is
+                    # assumed that Events always refer to a single frame).
+                    datum_kwargs = datum_doc.get("datum_kwargs", {})
+                    if index_stop := datum_kwargs.pop("frame", None):
+                        index_start = self._next_frame_index[(desc_name, data_key)]
+                        self._next_frame_index[(desc_name, data_key)] = index_stop + 1
+                    else:
+                        index_start, index_stop = doc["seq_num"] - 1, doc["seq_num"]
+                    indices = StreamRange(start=index_start, stop=index_stop)
+                    seq_nums = StreamRange(start=index_start + 1, stop=index_stop + 1)
 
                     # Update the Resource document (add data_key to match the StreamResource schema)
                     # Save a copy of the StreamResource document; this allows to account for cases where one
@@ -317,7 +330,7 @@ class _RunWriter(CallbackBase):
                     ):
                         sres_doc = copy.deepcopy(self._stream_resource_cache[sres_uid])
                         sres_doc["data_key"] = data_key
-                        sres_doc["parameters"].update(datum_doc.get("datum_kwargs", {}))
+                        sres_doc["parameters"].update(datum_kwargs)
                         self._stream_resource_cache[sres_uid_key] = sres_doc
 
                     # Produce the StreamDatum document and process it as usual
