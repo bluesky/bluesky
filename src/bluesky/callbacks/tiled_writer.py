@@ -260,7 +260,7 @@ class _RunWriter(CallbackBase):
 
     def event(self, doc: Event):
         parent_node = self._desc_nodes[doc["descriptor"]]
-        desc_name = parent_node.item["key"]  # Name of the descriptor/stream
+        desc_name = parent_node.item["id"]  # Name of the descriptor/stream
 
         # Process _internal_ data -- those keys without 'external' flag or those that have been filled
         data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
@@ -308,7 +308,7 @@ class _RunWriter(CallbackBase):
                     desc_uid = doc["descriptor"]  # From Event document
 
                     # Some Datums contain datum_kwargs and the 'frame' field, which indicates the last index of the
-                    # frame. This should take precedence over the seq_num field in the Event document. Keep the
+                    # frame. This should take precedence over the 'seq_num' field in the Event document. Keep the
                     # last frame index in memory, since next Datums may refer to more than one frame (it is
                     # assumed that Events always refer to a single frame).
                     datum_kwargs = datum_doc.get("datum_kwargs", {})
