@@ -312,9 +312,10 @@ class _RunWriter(CallbackBase):
                     # last frame index in memory, since next Datums may refer to more than one frame (it is
                     # assumed that Events always refer to a single frame).
                     datum_kwargs = datum_doc.get("datum_kwargs", {})
-                    if index_stop := datum_kwargs.pop("frame", None):
+                    if frame := datum_kwargs.get("frame", None):
                         index_start = self._next_frame_index[(desc_name, data_key)]
-                        self._next_frame_index[(desc_name, data_key)] = index_stop + 1
+                        index_stop = frame + 1
+                        self._next_frame_index[(desc_name, data_key)] = index_stop
                     else:
                         index_start, index_stop = doc["seq_num"] - 1, doc["seq_num"]
                     indices = StreamRange(start=index_start, stop=index_stop)
