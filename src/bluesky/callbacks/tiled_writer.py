@@ -116,7 +116,7 @@ class _RunWriter(CallbackBase):
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}
         self._node_exists: dict[str, bool] = defaultdict(lambda: False)  # Keep track of existing nodes
-        self._next_frame_index: dict[tuple[str, str], int] = defaultdict(lambda: 0)
+        self._next_frame_index: dict[tuple[str, str], int] = defaultdict(lambda: {'carry': 0, 'index': 0})
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
@@ -314,12 +314,16 @@ class _RunWriter(CallbackBase):
                     datum_kwargs = datum_doc.get("datum_kwargs", {})
                     frame = datum_kwargs.pop("frame", None)
                     if frame is not None:
-                        index_start = self._next_frame_index[(desc_name, data_key)]
-                        index_stop = frame + 1
+                        _next_index = self._next_frame_index[(desc_name, data_key)]
+                        index_start = sum(_next_index.values())
+                        _next_index['index'] = frame + 1
+                        index_stop = sum(_next_index.values())
                         if index_stop < index_start:
                             # The datum is likely referencing a next Resource, but the indexing must continue
-                            index_stop = index_start + index_stop
-                        self._next_frame_index[(desc_name, data_key)] = index_stop
+                            _next_index['carry'] = index_start
+                            index_stop = sum(_next_index.values())
+                        # self._next_frame_index[(desc_name, data_key)]['index'] = index_stop
+                        # index_stop = sum(self._next_frame_index[(desc_name, data_key)].values())
                     else:
                         index_start, index_stop = doc["seq_num"] - 1, doc["seq_num"]
                     indices = StreamRange(start=index_start, stop=index_stop)
