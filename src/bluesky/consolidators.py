@@ -337,7 +337,7 @@ class ConsolidatorBase:
             if not fix_errors:
                 raise ValueError(f"Dtype mismatch: {self.data_type} != {structure.data_type}")
             else:
-                warnings.warn(f"Fixing dtype mismatch: {self.data_type} -> {structure.data_type}", stacklevel=2)
+                warnings.warn(f"Fixing dtype mismatch: {self.data_type.to_numpy_dtype()} -> {structure.data_type.to_numpy_dtype()}", stacklevel=2)
                 self.data_type = structure.data_type
 
 
