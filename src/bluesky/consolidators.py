@@ -102,7 +102,7 @@ class ConsolidatorBase:
 
         # Find data shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
-        self.datum_shape = tuple(data_desc["shape"])
+        self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
 
         # Determine data type. From highest precedent to lowest:
@@ -165,7 +165,8 @@ class ConsolidatorBase:
         If `chunk_shape` is an empty tuple -- assume the dataset is stored as a single chunk for all existing and
         new elements. Usually, however, `chunk_shape` is a tuple of int, in which case, we assume fixed-sized
         chunks with at most `chunk_shape[0]` elements (i.e. `_num_rows`); last chunk can be smaller. If chunk_shape
-        is a tuple with only one element -- assume it defines the chunk size along the leading (event) dimension.
+        is a tuple with less than `self.shape` elements -- assume it defines the chunk sizes along the leading
+        dimensions.
 
         If the consolidator is NOT stackable, and `join_chunks = False`, the chunking along the leftmost dimensions
         is assumed to be preserved in each appended data point, i.e. consecutive chunks do not join, e.g. for a 1d
@@ -181,28 +182,22 @@ class ConsolidatorBase:
             # if `repeat = n`, n > 1, copy and repeat the entire result n times
             return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) * repeat or (0,)
 
-        if len(self.chunk_shape) == 0:
-            return tuple((d,) for d in self.shape)
+        # Calculate total shape based on number of rows and datum shape
+        total_shape = self.shape
 
-        elif len(self.chunk_shape) == 1:
-            if self.stackable or (not self.stackable and self.join_chunks):
-                return list_summands(self.shape[0], self.chunk_shape[0]), *[(d,) for d in self.shape[1:]]
-            else:
-                return list_summands(self.datum_shape[0], self.chunk_shape[0], repeat=self._num_rows), *[
-                    (d,) for d in self.datum_shape[1:]
-                ]
+        # If chunk shape is less than or equal to the total shape dimensions, chunk each specified dimension
+        # starting from the leading dimension
+        if len(self.chunk_shape) <= len(self.shape):
+            return tuple(
+                list_summands(ddim, cdim)
+                for ddim, cdim in zip(self.shape[: len(self.chunk_shape)], self.chunk_shape)
+            ) + tuple((d,) for d in self.shape[len(self.chunk_shape) :])
 
-        elif len(self.chunk_shape) == len(self.shape):
-            if self.stackable or (not self.stackable and self.join_chunks):
-                return tuple([list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape, self.shape)])
-            else:
-                return list_summands(self.datum_shape[0], self.chunk_shape[0], repeat=self._num_rows), *[
-                    list_summands(ddim, cdim) for cdim, ddim in zip(self.chunk_shape[1:], self.shape[1:])
-                ]
-
+        # If chunk shape is longer than the total shape dimensions, raise an error
         else:
             raise ValueError(
-                f"The shape of chunks, {self.chunk_shape}, is not consistent with the shape of data, {self.shape}."
+                f"The shape of chunks, {self.chunk_shape}, should be less than or equal to the shape of data, "
+                f"{self.shape}."
             )
 
     @property
