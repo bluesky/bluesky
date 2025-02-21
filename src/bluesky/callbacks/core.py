@@ -6,7 +6,7 @@ import logging
 import os
 import time as ttime
 import warnings
-from collections import OrderedDict, deque, namedtuple
+from collections import OrderedDict, defaultdict, deque, namedtuple
 from datetime import datetime
 from functools import partial as _partial
 from functools import wraps as _wraps
@@ -16,13 +16,20 @@ from event_model import DocumentRouter
 
 from ..utils import ensure_uid
 
-MIMETYPE_LOOKUP = {
-    "hdf5": "application/x-hdf5",
-    "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
-    "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
-    "AD_TIFF": "multipart/related;type=image/tiff",
-    "AD_HDF5_GERM": "application/x-hdf5",
-}
+MIMETYPE_LOOKUP = defaultdict(
+    lambda: "application/octet-stream",
+    {
+        "hdf5": "application/x-hdf5",
+        "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
+        "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
+        "PIL100k_HDF5": "application/x-hdf5",
+        "XPS3": "application/x-hdf5",
+        "XSP3_STEP": "application/x-hdf5",
+        "AD_TIFF": "multipart/related;type=image/tiff",
+        "AD_HDF5_GERM": "application/x-hdf5",
+        "PIZZABOX_ENC_FILE_TXT_PD": "text/csv",
+    },
+)
 
 logger = logging.getLogger(__name__)
 
