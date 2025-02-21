@@ -83,13 +83,17 @@ class ConsolidatorBase:
         a set of mimetypes that can be handled by a derived Consolidator class; raises ValueError if attempted to
         pass Resource documents related to unsupported mimetypes.
     stackable : bool
-        when True (default), the resulting consolidated dataset is produced by stacking all datums along a new
-        dimension added on the left, e.g. a stack of tiff images, otherwise -- new datum will appended to the end
-        of the exisitng leftmost dimension, e.g. rows of a table.
+        similar to numpy or dask stacking operation. When True, the resulting consolidated dataset is produced by
+        stacking all datums along a new dimension added on the left, e.g. a stack of tiff images, otherwise -- new
+        datum will appended to the end of the exisitng leftmost dimension, e.g. rows of a table (similarly to
+        concatenation in numpy).
+    join_chunks : bool
+        if True, the chunking of the resulting dataset will be determined after consolidation, otherwise each part
+        is considered to be chunked separately.
     """
 
     supported_mimetypes: set[str] = {"application/octet-stream"}
-    stackable: bool = True
+    stackable: bool = False
     join_chunks: bool = True
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
@@ -296,7 +300,7 @@ class HDF5Consolidator(ConsolidatorBase):
         super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
-        self.stackable = self._sres_parameters.get("stackable", False)
+        self.stackable = self._sres_parameters.get("stackable", self.stackable)
 
     @property
     def adapter_parameters(self) -> dict:
