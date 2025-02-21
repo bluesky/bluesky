@@ -104,7 +104,7 @@ class ConsolidatorBase:
         self.assets: list[Asset] = []
         self._sres_parameters = stream_resource["parameters"]
 
-        # Find data shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
+        # Find datum shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
         self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
@@ -135,6 +135,10 @@ class ConsolidatorBase:
         self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
         if 0 in self.chunk_shape:
             raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
+
+        # Possibly overwrite the stackable and join_chunks flags
+        self.stackable = self._sres_parameters.get("stackable", self.stackable)
+        self.join_chunks = self._sres_parameters.get("join_chunks", self.join_chunks)
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
         self._has_skips: bool = False
@@ -300,7 +304,6 @@ class HDF5Consolidator(ConsolidatorBase):
         super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
-        self.stackable = self._sres_parameters.get("stackable", self.stackable)
 
     @property
     def adapter_parameters(self) -> dict:
@@ -319,7 +322,12 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         super().__init__(stream_resource, descriptor)
         self.permitted_extensions: set[str] = permitted_extensions
         self.data_uris: list[str] = []
-        self.chunk_shape = self.chunk_shape or (1,)  # Assume one frame (chunk) per tiff file
+        self.chunk_shape = self.chunk_shape or (1,)  # I.e. number of frames per file (tiff, jpeg, etc.)
+        if not self.stackable:
+            assert self.datum_shape[0] % self.chunk_shape[0] == 0, (
+                f"Number of frames per file ({self.chunk_shape[0]}) must divide the total number of frames per"
+                f"datum ({self.datum_shape[0]}): variable-sized files are not allowed."
+            )
 
         # Normalize filename template:
         # Convert the template string from "old" to "new" Python style
@@ -370,10 +378,11 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         return self.uri + self.template.format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
-        # Determine the indices in the names of tiff files from indices of frames and number of frames per file
-        first_file_indx = int(doc["indices"]["start"] / self.chunk_shape[0])
-        last_file_indx = int((doc["indices"]["stop"] - 1) / self.chunk_shape[0])
-        for indx in range(first_file_indx, last_file_indx + 1):
+        # Determine the indices in the names of tiff files from indices of datums and number of frames per file
+        files_per_datum = self.datum_shape[0] // self.chunk_shape[0] if not self.stackable else 1
+        first_file_indx = doc["indices"]["start"] * files_per_datum
+        last_file_indx = doc["indices"]["stop"] * files_per_datum
+        for indx in range(first_file_indx, last_file_indx):
             new_datum_uri = self.get_datum_uri(indx)
             new_asset = Asset(
                 data_uri=new_datum_uri,
