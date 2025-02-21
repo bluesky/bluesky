@@ -182,9 +182,6 @@ class ConsolidatorBase:
             # if `repeat = n`, n > 1, copy and repeat the entire result n times
             return tuple([b] * (A // b) + ([A % b] if A % b > 0 else [])) * repeat or (0,)
 
-        # Calculate total shape based on number of rows and datum shape
-        total_shape = self.shape
-
         # If chunk shape is less than or equal to the total shape dimensions, chunk each specified dimension
         # starting from the leading dimension
         if len(self.chunk_shape) <= len(self.shape):
@@ -299,7 +296,7 @@ class HDF5Consolidator(ConsolidatorBase):
         super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
-        self.stackable = self._sres_parameters.get("stackable", True)
+        self.stackable = self._sres_parameters.get("stackable", False)
 
     @property
     def adapter_parameters(self) -> dict:
