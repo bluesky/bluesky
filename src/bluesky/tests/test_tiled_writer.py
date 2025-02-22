@@ -68,7 +68,6 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
         data_shape = tuple(data_desc["shape"])
-        data_shape = data_shape if data_shape != (1,) else ()
         hdf5_dataset = f"/{data_key}/VALUE"
 
         stream_resource = None
@@ -148,25 +147,30 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     def describe(self) -> dict[str, DataKey]:
         """Describe datasets which will be backed by StreamResources"""
         return {
+            # Numerical data with 1 number per event
             f"{self.name}-sd1": DataKey(
                 source="file",
                 dtype="number",
                 dtype_numpy=np.dtype("float64").str,
-                shape=[1],
+                shape=[
+                    1,
+                ],
                 external="STREAM:",
             ),
+            # 2-D data with 5 frames per event
             f"{self.name}-sd2": DataKey(
                 source="file",
                 dtype="array",
                 dtype_numpy=np.dtype("float64").str,
-                shape=[10, 15],
+                shape=[5, 10, 15],
                 external="STREAM:",
             ),
+            # 3-D data with 10 frames per event
             f"{self.name}-sd3": DataKey(
                 source="file",
                 dtype="array",
                 dtype_numpy=np.dtype("uint8").str,
-                shape=[5, 7, 4],
+                shape=[10, 5, 7, 4],
                 external="STREAM:",
             ),
         }
@@ -229,12 +233,33 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     RE(bp.count([det], 3), tw)
     arrs = client.values().last()["primary"]["external"].values()
 
-    assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (3, 10, 15)
-    assert arrs[2].shape == (3, 5, 7, 4)
+    assert arrs[0].shape == (3, 1)
+    assert arrs[1].shape == (3, 5, 10, 15)
+    assert arrs[2].shape == (3, 10, 5, 7, 4)
     assert arrs[0].read() is not None
     assert arrs[1].read() is not None
     assert arrs[2].read() is not None
+
+
+def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
+    det1 = StreamDatumReadableCollectable(name="det1", root=str(tmp_path))
+    det2 = StreamDatumReadableCollectable(name="det2", root=str(tmp_path))
+    tw = TiledWriter(client)
+    RE(bp.count([det1, det2], 3), tw)
+    arrs = client.values().last()["primary"]["external"].values()
+
+    assert arrs[0].shape == (3, 1)
+    assert arrs[1].shape == (3, 5, 10, 15)
+    assert arrs[2].shape == (3, 10, 5, 7, 4)
+    assert arrs[3].shape == (3, 1)
+    assert arrs[4].shape == (3, 5, 10, 15)
+    assert arrs[5].shape == (3, 10, 5, 7, 4)
+    assert arrs[0].read() is not None
+    assert arrs[1].read() is not None
+    assert arrs[2].read() is not None
+    assert arrs[3].read() is not None
+    assert arrs[4].read() is not None
+    assert arrs[5].read() is not None
 
 
 def test_stream_datum_collectable(RE, client, tmp_path):
@@ -248,9 +273,10 @@ def test_stream_datum_collectable(RE, client, tmp_path):
     assert arrs[2].read() is not None
 
 
-def test_handling_non_stream_resource(RE, client, tmp_path):
+@pytest.mark.parametrize("frames_per_event", [1, 5, 10])
+def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     det = SynSignalWithRegistry(
-        func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
+        func=lambda: np.random.randint(0, 255, (frames_per_event, 10, 15), dtype="uint8"),
         dtype_numpy=np.dtype("uint8").str,
         name="img",
         labels={"detectors"},
@@ -265,7 +291,7 @@ def test_handling_non_stream_resource(RE, client, tmp_path):
     intr = client.values().last()["primary"]["internal"]
     conf = client.values().last()["primary"]["config"]["img"]
 
-    assert extr.shape == (3, 10, 15)
+    assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
     assert set(intr.columns) == {"seq_num", "ts_img"}
     assert len(intr.read()) == 3
