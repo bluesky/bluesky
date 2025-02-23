@@ -188,9 +188,21 @@ class WritesStreamAssets(Protocol):
 
 
 @runtime_checkable
-class Configurable(Protocol[T]):
+class Configurable(Protocol):
     @abstractmethod
-    def read_configuration(self) -> SyncOrAsync[dict[str, Reading[T]]]:
+    def configure(self, *args: Any, **kwargs: Any) -> SyncOrAsync[tuple[Reading[Any], Reading[Any]]]:
+        """Configure an object.
+
+        The method returns a tuple of ``Reading``.
+        The first element is the old configuration value
+        and the second element is the new configuration value.
+
+        This can be a standard function or an ``async`` function.
+        """
+        ...
+
+    @abstractmethod
+    def read_configuration(self) -> SyncOrAsync[dict[str, Reading[Any]]]:
         """Same API as ``read`` but for slow-changing fields related to configuration.
         e.g., exposure time. These will typically be read only once per run.
 
