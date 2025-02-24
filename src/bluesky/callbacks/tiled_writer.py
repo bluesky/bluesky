@@ -201,6 +201,7 @@ class _RunWriter(CallbackBase):
 
         # Create a new stream node (container) for the descriptor if it does not exist
         if desc_name not in self.root_node["streams"].keys():
+            # NOTE: Maybe don't store data_keys in metadata?
             metadata = copy.copy(doc.get("data_keys", {}))
             metadata.update({"uid": doc["uid"], "time": doc["time"]})
             desc_node = self.root_node["streams"].create_container(key=desc_name, metadata=metadata)
@@ -223,32 +224,33 @@ class _RunWriter(CallbackBase):
         #     conf_list = [conf_dict]
 
         ### Option 2. Everything in an array of "records" (dicts)
-        if conf_dict := doc.get("configuration", None):
-            conf_list = []
-            for obj_name, obj_dict in conf_dict.items():
-                for key, val in obj_dict.get("data_keys", {}).items():
-                    val.update({"object_name": obj_name, "data_key": key})
-                    val["value"] = obj_dict.get("data", {}).get(key, None)
-                    val["timestamp"] = obj_dict.get("timestamps", {}).get(key, None)
-                    conf_list.append(val)  # awkward does not like None
+        conf_list = []
+        for obj_name, obj_dict in doc.get("configuration", {}).items():
+            for key, val in obj_dict.get("data_keys", {}).items():
+                val.update({"object_name": obj_name, "data_key": key})
+                val["value"] = obj_dict.get("data", {}).get(key, None)
+                val["timestamp"] = obj_dict.get("timestamps", {}).get(key, None)
+                conf_list.append(val)  # awkward does not like None
 
-            ### Option 2b. Add the usual data_keys specs as well
-            for key, val in doc.get("data_keys", {}).items():
-                val["data_key"] = key
+        ### Option 2b. Add the usual data_keys specs as well
+        for obj_name, data_keys_list in doc.get("object_keys", {}).items():
+            for key in data_keys_list:
+                val = doc.get("data_keys", {})[key]
+                val.update({"data_key": key, "object_name": obj_name})
                 conf_list.append(val)
 
-            if conf_list:
-                # Define the key (name) and metadata for the configuration node
-                conf_meta = {"uid": doc["uid"], "time": doc["time"]}
-                conf_key = desc_name
-                if conf_key in self.root_node["config"].keys():
-                    conf_key = f"{desc_name}-{doc['uid'][:8]}"
-                    warn(
-                        f"Configuration node for the '{desc_name}' stream already exists."
-                        f"The updated configuration will be stored under a new key, '{conf_key}'.",
-                        stacklevel=2,
-                    )
-                self.root_node["config"].write_awkward(conf_list, key=conf_key, metadata=conf_meta)
+        if conf_list:
+            # Define the key (name) and metadata for the configuration node
+            conf_meta = {"uid": doc["uid"], "time": doc["time"]}
+            conf_key = desc_name
+            if conf_key in self.root_node["config"].keys():
+                conf_key = f"{desc_name}-{doc['uid'][:8]}"
+                warn(
+                    f"Configuration node for the '{desc_name}' stream already exists."
+                    f"The updated configuration will be stored under a new key, '{conf_key}'.",
+                    stacklevel=2,
+                )
+            self.root_node["config"].write_awkward(conf_list, key=conf_key, metadata=conf_meta)
 
     def event(self, doc: Event):
         parent_node = self._desc_nodes[doc["descriptor"]]
