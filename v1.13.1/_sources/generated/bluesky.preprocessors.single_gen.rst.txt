@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.single\_gen
+=================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: single_gen

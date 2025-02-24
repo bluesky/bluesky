@@ -1,0 +1,32 @@
+﻿bluesky.run\_engine.Dispatcher
+==============================
+
+.. currentmodule:: bluesky.run_engine
+
+.. autoclass:: Dispatcher
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Dispatcher.__init__
+      ~Dispatcher.process
+      ~Dispatcher.subscribe
+      ~Dispatcher.unsubscribe
+      ~Dispatcher.unsubscribe_all
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Dispatcher.ignore_exceptions
+   
+   

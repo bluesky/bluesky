@@ -1,0 +1,1779 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Plans &#8212; bluesky 1.13.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=2b23eb2b"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'plans';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.1';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="bluesky.plans.count" href="generated/bluesky.plans.count.html" />
+    <link rel="prev" title="Tutorial" href="tutorial.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.13.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="otel-tracing.html">Tracing with Opentelemetry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="userindex.html" class="nav-link">User Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Plans</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="plans">
+<h1>Plans<a class="headerlink" href="#plans" title="Link to this heading">#</a></h1>
+<p>A <em>plan</em> is bluesky’s concept of an experimental procedure. A plan may be any
+iterable object (list, tuple, custom iterable class, …) but most commonly it
+is implemented as a Python generator. For a more technical discussion we refer
+you <a class="reference internal" href="msg.html"><span class="doc">Message Protocol</span></a>.</p>
+<p>A variety of pre-assembled plans are provided. Like sandwiches on a deli menu,
+you can use our pre-assembled plans or assemble your own from the same
+ingredients, catalogued under the heading <a class="reference internal" href="#stub-plans"><span class="std std-ref">Stub Plans</span></a> below.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the examples that follow, we will assume that you have a RunEngine
+instance named <code class="docutils literal notranslate"><span class="pre">RE</span></code>. This may have already been configured for you if you
+are a user at a facility that runs bluesky. See
+<a class="reference internal" href="tutorial.html#tutorial-run-engine-setup"><span class="std std-ref">this section of the tutorial</span></a> to sort out
+if you already have a RunEngine and to quickly make one if needed.</p>
+</div>
+<section id="pre-assembled-plans">
+<span id="preassembled-plans"></span><h2>Pre-assembled Plans<a class="headerlink" href="#pre-assembled-plans" title="Link to this heading">#</a></h2>
+<p>Below this summary table, we break the down the plans by category and show
+examples with figures.</p>
+<section id="summary">
+<h3>Summary<a class="headerlink" href="#summary" title="Link to this heading">#</a></h3>
+<p>Notice that the names in the left column are links to detailed API
+documentation.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count</span></code></a></p></td>
+<td><p>Take one or more readings from detectors.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.scan.html#bluesky.plans.scan" title="bluesky.plans.scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan</span></code></a></p></td>
+<td><p>Scan over one multi-motor trajectory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_scan.html#bluesky.plans.rel_scan" title="bluesky.plans.rel_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_scan</span></code></a></p></td>
+<td><p>Scan over one multi-motor trajectory relative to current position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.list_scan.html#bluesky.plans.list_scan" title="bluesky.plans.list_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_scan</span></code></a></p></td>
+<td><p>Scan over one or more variables in steps simultaneously (inner product).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_list_scan.html#bluesky.plans.rel_list_scan" title="bluesky.plans.rel_list_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_list_scan</span></code></a></p></td>
+<td><p>Scan over one variable in steps relative to current position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.list_grid_scan.html#bluesky.plans.list_grid_scan" title="bluesky.plans.list_grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh; each motor is on an independent trajectory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_list_grid_scan.html#bluesky.plans.rel_list_grid_scan" title="bluesky.plans.rel_list_grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_list_grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh; each motor is on an independent trajectory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.log_scan.html#bluesky.plans.log_scan" title="bluesky.plans.log_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_scan</span></code></a></p></td>
+<td><p>Scan over one variable in log-spaced steps.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_log_scan.html#bluesky.plans.rel_log_scan" title="bluesky.plans.rel_log_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_log_scan</span></code></a></p></td>
+<td><p>Scan over one variable in log-spaced steps relative to current position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.grid_scan.html#bluesky.plans.grid_scan" title="bluesky.plans.grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh; each motor is on an independent trajectory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_grid_scan.html#bluesky.plans.rel_grid_scan" title="bluesky.plans.rel_grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh relative to current position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.scan_nd.html#bluesky.plans.scan_nd" title="bluesky.plans.scan_nd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan_nd</span></code></a></p></td>
+<td><p>Scan over an arbitrary N-dimensional trajectory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.spiral.html#bluesky.plans.spiral" title="bluesky.plans.spiral"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spiral</span></code></a></p></td>
+<td><p>Spiral scan, centered around (x_start, y_start)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.spiral_fermat.html#bluesky.plans.spiral_fermat" title="bluesky.plans.spiral_fermat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spiral_fermat</span></code></a></p></td>
+<td><p>Absolute fermat spiral scan, centered around (x_start, y_start)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.spiral_square.html#bluesky.plans.spiral_square" title="bluesky.plans.spiral_square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spiral_square</span></code></a></p></td>
+<td><p>Absolute square spiral scan, centered around (x_center, y_center)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_spiral.html#bluesky.plans.rel_spiral" title="bluesky.plans.rel_spiral"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_spiral</span></code></a></p></td>
+<td><p>Relative spiral scan</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_spiral_fermat.html#bluesky.plans.rel_spiral_fermat" title="bluesky.plans.rel_spiral_fermat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_spiral_fermat</span></code></a></p></td>
+<td><p>Relative fermat spiral scan</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_spiral_square.html#bluesky.plans.rel_spiral_square" title="bluesky.plans.rel_spiral_square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_spiral_square</span></code></a></p></td>
+<td><p>Relative square spiral scan, centered around current (x, y) position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.adaptive_scan.html#bluesky.plans.adaptive_scan" title="bluesky.plans.adaptive_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">adaptive_scan</span></code></a></p></td>
+<td><p>Scan over one variable with adaptively tuned step size.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_adaptive_scan.html#bluesky.plans.rel_adaptive_scan" title="bluesky.plans.rel_adaptive_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_adaptive_scan</span></code></a></p></td>
+<td><p>Relative scan over one variable with adaptively tuned step size.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.tune_centroid.html#bluesky.plans.tune_centroid" title="bluesky.plans.tune_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tune_centroid</span></code></a></p></td>
+<td><p>plan: tune a motor to the centroid of signal(motor)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.tweak.html#bluesky.plans.tweak" title="bluesky.plans.tweak"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tweak</span></code></a></p></td>
+<td><p>Move and motor and read a detector with an interactive prompt.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.ramp_plan.html#bluesky.plans.ramp_plan" title="bluesky.plans.ramp_plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ramp_plan</span></code></a></p></td>
+<td><p>Take data while ramping one or more positioners.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.fly.html#bluesky.plans.fly" title="bluesky.plans.fly"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fly</span></code></a></p></td>
+<td><p>Perform a fly scan with one or more 'flyers'.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="time-series-count">
+<h3>Time series (“count”)<a class="headerlink" href="#time-series-count" title="Link to this heading">#</a></h3>
+<p>Examples:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
+
+<span class="c1"># a single reading of the detector &#39;det&#39;</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]))</span>
+
+<span class="c1"># five consecutive readings</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+
+<span class="c1"># five sequential readings separated by a 1-second delay</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># a variable delay</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]))</span>
+
+<span class="c1"># Take readings forever, until interrupted (e.g., with Ctrl+C)</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We&#39;ll use the &#39;noisy_det&#39; example detector for a more interesting plot.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">noisy_det</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">noisy_det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="_images/plans-1.png" class="plot-directive" src="_images/plans-1.png" />
+</figure>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Why doesn’t <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a> have an <code class="docutils literal notranslate"><span class="pre">exposure_time</span></code> parameter?</p>
+<p>Modern CCD detectors typically parametrize exposure time with <em>multiple</em>
+parameters (acquire time, acquire period, num exposures, …) as do scalers
+(preset time, auto count time). There is no one “exposure time” that can be
+applied to all detectors.</p>
+<p>Additionally, when using multiple detectors as in <code class="docutils literal notranslate"><span class="pre">count([det1,</span> <span class="pre">det2]))</span></code>,
+the user would need to provide a separate exposure time for each detector in
+the general case, which would grow wordy.</p>
+<p>One option is to set the time-related parameter(s) as a separate step.</p>
+<p>For interactive use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Just an example. Your detector might have different names or numbers of</span>
+<span class="c1"># exposure-related parameters---which is the point.</span>
+<span class="n">det</span><span class="o">.</span><span class="n">exposure_time</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">det</span><span class="o">.</span><span class="n">acquire_period</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mf">3.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>From a plan:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Just an example. Your detector might have different names or numbers of</span>
+<span class="c1"># exposure-related parameters---which is the point.</span>
+ <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span>
+     <span class="n">det</span><span class="o">.</span><span class="n">exposure_time</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>
+     <span class="n">det</span><span class="o">.</span><span class="n">acquire_period</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Another is to write a custom plan that wraps <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a> and sets the
+exposure time. This plan can encode the details that bluesky in general
+can’t know.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">count_with_time</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">exposure_time</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># Assume all detectors have one exposure time component called</span>
+    <span class="c1"># &#39;exposure_time&#39; that fully specifies its exposure.</span>
+    <span class="k">for</span> <span class="n">detector</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="n">detector</span><span class="o">.</span><span class="n">exposure_time</span><span class="p">,</span> <span class="n">exposure_time</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plans</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">md</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count</span></code></a></p></td>
+<td><p>Take one or more readings from detectors.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="scans-over-one-dimension">
+<h3>Scans over one dimension<a class="headerlink" href="#scans-over-one-dimension" title="Link to this heading">#</a></h3>
+<p>The “dimension” might be a physical motor position, a temperature, or a
+pseudo-axis. It’s all the same to the plans. Examples:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span><span class="p">,</span> <span class="n">rel_scan</span><span class="p">,</span> <span class="n">list_scan</span>
+
+<span class="c1"># scan a motor from 1 to 5, taking 5 equally-spaced readings of &#39;det&#39;</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="c1"># scan a motor from 1 to 5 *relative to its current position*</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">rel_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="c1"># scan a motor through a list of user-specified positions</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">list_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">]))</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="_images/plans-2.png" class="plot-directive" src="_images/plans-2.png" />
+</figure>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Why don’t scans have a <code class="docutils literal notranslate"><span class="pre">delay</span></code> parameter?</p>
+<p>You may have noticed that <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a> has a <code class="docutils literal notranslate"><span class="pre">delay</span></code> parameter but none
+of the scans do. This is intentional.</p>
+<p>The common reason for wanting a delay in a scan is to allow a motor to
+settle or a temperature controller to reach equilibrium. It is better to
+configure this on the respective devices, so that scans will always add the
+appropriate delay for the particular device being scanned.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">motor</span><span class="o">.</span><span class="n">settle_time</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">temperature_controller</span><span class="o">.</span><span class="n">settle_time</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<p>For many cases, this is more convenient and more robust than typing a delay
+parameter in every invocation of the scan. You only have to set it once, and
+it applies thereafter.</p>
+<p>This is why bluesky leaves <code class="docutils literal notranslate"><span class="pre">delay</span></code> out of the scans, to guide users toward
+an approach that will likely be a better fit than the one that might occur
+to them first. For situations where a <code class="docutils literal notranslate"><span class="pre">delay</span></code> parameter really is the
+right tool for the job, it is of course always possible to add a <code class="docutils literal notranslate"><span class="pre">delay</span></code>
+parameter yourself by writing a custom plan. Here is one approach, using a
+<a class="reference internal" href="#per-step-hook"><span class="std std-ref">per_step hook</span></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plans</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">scan_with_delay</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="s2">&quot;Accepts all the normal &#39;scan&#39; parameters, plus an optional delay.&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">one_nd_step_with_delay</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
+        <span class="s2">&quot;This is a copy of bluesky.plan_stubs.one_nd_step with a sleep added.&quot;</span>
+        <span class="n">motors</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">move_per_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">motors</span><span class="p">))</span>
+
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;per_step&#39;</span><span class="p">,</span> <span class="n">one_nd_step_with_delay</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plans</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.scan.html#bluesky.plans.scan" title="bluesky.plans.scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan</span></code></a></p></td>
+<td><p>Scan over one multi-motor trajectory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_scan.html#bluesky.plans.rel_scan" title="bluesky.plans.rel_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_scan</span></code></a></p></td>
+<td><p>Scan over one multi-motor trajectory relative to current position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.list_scan.html#bluesky.plans.list_scan" title="bluesky.plans.list_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_scan</span></code></a></p></td>
+<td><p>Scan over one or more variables in steps simultaneously (inner product).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_list_scan.html#bluesky.plans.rel_list_scan" title="bluesky.plans.rel_list_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_list_scan</span></code></a></p></td>
+<td><p>Scan over one variable in steps relative to current position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.log_scan.html#bluesky.plans.log_scan" title="bluesky.plans.log_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_scan</span></code></a></p></td>
+<td><p>Scan over one variable in log-spaced steps.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_log_scan.html#bluesky.plans.rel_log_scan" title="bluesky.plans.rel_log_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_log_scan</span></code></a></p></td>
+<td><p>Scan over one variable in log-spaced steps relative to current position.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="multi-dimensional-scans">
+<span id="id1"></span><h3>Multi-dimensional scans<a class="headerlink" href="#multi-dimensional-scans" title="Link to this heading">#</a></h3>
+<p>See <a class="reference internal" href="tutorial.html#tutorial-multiple-motors"><span class="std std-ref">Scan Multiple Motors Together</span></a> in the tutorial for an introduction to the
+common cases of moving multiple motors in coordination (i.e. moving X and Y
+along a diagonal) or in a grid. The key examples are reproduced here. Again,
+see the section linked for further explanation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">motor3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span><span class="p">,</span> <span class="n">grid_scan</span><span class="p">,</span> <span class="n">list_scan</span><span class="p">,</span> <span class="n">list_grid_scan</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span>
+        <span class="n">motor1</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span>  <span class="c1"># scan motor1 from -1.5 to 1.5</span>
+        <span class="n">motor2</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># ...while scanning motor2 from -0.1 to 0.1</span>
+        <span class="mi">11</span><span class="p">))</span>  <span class="c1"># ...both in 11 steps</span>
+
+<span class="c1"># Scan motor1 and motor2 jointly through a 5-point trajectory.</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">list_scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor1</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">motor2</span><span class="p">,</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+
+<span class="c1"># Scan a 3 x 5 x 2 grid.</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">grid_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span>
+             <span class="n">motor1</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>  <span class="c1"># no snake parameter for first motor</span>
+             <span class="n">motor2</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+             <span class="n">motor3</span><span class="p">,</span> <span class="o">-</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+
+<span class="c1"># Scan a grid with abitrary spacings given as specific positions.</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">list_grid_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span>
+                  <span class="n">motor1</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+                  <span class="n">motor2</span><span class="p">,</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">9</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>All of these plans are built on a more general-purpose plan,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">scan_nd()</span></code>, which we can use for more specialized cases.</p>
+<p>Some jargon: we speak of <a class="reference internal" href="generated/bluesky.plans.scan.html#bluesky.plans.scan" title="bluesky.plans.scan"><code class="xref py py-func docutils literal notranslate"><span class="pre">scan()</span></code></a>-like joint movement as an
+“inner product” of trajectories and <a class="reference internal" href="generated/bluesky.plans.grid_scan.html#bluesky.plans.grid_scan" title="bluesky.plans.grid_scan"><code class="xref py py-func docutils literal notranslate"><span class="pre">grid_scan()</span></code></a>-like
+movement as an “outer product” of trajectories. The general case, moving some
+motors together in an “inner product” against another motor (or motors) in an
+“outer product,” can be addressed using a <code class="docutils literal notranslate"><span class="pre">cycler</span></code>.  Notice what happens when
+we add or multiply <code class="docutils literal notranslate"><span class="pre">cycler</span></code> objects.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
+
+<span class="gp">In [2]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">motor3</span>
+
+<span class="gp">In [3]: </span><span class="n">traj1</span> <span class="o">=</span> <span class="n">cycler</span><span class="p">(</span><span class="n">motor1</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+
+<span class="gp">In [4]: </span><span class="n">traj2</span> <span class="o">=</span> <span class="n">cycler</span><span class="p">(</span><span class="n">motor2</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">])</span>
+
+<span class="gp">In [5]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span><span class="p">)</span>  <span class="c1"># a trajectory for motor1</span>
+<span class="gh">Out[5]: </span>
+<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3}]</span>
+
+<span class="gp">In [6]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span> <span class="o">+</span> <span class="n">traj2</span><span class="p">)</span>  <span class="c1"># an &quot;inner product&quot; trajectory</span>
+<span class="gh">Out[6]: </span>
+<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30}]</span>
+
+<span class="gp">In [7]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span> <span class="o">*</span> <span class="n">traj2</span><span class="p">)</span>  <span class="c1"># an &quot;outer product&quot; trajectory</span>
+<span class="gh">Out[7]: </span>
+<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30}]</span>
+</pre></div>
+</div>
+<p>We have reproduced inner product and outer product. The real power comes in
+when we combine them, like so. Here, motor1 and motor2 together in a mesh
+against motor3.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [8]: </span><span class="n">traj3</span> <span class="o">=</span> <span class="n">cycler</span><span class="p">(</span><span class="n">motor3</span><span class="p">,</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">300</span><span class="p">])</span>
+
+<span class="gp">In [9]: </span><span class="nb">list</span><span class="p">((</span><span class="n">traj1</span> <span class="o">+</span> <span class="n">traj2</span><span class="p">)</span> <span class="o">*</span> <span class="n">traj3</span><span class="p">)</span>
+<span class="gh">Out[9]: </span>
+<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 100},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 200},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 300},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 100},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 200},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 300},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 100},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 200},</span>
+<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30,</span>
+<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 300}]</span>
+</pre></div>
+</div>
+<p>For more on cycler, we refer you to the
+<a class="reference external" href="http://matplotlib.org/cycler/">cycler documentation</a>. To build a plan
+incorporating these trajectories, use our general N-dimensional scan plan,
+<a class="reference internal" href="generated/bluesky.plans.scan_nd.html#bluesky.plans.scan_nd" title="bluesky.plans.scan_nd"><code class="xref py py-func docutils literal notranslate"><span class="pre">scan_nd()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">scan_nd</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="p">(</span><span class="n">traj1</span> <span class="o">+</span> <span class="n">traj2</span><span class="p">)</span> <span class="o">*</span> <span class="n">traj3</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.scan.html#bluesky.plans.scan" title="bluesky.plans.scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan</span></code></a></p></td>
+<td><p>Scan over one multi-motor trajectory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_scan.html#bluesky.plans.rel_scan" title="bluesky.plans.rel_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_scan</span></code></a></p></td>
+<td><p>Scan over one multi-motor trajectory relative to current position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.grid_scan.html#bluesky.plans.grid_scan" title="bluesky.plans.grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh; each motor is on an independent trajectory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_grid_scan.html#bluesky.plans.rel_grid_scan" title="bluesky.plans.rel_grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh relative to current position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.list_scan.html#bluesky.plans.list_scan" title="bluesky.plans.list_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_scan</span></code></a></p></td>
+<td><p>Scan over one or more variables in steps simultaneously (inner product).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_list_scan.html#bluesky.plans.rel_list_scan" title="bluesky.plans.rel_list_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_list_scan</span></code></a></p></td>
+<td><p>Scan over one variable in steps relative to current position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.list_grid_scan.html#bluesky.plans.list_grid_scan" title="bluesky.plans.list_grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh; each motor is on an independent trajectory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_list_grid_scan.html#bluesky.plans.rel_list_grid_scan" title="bluesky.plans.rel_list_grid_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_list_grid_scan</span></code></a></p></td>
+<td><p>Scan over a mesh; each motor is on an independent trajectory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.scan_nd.html#bluesky.plans.scan_nd" title="bluesky.plans.scan_nd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan_nd</span></code></a></p></td>
+<td><p>Scan over an arbitrary N-dimensional trajectory.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="spiral-trajectories">
+<h3>Spiral trajectories<a class="headerlink" href="#spiral-trajectories" title="Link to this heading">#</a></h3>
+<p>We provide two-dimensional scans that trace out spiral trajectories.</p>
+<p>A simple spiral:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_raster_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">spiral</span>
+
+<span class="n">plan</span> <span class="o">=</span> <span class="n">spiral</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x_range</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
+              <span class="n">y_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">nth</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">&#39;motor1&#39;</span><span class="p">,</span> <span class="s1">&#39;motor2&#39;</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="_images/plans-3.png" class="plot-directive" src="_images/plans-3.png" />
+</figure>
+<p>A fermat spiral:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_raster_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">spiral_fermat</span>
+
+<span class="n">plan</span> <span class="o">=</span> <span class="n">spiral_fermat</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                     <span class="n">x_range</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y_range</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tilt</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">&#39;motor1&#39;</span><span class="p">,</span> <span class="s1">&#39;motor2&#39;</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="_images/plans-4.png" class="plot-directive" src="_images/plans-4.png" />
+</figure>
+<p>A square spiral:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.simulators</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_raster_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">det</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">spiral_square</span>
+
+<span class="n">plan</span> <span class="o">=</span> <span class="n">spiral_square</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                     <span class="n">x_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">y_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">x_num</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">y_num</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">&#39;motor1&#39;</span><span class="p">,</span> <span class="s1">&#39;motor2&#39;</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="_images/plans-5.png" class="plot-directive" src="_images/plans-5.png" />
+</figure>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.spiral.html#bluesky.plans.spiral" title="bluesky.plans.spiral"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spiral</span></code></a></p></td>
+<td><p>Spiral scan, centered around (x_start, y_start)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.spiral_fermat.html#bluesky.plans.spiral_fermat" title="bluesky.plans.spiral_fermat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spiral_fermat</span></code></a></p></td>
+<td><p>Absolute fermat spiral scan, centered around (x_start, y_start)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.spiral_square.html#bluesky.plans.spiral_square" title="bluesky.plans.spiral_square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spiral_square</span></code></a></p></td>
+<td><p>Absolute square spiral scan, centered around (x_center, y_center)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_spiral.html#bluesky.plans.rel_spiral" title="bluesky.plans.rel_spiral"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_spiral</span></code></a></p></td>
+<td><p>Relative spiral scan</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_spiral_fermat.html#bluesky.plans.rel_spiral_fermat" title="bluesky.plans.rel_spiral_fermat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_spiral_fermat</span></code></a></p></td>
+<td><p>Relative fermat spiral scan</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_spiral_square.html#bluesky.plans.rel_spiral_square" title="bluesky.plans.rel_spiral_square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_spiral_square</span></code></a></p></td>
+<td><p>Relative square spiral scan, centered around current (x, y) position.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="adaptive-scans">
+<h3>Adaptive scans<a class="headerlink" href="#adaptive-scans" title="Link to this heading">#</a></h3>
+<p>These are one-dimension scans with an adaptive step size tuned to move quickly
+over flat regions can concentrate readings in areas of high variation by
+computing the local slope aiming for a target delta y between consecutive
+points.</p>
+<p>This is a basic example of the power of adaptive plan logic.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">adaptive_scan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor</span><span class="p">,</span> <span class="n">det</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">adaptive_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="s1">&#39;det&#39;</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span>
+                 <span class="n">start</span><span class="o">=-</span><span class="mi">15</span><span class="p">,</span>
+                 <span class="n">stop</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                 <span class="n">min_step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+                 <span class="n">max_step</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                 <span class="n">target_delta</span><span class="o">=</span><span class="mf">.05</span><span class="p">,</span>
+                 <span class="n">backstep</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="_images/plans-6.png" class="plot-directive" src="_images/plans-6.png" />
+</figure>
+<p>From left to right, the scan lengthens its stride through the flat region. At
+first, it steps past the peak. The large jump causes it to double back and then
+sample more densely through the peak. As the peak flattens, it lengthens its
+stride again.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.adaptive_scan.html#bluesky.plans.adaptive_scan" title="bluesky.plans.adaptive_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">adaptive_scan</span></code></a></p></td>
+<td><p>Scan over one variable with adaptively tuned step size.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.rel_adaptive_scan.html#bluesky.plans.rel_adaptive_scan" title="bluesky.plans.rel_adaptive_scan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_adaptive_scan</span></code></a></p></td>
+<td><p>Relative scan over one variable with adaptively tuned step size.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="misc">
+<h3>Misc.<a class="headerlink" href="#misc" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plans.tweak.html#bluesky.plans.tweak" title="bluesky.plans.tweak"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tweak</span></code></a></p></td>
+<td><p>Move and motor and read a detector with an interactive prompt.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plans.fly.html#bluesky.plans.fly" title="bluesky.plans.fly"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fly</span></code></a></p></td>
+<td><p>Perform a fly scan with one or more 'flyers'.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="stub-plans">
+<span id="id2"></span><h2>Stub Plans<a class="headerlink" href="#stub-plans" title="Link to this heading">#</a></h2>
+<p>These are the aforementioned “ingredients” for remixing, the pieces from which
+the pre-assembled plans above were made. See <a class="reference internal" href="tutorial.html#tutorial-custom-plans"><span class="std std-ref">Write Custom Plans</span></a> in
+the tutorial for a practical introduction to these components.</p>
+<p>Plans for interacting with hardware:</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.abs_set.html#bluesky.plan_stubs.abs_set" title="bluesky.plan_stubs.abs_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">abs_set</span></code></a></p></td>
+<td><p>Set a value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.rel_set.html#bluesky.plan_stubs.rel_set" title="bluesky.plan_stubs.rel_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rel_set</span></code></a></p></td>
+<td><p>Set a value relative to current value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.mv.html#bluesky.plan_stubs.mv" title="bluesky.plan_stubs.mv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mv</span></code></a></p></td>
+<td><p>Move one or more devices to a setpoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.mvr.html#bluesky.plan_stubs.mvr" title="bluesky.plan_stubs.mvr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mvr</span></code></a></p></td>
+<td><p>Move one or more devices to a relative setpoint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.trigger.html#bluesky.plan_stubs.trigger" title="bluesky.plan_stubs.trigger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trigger</span></code></a></p></td>
+<td><p>Trigger and acquisition.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.read.html#bluesky.plan_stubs.read" title="bluesky.plan_stubs.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a></p></td>
+<td><p>Take a reading and add it to the current bundle of readings.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.rd.html#bluesky.plan_stubs.rd" title="bluesky.plan_stubs.rd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rd</span></code></a></p></td>
+<td><p>Reads a single-value non-triggered object</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.stage.html#bluesky.plan_stubs.stage" title="bluesky.plan_stubs.stage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stage</span></code></a></p></td>
+<td><p>'Stage' a device (i.e., prepare it for use, 'arm' it).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.unstage.html#bluesky.plan_stubs.unstage" title="bluesky.plan_stubs.unstage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unstage</span></code></a></p></td>
+<td><p>'Unstage' a device (i.e., put it in standby, 'disarm' it).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.configure.html#bluesky.plan_stubs.configure" title="bluesky.plan_stubs.configure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure</span></code></a></p></td>
+<td><p>Change Device configuration and emit an updated Event Descriptor document.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.stop.html#bluesky.plan_stubs.stop" title="bluesky.plan_stubs.stop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop</span></code></a></p></td>
+<td><p>Stop a device.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Plans for asynchronous acquisition:</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.monitor.html#bluesky.plan_stubs.monitor" title="bluesky.plan_stubs.monitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor</span></code></a></p></td>
+<td><p>Asynchronously monitor for new values and emit Event documents.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.unmonitor.html#bluesky.plan_stubs.unmonitor" title="bluesky.plan_stubs.unmonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unmonitor</span></code></a></p></td>
+<td><p>Stop monitoring.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.kickoff.html#bluesky.plan_stubs.kickoff" title="bluesky.plan_stubs.kickoff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kickoff</span></code></a></p></td>
+<td><p>Kickoff one fly-scanning device.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.complete.html#bluesky.plan_stubs.complete" title="bluesky.plan_stubs.complete"><code class="xref py py-obj docutils literal notranslate"><span class="pre">complete</span></code></a></p></td>
+<td><p>Tell a flyable, 'stop collecting, whenever you are ready'.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.collect.html#bluesky.plan_stubs.collect" title="bluesky.plan_stubs.collect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">collect</span></code></a></p></td>
+<td><p>Collect data cached by one or more fly-scanning devices and emit documents.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Plans that control the RunEngine:</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.open_run.html#bluesky.plan_stubs.open_run" title="bluesky.plan_stubs.open_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open_run</span></code></a></p></td>
+<td><p>Mark the beginning of a new 'run'.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.close_run.html#bluesky.plan_stubs.close_run" title="bluesky.plan_stubs.close_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">close_run</span></code></a></p></td>
+<td><p>Mark the end of the current 'run'.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.create.html#bluesky.plan_stubs.create" title="bluesky.plan_stubs.create"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create</span></code></a></p></td>
+<td><p>Bundle future readings into a new Event document.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.save.html#bluesky.plan_stubs.save" title="bluesky.plan_stubs.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a></p></td>
+<td><p>Close a bundle of readings and emit a completed Event document.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.drop.html#bluesky.plan_stubs.drop" title="bluesky.plan_stubs.drop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop</span></code></a></p></td>
+<td><p>Drop a bundle of readings without emitting a completed Event document.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.pause.html#bluesky.plan_stubs.pause" title="bluesky.plan_stubs.pause"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pause</span></code></a></p></td>
+<td><p>Pause and wait for the user to resume.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.deferred_pause.html#bluesky.plan_stubs.deferred_pause" title="bluesky.plan_stubs.deferred_pause"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deferred_pause</span></code></a></p></td>
+<td><p>Pause at the next checkpoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.checkpoint.html#bluesky.plan_stubs.checkpoint" title="bluesky.plan_stubs.checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">checkpoint</span></code></a></p></td>
+<td><p>If interrupted, rewind to this point.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.clear_checkpoint.html#bluesky.plan_stubs.clear_checkpoint" title="bluesky.plan_stubs.clear_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear_checkpoint</span></code></a></p></td>
+<td><p>Designate that it is not safe to resume.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.sleep.html#bluesky.plan_stubs.sleep" title="bluesky.plan_stubs.sleep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sleep</span></code></a></p></td>
+<td><p>Tell the RunEngine to sleep, while asynchronously doing other processing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.input_plan.html#bluesky.plan_stubs.input_plan" title="bluesky.plan_stubs.input_plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_plan</span></code></a></p></td>
+<td><p>Prompt the user for text input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.subscribe.html#bluesky.plan_stubs.subscribe" title="bluesky.plan_stubs.subscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subscribe</span></code></a></p></td>
+<td><p>Subscribe the stream of emitted documents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.unsubscribe.html#bluesky.plan_stubs.unsubscribe" title="bluesky.plan_stubs.unsubscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unsubscribe</span></code></a></p></td>
+<td><p>Remove a subscription.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.install_suspender.html#bluesky.plan_stubs.install_suspender" title="bluesky.plan_stubs.install_suspender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">install_suspender</span></code></a></p></td>
+<td><p>Install a suspender during a plan.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.remove_suspender.html#bluesky.plan_stubs.remove_suspender" title="bluesky.plan_stubs.remove_suspender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_suspender</span></code></a></p></td>
+<td><p>Remove a suspender during a plan.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.wait.html#bluesky.plan_stubs.wait" title="bluesky.plan_stubs.wait"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wait</span></code></a></p></td>
+<td><p>Wait for all statuses in a group to report being finished.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.wait_for.html#bluesky.plan_stubs.wait_for" title="bluesky.plan_stubs.wait_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wait_for</span></code></a></p></td>
+<td><p>Low-level: wait for a list of <code class="docutils literal notranslate"><span class="pre">asyncio.Future</span></code> objects to set (complete).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.null.html#bluesky.plan_stubs.null" title="bluesky.plan_stubs.null"><code class="xref py py-obj docutils literal notranslate"><span class="pre">null</span></code></a></p></td>
+<td><p>Yield a no-op Message.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Combinations of the above that are often convenient:</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.trigger_and_read.html#bluesky.plan_stubs.trigger_and_read" title="bluesky.plan_stubs.trigger_and_read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trigger_and_read</span></code></a>(devices[, name])</p></td>
+<td><p>Trigger and read a list of detectors and bundle readings into one Event.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.one_1d_step.html#bluesky.plan_stubs.one_1d_step" title="bluesky.plan_stubs.one_1d_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_1d_step</span></code></a>(detectors, motor, step[, ...])</p></td>
+<td><p>Inner loop of a 1D step scan</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.one_nd_step.html#bluesky.plan_stubs.one_nd_step" title="bluesky.plan_stubs.one_nd_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_nd_step</span></code></a>(detectors, step, pos_cache[, ...])</p></td>
+<td><p>Inner loop of an N-dimensional step scan</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.one_shot.html#bluesky.plan_stubs.one_shot" title="bluesky.plan_stubs.one_shot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_shot</span></code></a>(detectors[, take_reading])</p></td>
+<td><p>Inner loop of a count.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.move_per_step.html#bluesky.plan_stubs.move_per_step" title="bluesky.plan_stubs.move_per_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">move_per_step</span></code></a>(step, pos_cache)</p></td>
+<td><p>Inner loop of an N-dimensional step scan without any readings</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Special utilities:</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.repeat.html#bluesky.plan_stubs.repeat" title="bluesky.plan_stubs.repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeat</span></code></a>(plan[, num, delay])</p></td>
+<td><p>Repeat a plan num times with delay and checkpoint between each repeat.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.repeater.html#bluesky.plan_stubs.repeater" title="bluesky.plan_stubs.repeater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeater</span></code></a>(n, gen_func, *args, **kwargs)</p></td>
+<td><p>Generate n chained copies of the messages from gen_func</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.caching_repeater.html#bluesky.plan_stubs.caching_repeater" title="bluesky.plan_stubs.caching_repeater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">caching_repeater</span></code></a>(n, plan)</p></td>
+<td><p>Generate n chained copies of the messages in a plan.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.broadcast_msg.html#bluesky.plan_stubs.broadcast_msg" title="bluesky.plan_stubs.broadcast_msg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">broadcast_msg</span></code></a>(command, objs, *args, **kwargs)</p></td>
+<td><p>Generate many copies of a message, applying it to a list of devices.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="plan-preprocessors">
+<span id="preprocessors"></span><h2>Plan Preprocessors<a class="headerlink" href="#plan-preprocessors" title="Link to this heading">#</a></h2>
+<section id="supplemental-data">
+<span id="id3"></span><h3>Supplemental Data<a class="headerlink" href="#supplemental-data" title="Link to this heading">#</a></h3>
+<p>Plan preprocessors modify a plans contents on the fly. One common use of a
+preprocessor is to take “baseline” readings of a group of devices at the
+beginning and end of each run. It is convenient to apply this to <em>all</em> plans
+executed by a RunEngine using the <a class="reference internal" href="#bluesky.preprocessors.SupplementalData" title="bluesky.preprocessors.SupplementalData"><code class="xref py py-class docutils literal notranslate"><span class="pre">SupplementalData</span></code></a>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="bluesky.preprocessors.SupplementalData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.preprocessors.</span></span><span class="sig-name descname"><span class="pre">SupplementalData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monitors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flyers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/preprocessors.html#SupplementalData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.preprocessors.SupplementalData" title="Link to this definition">#</a></dt>
+<dd><p>A configurable preprocessor for supplemental measurements</p>
+<p>This is a plan preprocessor. It inserts messages into plans to:</p>
+<ul class="simple">
+<li><p>take “baseline” readings at the beginning and end of each run for the
+devices listed in its <code class="docutils literal notranslate"><span class="pre">baseline</span></code> atrribute</p></li>
+<li><p>monitor signals in its <code class="docutils literal notranslate"><span class="pre">monitors</span></code> attribute for asynchronous
+updates during each run.</p></li>
+<li><p>kick off “flyable” devices listed in its <code class="docutils literal notranslate"><span class="pre">flyers</span></code> attribute at the
+beginning of each run and collect their data at the end</p></li>
+</ul>
+<p>Internally, it uses the plan preprocessors:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="generated/bluesky.preprocessors.baseline_wrapper.html#bluesky.preprocessors.baseline_wrapper" title="bluesky.preprocessors.baseline_wrapper"><code class="xref py py-func docutils literal notranslate"><span class="pre">baseline_wrapper()</span></code></a></p></li>
+<li><p><a class="reference internal" href="generated/bluesky.preprocessors.monitor_during_wrapper.html#bluesky.preprocessors.monitor_during_wrapper" title="bluesky.preprocessors.monitor_during_wrapper"><code class="xref py py-func docutils literal notranslate"><span class="pre">monitor_during_wrapper()</span></code></a></p></li>
+<li><p><a class="reference internal" href="generated/bluesky.preprocessors.fly_during_wrapper.html#bluesky.preprocessors.fly_during_wrapper" title="bluesky.preprocessors.fly_during_wrapper"><code class="xref py py-func docutils literal notranslate"><span class="pre">fly_during_wrapper()</span></code></a></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>baseline</strong><span class="classifier">list</span></dt><dd><p>Devices to be read at the beginning and end of each run</p>
+</dd>
+<dt><strong>monitors</strong><span class="classifier">list</span></dt><dd><p>Signals (not multi-signal Devices) to be monitored during each run,
+generating readings asynchronously</p>
+</dd>
+<dt><strong>flyers</strong><span class="classifier">list</span></dt><dd><p>“Flyable” Devices to be kicked off before each run and collected
+at the end of each run</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Create an instance of SupplementalData and apply it to a RunEngine.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span> <span class="o">=</span> <span class="n">SupplementalData</span><span class="p">(</span><span class="n">baseline</span><span class="o">=</span><span class="p">[</span><span class="n">some_motor</span><span class="p">,</span> <span class="n">some_detector</span><span class="p">]),</span>
+<span class="gp">... </span>                      <span class="n">monitors</span><span class="o">=</span><span class="p">[</span><span class="n">some_signal</span><span class="p">],</span>
+<span class="gp">... </span>                      <span class="n">flyers</span><span class="o">=</span><span class="p">[</span><span class="n">some_flyer</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">preprocessors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sd</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now all plans executed by RE will be modified to add baseline readings
+(before and after each run), monitors (during each run), and flyers
+(kicked off before each run and collected afterward).</p>
+<p>Inspect or update the lists of devices interactively.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">baseline</span>
+<span class="go">[some_motor, some_detector]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">baseline</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">some_motor</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">baseline</span>
+<span class="go">[some_detector]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">baseline</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">another_detector</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">baseline</span>
+<span class="go">[some_detector, another_detector]</span>
+</pre></div>
+</div>
+<p>Each attribute (<code class="docutils literal notranslate"><span class="pre">baseline</span></code>, <code class="docutils literal notranslate"><span class="pre">monitors</span></code>, <code class="docutils literal notranslate"><span class="pre">flyers</span></code>) is an ordinary
+Python list, support all the standard list methods, such as:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">baseline</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The arguments to SupplementalData are optional. All the lists
+will empty by default.  As shown above, they can be populated
+interactively.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span> <span class="o">=</span> <span class="n">SupplementalData</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">preprocessors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sd</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">baseline</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">some_detector</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>We have installed a “preprocessor” on the RunEngine. A preprocessor modifies
+plans, supplementing or altering their instructions in some way. From now on,
+every time we type <code class="docutils literal notranslate"><span class="pre">RE(some_plan())</span></code>, the RunEngine will silently change
+<code class="docutils literal notranslate"><span class="pre">some_plan()</span></code> to <code class="docutils literal notranslate"><span class="pre">sd(some_plan())</span></code>, where <code class="docutils literal notranslate"><span class="pre">sd</span></code> may insert some extra
+instructions. Envision the instructions flow from <code class="docutils literal notranslate"><span class="pre">some_plan</span></code> to <code class="docutils literal notranslate"><span class="pre">sd</span></code> and
+finally to <code class="docutils literal notranslate"><span class="pre">RE</span></code>. The <code class="docutils literal notranslate"><span class="pre">sd</span></code> preprocessors has the opportunity to inspect
+he
+instructions as they go by and modify them as it sees fit before they get
+processed by the RunEngine.</p>
+</section>
+<section id="preprocessor-wrappers-and-decorators">
+<h3>Preprocessor Wrappers and Decorators<a class="headerlink" href="#preprocessor-wrappers-and-decorators" title="Link to this heading">#</a></h3>
+<p>Preprocessors can make arbirary modifcations to a plan, and can get quite
+devious. For example, the <a class="reference internal" href="generated/bluesky.preprocessors.relative_set_wrapper.html#bluesky.preprocessors.relative_set_wrapper" title="bluesky.preprocessors.relative_set_wrapper"><code class="xref py py-func docutils literal notranslate"><span class="pre">relative_set_wrapper()</span></code></a> rewrites all positions
+to be relative to the initial position.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">rel_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+    <span class="n">absolute</span> <span class="o">=</span> <span class="n">scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+    <span class="n">relative</span> <span class="o">=</span> <span class="n">relative_set_wrapper</span><span class="p">(</span><span class="n">absolute</span><span class="p">,</span> <span class="p">[</span><span class="n">motor</span><span class="p">])</span>
+    <span class="k">yield from</span> <span class="n">relative</span>
+</pre></div>
+</div>
+<p>This is a subtle but remarkably powerful feature.</p>
+<p>Wrappers like <a class="reference internal" href="generated/bluesky.preprocessors.relative_set_wrapper.html#bluesky.preprocessors.relative_set_wrapper" title="bluesky.preprocessors.relative_set_wrapper"><code class="xref py py-func docutils literal notranslate"><span class="pre">relative_set_wrapper()</span></code></a> operate on a generator <em>instance</em>,
+like <code class="docutils literal notranslate"><span class="pre">scan(...)</span></code>. There are corresponding decorator functions like
+<code class="docutils literal notranslate"><span class="pre">relative_set_decorator</span></code> that operate on a generator
+<em>function</em> itself, like <code class="xref py py-func docutils literal notranslate"><span class="pre">scan()</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using a decorator to modify a generator function</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+
+    <span class="nd">@relative_set_decorator</span><span class="p">([</span><span class="n">motor</span><span class="p">])</span>  <span class="c1"># unfamiliar syntax? -- see box below</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_relative_scan</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+
+    <span class="k">yield from</span> <span class="n">inner_relative_scan</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Incidentally, the name <code class="docutils literal notranslate"><span class="pre">inner_relative_scan</span></code> is just an internal variable,
+so why did we choose such a verbose name? Why not just name it <code class="docutils literal notranslate"><span class="pre">f</span></code>? That
+would work, of course, but using a descriptive name can make debugging easier.
+When navigating gnarly, deeply nested tracebacks, it helps if internal variables
+have clear names.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The decorator syntax — the <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> — is a succinct way of passing a
+function to another function.</p>
+<p>This:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@g</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">f</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>is equivalent to</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">g</span><span class="p">(</span><span class="n">f</span><span class="p">)(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="built-in-preprocessors">
+<h3>Built-in Preprocessors<a class="headerlink" href="#built-in-preprocessors" title="Link to this heading">#</a></h3>
+<p>Each of the following functions named <code class="docutils literal notranslate"><span class="pre">&lt;something&gt;_wrapper</span></code> operates on
+a generator instance. The corresponding functions named
+<code class="docutils literal notranslate"><span class="pre">&lt;something_decorator&gt;</span></code> operate on a generator function.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.baseline_decorator.html#bluesky.preprocessors.baseline_decorator" title="bluesky.preprocessors.baseline_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">baseline_decorator</span></code></a></p></td>
+<td><p>Preprocessor that records a baseline of all <cite>devices</cite> after <cite>open_run</cite></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.baseline_wrapper.html#bluesky.preprocessors.baseline_wrapper" title="bluesky.preprocessors.baseline_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">baseline_wrapper</span></code></a></p></td>
+<td><p>Preprocessor that records a baseline of all <cite>devices</cite> after <cite>open_run</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.contingency_wrapper.html#bluesky.preprocessors.contingency_wrapper" title="bluesky.preprocessors.contingency_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">contingency_wrapper</span></code></a></p></td>
+<td><p>try...except...else...finally helper</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.finalize_decorator.html#bluesky.preprocessors.finalize_decorator" title="bluesky.preprocessors.finalize_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">finalize_decorator</span></code></a></p></td>
+<td><p>try...finally helper</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.finalize_wrapper.html#bluesky.preprocessors.finalize_wrapper" title="bluesky.preprocessors.finalize_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">finalize_wrapper</span></code></a></p></td>
+<td><p>try...finally helper</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.fly_during_decorator.html#bluesky.preprocessors.fly_during_decorator" title="bluesky.preprocessors.fly_during_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fly_during_decorator</span></code></a></p></td>
+<td><p>Kickoff and collect &quot;flyer&quot; (asynchronously collect) objects during runs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.fly_during_wrapper.html#bluesky.preprocessors.fly_during_wrapper" title="bluesky.preprocessors.fly_during_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fly_during_wrapper</span></code></a></p></td>
+<td><p>Kickoff and collect &quot;flyer&quot; (asynchronously collect) objects during runs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.inject_md_decorator.html#bluesky.preprocessors.inject_md_decorator" title="bluesky.preprocessors.inject_md_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inject_md_decorator</span></code></a></p></td>
+<td><p>Inject additional metadata into a run.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.inject_md_wrapper.html#bluesky.preprocessors.inject_md_wrapper" title="bluesky.preprocessors.inject_md_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inject_md_wrapper</span></code></a></p></td>
+<td><p>Inject additional metadata into a run.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.lazily_stage_decorator.html#bluesky.preprocessors.lazily_stage_decorator" title="bluesky.preprocessors.lazily_stage_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lazily_stage_decorator</span></code></a></p></td>
+<td><p>This is a preprocessor that inserts 'stage' messages and appends 'unstage'.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.lazily_stage_wrapper.html#bluesky.preprocessors.lazily_stage_wrapper" title="bluesky.preprocessors.lazily_stage_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lazily_stage_wrapper</span></code></a></p></td>
+<td><p>This is a preprocessor that inserts 'stage' messages and appends 'unstage'.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.monitor_during_decorator.html#bluesky.preprocessors.monitor_during_decorator" title="bluesky.preprocessors.monitor_during_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor_during_decorator</span></code></a></p></td>
+<td><p>Monitor (asynchronously read) devices during runs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.monitor_during_wrapper.html#bluesky.preprocessors.monitor_during_wrapper" title="bluesky.preprocessors.monitor_during_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor_during_wrapper</span></code></a></p></td>
+<td><p>Monitor (asynchronously read) devices during runs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.relative_set_decorator.html#bluesky.preprocessors.relative_set_decorator" title="bluesky.preprocessors.relative_set_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">relative_set_decorator</span></code></a></p></td>
+<td><p>Interpret 'set' messages on devices as relative to initial position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.relative_set_wrapper.html#bluesky.preprocessors.relative_set_wrapper" title="bluesky.preprocessors.relative_set_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">relative_set_wrapper</span></code></a></p></td>
+<td><p>Interpret 'set' messages on devices as relative to initial position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.reset_positions_decorator.html#bluesky.preprocessors.reset_positions_decorator" title="bluesky.preprocessors.reset_positions_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_positions_decorator</span></code></a></p></td>
+<td><p>Return movable devices to their initial positions at the end.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.reset_positions_wrapper.html#bluesky.preprocessors.reset_positions_wrapper" title="bluesky.preprocessors.reset_positions_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_positions_wrapper</span></code></a></p></td>
+<td><p>Return movable devices to their initial positions at the end.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.run_decorator.html#bluesky.preprocessors.run_decorator" title="bluesky.preprocessors.run_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_decorator</span></code></a></p></td>
+<td><p>Enclose in 'open_run' and 'close_run' messages.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.run_wrapper.html#bluesky.preprocessors.run_wrapper" title="bluesky.preprocessors.run_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_wrapper</span></code></a></p></td>
+<td><p>Enclose in 'open_run' and 'close_run' messages.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.stage_decorator.html#bluesky.preprocessors.stage_decorator" title="bluesky.preprocessors.stage_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stage_decorator</span></code></a></p></td>
+<td><p>'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.stage_wrapper.html#bluesky.preprocessors.stage_wrapper" title="bluesky.preprocessors.stage_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stage_wrapper</span></code></a></p></td>
+<td><p>'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.subs_decorator.html#bluesky.preprocessors.subs_decorator" title="bluesky.preprocessors.subs_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subs_decorator</span></code></a></p></td>
+<td><p>Subscribe callbacks to the document stream; finally, unsubscribe.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.subs_wrapper.html#bluesky.preprocessors.subs_wrapper" title="bluesky.preprocessors.subs_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subs_wrapper</span></code></a></p></td>
+<td><p>Subscribe callbacks to the document stream; finally, unsubscribe.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.suspend_decorator.html#bluesky.preprocessors.suspend_decorator" title="bluesky.preprocessors.suspend_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">suspend_decorator</span></code></a></p></td>
+<td><p>Install suspenders to the RunEngine, and remove them at the end.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.suspend_wrapper.html#bluesky.preprocessors.suspend_wrapper" title="bluesky.preprocessors.suspend_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">suspend_wrapper</span></code></a></p></td>
+<td><p>Install suspenders to the RunEngine, and remove them at the end.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="custom-preprocessors">
+<h3>Custom Preprocessors<a class="headerlink" href="#custom-preprocessors" title="Link to this heading">#</a></h3>
+<p>The preprocessors are implemented using <a class="reference internal" href="generated/bluesky.preprocessors.msg_mutator.html#bluesky.preprocessors.msg_mutator" title="bluesky.preprocessors.msg_mutator"><code class="xref py py-func docutils literal notranslate"><span class="pre">msg_mutator()</span></code></a> (for altering
+messages in place) and <a class="reference internal" href="generated/bluesky.preprocessors.plan_mutator.html#bluesky.preprocessors.plan_mutator" title="bluesky.preprocessors.plan_mutator"><code class="xref py py-func docutils literal notranslate"><span class="pre">plan_mutator()</span></code></a> (for inserting
+messages into the plan or removing messages).</p>
+<p>It’s easiest to learn this by example, studying the implementations of the built-in
+processors (catalogued above) in the
+<a class="reference external" href="https://github.com/NSLS-II/bluesky/blob/master/bluesky/plans.py">the source of the plans module</a>.</p>
+</section>
+</section>
+<section id="customize-step-scans-with-per-step">
+<span id="per-step-hook"></span><h2>Customize Step Scans with <code class="docutils literal notranslate"><span class="pre">per_step</span></code><a class="headerlink" href="#customize-step-scans-with-per-step" title="Link to this heading">#</a></h2>
+<p>The one-dimensional and multi-dimensional plans are composed (1) setup,
+(2) a loop over a plan to perform at each position, (3) cleanup.</p>
+<p>We provide a hook for customizing step (2). This enables you to write a
+variation of an existing plan without starting from scratch.</p>
+<p>For one-dimensional plans, the default inner loop is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">trigger_and_read</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">one_1d_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inner loop of a 1D step scan</span>
+
+<span class="sd">    This is the default function for ``per_step`` param in 1D plans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">yield from</span> <span class="n">checkpoint</span><span class="p">()</span>
+    <span class="k">yield from</span> <span class="n">abs_set</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">trigger_and_read</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">motor</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>Some user-defined function, <code class="docutils literal notranslate"><span class="pre">custom_step</span></code>, with the same signature can be
+used in its place:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">per_step</span><span class="o">=</span><span class="n">custom_step</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For convenience, this could be wrapped into the definition of a new plan:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">custom_scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">yield from</span> <span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">md</span>
+                    <span class="n">per_step</span><span class="o">=</span><span class="n">custom_step</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For multi-dimensional plans, the default inner loop is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">short_uid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">wait</span><span class="p">,</span> <span class="n">trigger_and_read</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">one_nd_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inner loop of an N-dimensional step scan</span>
+
+<span class="sd">    This is the default function for ``per_step`` param in ND plans.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    detectors : iterable</span>
+<span class="sd">        devices to read</span>
+<span class="sd">    step : dict</span>
+<span class="sd">        mapping motors to positions in this step</span>
+<span class="sd">    pos_cache : dict</span>
+<span class="sd">        mapping motors to their last-set positions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">move</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">checkpoint</span><span class="p">()</span>
+        <span class="n">grp</span> <span class="o">=</span> <span class="n">short_uid</span><span class="p">(</span><span class="s1">&#39;set&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">motor</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">pos</span> <span class="o">==</span> <span class="n">pos_cache</span><span class="p">[</span><span class="n">motor</span><span class="p">]:</span>
+                <span class="c1"># This step does not move this motor.</span>
+                <span class="k">continue</span>
+            <span class="k">yield from</span> <span class="n">abs_set</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp</span><span class="p">)</span>
+            <span class="n">pos_cache</span><span class="p">[</span><span class="n">motor</span><span class="p">]</span> <span class="o">=</span> <span class="n">pos</span>
+        <span class="k">yield from</span> <span class="n">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">grp</span><span class="p">)</span>
+
+    <span class="n">motors</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">yield from</span> <span class="n">move</span><span class="p">()</span>
+    <span class="k">yield from</span> <span class="n">trigger_and_read</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">motors</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Likewise, a custom function with the same signature may be passed into the
+<code class="docutils literal notranslate"><span class="pre">per_step</span></code> argument of any of the multi-dimensional plans.</p>
+</section>
+<section id="asynchronous-plans-fly-scans-and-monitoring">
+<h2>Asynchronous Plans: “Fly Scans” and “Monitoring”<a class="headerlink" href="#asynchronous-plans-fly-scans-and-monitoring" title="Link to this heading">#</a></h2>
+<p>See the section on <a class="reference internal" href="async.html"><span class="doc">Asynchronous Acquisition</span></a> for some context on these terms and, near the
+end of the section, some example plans.</p>
+</section>
+<section id="plan-utilities">
+<span id="plan-utils"></span><h2>Plan Utilities<a class="headerlink" href="#plan-utilities" title="Link to this heading">#</a></h2>
+<p>These are useful utilities for defining custom plans and plan preprocessors.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.pchain.html#bluesky.preprocessors.pchain" title="bluesky.preprocessors.pchain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pchain</span></code></a></p></td>
+<td><p>Like <cite>itertools.chain</cite> but using <cite>yield from</cite></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.msg_mutator.html#bluesky.preprocessors.msg_mutator" title="bluesky.preprocessors.msg_mutator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">msg_mutator</span></code></a></p></td>
+<td><p>A simple preprocessor that mutates or deletes single messages in a plan.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.plan_mutator.html#bluesky.preprocessors.plan_mutator" title="bluesky.preprocessors.plan_mutator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plan_mutator</span></code></a></p></td>
+<td><p>Alter the contents of a plan on the fly by changing or inserting messages.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.single_gen.html#bluesky.preprocessors.single_gen" title="bluesky.preprocessors.single_gen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_gen</span></code></a></p></td>
+<td><p>Turn a single message into a plan</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.preprocessors.make_decorator.html#bluesky.preprocessors.make_decorator" title="bluesky.preprocessors.make_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_decorator</span></code></a></p></td>
+<td><p>Turn a generator instance wrapper into a generator function decorator.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="tutorial.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Tutorial</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="generated/bluesky.plans.count.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">bluesky.plans.count</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pre-assembled-plans">Pre-assembled Plans</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#summary">Summary</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#time-series-count">Time series (“count”)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scans-over-one-dimension">Scans over one dimension</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-dimensional-scans">Multi-dimensional scans</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spiral-trajectories">Spiral trajectories</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#adaptive-scans">Adaptive scans</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#misc">Misc.</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stub-plans">Stub Plans</a><ul class="nav section-nav flex-column">
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plan-preprocessors">Plan Preprocessors</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#supplemental-data">Supplemental Data</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.preprocessors.SupplementalData"><code class="docutils literal notranslate"><span class="pre">SupplementalData</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#preprocessor-wrappers-and-decorators">Preprocessor Wrappers and Decorators</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#built-in-preprocessors">Built-in Preprocessors</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#custom-preprocessors">Custom Preprocessors</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#customize-step-scans-with-per-step">Customize Step Scans with <code class="docutils literal notranslate"><span class="pre">per_step</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#asynchronous-plans-fly-scans-and-monitoring">Asynchronous Plans: “Fly Scans” and “Monitoring”</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plan-utilities">Plan Utilities</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.1/docs/plans.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/plans.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.monitor
+===================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.monitor

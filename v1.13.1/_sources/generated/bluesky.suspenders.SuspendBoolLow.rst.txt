@@ -1,0 +1,31 @@
+﻿bluesky.suspenders.SuspendBoolLow
+=================================
+
+.. currentmodule:: bluesky.suspenders
+
+.. autoclass:: SuspendBoolLow
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SuspendBoolLow.__init__
+      ~SuspendBoolLow.get_futures
+      ~SuspendBoolLow.install
+      ~SuspendBoolLow.remove
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SuspendBoolLow.tripped
+   
+   
