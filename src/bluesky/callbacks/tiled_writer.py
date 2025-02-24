@@ -3,6 +3,7 @@ import itertools
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Optional, Union, cast
+from warnings import warn
 
 import pandas as pd
 from event_model import RunRouter, unpack_datum_page, unpack_event_page
@@ -19,7 +20,6 @@ from event_model.documents import (
     StreamResource,
 )
 from event_model.documents.stream_datum import StreamRange
-from pydantic.v1.utils import deep_update
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
 from tiled.client.container import Container
@@ -198,65 +198,57 @@ class _RunWriter(CallbackBase):
             raise RuntimeError("RunWriter is not roperly initialized: no Start document has been recorded.")
 
         desc_name = doc["name"]  # Name of the descriptor/stream
-        # Copy the document items, excluding the variable fields
-        metadata = {k: v for k, v in doc.items() if k not in ("uid", "time", "configuration")}
 
-        # Encapsulate variable fields into sub-dictionaries with uids as the keys
-        uid = doc["uid"]
-        conf_dict = {uid: doc.get("configuration", {})}
-        time_dict = {uid: doc["time"]}
-        var_fields = {"configuration": conf_dict, "time": time_dict}
-
+        # Create a new stream node (container) for the descriptor if it does not exist
         if desc_name not in self.root_node["streams"].keys():
-            # Create a new descriptor node; write only the fixed part of the metadata
+            metadata = copy.copy(doc.get("data_keys", {}))
+            metadata.update({"uid": doc["uid"], "time": doc["time"]})
             desc_node = self.root_node["streams"].create_container(key=desc_name, metadata=metadata)
         else:
-            # Get existing descriptor node (with fixed and variable metadata saved before)
             desc_node = self.root_node["streams"][desc_name]
+        self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the descriptor node by its uid
 
-        # Update (add new values to) variable fields of the metadata
-        metadata = deep_update(dict(desc_node.metadata), var_fields)
-        desc_node.update_metadata(metadata)
+        # Write the configuration data
+        ### Option 1. Values and TS in awkward arrays, data_keys specs in metadata
+        # if conf_dict := doc.get("configuration", None):
+        #     # Put configuration data_keys specs into the metadata
+        #     conf_data_keys = {}
+        #     for obj_name, obj_dict in conf_dict.items():
+        #         if _conf_data_keys := obj_dict.pop("data_keys", None): # Remove data_keys from the obj dictionary
+        #             for item in _conf_data_keys.values():
+        #                 item.update({"object_name": obj_name})   # Make consistent with usual data_keys
+        #             conf_data_keys[obj_name] = _conf_data_keys
+        #     conf_meta = {"data_keys": conf_data_keys} if conf_data_keys else {}
+        #     conf_meta.update({"uid": doc["uid"], "time": doc["time"]})
+        #     conf_list = [conf_dict]
 
-        # Keep specifications for external and internal data_keys for faster access
-        if not isinstance(metadata["data_keys"], dict):
-            raise RuntimeError("Expected data_keys to be a dictionary")
-        self.data_keys_int.update({k: v for k, v in metadata["data_keys"].items() if "external" not in v.keys()})
-        self.data_keys_ext.update({k: v for k, v in metadata["data_keys"].items() if "external" in v.keys()})
+        ### Option 2. Everything in an array of "records" (dicts)
+        if conf_dict := doc.get("configuration", None):
+            conf_list = []
+            for obj_name, obj_dict in conf_dict.items():
+                for key, val in obj_dict.get("data_keys", {}).items():
+                    val.update({"object_name": obj_name, "data_key": key})
+                    val["value"] = obj_dict.get("data", {}).get(key, None)
+                    val["timestamp"] = obj_dict.get("timestamps", {}).get(key, None)
+                    conf_list.append(val)  # awkward does not like None
 
-        # Write the configuration data: loop over all detectors
-        if conf_dict[uid]:
-            if desc_name not in self.root_node["config"].keys():
-                conf_node = self.root_node["config"].create_container(key=desc_name)
-            else:
-                conf_node = self.root_node["config"][desc_name]
-        for det_name, det_dict in doc.get("configuration", {}).items():
-            df_dict = {"descriptor_uid": uid}
-            df_dict.update(det_dict.get("data", {}))
-            df_dict.update({f"ts_{c}": v for c, v in det_dict.get("timestamps", {}).items()})
-            conf_node.write_awkward([df_dict], key=det_name)
+            ### Option 2b. Add the usual data_keys specs as well
+            for key, val in doc.get("data_keys", {}).items():
+                val["data_key"] = key
+                conf_list.append(val)
 
-            # TODO: clean-up AwkwardClient: better __repr__, .read(), etc.
-
-            # df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
-            # if det_name in conf_node.keys():
-            #     conf_node[det_name].append_partition(df, 0)
-            # else:
-            #     conf_node.new(
-            #         structure_family=StructureFamily.table,
-            #         data_sources=[
-            #             DataSource(
-            #                 structure_family=StructureFamily.table,
-            #                 structure=TableStructure.from_pandas(df),
-            #                 mimetype="text/csv",
-            #             ),
-            #         ],
-            #         key=det_name,
-            #         metadata=det_dict["data_keys"],
-            #     )
-            #     conf_node[det_name].write_partition(df, 0)
-
-        self._desc_nodes[uid] = desc_node
+            if conf_list:
+                # Define the key (name) and metadata for the configuration node
+                conf_meta = {"uid": doc["uid"], "time": doc["time"]}
+                conf_key = desc_name
+                if conf_key in self.root_node["config"].keys():
+                    conf_key = f"{desc_name}-{doc['uid'][:8]}"
+                    warn(
+                        f"Configuration node for the '{desc_name}' stream already exists."
+                        f"The updated configuration will be stored under a new key, '{conf_key}'.",
+                        stacklevel=2,
+                    )
+                self.root_node["config"].write_awkward(conf_list, key=conf_key, metadata=conf_meta)
 
     def event(self, doc: Event):
         parent_node = self._desc_nodes[doc["descriptor"]]
