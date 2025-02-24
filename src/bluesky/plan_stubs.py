@@ -169,9 +169,9 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
 
 
 @typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+def locate(*objs: Locatable, squeeze: bool = True) -> MsgGenerator[list[Location[Any]]]: ...
 @typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
+def locate(obj: Locatable, squeeze: Literal[True] = True) -> MsgGenerator[Location[Any]]: ...
 @plan
 def locate(*objs, squeeze=True):
     """
