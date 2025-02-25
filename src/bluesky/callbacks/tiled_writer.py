@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Optional, Union, cast
 from warnings import warn
 
-import pandas as pd
+import pyarrow
 from event_model import RunRouter, unpack_datum_page, unpack_event_page
 from event_model.documents import (
     Datum,
@@ -25,13 +25,12 @@ from tiled.client.base import BaseClient
 from tiled.client.container import Container
 from tiled.client.utils import handle_error
 from tiled.structures.core import Spec
-from tiled.structures.table import TableStructure
 from tiled.utils import safe_json_dump
 
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
-BULK_SIZE = 100
+BATCH_SIZE = 100
 
 
 def build_summary(start_doc, stop_doc, stream_names):
@@ -170,10 +169,10 @@ class _RunWriter(CallbackBase):
             raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
 
         # Write the cached internal data
-        for desc_uid, data_cache in self._internal_data_cache.items():
+        for desc_name, data_cache in self._internal_data_cache.items():
             if data_cache:
-                df = pd.DataFrame(data_cache, index=range(len(data_cache)), columns=data_cache[0].keys())
-                self._desc_nodes[desc_uid]["internal"].append_partition(df, 0)
+                table = pyarrow.Table.from_pylist(data_cache)
+                self.root_node[f"streams/{desc_name}/internal"].append_partition(table, 0)
                 data_cache.clear()
 
         # Write the cached external data
@@ -200,14 +199,18 @@ class _RunWriter(CallbackBase):
         desc_name = doc["name"]  # Name of the descriptor/stream
 
         # Create a new stream node (container) for the descriptor if it does not exist
+        data_keys = doc.get("data_keys", {})
         if desc_name not in self.root_node["streams"].keys():
             # NOTE: Maybe don't store data_keys in metadata?
-            metadata = copy.copy(doc.get("data_keys", {}))
-            metadata.update({"uid": doc["uid"], "time": doc["time"]})
+            metadata = data_keys | {"uid": doc["uid"], "time": doc["time"]}
             desc_node = self.root_node["streams"].create_container(key=desc_name, metadata=metadata)
         else:
             desc_node = self.root_node["streams"][desc_name]
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the descriptor node by its uid
+
+        # Keep specifications for external and internal data_keys for faster access
+        self.data_keys_int.update({k: v for k, v in data_keys.items() if "external" not in v.keys()})
+        self.data_keys_ext.update({k: v for k, v in data_keys.items() if "external" in v.keys()})
 
         # Write the configuration data
         ### Option 1. Values and TS in awkward arrays, data_keys specs in metadata
@@ -253,39 +256,32 @@ class _RunWriter(CallbackBase):
             self.root_node["config"].write_awkward(conf_list, key=conf_key, metadata=conf_meta)
 
     def event(self, doc: Event):
-        parent_node = self._desc_nodes[doc["descriptor"]]
+        desc_uid = doc["descriptor"]
+        parent_node = self._desc_nodes[desc_uid]
         desc_name = parent_node.item["id"]  # Name of the descriptor/stream
 
         # Process _internal_ data -- those keys without 'external' flag or those that have been filled
+        data_cache = self._internal_data_cache[desc_name]
         data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
         data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
-        df_dict = {"seq_num": doc["seq_num"]}
-        df_dict.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
-        df_dict.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})  # Keep all timestamps
+        row = {"seq_num": doc["seq_num"]}
+        row.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
+        row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items()})  # Keep all timestamps
+        data_cache.append(row)
+
         if self._node_exists[f"{desc_name}/internal"]:
-            # Do not add the data immediately; collect it in a cache and write in bulk
-            data_cache = self._internal_data_cache[doc["descriptor"]]
-            data_cache.append(df_dict)
-            if len(data_cache) >= BULK_SIZE:
-                df = pd.DataFrame(data_cache, index=range(len(data_cache)), columns=df_dict.keys())
-                parent_node["internal"].append_partition(df, 0)
+            # Do not write the data immediately; collect it in a cache and write in bulk
+            if len(data_cache) >= BATCH_SIZE:
+                table = pyarrow.Table.from_pylist(data_cache)
+                parent_node["internal"].append_partition(table, 0)
                 data_cache.clear()
         else:
-            # Create a new internal data node and write the initial piece of data
-            df = pd.DataFrame([df_dict], index=[0], columns=df_dict.keys())
-            parent_node.new(
-                structure_family=StructureFamily.table,
-                data_sources=[
-                    DataSource(
-                        structure_family=StructureFamily.table,
-                        structure=TableStructure.from_pandas(df),
-                        mimetype="text/csv",
-                    ),
-                ],
-                key="internal",
-                metadata=data_keys_spec,
-            )
-            parent_node["internal"].write_partition(df, 0)
+            # Create a new "internal" data node and write the initial piece of data
+            table = pyarrow.Table.from_pylist(data_cache)
+            parent_node.create_appendable_table(schema=table.schema, key="internal", metadata=data_keys_spec)
+            parent_node["internal"].append_partition(table, 0)
+            data_cache.clear()
+            # Mark the node as existing to avoid making API calls for each subsequent inserts
             self._node_exists[f"{desc_name}/internal"] = True
 
         # Process _external_ data: Loop over all referenced Datums
@@ -299,7 +295,6 @@ class _RunWriter(CallbackBase):
                     datum_doc = self._datum_cache.pop(datum_id)
                     uid = datum_doc["datum_id"]
                     sres_uid = datum_doc["resource"]
-                    desc_uid = doc["descriptor"]  # From Event document
 
                     # Some Datums contain datum_kwargs and the 'frame' field, which indicates the last index of the
                     # frame. This should take precedence over the 'seq_num' field in the Event document. Keep the
@@ -350,7 +345,7 @@ class _RunWriter(CallbackBase):
                     if cached_stream_datum_doc := self._external_data_cache.pop(data_key, None):
                         try:
                             _doc = concatenate_stream_datums(cached_stream_datum_doc, stream_datum_doc)
-                            if _doc["indices"]["stop"] - _doc["indices"]["start"] > BULK_SIZE:
+                            if _doc["indices"]["stop"] - _doc["indices"]["start"] > BATCH_SIZE:
                                 # Write the (large) concatenated StreamDatum document immediately
                                 self.stream_datum(_doc)
                             else:
@@ -410,7 +405,7 @@ class _RunWriter(CallbackBase):
                 handler.consume_stream_resource(sres_doc)
             else:
                 # Initialise a bluesky handler (consolidator) for the StreamResource
-                handler = consolidator_factory(sres_doc, dict(desc_node.metadata))
+                handler = consolidator_factory(sres_doc, {"data_keys": desc_node.metadata})
                 sres_node = desc_node.new(
                     key=handler.data_key,
                     structure_family=StructureFamily.array,
