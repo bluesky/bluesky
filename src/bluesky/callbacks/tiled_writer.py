@@ -203,7 +203,7 @@ class _RunWriter(CallbackBase):
         if desc_name not in self.root_node["streams"].keys():
             # NOTE: Maybe don't store data_keys in metadata?
             metadata = data_keys | {"uid": doc["uid"], "time": doc["time"]}
-            desc_node = self.root_node["streams"].create_container(key=desc_name, metadata=metadata)
+            desc_node = self.root_node["streams"].create_container(key=desc_name, metadata=metadata, flat=True)
         else:
             desc_node = self.root_node["streams"][desc_name]
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the descriptor node by its uid
@@ -278,7 +278,8 @@ class _RunWriter(CallbackBase):
         else:
             # Create a new "internal" data node and write the initial piece of data
             table = pyarrow.Table.from_pylist(data_cache)
-            parent_node.create_appendable_table(schema=table.schema, key="internal", metadata=data_keys_spec)
+            metadata = {k: v for k, v in data_keys_spec.items() if k in table.column_names}
+            parent_node.create_appendable_table(schema=table.schema, key="internal", metadata=metadata)
             parent_node["internal"].append_partition(table, 0)
             data_cache.clear()
             # Mark the node as existing to avoid making API calls for each subsequent inserts
@@ -411,7 +412,6 @@ class _RunWriter(CallbackBase):
                     structure_family=StructureFamily.array,
                     data_sources=[handler.get_data_source()],
                     metadata=sres_doc,
-                    specs=[],
                 )
 
             self._handlers[sres_uid] = handler
