@@ -98,8 +98,8 @@ To produce data in a step scan, a device must be Readable:
     :members:
     :show-inheritance:
 
-A dict of stream name to Descriptors is returned from :meth:`describe`, where a
-`Descriptor` is a dictionary with the following keys:
+A dict of stream name to DataKeys is returned from :meth:`describe`, where a
+`DataKey` is a dictionary with the following keys:
 
 .. autoclass:: bluesky.protocols.DataKey
     :members:
@@ -136,11 +136,25 @@ External Asset Writing Interface
 Devices that write their data in external files, rather than returning directly
 from ``read()`` should implement the following interface:
 
+.. autoclass:: bluesky.protocols.WritesStreamAssets
+    :members:
+    :show-inheritance:
+
+The yielded values are a tuple of the document type and the document as a dictionary:
+
+.. autoclass:: bluesky.protocols.StreamAsset
+    :members:
+
+The original interface for external assets was:
+
 .. autoclass:: bluesky.protocols.WritesExternalAssets
     :members:
     :show-inheritance:
 
-The yielded values are a tuple of the document type and the document as a dictionary.
+The yielded values are a tuple of the document type and the document as a dictionary:
+
+.. autoclass:: bluesky.protocols.Asset
+    :members:
 
 A Resource will be yielded to show that data will be written to an external resource
 like a file on disk:
@@ -204,13 +218,30 @@ or settable device, though there is some overlap.
     :members:
     :show-inheritance:
 
+There is also a ``describe`` method for flyscans:
+
+.. autoclass:: bluesky.protocols.Collectable
+    :members:
+    :show-inheritance:
+
+And event data can be emitted either singly or in a page:
+
+.. autoclass:: bluesky.protocols.EventCollectable
+    :members:
+    :show-inheritance:
+
+.. autoclass:: bluesky.protocols.EventPageCollectable
+    :members:
+    :show-inheritance:
+
 The yielded values from ``collect()`` are partial Event dictionaries:
 
 .. autoclass:: bluesky.protocols.PartialEvent
     :members:
 
-If any of the data keys are in external assets rather than including the data,
-a ``filled`` key should be present:
+If any of the data keys are in external assets rather than including the data, a
+``filled`` key should be present, and the data should be emitted via
+`WritesExternalAssets`.
 
 
 Flyable devices can also implement :class:`Configurable` if they have

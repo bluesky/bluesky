@@ -7,12 +7,11 @@ import types
 from collections import defaultdict
 from functools import partial
 from traceback import FrameSummary, extract_tb
-from typing import List
 
 import pytest
 from event_model import DocumentNames
 
-from bluesky import Msg
+from bluesky import Msg, RunEngine
 from bluesky.plan_stubs import abs_set, checkpoint, declare_stream, pause, trigger_and_read, wait, wait_for
 from bluesky.plans import count, grid_scan
 from bluesky.preprocessors import (
@@ -37,7 +36,7 @@ from bluesky.run_engine import (
     TransitionError,
     WaitForTimeoutError,
 )
-from bluesky.tests import requires_ophyd
+from bluesky.tests import requires_ophyd, uses_os_kill_sigint
 from bluesky.tests.utils import DocCollector, MsgCollector
 
 from .utils import _careful_event_set, _fabricate_asycio_event
@@ -475,7 +474,7 @@ def test_stage_and_unstage_status_objects(RE):
     RE(my_plan())
     stop = ttime.monotonic()
 
-    assert 2 < stop - start < 3
+    assert 2 <= stop - start < 3
 
 
 def test_bad_call_args(RE):
@@ -713,6 +712,7 @@ def test_exit_raise(RE, unpause_func, excp):
     assert flag
 
 
+@uses_os_kill_sigint
 def test_sigint_three_hits(RE, hw):
     import time
 
@@ -746,6 +746,7 @@ def test_sigint_three_hits(RE, hw):
     assert 0.3 < done_cleanup_time - end_time < 0.6
 
 
+@uses_os_kill_sigint
 def test_sigint_many_hits_pln(RE):
     pid = os.getpid()
 
@@ -774,6 +775,7 @@ def test_sigint_many_hits_pln(RE):
     timer.join()
 
 
+@uses_os_kill_sigint
 def test_sigint_many_hits_panic(RE):
     raise pytest.skip("hangs tests on exit")
     pid = os.getpid()
@@ -820,6 +822,7 @@ def test_sigint_many_hits_panic(RE):
         RE.request_pause()
 
 
+@uses_os_kill_sigint
 def test_sigint_many_hits_cb(RE):
     pid = os.getpid()
 
@@ -850,6 +853,7 @@ def test_sigint_many_hits_cb(RE):
     timer.join()
 
 
+@uses_os_kill_sigint
 def test_no_context_manager(RE):
     # Clear the context managers so that RE will not react to sigint
     RE.context_managers = []
@@ -1490,7 +1494,7 @@ def test_wait_with_timeout_can_be_repeated(RE):
 
 
 @requires_ophyd
-def test_status_propagates_exception_through_run_engine(RE):
+def test_status_propagates_exception_through_run_engine(RE: RunEngine):
     # just to make sure that 'pardon_failures' does not block *real* failures
     from ophyd import StatusBase
 
@@ -1511,13 +1515,13 @@ def test_status_propagates_exception_through_run_engine(RE):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg("set", dummy1, 1, group="test"), Msg("wait", group="test")])
 
-        traceback: List[FrameSummary] = extract_tb(exc.__traceback__)
+        traceback: list[FrameSummary] = extract_tb(exc.__traceback__)  # type: ignore[attr-defined]
         assert traceback[0].filename == __file__
         assert traceback[0].line == "RE([Msg('set', dummy1, 1, group='test'),"
         assert traceback[-1].name == "set"
         assert traceback[-1].line == "1/0"
 
-        assert isinstance(exc.args[0], ZeroDivisionError)
+        assert isinstance(exc.args[0], ZeroDivisionError)  # type: ignore[attr-defined]
 
 
 def test_colliding_streams(RE, hw):

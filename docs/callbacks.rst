@@ -72,7 +72,7 @@ A working example:
     from bluesky.plans import scan
     from bluesky.callbacks import LiveTable
     dets = [det]
-    RE(scan(dets, motor, 1, 5, 5), LiveTable(dets))
+    RE(scan(dets, motor, 1, 5, 5), LiveTable(["det"]))
 
 A *list* of callbacks --- ``[cb1, cb2]`` --- is also accepted; see
 :ref:`filtering`, below, for additional options.
@@ -131,7 +131,7 @@ For example, to define a variant of ``scan`` that includes a table by default:
     def my_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         "This plan takes the same arguments as `scan`."
 
-        table = LiveTable([motor] + list(detectors))
+        table = LiveTable([motor.name] + [det.name for det in detectors])
 
         @subs_decorator(table)
         def inner():
@@ -157,7 +157,7 @@ row is added to the table. Demo:
     from ophyd.sim import motor, det
     from bluesky.callbacks import LiveTable
 
-    RE(scan([det], motor, 1, 5, 5), LiveTable([motor, det]))
+    RE(scan([det], motor, 1, 5, 5), LiveTable(["motor", "det"]))
 
 Pass an empty list of columns to show simply 'time' and 'seq_num' (sequence
 number).
@@ -166,7 +166,9 @@ number).
 
     LiveTable([])
 
-In the demo above, we passed in a list of *device(s)*, like so:
+For devices which are implemented using synchronous functions, for example
+``ophyd`` devices, it is also possible to pass the device *object* itself,
+as opposed to a field name:
 
 .. code-block:: python
 
@@ -191,6 +193,13 @@ device.
 In fact, almost all other callbacks (including :ref:`LivePlot`) *require* a
 specific field. They will not accept a device because it may have more than one
 field.
+
+.. warning::
+
+    For compatibility between ``ophyd`` devices, which are implemented using
+    synchronous functions, and ``ophyd-async`` devices, which are implemented using
+    coroutines, it is recommended to always specify a signal name rather than a
+    device object in the ``LiveTable`` callback.
 
 .. autoclass:: bluesky.callbacks.LiveTable
 

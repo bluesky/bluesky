@@ -1,14 +1,15 @@
 import importlib.metadata
+from collections.abc import Iterable, Iterator
 from random import randint, sample
-from typing import Dict, Iterable, Iterator, List, Optional, Union
+from typing import Literal, Optional, Union
 
 import packaging.version
 import pytest
 from event_model import ComposeStreamResource, EventModelValueError
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.event_page import PartialEventPage
-from event_model.documents.resource import Resource
 from event_model.documents.stream_datum import StreamRange
+from event_model.documents.stream_resource import StreamResource
 
 from bluesky import Msg
 from bluesky.protocols import (
@@ -28,21 +29,22 @@ DRAFT_0_STREAM_RESOURCE = event_model_version < packaging.version.parse("1.21.0"
 
 
 class ExternalAssetDevice:
-    sequence_counter_at_chunks: Optional[Union[range, List[int]]] = None
+    sequence_counter_at_chunks: Optional[Union[range, list[int]]] = None
     current_chunk: int = 0
 
     def __init__(
         self,
         number_of_chunks: int,
         number_of_frames: int,
-        detectors: Optional[List[str]] = None,
+        detectors: Optional[list[str]] = None,
         stream_datum_contains_one_index: bool = False,
     ):
         self.detectors = detectors or ["det1", "det2", "det3"]
         self.compose_stream_resource = ComposeStreamResource()
         if DRAFT_0_STREAM_RESOURCE:
             self.stream_resource_compose_datum_pairs = tuple(
-                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
+                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})  # type: ignore[arg-type]
+                for det in self.detectors
             )
         else:
             self.stream_resource_compose_datum_pairs = tuple(
@@ -72,7 +74,7 @@ class ExternalAssetDevice:
 
         self.new_random_width = self.sequence_counter_at_chunks[0]
 
-    def collect_resources(self) -> Iterator[Resource]:
+    def collect_resources(self) -> Iterator[tuple[Literal["stream_resource"], StreamResource]]:
         for stream_resource, _ in self.stream_resource_compose_datum_pairs:
             yield ("stream_resource", stream_resource)
 
@@ -123,7 +125,7 @@ class ExternalAssetDevice:
             # New stream_resource half way through the run
             if DRAFT_0_STREAM_RESOURCE:
                 self.stream_resource_compose_datum_pairs = tuple(
-                    self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})
+                    self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {})  # type: ignore[arg-type]
                     for det in self.detectors
                 )
             else:
@@ -147,7 +149,7 @@ class ExternalAssetDevice:
         def data():
             return {"det4": ["a"] * self.new_random_width}
 
-        return [PartialEventPage(timestamps=timestamps(), data=data())]
+        return [PartialEventPage(timestamps=timestamps(), data=data(), time=[1] * self.new_random_width)]
 
 
 def kickoff(self, *_, **__):
@@ -170,11 +172,11 @@ def pause(self, *_, **__): ...
 def resume(self, *_, **__): ...
 
 
-def read_Readable(self) -> Dict[str, Reading]:
+def read_Readable(self) -> dict[str, Reading]:
     return dict(det3=dict(value=1.2, timestamp=0.0))  # noqa: C408
 
 
-def describe_Readable(self) -> Dict[str, DataKey]:
+def describe_Readable(self) -> dict[str, DataKey]:
     return dict(  # noqa: C408
         det1=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),  # noqa: C408
         det2=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),  # noqa: C408
@@ -182,7 +184,7 @@ def describe_Readable(self) -> Dict[str, DataKey]:
     )
 
 
-def describe_collect_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
+def describe_collect_with_name(self) -> SyncOrAsync[dict[str, DataKey]]:
     description = {
         str(det): DataKey(shape=[], source="stream1", dtype="string", external="STREAM:")
         for det in ["det1", "det2", "det3"]

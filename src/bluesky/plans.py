@@ -4,9 +4,10 @@ import os
 import sys
 import time
 from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 from cycler import Cycler
@@ -41,7 +42,7 @@ PerStepND = Callable[
     [
         Sequence[Readable],
         Mapping[Movable, Any],
-        Dict[Movable, Any],
+        dict[Movable, Any],
         Optional[bps.TakeReading],
     ],
     MsgGenerator,
@@ -54,7 +55,7 @@ def _check_detectors_type_input(detectors):
         raise TypeError("The input argument must be either as a list or a tuple of Readable objects.")
 
 
-def derive_default_hints(motors: List[Any]) -> Dict[str, Sequence]:
+def derive_default_hints(motors: list[Any]) -> dict[str, Sequence]:
     x_fields = [field for motor in motors for field in get_hinted_fields(motor)]
 
     default_dimensions = [(x_fields, "primary")] if x_fields else []
@@ -130,7 +131,7 @@ def count(
 
 def list_scan(
     detectors: Sequence[Readable],
-    *args: Tuple[Union[Movable, Any], List[Any]],
+    *args: tuple[Union[Movable, Any], list[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -175,7 +176,7 @@ def list_scan(
 
     # set some variables and check that all lists are the same length
     lengths = {}
-    motors: List[Any] = []
+    motors: list[Any] = []
     pos_lists = []
     length = None
     for motor, pos_list in partition(2, args):
@@ -189,9 +190,7 @@ def list_scan(
 
     if not length_check:
         raise ValueError(
-            "The lengths of all lists in *args must be the same. "
-            "However the lengths in args are : "
-            f"{lengths}"
+            f"The lengths of all lists in *args must be the same. However the lengths in args are : {lengths}"
         )
 
     md_args = list(chain(*((repr(motor), pos_list) for motor, pos_list in partition(2, args))))
@@ -703,7 +702,7 @@ def adaptive_scan(
     min_step : float
         smallest step for fast-changing regions
     max_step : float
-        largest step for slow-chaning regions
+        largest step for slow-changing regions
     target_delta : float
         desired fractional change in detector signal between steps
     backstep : bool
@@ -826,13 +825,13 @@ def rel_adaptive_scan(
     motor : object
         any 'settable' object (motor, temp controller, etc.)
     start : float
-        starting position of motor
+        starting position of motor, relative to the current position.
     stop : float
-        ending position of motor
+        ending position of motor, relative to the current position.
     min_step : float
         smallest step for fast-changing regions
     max_step : float
-        largest step for slow-chaning regions
+        largest step for slow-changing regions
     target_delta : float
         desired fractional change in detector signal between steps
     backstep : bool
@@ -1136,7 +1135,7 @@ def scan_nd(
             # inner_product_scan was renamed scan).
             dims = len(list(cycler.keys))
             if dims != 1:
-                raise TypeError("Signature of per_step assumes 1D trajectory " f"but {dims} motors are specified.")
+                raise TypeError(f"Signature of per_step assumes 1D trajectory but {dims} motors are specified.")
             (motor,) = cycler.keys
             user_per_step = per_step
 
@@ -1154,7 +1153,7 @@ def scan_nd(
                 "<Signature (detectors, motor, step)>. \n"
                 f"per_step signature received: {sig}"
             )
-    pos_cache: Dict = defaultdict(lambda: None)  # where last position is stashed
+    pos_cache: dict = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
 
@@ -1278,7 +1277,7 @@ def scan(
 
     default_dimensions = [(x_fields, "primary")]
 
-    default_hints: Dict[str, Sequence] = {}
+    default_hints: dict[str, Sequence] = {}
     if len(x_fields) > 0:
         default_hints.update(dimensions=default_dimensions)
 
@@ -1374,7 +1373,7 @@ def grid_scan(
 
     # Check that the same motor is not listed multiple times. This indicates an error in the script.
     if len(set(motors)) != len(motors):
-        raise ValueError(f"Some motors are listed multiple times in the argument list 'args': " f"'{motors}'")
+        raise ValueError(f"Some motors are listed multiple times in the argument list 'args': '{motors}'")
 
     if snake_axes is not None:
 
@@ -1389,11 +1388,11 @@ def grid_scan(
 
             # Check if the list of axes (motors) contains repeated entries.
             if len(set(snake_axes)) != len(snake_axes):
-                raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: " f"'{snake_axes}'")
+                raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: '{snake_axes}'")
 
             # Check if the snaking is enabled for the slowest motor.
             if len(motors) and (motors[0] in snake_axes):
-                raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: " f"'{snake_axes}'")
+                raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: '{snake_axes}'")
 
             # Check that all motors in the chunk_args are controlled in the scan.
             #   It is very likely that the script running the plan has a bug.
@@ -2304,7 +2303,7 @@ def ramp_plan(
 
 
 def fly(
-    flyers: List[Flyable],
+    flyers: list[Flyable],
     *,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:

@@ -14,7 +14,7 @@ from datetime import datetime
 from functools import partial as _partial
 from functools import wraps as _wraps
 from itertools import count
-from typing import Dict, List, Optional
+from typing import Optional
 
 from event_model import DocumentRouter
 from event_model.documents import Event, EventDescriptor, StreamDatum, StreamResource
@@ -266,12 +266,12 @@ class CollectLiveStream(CallbackBase):
     def __init__(self):
         self._start_doc = None
         self._stop_doc = None
-        self._event_docs: Dict[str, Event] = {}  # Keyed by Event uid
-        self._desc_docs: Dict[str, EventDescriptor] = {}  # Keyed by Descriptor uid
-        self._sres_docs: Dict[str, StreamResource] = {}  # Keyed by Stream Resource uid
-        self._data_key_to_sres_uid: Dict[str, List[str]] = collections.defaultdict(list)
+        self._event_docs: dict[str, Event] = {}  # Keyed by Event uid
+        self._desc_docs: dict[str, EventDescriptor] = {}  # Keyed by Descriptor uid
+        self._sres_docs: dict[str, StreamResource] = {}  # Keyed by Stream Resource uid
+        self._data_key_to_sres_uid: dict[str, list[str]] = collections.defaultdict(list)
         self.events = deque()
-        self.stream_consolidators: Dict[str, ConsolidatorBase] = {}  # Keyed by Stream Resource uid
+        self.stream_consolidators: dict[str, ConsolidatorBase] = {}  # Keyed by Stream Resource uid
 
     def _ensure_resource_backcompat(self, doc: StreamResource) -> StreamResource:
         """Kept for back-compatibility with old StreamResource schema from event_model<1.20.0

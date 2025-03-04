@@ -15,33 +15,26 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable
+from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
     Any,
-    AsyncIterable,
-    AsyncIterator,
     Callable,
-    Dict,
-    Generator,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )
-from typing import Iterable as TypingIterable
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
 import msgpack_numpy
 import numpy as np
-import zict
 from cycler import Cycler, cycler
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
+from typing_extensions import TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
@@ -85,10 +78,7 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         )
 
     def __repr__(self):
-        return (
-            f"Msg({self.command!r}, obj={self.obj!r}, "
-            f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
-        )
+        return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
@@ -98,7 +88,7 @@ P = TypeVar("P")
 MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
-CustomPlanMetadata = Dict[str, Any]
+CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
@@ -151,7 +141,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES: Tuple[Type, ...] = (types.GeneratorType,)
+PLAN_TYPES: tuple[type, ...] = (types.GeneratorType,)
 try:
     from types import CoroutineType
 except ImportError:
@@ -562,7 +552,7 @@ class StructMeta(type):
 class Struct(metaclass=StructMeta):
     "The _fields of any subclass become its attritubes and __init__ args."
 
-    _fields: List[str] = []
+    _fields: list[str] = []
 
     def __init__(self, *args, **kwargs):
         # Now bind default values of optional arguments.
@@ -613,7 +603,7 @@ def normalize_subs_input(subs):
         for func in funcs:
             if not callable(func):
                 raise ValueError(
-                    "subs values must be functions or lists of functions. The offending entry is\n " f"{func}"
+                    f"subs values must be functions or lists of functions. The offending entry is\n {func}"
                 )
     return normalized
 
@@ -645,7 +635,7 @@ class Subs:
         self.data[instance] = normalize_subs_input(value)
 
 
-def snake_cyclers(cyclers: List[Cycler], snake_booleans: List[bool]) -> Cycler:
+def snake_cyclers(cyclers: list[Cycler], snake_booleans: list[bool]) -> Cycler:
     """
     Combine cyclers with a 'snaking' back-and-forth order.
     If none of the cyclers are "snaked" this is equivalent to taking the product of all the cyclers.
@@ -831,6 +821,14 @@ class PersistentDict(collections.abc.MutableMapping):
     """
 
     def __init__(self, directory):
+        try:
+            import zict
+        except ImportError as e:
+            raise RuntimeError(
+                "In order to use PersistentDict you must install zict. "
+                "zict v3 has the limitation that only one Python process "
+                "can reliably work with the data files at a time."
+            ) from e
         self._directory = directory
         self._file = zict.File(directory)
         self._func = zict.Func(self._dump, self._load, self._file)
@@ -1029,10 +1027,8 @@ def install_remote_qt_kicker(loop=None, update_rate=0.03):
 
     import matplotlib.backends.backend_qt
     from matplotlib._pylab_helpers import Gcf
-    from matplotlib.backends.backend_qt import _create_qApp
 
-    _create_qApp()
-    qApp = matplotlib.backends.backend_qt.qApp
+    qApp = matplotlib.backends.backend_qt._create_qApp()
 
     try:
         _draw_all = Gcf.draw_all  # mpl version >= 1.5
@@ -1243,11 +1239,14 @@ def make_decorator(wrapper):
 
     Example of a decorator:
     >>> some_decorator = make_decorator(some_wrapper)  # returns decorator
-    >>> customized_count = some_decorator(count)  # returns generator func
+    >>> customized_count = some_decorator()(count)  # returns generator func
     >>> plan = customized_count([det])  # returns a generator instance
 
     This turns a 'wrapper' into a decorator, which accepts a generator
-    function and returns a generator function.
+    function and returns a generator function. Additional arguments
+    given to ``some_decorator(arg0, kwarg0=...)(count)`` will be
+    passed to the wrapper as ``some_wrapper(plan, arg0, kwarg0=...)``.
+
     """
 
     @wraps(wrapper)
@@ -1877,14 +1876,14 @@ def is_movable(obj):
     return isinstance(obj, Movable) and isinstance(obj, Readable)
 
 
-def get_hinted_fields(obj) -> List[str]:
+def get_hinted_fields(obj) -> list[str]:
     if isinstance(obj, HasHints):
         return obj.hints.get("fields", [])
     else:
         return []
 
 
-already_warned: Dict[Any, bool] = {}
+already_warned: dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
@@ -1899,7 +1898,7 @@ https://github.com/bluesky/bluesky/issues"""
         warnings.warn(error_msg)  # noqa: B028
 
 
-def maybe_update_hints(hints: Dict[str, Hints], obj):
+def maybe_update_hints(hints: dict[str, Hints], obj):
     if isinstance(obj, HasHints):
         hints[obj.name] = obj.hints
 
@@ -1929,13 +1928,15 @@ async def maybe_collect_asset_docs(
             yield doc
 
 
+def _isawaitable(value: SyncOrAsync[T]) -> TypeIs[Awaitable[T]]:
+    return inspect.isawaitable(value)
+
+
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
-    if inspect.isawaitable(ret):
+    if _isawaitable(ret):
         return await ret
     else:
-        # Mypy does not understand how to narrow type to non-awaitable in this
-        # instance, see https://github.com/python/mypy/issues/15520
-        return ret  # type: ignore
+        return ret
 
 
 class Plan:
@@ -1946,7 +1947,7 @@ class Plan:
         self._stack = traceback.format_stack()
         self._stack = self._stack[:-2]
         self._stack += [
-            f"RuntimeWarning: plan `{f.__name__}` was never iterated" ", did you mean to use `yield from`?"
+            f"RuntimeWarning: plan `{f.__name__}` was never iterated, did you mean to use `yield from`?"
         ]
 
     def __iter__(self):
@@ -1969,6 +1970,10 @@ class Plan:
     def throw(self, typ, val=None, tb=None):
         self._stack = None
         return self._iter.throw(typ, val, tb)
+
+    def close(self):
+        self._stack = None
+        return self._iter.close()
 
 
 def plan(bs_plan):

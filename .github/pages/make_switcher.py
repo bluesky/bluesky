@@ -1,30 +1,32 @@
+"""Make switcher.json to allow docs to switch between different versions."""
+
 import json
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
-from typing import List, Optional
 
 
-def report_output(stdout: bytes, label: str) -> List[str]:
+def report_output(stdout: bytes, label: str) -> list[str]:
+    """Print and return something received frm stdout."""
     ret = stdout.decode().strip().split("\n")
     print(f"{label}: {ret}")
     return ret
 
 
-def get_branch_contents(ref: str) -> List[str]:
+def get_branch_contents(ref: str) -> list[str]:
     """Get the list of directories in a branch."""
     stdout = check_output(["git", "ls-tree", "-d", "--name-only", ref])
     return report_output(stdout, "Branch contents")
 
 
-def get_sorted_tags_list() -> List[str]:
+def get_sorted_tags_list() -> list[str]:
     """Get a list of sorted tags in descending order from the repository."""
     stdout = check_output(["git", "tag", "-l", "--sort=-v:refname"])
     return report_output(stdout, "Tags list")
 
 
-def get_versions(ref: str, add: Optional[str]) -> List[str]:
+def get_versions(ref: str, add: str | None) -> list[str]:
     """Generate the file containing the list of all GitHub Pages builds."""
     # Get the directories (i.e. builds) from the GitHub Pages branch
     try:
@@ -41,7 +43,7 @@ def get_versions(ref: str, add: Optional[str]) -> List[str]:
     tags = get_sorted_tags_list()
 
     # Make the sorted versions list from main branches and tags
-    versions: List[str] = []
+    versions: list[str] = []
     for version in ["master", "main"] + tags:
         if version in builds:
             versions.append(version)
@@ -53,7 +55,8 @@ def get_versions(ref: str, add: Optional[str]) -> List[str]:
     return versions
 
 
-def write_json(path: Path, repository: str, versions: str):
+def write_json(path: Path, repository: str, versions: list[str]):
+    """Write the JSON switcher to path."""
     org, repo_name = repository.split("/")
     struct = [
         {"version": version, "url": f"https://{org}.github.io/{repo_name}/{version}/"} for version in versions
@@ -64,6 +67,7 @@ def write_json(path: Path, repository: str, versions: str):
 
 
 def main(args=None):
+    """Parse args and write switcher."""
     parser = ArgumentParser(description="Make a versions.json file from gh-pages directories")
     parser.add_argument(
         "--add",
