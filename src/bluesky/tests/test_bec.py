@@ -132,12 +132,12 @@ def test_push_start_document(capsys):
     assert f"Transient Scan ID: {scan_id}" in captured.out, "BestEffortCallback: Scan ID is not printed correctly"
 
     tt = datetime.fromtimestamp(time).utctimetuple()
-    assert f"Time: {ttime.strftime('%Y-%m-%d %H:%M:%S', tt)}" in captured.out, (
-        "BestEffortCallback: Scan time is not printed correctly"
-    )
-    assert f"Persistent Unique Scan ID: '{uid}'" in captured.out, (
-        "BestEffortCallback: Scan UID is not printed correctly"
-    )
+    assert (
+        f"Time: {ttime.strftime('%Y-%m-%d %H:%M:%S', tt)}" in captured.out
+    ), "BestEffortCallback: Scan time is not printed correctly"
+    assert (
+        f"Persistent Unique Scan ID: '{uid}'" in captured.out
+    ), "BestEffortCallback: Scan UID is not printed correctly"
 
 
 def test_multirun_nested_plan(capsys, caplog, RE, hw):
@@ -179,9 +179,9 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     # Check if the expected error message is printed once the callback fails. The same
     #   substring will be used in the second part of the test to check if BEC did not fail.
     err_msg_substr = "is being suppressed to not interrupt plan execution"
-    assert err_msg_substr in str(caplog.text), (
-        "Best Effort Callback failed, but expected error message was not printed"
-    )
+    assert err_msg_substr in str(
+        caplog.text
+    ), "Best Effort Callback failed, but expected error message was not printed"
 
     RE.unsubscribe(bec_token)
     caplog.clear()

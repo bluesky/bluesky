@@ -523,13 +523,13 @@ def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
     # Generate the list of positions based on
     positions_expected, snaking_expected = _grid_scan_position_list(args=args, snake_axes=snake_axes)
 
-    assert snaking == snaking_expected, (
-        "The contents of the 'snaking' field in the start document does not match the expected values"
-    )
+    assert (
+        snaking == snaking_expected
+    ), "The contents of the 'snaking' field in the start document does not match the expected values"
 
-    assert set(positions.keys()) == set(positions_expected.keys()), (
-        "Different set of motors in dictionaries of actual and expected positions"
-    )
+    assert set(positions.keys()) == set(
+        positions_expected.keys()
+    ), "Different set of motors in dictionaries of actual and expected positions"
 
     # The dictionary of the initial postiions
     motor_pos_shift = {_motor.name: _pos for (_motor, _pos) in zip(motors, motors_pos)}

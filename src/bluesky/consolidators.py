@@ -107,7 +107,7 @@ class ConsolidatorBase:
         # Find datum shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
-        self.datum_shape = self.datum_shape if self.datum_shape != (1,) else ()
+        self.datum_shape = () if self.datum_shape == (1,) and self.stackable else self.datum_shape
 
         # Determine data type. From highest precedent to lowest:
         # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
@@ -193,10 +193,20 @@ class ConsolidatorBase:
         # If chunk shape is less than or equal to the total shape dimensions, chunk each specified dimension
         # starting from the leading dimension
         if len(self.chunk_shape) <= len(self.shape):
-            return tuple(
-                list_summands(ddim, cdim)
-                for ddim, cdim in zip(self.shape[: len(self.chunk_shape)], self.chunk_shape)
-            ) + tuple((d,) for d in self.shape[len(self.chunk_shape) :])
+            if self.stackable or (not self.stackable and self.join_chunks) or len(self.chunk_shape) == 0:
+                result = tuple(
+                    list_summands(ddim, cdim)
+                    for ddim, cdim in zip(self.shape[: len(self.chunk_shape)], self.chunk_shape)
+                )
+            else:
+                result = (
+                    list_summands(self.datum_shape[0], self.chunk_shape[0], repeat=self._num_rows),
+                    *[
+                        list_summands(ddim, cdim)
+                        for ddim, cdim in zip(self.shape[1 : len(self.chunk_shape)], self.chunk_shape[1:])
+                    ],
+                )
+            return result + tuple((d,) for d in self.shape[len(self.chunk_shape) :])
 
         # If chunk shape is longer than the total shape dimensions, raise an error
         else:

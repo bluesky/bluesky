@@ -297,9 +297,9 @@ def test_chunk_outer_product_args_4(hw, args, chunked_args, pattern):
     for n, a in enumerate(chunked_args):
         chunked_args[n] = tuple([getattr(hw, _) if isinstance(_, str) else _ for _ in a])
 
-    assert list(chunk_outer_product_args(args, pattern)) == chunked_args, (
-        "Argument list was split into chunks incorrectly"
-    )
+    assert (
+        list(chunk_outer_product_args(args, pattern)) == chunked_args
+    ), "Argument list was split into chunks incorrectly"
 
 
 def test_chunk_outer_product_args_failing(hw):
@@ -417,9 +417,9 @@ def test_outer_product(hw, args):
 
     positions_expected = _gen_outer_product(args)
 
-    assert set(positions.keys()) == set(positions_expected.keys()), (
-        "Different set of motors in dictionaries of actual and expected positions"
-    )
+    assert set(positions.keys()) == set(
+        positions_expected.keys()
+    ), "Different set of motors in dictionaries of actual and expected positions"
 
     for name in positions_expected.keys():
         npt.assert_array_almost_equal(
