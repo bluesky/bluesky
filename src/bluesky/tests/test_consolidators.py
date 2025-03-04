@@ -108,6 +108,18 @@ def image_seq_stream_resource_factory():
 
 
 @pytest.fixture
+def csv_stream_resource_factory():
+    return lambda data_key, chunk_shape: {
+        "data_key": data_key,
+        "mimetype": "text/csv;header=absent",
+        "uri": "file://localhost/test/file/path",
+        "resource_path": "test_file.csv",
+        "parameters": {"chunk_shape": chunk_shape},
+        "uid": f"stream-resource-uid-{data_key}",
+    }
+
+
+@pytest.fixture
 def stream_datum_factory():
     return lambda data_key, indx, i_start, i_stop: {
         "seq_nums": {"start": i_start + 1, "stop": i_stop + 1},
@@ -189,6 +201,41 @@ def test_tiff_and_jpeg_shape(
 
     # Stackable case here corresponds to multipage tiffs (AD does not support them though)
     assert len(cons.assets) == 5 * points_per_event if not stackable else 5
+
+
+# Tuples of (data_key, chunk_shape, expected_shape, expected_chunks)
+csv_testdata = [
+    # 5 events, 1 or 7 array per event, 1 element in array
+    ("test_arr", (1,), (5, 3), ((1,) * 5, (3,))),
+    ("test_7_arrs", (1,), (35, 3), ((1,) * 35, (3,))),
+    ("test_arr", (), (5, 3), ((5,), (3,))),
+    ("test_7_arrs", (), (35, 3), ((35,), (3,))),
+    ("test_arr", (10,), (5, 3), ((1,) * 5, (3,))),
+    ("test_7_arrs", (10,), (35, 3), ((7, 7, 7, 7, 7), (3,))),
+    ("test_7_arrs", (3,), (35, 3), ((3, 3, 1) * 5, (3,))),
+]
+
+
+@pytest.mark.parametrize("data_key, chunk_shape, expected_shape, expected_chunks", csv_testdata)
+def test_csv_shape_and_chunks(
+    descriptor,
+    csv_stream_resource_factory,
+    stream_datum_factory,
+    data_key,
+    chunk_shape,
+    expected_shape,
+    expected_chunks,
+):
+    stream_resource = csv_stream_resource_factory(data_key=data_key, chunk_shape=chunk_shape)
+    cons = consolidator_factory(stream_resource, descriptor)
+    assert not cons.stackable
+    assert not cons.join_chunks
+    assert cons.shape == (0, *expected_shape[1:])
+    for i in range(5):
+        doc = stream_datum_factory(data_key, i, i, i + 1)
+        cons.consume_stream_datum(doc)
+    assert cons.shape == expected_shape
+    assert cons.chunks == expected_chunks
 
 
 # Tuples of (data_key, stackable, join_chunks, chunk_shape, expected_chunks)
