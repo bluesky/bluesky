@@ -258,7 +258,7 @@ class _RunWriter(CallbackBase):
                 key=handler.data_key,
                 structure_family=StructureFamily.array,
                 data_sources=[handler.get_data_source()],
-                metadata=sres_doc,
+                metadata={},
                 specs=[],
             )
 

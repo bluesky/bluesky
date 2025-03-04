@@ -157,7 +157,7 @@ value may be of any type, but it is **strongly** recommended that manually assig
 human-readable informative strings.
 
 The new 'inner' run can be opened from within the 'outer' run only if the run keys of the 'inner' and
-'outer' scans are different. Otherwise the plan exectuion fails.
+'outer' scans are different. Otherwise the plan execution fails.
 
 The run key is used by Run Engine
 

@@ -19,15 +19,10 @@ from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import ParamSpec, TypedDict, Unpack
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
-
-try:
-    from typing import ParamSpec
-except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore
 
 
 # TODO: these are not placed in Events by RE yet
