@@ -335,14 +335,17 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         self.chunk_shape = self.chunk_shape or (1,)  # I.e. number of frames per file (tiff, jpeg, etc.)
         if not self.stackable:
             assert self.datum_shape[0] % self.chunk_shape[0] == 0, (
-                f"Number of frames per file ({self.chunk_shape[0]}) must divide the total number of frames per"
+                f"Number of frames per file ({self.chunk_shape[0]}) must divide the total number of frames per "
                 f"datum ({self.datum_shape[0]}): variable-sized files are not allowed."
             )
 
-        # Normalize filename template:
-        # Convert the template string from "old" to "new" Python style
-        # e.g. "%s%s_%06d.tif" to "filename_{:06d}.tif"
         def int_replacer(match):
+            """Normalize filename template
+
+            Replace an integer format specifier with a new-style format specifier, i.e. convert the template string
+            from "old" to "new" Python style, e.g. "%s%s_%06d.tif" to "filename_{:06d}.tif"
+
+            """
             flags, width, precision, type_char = match.groups()
 
             # Handle the flags
@@ -388,7 +391,18 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         return self.uri + self.template.format(indx)
 
     def consume_stream_datum(self, doc: StreamDatum):
-        # Determine the indices in the names of tiff files from indices of datums and number of frames per file
+        """Determine the number and names of files from indices of datums and the number of files per datum.
+
+        In the most general case, each file may be a multipage tiff or a stack of images (frames) and a single
+        datum may be composed of multiple such files, leading to a total of self.datum_shape[0] frames.
+        Since each file necessarily represents a single chunk (tiffs can not be sub-chunked), the number of
+        frames per file is equal to the leftmost chunk_shape dimension, self.chunk_shape[0].
+        The number of files produced per each datum is then the ratio of these two numbers.
+
+        If the dataset is stackable, we assume that each datum becomes its own index in the new leftmost dimension
+        of the resulting dataset, and hence corresponds to a single file.
+        """
+
         files_per_datum = self.datum_shape[0] // self.chunk_shape[0] if not self.stackable else 1
         first_file_indx = doc["indices"]["start"] * files_per_datum
         last_file_indx = doc["indices"]["stop"] * files_per_datum
