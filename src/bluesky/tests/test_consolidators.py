@@ -23,6 +23,13 @@ def descriptor():
                 "external": "STREAM:",
                 "object_name": "test_object",
             },
+            "test_6_imgs": {
+                "shape": [6, 10, 15],
+                "dtype": "array",
+                "dtype_numpy": "<f8",
+                "external": "STREAM:",
+                "object_name": "test_object",
+            },
             "test_cube": {
                 "shape": [1, 10, 15, 3],
                 "dtype": "array",
@@ -130,7 +137,7 @@ def stream_datum_factory():
     }
 
 
-# Tuples of (data_key, points_per_event, stackable, expected_shape)
+# Tuples of (data_key, frames_per_datum, stackable, expected_shape)
 shape_testdata = [
     # 5 events, 1 or 7 image per event, 10x15 pixels
     ("test_img", 1, False, (5, 10, 15)),
@@ -155,9 +162,9 @@ shape_testdata = [
 ]
 
 
-@pytest.mark.parametrize("data_key, points_per_event, stackable, expected", shape_testdata)
+@pytest.mark.parametrize("data_key, frames_per_datum, stackable, expected", shape_testdata)
 def test_hdf5_shape(
-    descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, points_per_event, stackable, expected
+    descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, frames_per_datum, stackable, expected
 ):
     stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=())
     cons = HDF5Consolidator(stream_resource, descriptor)
@@ -172,19 +179,19 @@ def test_hdf5_shape(
 supported_image_seq_formats = ["jpeg", "tiff"]
 
 
-@pytest.mark.parametrize("data_key, points_per_event, stackable, expected", shape_testdata)
+@pytest.mark.parametrize("data_key, frames_per_datum, stackable, expected", shape_testdata)
 @pytest.mark.parametrize("image_format", supported_image_seq_formats)
-@pytest.mark.parametrize("files_per_stream_datum", [1, 2, 3, 5])
+@pytest.mark.parametrize("indx_per_stream_datum_doc", [1, 2, 3, 5])
 def test_tiff_and_jpeg_shape(
     descriptor,
     image_seq_stream_resource_factory,
     stream_datum_factory,
     image_format,
     data_key,
-    points_per_event,
+    frames_per_datum,
     stackable,
     expected,
-    files_per_stream_datum,
+    indx_per_stream_datum_doc,
 ):
     stream_resource = image_seq_stream_resource_factory(
         image_format=image_format, data_key=data_key, chunk_shape=(1,)
@@ -192,15 +199,15 @@ def test_tiff_and_jpeg_shape(
     cons = consolidator_factory(stream_resource, descriptor)
     cons.stackable = stackable
     assert cons.shape == (0, *expected[1:])
-    for i in range(ceil(5 / files_per_stream_datum)):
+    for i in range(ceil(5 / indx_per_stream_datum_doc)):
         doc = stream_datum_factory(
-            data_key, i, i * files_per_stream_datum, min((i + 1) * files_per_stream_datum, 5)
+            data_key, i, i * indx_per_stream_datum_doc, min((i + 1) * indx_per_stream_datum_doc, 5)
         )
         cons.consume_stream_datum(doc)
     assert cons.shape == expected
 
     # Stackable case here corresponds to multipage tiffs (AD does not support them though)
-    assert len(cons.assets) == 5 * points_per_event if not stackable else 5
+    assert len(cons.assets) == 5 * frames_per_datum if not stackable else 5
 
 
 # Tuples of (data_key, chunk_shape, expected_shape, expected_chunks)
@@ -239,7 +246,7 @@ def test_csv_shape_and_chunks(
 
 
 # Tuples of (data_key, stackable, join_chunks, chunk_shape, expected_chunks)
-chunk_testdata = [
+chunk_hdf5_testdata = [
     ("test_img", True, True, (), ((5,), (1,), (10,), (15,))),
     ("test_img", True, True, (1, 1, 10, 15), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
     ("test_img", True, True, (2,), ((2, 2, 1), (1,), (10,), (15,))),
@@ -329,8 +336,8 @@ chunk_testdata = [
 ]
 
 
-@pytest.mark.parametrize("data_key, stackable, join_chunks, chunk_shape, expected", chunk_testdata)
-def test_chunks(
+@pytest.mark.parametrize("data_key, stackable, join_chunks, chunk_shape, expected", chunk_hdf5_testdata)
+def test_hdf5_chunks(
     descriptor,
     hdf5_stream_resource_factory,
     stream_datum_factory,
@@ -349,3 +356,63 @@ def test_chunks(
         doc = stream_datum_factory(data_key, i, i, i + 1)
         cons.consume_stream_datum(doc)
     assert cons.chunks == expected
+
+
+# Tuples of (data_key, stackable, join_chunks, frames_per_datum, indx_per_stream_datum_doc, chunk_shape, expected_chunks) # noqa
+chunk_tiff_testdata = [
+    ("test_img", True, True, 1, 1, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_img", True, True, 1, 2, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_img", True, True, 1, 5, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_6_imgs", True, True, 6, 1, (1,), ((1,) * 5, (6,), (10,), (15,))),
+    ("test_6_imgs", False, True, 6, 1, (1,), ((1,) * 30, (10,), (15,))),
+    ("test_6_imgs", True, True, 6, 2, (2,), ((2, 2, 1), (6,), (10,), (15,))),
+    ("test_6_imgs", False, True, 6, 2, (2,), ((2,) * 15, (10,), (15,))),
+    ("test_6_imgs", True, True, 6, 4, (3,), ((3, 2), (6,), (10,), (15,))),
+    ("test_6_imgs", False, True, 6, 4, (3,), ((3,) * 10, (10,), (15,))),
+    ("test_6_imgs", True, True, 6, 1, (5,), None),  # chunk_shape[0] must devide the number of frames
+    ("test_6_imgs", False, True, 6, 1, (5,), None),
+    ("test_6_imgs", False, True, 6, 10, (10,), None),
+]
+
+
+@pytest.mark.parametrize(
+    "data_key, stackable, join_chunks, frames_per_datum, indx_per_stream_datum_doc, chunk_shape, expected_chunks",
+    chunk_tiff_testdata,
+)
+@pytest.mark.parametrize("image_format", supported_image_seq_formats)
+def test_tiff_and_jpeg_chunks(
+    descriptor,
+    image_seq_stream_resource_factory,
+    stream_datum_factory,
+    image_format,
+    data_key,
+    stackable,
+    join_chunks,
+    frames_per_datum,
+    indx_per_stream_datum_doc,
+    chunk_shape,
+    expected_chunks,
+):
+    """Test the chunking of (possibly multipage) tiff and jpeg datasets and the number of registered files."""
+
+    stream_resource = image_seq_stream_resource_factory(
+        image_format=image_format, data_key=data_key, chunk_shape=chunk_shape
+    )
+    if expected_chunks is None:
+        with pytest.raises(AssertionError):
+            cons = consolidator_factory(stream_resource, descriptor)
+        return
+
+    cons = consolidator_factory(stream_resource, descriptor)
+    cons.stackable = stackable
+    cons.join_chunks = join_chunks
+    assert cons.chunks == ((0,), *expected_chunks[1:])
+    for i in range(ceil(5 / indx_per_stream_datum_doc)):
+        doc = stream_datum_factory(
+            data_key, i, i * indx_per_stream_datum_doc, min((i + 1) * indx_per_stream_datum_doc, 5)
+        )
+        cons.consume_stream_datum(doc)
+    assert cons.chunks == expected_chunks
+
+    # Check the number of registered files
+    assert len(cons.assets) == 5 * frames_per_datum / expected_chunks[0][0] if not stackable else 5
