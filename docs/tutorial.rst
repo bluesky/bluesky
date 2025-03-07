@@ -1220,7 +1220,7 @@ For more possibilities, see :doc:`simulation`.
 .. _tutorial_device:
 
 Devices
-========
+=======
 
 Theory
 ------
