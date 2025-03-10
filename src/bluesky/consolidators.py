@@ -5,13 +5,10 @@ import os
 from collections.abc import Sequence
 from typing import Any, Optional
 
-import h5py
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
-from tiled.adapters.hdf5 import HDF5Adapter
 from tiled.mimetypes import DEFAULT_ADAPTERS_BY_MIMETYPE
 from tiled.structures.array import ArrayStructure, BuiltinDtype
-from tiled.utils import path_from_uri
 
 DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
 
@@ -244,29 +241,7 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_factory = all_adapters_by_mimetype[self.mimetype]
 
-        # Construct kwargs to pass to Adapter.
-        parameters = collections.defaultdict(list)
-        for asset in self.assets:
-            if asset.parameter is None:
-                # This asset is not directly opened by the Adapter. It is used indirectly, such as the case of HDF5
-                # virtual dataset 'data' files are referenced from 'master' files.
-                continue
-            if asset.num is None:
-                # This parameters takes the URI as a scalar value.
-                parameters[asset.parameter] = asset.data_uri
-            else:
-                # This parameters takes a list of URIs.
-                parameters[asset.parameter].append(asset.data_uri)
-
-        parameters["structure"] = ArrayStructure(
-            data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
-            shape=self.shape,
-            chunks=self.chunks,
-        )
-        adapter_kwargs = dict(parameters)
-        adapter_kwargs.update(self.adapter_parameters)
-
-        return adapter_factory(**adapter_kwargs)
+        return adapter_factory.from_uris(self.uri, **self.adapter_parameters)
 
 
 class HDF5Consolidator(ConsolidatorBase):
@@ -284,18 +259,7 @@ class HDF5Consolidator(ConsolidatorBase):
         dataset: List[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
-
-    def get_adapter(self):
-        fpath = path_from_uri(self.uri)
-        f = h5py.File(fpath, "r", swmr=True)
-        adapter = HDF5Adapter.from_file(f)
-        # adapter = HDF5Adapter.from_uri(self.uri, swmr=True)   # <- Does not work if the file is opened by reader!
-
-        for segment in self.adapter_parameters["dataset"]:
-            adapter = adapter.get(segment)
-
-        return adapter
+        return {"dataset": self._sres_parameters["dataset"], "swmr": self.swmr}
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):
