@@ -21,7 +21,7 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .protocols import Flyable, Movable, NamedMovable, Readable, Collectable
+from .protocols import Collectable, Flyable, Movable, NamedMovable, Readable
 from .utils import (
     CustomPlanMetadata,
     Msg,
