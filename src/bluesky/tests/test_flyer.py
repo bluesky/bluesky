@@ -31,7 +31,7 @@ def collect_while_completing_plan(flyers, dets, stream_name: str = "test_stream"
     yield from open_run()
     if pre_declare:
         yield from declare_stream(*dets, name=stream_name, collect=True)
-    yield from collect_while_completing(flyers, dets, flush_period=0.1, stream_name=stream_name)
+    yield from collect_while_completing(flyers, dets=dets, flush_period=0.1, stream_name=stream_name)
     yield from close_run()
 
 
