@@ -442,9 +442,9 @@ class RunBundler:
         def emit_event(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
-                assert not args and not kwargs, (
-                    "If subscribe callback called with readings, args and kwargs are not supported."
-                )
+                assert (
+                    not args and not kwargs
+                ), "If subscribe callback called with readings, args and kwargs are not supported."
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
@@ -756,9 +756,9 @@ class RunBundler:
         def is_data_key(obj: Any) -> bool:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
-        assert all(not is_data_key(value) for value in describe_collect.values()), (
-            "Single nested data keys should be pre-declared"
-        )
+        assert all(
+            not is_data_key(value) for value in describe_collect.values()
+        ), "Single nested data keys should be pre-declared"
 
         # Make sure you can't use identical data keys in multiple streams
         # Data structure is assumed to be dict[stream_name, dictionary of key -> data_key]
@@ -1064,9 +1064,9 @@ class RunBundler:
         # If a stream name was provided in the message, check the stream has been declared
         # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
-            assert message_stream_name in declared_stream_names, (
-                "If a message stream name is provided declare stream needs to be called first."
-            )
+            assert (
+                message_stream_name in declared_stream_names
+            ), "If a message stream name is provided declare stream needs to be called first."
             stream_name = message_stream_name
         elif declared_stream_names:
             assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations

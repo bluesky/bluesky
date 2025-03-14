@@ -134,9 +134,9 @@ def test_is_movable(hw):
         (hw.motor, True),
     ]
     for obj, result in obj_list:
-        assert is_movable(obj) == result, (
-            f"The object {obj} is incorrectly recognized as {'' if result else 'not '}movable"
-        )
+        assert (
+            is_movable(obj) == result
+        ), f"The object {obj} is incorrectly recognized as {'' if result else 'not '}movable"
 
 
 # Indicates if the step when all external references to callables are deleted is included.
@@ -360,9 +360,9 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             rand_value = np.random.rand()  # Some value that is expected to be part of the function output
             cb.process(sig_name, list_out, kwarg_value=rand_value)
 
-            assert len(list_out) == len([_ for _ in i_sig if _ >= n_start_check]), (
-                "Output list has incorrect number of entries"
-            )
+            assert len(list_out) == len(
+                [_ for _ in i_sig if _ >= n_start_check]
+            ), "Output list has incorrect number of entries"
             for n in i_sig:
                 if n >= n_start_check:
                     expected_substr = _f_print(obj_name[n], rand_value)
@@ -391,12 +391,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
                 assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():
-                    assert len(cb._func_cid_map[sig_name]) == n_objects, (
-                        f"Incorrect number of callbacks for '{sig_name}'"
-                    )
-                    assert len(cb.callbacks[sig_name]) == n_objects, (
-                        f"Incorrect number of callbacks for '{sig_name}'"
-                    )
+                    assert (
+                        len(cb._func_cid_map[sig_name]) == n_objects
+                    ), f"Incorrect number of callbacks for '{sig_name}'"
+                    assert (
+                        len(cb.callbacks[sig_name]) == n_objects
+                    ), f"Incorrect number of callbacks for '{sig_name}'"
 
                 _process_each_signal()
 
@@ -407,12 +407,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 assert len(cb.callbacks) == len(sigs_remaining), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():  # noqa: B007
                     if sig_name in sigs_remaining:
-                        assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
-                            f"Incorrect number of callbacks for '{sig_name}'"
-                        )
-                        assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
-                            f"Incorrect number of callbacks for '{sig_name}'"
-                        )
+                        assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(
+                            sig_name
+                        ), f"Incorrect number of callbacks for '{sig_name}'"
+                        assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(
+                            sig_name
+                        ), f"Incorrect number of callbacks for '{sig_name}'"
 
                 _process_each_signal(n_start_check=n + 1)
 
@@ -432,12 +432,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
             assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
             for sig_name, n_objects in signals.items():  # noqa: B007
-                assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
-                    f"Incorrect number of callbacks for '{sig_name}'"
-                )
-                assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
-                    f"Incorrect number of callbacks for '{sig_name}'"
-                )
+                assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(
+                    sig_name
+                ), f"Incorrect number of callbacks for '{sig_name}'"
+                assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(
+                    sig_name
+                ), f"Incorrect number of callbacks for '{sig_name}'"
             _process_each_signal(n_start_check=n + 1)
 
 
