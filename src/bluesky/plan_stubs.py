@@ -996,7 +996,7 @@ def collect(
 
 
 @plan
-def collect_while_completing(flyers, dets=None, flush_period=None, stream_name=None):
+def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
     data from one or more Collectable detectors until all are done.
@@ -1030,10 +1030,7 @@ def collect_while_completing(flyers, dets=None, flush_period=None, stream_name=N
     done = False
     while not done:
         done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False)
-        if dets is None:
-            yield from collect(*flyers, name=stream_name)
-        else:
-            yield from collect(*dets, name=stream_name)
+        yield from collect(*dets, name=stream_name)
 
 
 @plan
