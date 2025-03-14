@@ -241,9 +241,7 @@ class LivePlot(QtAwareCallback):
             print(f"LivePlot did not get any data that corresponds to the y axis. {self.y}")
         if len(self.y_data) != len(self.x_data):
             print(
-                "LivePlot has a different number of elements for x ({}) and y ({})".format(  # noqa: UP032
-                    len(self.x_data), len(self.y_data)
-                )
+                f"LivePlot has different number of elements for x ({len(self.x_data)}) and y ({len(self.y_data)})"
             )
         super().stop(doc)
 
@@ -396,10 +394,7 @@ class LiveMesh(LiveScatter):
     __doc__ = LiveScatter.__doc__
 
     def __init__(self, *args, **kwargs):
-        warnings.warn(  # noqa: B028
-            "LiveMesh has been renamed to LiveScatter. The name "
-            "LiveMesh will eventually be removed. Use LiveScatter."
-        )
+        warnings.warn("LiveMesh has been renamed to LiveScatter and will eventually be removed. Use LiveScatter.")  # noqa: B028
         super().__init__(*args, **kwargs)
 
 
@@ -592,10 +587,7 @@ class LiveRaster(LiveGrid):
     __doc__ = LiveGrid.__doc__
 
     def __init__(self, *args, **kwargs):
-        warnings.warn(  # noqa: B028
-            "LiveRaster has been renamed to LiveGrid. The name "
-            "LiveRaster will eventually be removed. Use LiveGrid."
-        )
+        warnings.warn("LiveRaster has been renamed to LiveGrid and will eventually be removed. Use LiveGrid.")  # noqa: B028
         super().__init__(*args, **kwargs)
 
 
@@ -743,3 +735,202 @@ def plot_peak_stats(peak_stats, ax=None):
     legend = ax.legend(loc="best")
     arts.update({"points": points, "vlines": vlines, "legend": legend})
     return arts
+
+
+@make_class_safe(logger=logger)
+class LiveStreamPlot(QtAwareCallback):
+    """Produce an updatable plot from StreamDatums.
+
+    Parameters
+    ----------
+    cl : CollectLiveStream
+        Bluesky callback that stitches together StreamDatums and Events and
+        allows for fast random and bulk access to them via Consolidator objects.
+    data_key : str
+        The identifier of a dataset to plot
+
+    y : str
+        the name of a data field in an Event
+    x : str, optional
+        the name of a data field in an Event, or 'seq_num' or 'time'
+        If None, use the Event's sequence number.
+        Special case: If the Event's data includes a key named 'seq_num' or
+        'time', that takes precedence over the standard 'seq_num' and 'time'
+        recorded in every Event.
+    legend_keys : list, optional
+        The list of keys to extract from the RunStart document and format
+        in the legend of the plot. The legend will always show the
+        scan_id followed by a colon ("1: ").  Each
+    xlim : tuple, optional
+        passed to Axes.set_xlim
+    ylim : tuple, optional
+        passed to Axes.set_ylim
+    clim : tuple, optional
+        min and max values for colormap normalization
+    ax : Axes, optional
+        matplotib Axes; if none specified, new figure and axes are made.
+    epoch : {'run', 'unix'}, optional
+        If 'run' t=0 is the time recorded in the RunStart document. If 'unix',
+        t=0 is 1 Jan 1970 ("the UNIX epoch"). Default is 'run'.
+    All additional keyword arguments are passed through to ``Axes.plot``.
+
+
+    Note: If your figure blocks the main thread when you are trying to
+    scan with this callback, call `plt.ion()` in your IPython session.
+    """
+
+    def __init__(
+        self,
+        cl,
+        data_key,
+        y=None,
+        x=None,
+        *,
+        ax=None,
+        **kwargs,
+    ):
+        super().__init__(use_teleporter=kwargs.pop("use_teleporter", None))
+        self.__setup_lock = threading.Lock()
+        self.__setup_event = threading.Event()
+
+        self.cl = cl
+        self.data_key = data_key
+        self.axes_keys = []
+        self._monitored_sres_uids = []
+        self._init_kwargs = kwargs
+
+        self.ax = ax
+        self._plot_type = None
+
+    def start(self, doc):
+        self._start_doc = doc
+
+        with self.__setup_lock:
+            if self.__setup_event.is_set():
+                return
+            self.__setup_event.set()
+
+        import matplotlib.pyplot as plt
+
+        if self.ax is None:
+            fig, self.ax = plt.subplots()
+
+        # Clean the axis and remove any exisiting colorbars
+        if self.ax.images and self.ax.images[-1].colorbar:
+            self.ax.images[-1].colorbar.remove()
+        self.ax.cla()
+
+        super().start(doc)
+
+    def setup_line_plot(self, ax, xlim=None, ylim=None, title=None, xlabel=None, ylabel=None, **kwargs):
+        self.ax.plot([], [])  # Initialize the line
+        ax.set_xlabel(xlabel or "scan no.")
+        ax.set_ylabel(ylabel or "value")
+        self.ax.set_title(title or self.data_key)
+
+    def setup_grid_plot(
+        self,
+        ax,
+        datum_shape,
+        clim=None,
+        cmap="viridis",
+        xlabel="x",
+        ylabel="y",
+        extent=None,
+        aspect="equal",
+        x_positive="right",
+        y_positive="up",
+        title=None,
+        **kwargs,
+    ):
+        import matplotlib.colors as mcolors
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+        # Set Up axes
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_aspect(aspect)
+        self.ax.set_title(
+            title or "scan {uid} [{sid}]".format(sid=self._start_doc["scan_id"], uid=self._start_doc["uid"][:6])
+        )
+
+        self._data = np.empty(datum_shape)
+        self._norm = mcolors.Normalize()
+        if clim is not None:
+            self._norm.vmin, self._norm.vmax = clim
+
+        im = self.ax.imshow(
+            self._data,
+            norm=self._norm,
+            cmap=cmap,
+            interpolation="none",
+            extent=extent,
+            aspect=aspect,
+            origin="lower",
+        )
+        cax = make_axes_locatable(self.ax).append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, cax=cax)
+
+        # make sure the 'positive direction' of the axes matches what is defined in axes_positive
+        xmin, xmax = ax.get_xlim()
+        if (xmin > xmax and x_positive == "right") or (xmax > xmin and x_positive == "left"):
+            ax.set_xlim(xmax, xmin)
+        elif (xmax >= xmin and x_positive == "right") or (xmin >= xmax and x_positive == "left"):
+            ax.set_xlim(xmin, xmax)
+        else:
+            raise ValueError('x_positive must be either "right" or "left"')
+
+        ymin, ymax = ax.get_ylim()
+        if (ymin > ymax and y_positive == "up") or (ymax > ymin and y_positive == "down"):
+            ax.set_ylim(ymax, ymin)
+        elif (ymax >= ymin and y_positive == "up") or (ymin >= ymax and y_positive == "down"):
+            ax.set_ylim(ymin, ymax)
+        else:
+            raise ValueError('y_positive must be either "up" or "down"')
+
+    def descriptor(self, doc):
+        if (self._plot_type is None) and (self.data_key in doc["data_keys"].keys()):
+            datum_shape = tuple(doc["data_keys"][self.data_key]["shape"])
+            if len(datum_shape) < 2:
+                self._plot_type = "line_plot"
+                self.setup_line_plot(self.ax, datum_shape, **self._init_kwargs)
+            elif len(datum_shape) == 2:
+                self._plot_type = "grid_plot"
+                self.setup_grid_plot(self.ax, datum_shape, **self._init_kwargs)
+
+    def stream_resource(self, doc):
+        """Register the uid of StreamResource if it relates to the data_key"""
+        if self.data_key == doc["data_key"]:
+            self._monitored_sres_uids.append(doc["uid"])
+
+    def stream_datum(self, doc):
+        if doc["stream_resource"] in self._monitored_sres_uids:
+            self._update()
+
+    def event(self, doc):
+        super().event(doc)
+
+    def _update(self):
+        adapter = self.cl.get_adapter(self.data_key)
+        arr = adapter.read()
+
+        if self._plot_type == "line_plot":
+            ln = self.ax.get_lines()[0]
+            self._data = arr
+            ln.set_data(range(0, len(self._data)), self._data)
+
+            # Rescale the plot
+            self.ax.relim(visible_only=True)
+            self.ax.autoscale_view(tight=True)
+
+        elif self._plot_type == "grid_plot":
+            self._data = arr[-1, ...]
+            im = self.ax.get_images()[0]
+            im.set_array(self._data)
+
+        # Redraw
+        self.ax.figure.canvas.draw_idle()
+
+    def stop(self, doc):
+        super().stop(doc)

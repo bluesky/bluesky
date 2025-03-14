@@ -2,6 +2,7 @@ import collections
 import dataclasses
 import enum
 import os
+from collections.abc import Sequence
 from typing import Any, Optional
 
 import numpy as np
@@ -111,6 +112,18 @@ class ConsolidatorBase:
         self._has_skips: bool = False
         self._seqnums_to_indices_map: dict[int, int] = {}
 
+        # Set the maximal chunk size; if not specified -- assume single chunk for the entire file
+        self.chunk_size: Sequence[int] = self._sres_parameters.get("chunk_size", self.shape)
+        if isinstance(self.chunk_size, int):
+            # Only the left-most dimension (rows) is chunked; other dimensions are in a single chunk
+            self.chunk_size = (self.chunk_size, *self.datum_shape)
+        else:
+            # Chunk size is specified for each dimension separately as a list or a tuple
+            if len(self.chunk_size) == len(self.datum_shape):
+                self.chunk_size = (0, self.chunk_size)  # Assume the leading dimension is not chunked
+            elif len(self.chunk_size) != len(self.shape):
+                raise RuntimeError(f"Dimensions of chunks {self.chunk_size} do not match the data {self.shape}.")
+
     @classmethod
     def get_supported_mimetype(cls, sres):
         if sres["mimetype"] not in cls.supported_mimetypes:
@@ -172,7 +185,7 @@ class ConsolidatorBase:
         """A dictionary of parameters passed to an Adapter
 
         These parameters are intended to provide any additional information required to read a data source of a
-        specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF
+        specific mimetype, e.g. "dataset" the path into an HDF5 file or "template" the filename pattern of a TIFF
         sequence.
 
         This property is to be subclassed as necessary.
@@ -228,29 +241,7 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_factory = all_adapters_by_mimetype[self.mimetype]
 
-        # Construct kwargs to pass to Adapter.
-        parameters = collections.defaultdict(list)
-        for asset in self.assets:
-            if asset.parameter is None:
-                # This asset is not directly opened by the Adapter. It is used indirectly, such as the case of HDF5
-                # virtual dataset 'data' files are referenced from 'master' files.
-                continue
-            if asset.num is None:
-                # This parameters takes the URI as a scalar value.
-                parameters[asset.parameter] = asset.data_uri
-            else:
-                # This parameters takes a list of URIs.
-                parameters[asset.parameter].append(asset.data_uri)
-
-        parameters["structure"] = ArrayStructure(
-            data_type=BuiltinDtype.from_numpy_dtype(self.dtype),
-            shape=self.shape,
-            chunks=self.chunks,
-        )
-        adapter_kwargs = dict(parameters)
-        adapter_kwargs.update(self.adapter_parameters)
-
-        return adapter_factory(**adapter_kwargs)
+        return adapter_factory.from_uris(self.uri, **self.adapter_parameters)
 
 
 class HDF5Consolidator(ConsolidatorBase):
@@ -268,7 +259,7 @@ class HDF5Consolidator(ConsolidatorBase):
         dataset: List[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+        return {"dataset": self._sres_parameters["dataset"], "swmr": self.swmr}
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):

@@ -23,7 +23,9 @@ dependencies = [
     "opentelemetry-api",
     "toolz",
     "tqdm>=4.44",
-    "typing-extensions>=4.10.0",
+    "typing-extensions>=4.10.0;python_version<'3.11'",
+    "dataclasses;python_version<'3.7'",
+    "zict",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -52,6 +54,7 @@ dev = [
     "networkx",
     "numpydoc",
     "ophyd",
+    "ophyd-async",
     "packaging",
     "pandas",
     "pickleshare",
