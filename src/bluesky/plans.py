@@ -2306,6 +2306,8 @@ def fly(
     flyers: list[Flyable],
     *,
     md: Optional[CustomPlanMetadata] = None,
+    collect_flush_period: Optional[float] = None,
+    stream_name: Optional[str] = None,
 ) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
@@ -2316,6 +2318,10 @@ def fly(
         objects that support the flyer interface
     md : dict, optional
         metadata
+    collect_flush_period : float, optional
+        If set, will use `collect_while_completing` with the given flush period
+    stream_name : str, optional
+        If set, will declare a stream with the given name for all flyers
 
     Yields
     ------
@@ -2328,12 +2334,24 @@ def fly(
     :func:`bluesky.preprocessors.fly_during_decorator`
     """
     uid = yield from bps.open_run(md)
-    for flyer in flyers:
-        yield from bps.kickoff(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.complete(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.collect(flyer)
+
+    if stream_name is not None:
+        yield from bps.declare_stream(*flyers, name=stream_name)
+
+    yield from bps.kickoff_all(*flyers, wait=True)
+
+    if collect_flush_period is not None:
+        if stream_name is None:
+            raise ValueError("stream_name must be provided when using collect_flush_period!")
+        yield from bps.collect_while_completing(flyers, flush_period=collect_flush_period)
+    else:
+        yield from bps.complete_all(*flyers, wait=True)
+        if stream_name is not None:
+            yield from bps.collect(*flyers, name=stream_name)
+        else:
+            for flyer in flyers:
+                yield from bps.collect(flyer)
+
     yield from bps.close_run()
     return uid
 
