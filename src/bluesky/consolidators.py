@@ -3,7 +3,7 @@ import dataclasses
 import enum
 import os
 import re
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
@@ -72,8 +72,8 @@ class ConsolidatorBase:
         - Interpreting those DataSource and Asset parameters to do I/O (the adapter's job).
 
     To implement new Consolidators for other mimetypes, subclass ConsolidatorBase, possibly expand the
-    `consume_stream_datum` and `get_data_source` methods, and ensure that the returned `adapter_parameters`
-    property matches the expected adapter signature. Declare a set of supported mimetypes to allow validation and
+    `consume_stream_datum` and `get_data_source` methods, and ensure that the keys of returned `adapter_parameters`
+    dictionary matches the expected adapter signature. Declare a set of supported mimetypes to allow validation and
     automated discovery of the subclassed Consolidator.
 
     Attributes:
@@ -82,18 +82,17 @@ class ConsolidatorBase:
     supported_mimetypes : set[str]
         a set of mimetypes that can be handled by a derived Consolidator class; raises ValueError if attempted to
         pass Resource documents related to unsupported mimetypes.
-    stackable : bool
-        similar to numpy or dask stacking operation. When True, the resulting consolidated dataset is produced by
-        stacking all datums along a new dimension added on the left, e.g. a stack of tiff images, otherwise -- new
-        datum will appended to the end of the exisitng leftmost dimension, e.g. rows of a table (similarly to
-        concatenation in numpy).
+    join_method : Literal["stack", "concat"]
+        a method to join the data; if "stack", the resulting consolidated dataset is produced by joining all datums
+        along a new dimension added on the left, e.g. a stack of tiff images, otherwise -- datums will be appended
+        to the end of the existing leftmost dimension, e.g. rows of a table (similarly to concatenation in numpy).
     join_chunks : bool
         if True, the chunking of the resulting dataset will be determined after consolidation, otherwise each part
         is considered to be chunked separately.
     """
 
     supported_mimetypes: set[str] = {"application/octet-stream"}
-    stackable: bool = False
+    join_method: Literal["stack", "concat"] = "concat"
     join_chunks: bool = True
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
@@ -107,7 +106,7 @@ class ConsolidatorBase:
         # Find datum shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
-        self.datum_shape = () if self.datum_shape == (1,) and self.stackable else self.datum_shape
+        self.datum_shape = () if self.datum_shape == (1,) and self.join_method == "stack" else self.datum_shape
 
         # Determine data type. From highest precedent to lowest:
         # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
@@ -136,12 +135,11 @@ class ConsolidatorBase:
         if 0 in self.chunk_shape:
             raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
 
-        # Possibly overwrite the stackable and join_chunks flags
-        self.stackable = self._sres_parameters.get("stackable", self.stackable)
+        # Possibly overwrite the join_method and join_chunks attributes
+        self.join_method = self._sres_parameters.get("join_method", self.join_method)
         self.join_chunks = self._sres_parameters.get("join_chunks", self.join_chunks)
 
         self._num_rows: int = 0  # Number of rows in the Data Source (all rows, includung skips)
-        self._has_skips: bool = False
         self._seqnums_to_indices_map: dict[int, int] = {}
 
     @classmethod
@@ -154,11 +152,11 @@ class ConsolidatorBase:
     def shape(self) -> tuple[int, ...]:
         """Native shape of the data stored in assets
 
-        This includes the leading (0th) dimension corresponding to the number of rows, if the dataset is stackable,
+        This includes the leading (0th) dimension corresponding to the number of rows (if the join_method is stack)
         including skipped rows, if any. The number of relevant usable data rows may be lower, which is determined
         by the `seq_nums` field of StreamDatum documents."""
 
-        if (not self.stackable) and len(self.datum_shape) > 0:
+        if (self.join_method == "concat") and len(self.datum_shape) > 0:
             return self._num_rows * self.datum_shape[0], *self.datum_shape[1:]
 
         return self._num_rows, *self.datum_shape
@@ -176,11 +174,11 @@ class ConsolidatorBase:
         is a tuple with less than `self.shape` elements -- assume it defines the chunk sizes along the leading
         dimensions.
 
-        If the consolidator is NOT stackable, and `join_chunks = False`, the chunking along the leftmost dimensions
+        If the joining method is "concat", and `join_chunks = False`, the chunking along the leftmost dimensions
         is assumed to be preserved in each appended data point, i.e. consecutive chunks do not join, e.g. for a 1d
         array with chunks (3,3,1), the resulting chunking after 3 repeats is (3,3,1,3,3,1,3,3,1).
         When `join_chunks = True` (default), the chunk size along the leftmost dimension is determined by the
-        chunk_shape parameter, as in the usual, stackable, case.
+        chunk_shape parameter; this is the case when `join_method == "stack"` well.
         Chunking along the trailing dimensions is always preserved as in the original (single) array.
         """
 
@@ -193,7 +191,11 @@ class ConsolidatorBase:
         # If chunk shape is less than or equal to the total shape dimensions, chunk each specified dimension
         # starting from the leading dimension
         if len(self.chunk_shape) <= len(self.shape):
-            if self.stackable or (not self.stackable and self.join_chunks) or len(self.chunk_shape) == 0:
+            if (
+                self.join_method == "stack"
+                or (self.join_method == "concat" and self.join_chunks)
+                or len(self.chunk_shape) == 0
+            ):
                 result = tuple(
                     list_summands(ddim, cdim)
                     for ddim, cdim in zip(self.shape[: len(self.chunk_shape)], self.chunk_shape)
@@ -225,7 +227,6 @@ class ConsolidatorBase:
         """
         return self._num_rows > len(self._seqnums_to_indices_map)
 
-    @property
     def adapter_parameters(self) -> dict:
         """A dictionary of parameters passed to an Adapter
 
@@ -233,11 +234,10 @@ class ConsolidatorBase:
         specific mimetype, e.g. "path" the path into an HDF5 file or "template" the filename pattern of a TIFF
         sequence.
 
-        This property is to be subclassed as necessary.
+        This method is to be subclassed as necessary.
         """
         return {}
 
-    @property
     def structure(self) -> ArrayStructure:
         return ArrayStructure(
             data_type=self.data_type,
@@ -273,8 +273,8 @@ class ConsolidatorBase:
             mimetype=self.mimetype,
             assets=self.assets,
             structure_family=StructureFamily.array,
-            structure=self.structure,
-            parameters=self.adapter_parameters,
+            structure=self.structure(),
+            parameters=self.adapter_parameters(),
             management=Management.external,
         )
 
@@ -290,21 +290,20 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
-        return adapter_class.from_assets(self.assets, structure=self.structure, **self.adapter_parameters)
+        return adapter_class.from_assets(self.assets, structure=self.structure(), **self.adapter_parameters())
 
 
 class CSVConsolidator(ConsolidatorBase):
     supported_mimetypes: set[str] = {"text/csv;header=absent"}
-    stackable: bool = False
+    join_method: Literal["stack", "concat"] = "concat"
     join_chunks: bool = False
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uris"))
 
-    @property
     def adapter_parameters(self) -> dict:
-        return {**self._sres_parameters}
+        return {**self._sres_parameters()}
 
 
 class HDF5Consolidator(ConsolidatorBase):
@@ -315,7 +314,6 @@ class HDF5Consolidator(ConsolidatorBase):
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
         self.swmr = self._sres_parameters.get("swmr", True)
 
-    @property
     def adapter_parameters(self) -> dict:
         """Parameters to be passed to the HDF5 adapter, a dictionary with the keys:
 
@@ -333,7 +331,7 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         self.permitted_extensions: set[str] = permitted_extensions
         self.data_uris: list[str] = []
         self.chunk_shape = self.chunk_shape or (1,)  # I.e. number of frames per file (tiff, jpeg, etc.)
-        if not self.stackable:
+        if self.join_method == "concat":
             assert self.datum_shape[0] % self.chunk_shape[0] == 0, (
                 f"Number of frames per file ({self.chunk_shape[0]}) must divide the total number of frames per "
                 f"datum ({self.datum_shape[0]}): variable-sized files are not allowed."
@@ -399,11 +397,11 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         frames per file is equal to the leftmost chunk_shape dimension, self.chunk_shape[0].
         The number of files produced per each datum is then the ratio of these two numbers.
 
-        If the dataset is stackable, we assume that each datum becomes its own index in the new leftmost dimension
+        If `join_method == "stack"`, we assume that each datum becomes its own index in the new leftmost dimension
         of the resulting dataset, and hence corresponds to a single file.
         """
 
-        files_per_datum = self.datum_shape[0] // self.chunk_shape[0] if not self.stackable else 1
+        files_per_datum = self.datum_shape[0] // self.chunk_shape[0] if self.join_method == "concat" else 1
         first_file_indx = doc["indices"]["start"] * files_per_datum
         last_file_indx = doc["indices"]["stop"] * files_per_datum
         for indx in range(first_file_indx, last_file_indx):

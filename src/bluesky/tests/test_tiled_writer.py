@@ -122,7 +122,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             if self.counter == 0:
                 # Backward compatibility test, ignore typing errors
                 stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
-                    parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif", "stackable": True},
+                    parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif", "join_method": "stack"},
                     data_key=data_key,
                     root=self.root,
                     uri="file://localhost/" + self.root + "/",
@@ -218,7 +218,7 @@ class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
 
     def stage(self):
         super().stage()
-        parameters = {"chunk_shape": (1,), "template": "_{:d}." + self.save_ext, "stackable": True}
+        parameters = {"chunk_shape": (1,), "template": "_{:d}." + self.save_ext, "join_method": "stack"}
         self._asset_docs_cache[-1][1]["resource_kwargs"].update(parameters)
 
     def describe(self):
