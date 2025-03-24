@@ -132,7 +132,7 @@ class ConsolidatorBase:
 
         # Set chunk (or partition) shape
         self.chunk_shape = self._sres_parameters.get("chunk_shape", ())
-        if 0 in self.chunk_shape:
+        if any(d <= 0 for d in self.chunk_shape):
             raise ValueError(f"Chunk size in all dimensions must be at least 1: chunk_shape={self.chunk_shape}.")
 
         # Possibly overwrite the join_method and join_chunks attributes
