@@ -32,6 +32,28 @@ from .core import MIMETYPE_LOOKUP, CallbackBase
 
 BATCH_SIZE = 100
 
+DATA_KEYS_SCHEMA = pyarrow.schema(
+    [
+        pyarrow.field("object_name", pyarrow.string()),
+        pyarrow.field("data_key", pyarrow.string(), nullable=False),
+        pyarrow.field("dtype", pyarrow.string()),
+        pyarrow.field("dtype_numpy", pyarrow.string()),  # Supercedes dtype_str
+        pyarrow.field("external", pyarrow.string()),
+        pyarrow.field("shape", pyarrow.list_(pyarrow.int32())),
+        pyarrow.field("source", pyarrow.string()),
+        pyarrow.field("units", pyarrow.string()),
+        pyarrow.field("enum_strs", pyarrow.list_(pyarrow.string())),
+        pyarrow.field("lower_ctrl_limit", pyarrow.float64()),
+        pyarrow.field("upper_ctrl_limit", pyarrow.float64()),
+        pyarrow.field("precision", pyarrow.int8()),
+        pyarrow.field("value_integer", pyarrow.int64()),
+        pyarrow.field("value_number", pyarrow.float64()),
+        pyarrow.field("value_string", pyarrow.string()),
+        pyarrow.field("timestamp", pyarrow.int64()),
+        pyarrow.field("descriptor_uid", pyarrow.string()),
+    ]
+)
+
 
 def build_summary(start_doc, stop_doc, stream_names):
     summary = {
@@ -212,39 +234,31 @@ class _RunWriter(CallbackBase):
         self.data_keys_int.update({k: v for k, v in data_keys.items() if "external" not in v.keys()})
         self.data_keys_ext.update({k: v for k, v in data_keys.items() if "external" in v.keys()})
 
-        # Write the configuration data
-        ### Option 1. Values and TS in awkward arrays, data_keys specs in metadata
-        # if conf_dict := doc.get("configuration", None):
-        #     # Put configuration data_keys specs into the metadata
-        #     conf_data_keys = {}
-        #     for obj_name, obj_dict in conf_dict.items():
-        #         if _conf_data_keys := obj_dict.pop("data_keys", None): # Remove data_keys from the obj dictionary
-        #             for item in _conf_data_keys.values():
-        #                 item.update({"object_name": obj_name})   # Make consistent with usual data_keys
-        #             conf_data_keys[obj_name] = _conf_data_keys
-        #     conf_meta = {"data_keys": conf_data_keys} if conf_data_keys else {}
-        #     conf_meta.update({"uid": doc["uid"], "time": doc["time"]})
-        #     conf_list = [conf_dict]
-
-        ### Option 2. Everything in an array of "records" (dicts)
+        # Construct a list of configuration data_keys descriptions with values
         conf_list = []
         for obj_name, obj_dict in doc.get("configuration", {}).items():
-            for key, val in obj_dict.get("data_keys", {}).items():
-                val.update({"object_name": obj_name, "data_key": key})
-                val["value"] = obj_dict.get("data", {}).get(key, None)
-                val["timestamp"] = obj_dict.get("timestamps", {}).get(key, None)
-                conf_list.append(val)  # awkward does not like None
+            for key, dk_dict in obj_dict.get("data_keys", {}).items():
+                dk_dict.update({"object_name": obj_name, "data_key": key})
+                dk_dict["value"] = obj_dict.get("data", {}).get(key, None)
+                dk_dict["timestamp"] = obj_dict.get("timestamps", {}).get(key, None)
+                dk_dict["timestamp"] = None if dk_dict["timestamp"] is None else int(dk_dict["timestamp"])
+                conf_list.append(dk_dict)  # awkward does not like None
 
-        ### Option 2b. Add the usual data_keys specs as well
+        # Add the usual data_keys descriptions as well
         for obj_name, data_keys_list in doc.get("object_keys", {}).items():
             for key in data_keys_list:
-                val = doc.get("data_keys", {})[key]
-                val.update({"data_key": key, "object_name": obj_name})
-                conf_list.append(val)
+                dk_dict = doc.get("data_keys", {})[key]
+                dk_dict.update({"data_key": key, "object_name": obj_name})
+                conf_list.append(dk_dict)
 
+        # Rename some fields to match the current schema
+        for dk_dict in conf_list:
+            dk_dict["dtype_numpy"] = dk_dict.pop("dtype_str", None)
+
+        ### Option 1. Write everything in an awkward array of "records" (dicts)
         if conf_list:
             # Define the key (name) and metadata for the configuration node
-            conf_meta = {"uid": doc["uid"], "time": doc["time"]}
+            conf_meta = {"uid": doc["uid"], "time": int(doc["time"])}
             conf_key = desc_name
             if conf_key in self.root_node["config"].keys():
                 conf_key = f"{desc_name}-{doc['uid'][:8]}"
@@ -254,6 +268,27 @@ class _RunWriter(CallbackBase):
                     stacklevel=2,
                 )
             self.root_node["config"].write_awkward(conf_list, key=conf_key, metadata=conf_meta)
+
+        ### Option 2. Write as a table with split value columns by type
+        for dk_dict in conf_list:
+            value = dk_dict.pop("value", None)
+            if isinstance(value, int):
+                dk_dict["value_integer"] = value
+            elif isinstance(value, float):
+                dk_dict["value_number"] = value
+            elif isinstance(value, str):
+                dk_dict["value_string"] = value
+            dk_dict["descriptor_uid"] = doc["uid"]
+
+        if conf_list:
+            conf_meta = {"uid": doc["uid"], "time": int(doc["time"])}
+            conf_key = f"{desc_name}_table"
+            table = pyarrow.Table.from_pylist(conf_list, schema=DATA_KEYS_SCHEMA)
+            if conf_key not in self.root_node["config"].keys():
+                self.root_node["config"].create_appendable_table(
+                    key=conf_key, schema=DATA_KEYS_SCHEMA, metadata=conf_meta
+                )
+            self.root_node["config"][conf_key].append_partition(table, 0)
 
     def event(self, doc: Event):
         desc_uid = doc["descriptor"]
