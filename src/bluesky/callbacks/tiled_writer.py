@@ -32,28 +32,6 @@ from .core import MIMETYPE_LOOKUP, CallbackBase
 
 BATCH_SIZE = 100
 
-DATA_KEYS_SCHEMA = pyarrow.schema(
-    [
-        pyarrow.field("object_name", pyarrow.string()),
-        pyarrow.field("data_key", pyarrow.string(), nullable=False),
-        pyarrow.field("dtype", pyarrow.string()),
-        pyarrow.field("dtype_numpy", pyarrow.string()),  # Supercedes dtype_str
-        pyarrow.field("external", pyarrow.string()),
-        pyarrow.field("shape", pyarrow.list_(pyarrow.int32())),
-        pyarrow.field("source", pyarrow.string()),
-        pyarrow.field("units", pyarrow.string()),
-        pyarrow.field("enum_strs", pyarrow.list_(pyarrow.string())),
-        pyarrow.field("lower_ctrl_limit", pyarrow.float64()),
-        pyarrow.field("upper_ctrl_limit", pyarrow.float64()),
-        pyarrow.field("precision", pyarrow.int8()),
-        pyarrow.field("value_integer", pyarrow.int64()),
-        pyarrow.field("value_number", pyarrow.float64()),
-        pyarrow.field("value_string", pyarrow.string()),
-        pyarrow.field("timestamp", pyarrow.int64()),
-        pyarrow.field("descriptor_uid", pyarrow.string()),
-    ]
-)
-
 
 def build_summary(start_doc, stop_doc, stream_names):
     summary = {
@@ -255,7 +233,7 @@ class _RunWriter(CallbackBase):
         for dk_dict in conf_list:
             dk_dict["dtype_numpy"] = dk_dict.pop("dtype_str", None)
 
-        ### Option 1. Write everything in an awkward array of "records" (dicts)
+        ### Write configs and data_keys descriptions in an awkward array of "records" (dicts)
         if conf_list:
             # Define the key (name) and metadata for the configuration node
             conf_meta = {"uid": doc["uid"], "time": int(doc["time"])}
@@ -269,27 +247,6 @@ class _RunWriter(CallbackBase):
                 )
             self.root_node["config"].write_awkward(conf_list, key=conf_key, metadata=conf_meta)
 
-        ### Option 2. Write as a table with split value columns by type
-        for dk_dict in conf_list:
-            value = dk_dict.pop("value", None)
-            if isinstance(value, int):
-                dk_dict["value_integer"] = value
-            elif isinstance(value, float):
-                dk_dict["value_number"] = value
-            elif isinstance(value, str):
-                dk_dict["value_string"] = value
-            dk_dict["descriptor_uid"] = doc["uid"]
-
-        if conf_list:
-            conf_meta = {"uid": doc["uid"], "time": int(doc["time"])}
-            conf_key = f"{desc_name}_table"
-            table = pyarrow.Table.from_pylist(conf_list, schema=DATA_KEYS_SCHEMA)
-            if conf_key not in self.root_node["config"].keys():
-                self.root_node["config"].create_appendable_table(
-                    key=conf_key, schema=DATA_KEYS_SCHEMA, metadata=conf_meta
-                )
-            self.root_node["config"][conf_key].append_partition(table, 0)
-
     def event(self, doc: Event):
         desc_uid = doc["descriptor"]
         parent_node = self._desc_nodes[desc_uid]
@@ -299,7 +256,7 @@ class _RunWriter(CallbackBase):
         data_cache = self._internal_data_cache[desc_name]
         data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
         data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
-        row = {"seq_num": doc["seq_num"]}
+        row = {"seq_num": doc["seq_num"], "time": int(doc["time"])}
         row.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
         row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items()})  # Keep all timestamps
         data_cache.append(row)
