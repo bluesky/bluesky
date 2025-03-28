@@ -349,13 +349,13 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
             # Handle the flags
             flag_str = ""
             if "-" in flags:
-                flag_str += "<"  # Left-align
-            elif "0" in flags:
-                flag_str += "0"  # Zero padding
+                flag_str = "<"  # Left-align
             if "+" in flags:
                 flag_str += "+"  # Show positive sign
             elif " " in flags:
                 flag_str += " "  # Space before positive numbers
+            if "0" in flags:
+                flag_str += "0"  # Zero padding
 
             # Build width and precision if they exist
             width_str = width if width else ""
@@ -374,7 +374,7 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
             self._sres_parameters["template"]
             .replace("%s", "{:s}", 1)
             .replace("%s", "")
-            .replace("%s", self._sres_parameters.get("filename", ""), 1)
+            .replace("{:s}", self._sres_parameters.get("filename", ""), 1)
         )
         self.template = re.sub(r"%([-+#0 ]*)(\d+)?(?:\.(\d+))?([d])", int_replacer, self.template)
 

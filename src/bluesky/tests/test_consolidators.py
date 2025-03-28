@@ -105,9 +105,15 @@ def hdf5_stream_resource_factory():
 
 @pytest.fixture
 def image_seq_stream_resource_factory():
+    format_to_mimetype = {
+        "jpeg": "image/jpeg",
+        "jpg": "image/jpeg",
+        "tiff": "image/tiff",
+        "tif": "image/tiff",
+    }
     return lambda image_format, data_key, chunk_shape: {
         "data_key": data_key,
-        "mimetype": f"multipart/related;type=image/{image_format}",
+        "mimetype": f"multipart/related;type={format_to_mimetype[image_format]}",
         "uri": "file://localhost/test/file/path",
         "parameters": {"chunk_shape": chunk_shape, "template": "img_{:06d}." + image_format},
         "uid": f"stream-resource-uid-{data_key}",
@@ -182,7 +188,7 @@ def test_hdf5_shape(
     assert cons.shape == expected
 
 
-supported_image_seq_formats = ["jpeg", "tiff"]
+supported_image_seq_formats = ["jpeg", "tiff", "jpg", "tif"]
 
 
 @pytest.mark.parametrize("data_key, frames_per_datum, join_method, expected", shape_testdata)
@@ -422,3 +428,39 @@ def test_tiff_and_jpeg_chunks(
 
     # Check the number of registered files
     assert len(cons.assets) == 5 * frames_per_datum / expected_chunks[0][0] if join_method == "concat" else 5
+
+
+template_testdata = [
+    ("", "img_{:06d}", "img_{:06d}", "img_000042"),
+    ("img", "{:s}_{:06d}", "img_{:06d}", "img_000042"),
+    ("img", "%s_%06d", "img_{:06d}", "img_000042"),
+    ("", "img%s_%06d", "img_{:06d}", "img_000042"),
+    ("img", "%s_%1d", "img_{:1d}", "img_42"),
+    ("img", "%s_%-6d", "img_{:<6d}", "img_42    "),
+    ("img", "%s_%+06d", "img_{:+06d}", "img_+00042"),
+    ("img", "%s_% 06d", "img_{: 06d}", "img_ 00042"),
+    ("img", "%s_%-+6d", "img_{:<+6d}", "img_+42   "),
+    ("img", "%s_%- 6d", "img_{:< 6d}", "img_ 42   "),
+]
+
+
+@pytest.mark.parametrize("image_format", supported_image_seq_formats)
+@pytest.mark.parametrize("filename, original_template, expected_template, formatted", template_testdata)
+def test_name_templating(
+    descriptor,
+    image_seq_stream_resource_factory,
+    image_format,
+    filename,
+    original_template,
+    expected_template,
+    formatted,
+):
+    stream_resource = image_seq_stream_resource_factory(
+        image_format=image_format, data_key="test_img", chunk_shape=((1),)
+    )
+    stream_resource["parameters"]["template"] = f"{original_template}.{image_format}"
+    if filename:
+        stream_resource["parameters"]["filename"] = filename
+    cons = consolidator_factory(stream_resource, descriptor)
+    assert cons.template == f"{expected_template}.{image_format}"
+    assert cons.template.format(42) == f"{formatted}.{image_format}"
