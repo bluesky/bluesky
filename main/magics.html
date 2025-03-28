@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>IPython ‘Magics’ [Experimental] &#8212; bluesky 1.13.2.dev22+g53f76513 documentation</title>
+    <title>IPython ‘Magics’ [Experimental] &#8212; bluesky 1.13.2.dev52+g59204bf3 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=884aab5e"></script>
+    <script src="_static/documentation_options.js?v=f17e95cf"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'magics';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.2.dev22+g53f76513';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.2.dev52+g59204bf3';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -56,7 +56,7 @@
     <link rel="prev" title="bluesky.utils.DefaultDuringTask" href="generated/bluesky.utils.DefaultDuringTask.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.13.2.dev22+g53f76513" />
+  <meta name="docsearch:version" content="1.13.2.dev52+g59204bf3" />
   </head>
   
   
@@ -658,8 +658,8 @@ results to the screen without saving them or doing any fancy processing. Use
 the <code class="docutils literal notranslate"><span class="pre">%ct</span></code> magic:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="o">%</span><span class="k">ct</span> area_detectors
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.96312799 0.57124743]</span>
-<span class="go"> [0.75966989 0.30634149]]</span>
+<span class="go">adet1                          [[0.95979353 0.1510802 ]</span>
+<span class="go"> [0.21821802 0.56526155]]</span>
 </pre></div>
 </div>
 <p>Where the names after count are a list of whitespace separated labels. In this
@@ -667,12 +667,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <p>Running <code class="docutils literal notranslate"><span class="pre">%ct</span></code> without arguments looks for the <code class="docutils literal notranslate"><span class="pre">detectors</span></code> label by default:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [17]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.36597609 0.18776871]</span>
-<span class="go"> [0.64021999 0.934677  ]]</span>
+<span class="go">adet1                          [[0.2293052  0.29945455]</span>
+<span class="go"> [0.97972987 0.52288782]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.58062522]</span>
+<span class="go">pointdet1                      [0.38772099]</span>
 </pre></div>
 </div>
 <p>In this case, we count both on the area detector and the point detector.</p>
@@ -683,12 +683,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <code class="docutils literal notranslate"><span class="pre">%</span></code> as long as the meaning is unambiguous:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [18]: </span><span class="n">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.03595105 0.0791116 ]</span>
-<span class="go"> [0.66480141 0.4850841 ]]</span>
+<span class="go">adet1                          [[0.91064387 0.5272063 ]</span>
+<span class="go"> [0.19643767 0.67451203]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.29798181]</span>
+<span class="go">pointdet1                      [0.70361913]</span>
 
 <span class="gp">In [19]: </span><span class="n">ct</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Now ct is a variable so automagic will not work...</span>
 
@@ -698,12 +698,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <span class="go"># ... but the magic still works.</span>
 <span class="gp">In [21]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.52474485 0.92804462]</span>
-<span class="go"> [0.6491416  0.7620337 ]]</span>
+<span class="go">adet1                          [[0.57179951 0.04868397]</span>
+<span class="go"> [0.64618055 0.97085265]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.0776933]</span>
+<span class="go">pointdet1                      [0.32051665]</span>
 </pre></div>
 </div>
 <p>For what it’s worth, we recommend disabling ‘automagic’. The <code class="docutils literal notranslate"><span class="pre">%</span></code> is useful
@@ -794,9 +794,9 @@ without any parameters. This behaviour is deprecated. Do not use this:</p>
 
 <span class="gp">In [25]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.53149501 0.34316522]</span>
-<span class="go"> [0.74885649 0.38564921]]</span>
-<span class="go">pointdet1                      [0.48700472]</span>
+<span class="go">adet1                          [[0.95801953 0.2773232 ]</span>
+<span class="go"> [0.31839718 0.19910365]]</span>
+<span class="go">pointdet1                      [0.44875563]</span>
 </pre></div>
 </div>
 <p>This is no longer supported.</p>
@@ -904,7 +904,7 @@ deprecated. Do not use this:</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.13.2.dev22+g53f76513/docs/magics.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.13.2.dev52+g59204bf3/docs/magics.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

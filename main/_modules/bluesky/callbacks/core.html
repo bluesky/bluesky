@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.callbacks.core &#8212; bluesky 1.13.2.dev22+g53f76513 documentation</title>
+    <title>bluesky.callbacks.core &#8212; bluesky 1.13.2.dev52+g59204bf3 documentation</title>
   
   
   
@@ -38,14 +38,14 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=884aab5e"></script>
+    <script src="../../../_static/documentation_options.js?v=f17e95cf"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/callbacks/core';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.2.dev22+g53f76513';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.2.dev52+g59204bf3';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -53,7 +53,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.13.2.dev22+g53f76513" />
+  <meta name="docsearch:version" content="1.13.2.dev52+g59204bf3" />
   </head>
   
   
@@ -538,7 +538,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ttime</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">deque</span><span class="p">,</span> <span class="n">namedtuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span><span class="p">,</span> <span class="n">namedtuple</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span> <span class="k">as</span> <span class="n">_partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span> <span class="k">as</span> <span class="n">_wraps</span>
@@ -548,13 +548,20 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_uid</span>
 
-<span class="n">MIMETYPE_LOOKUP</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;AD_HDF5_SWMR_STREAM&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;AD_HDF5_SWMR_SLICE&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;AD_TIFF&quot;</span><span class="p">:</span> <span class="s2">&quot;multipart/related;type=image/tiff&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;AD_HDF5_GERM&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
-<span class="p">}</span>
+<span class="n">MIMETYPE_LOOKUP</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span>
+    <span class="k">lambda</span><span class="p">:</span> <span class="s2">&quot;application/octet-stream&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AD_HDF5_SWMR_STREAM&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AD_HDF5_SWMR_SLICE&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PIL100k_HDF5&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;XPS3&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;XSP3_STEP&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AD_TIFF&quot;</span><span class="p">:</span> <span class="s2">&quot;multipart/related;type=image/tiff&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AD_HDF5_GERM&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PIZZABOX_ENC_FILE_TXT_PD&quot;</span><span class="p">:</span> <span class="s2">&quot;text/csv&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
