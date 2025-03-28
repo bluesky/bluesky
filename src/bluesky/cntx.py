@@ -241,7 +241,7 @@ def monitor_context(plan_stack, signals):
         pass
     else:
         # interpet input as list of signals
-        signals = {sig: None for sig in signals}
+        signals = dict.fromkeys(signals)
 
     for sig, name in signals.items():
         plan_stack.append(single_gen(Msg("monitor", sig, name=name)))

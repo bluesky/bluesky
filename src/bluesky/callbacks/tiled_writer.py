@@ -111,7 +111,7 @@ class _RunWriter(CallbackBase):
         self._sres_nodes: dict[str, BaseClient] = {}
         self._datum_cache: dict[str, Datum] = {}
         self._stream_resource_cache: dict[str, StreamResource] = {}
-        self._handlers: dict[str, ConsolidatorBase] = {}
+        self._consolidators: dict[str, ConsolidatorBase] = {}
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}
         self._node_exists: dict[str, bool] = defaultdict(lambda: False)  # Keep track of existing nodes
@@ -376,7 +376,7 @@ class _RunWriter(CallbackBase):
 
         if sres_uid in self._sres_nodes.keys():
             sres_node = self._sres_nodes[sres_uid]
-            handler = self._handlers[sres_uid]
+            consolidator = self._consolidators[sres_uid]
 
         elif sres_uid in self._stream_resource_cache.keys():
             if not desc_uid:
@@ -397,21 +397,23 @@ class _RunWriter(CallbackBase):
                 handler = self._handlers[sres_uid_old]
                 handler.consume_stream_resource(sres_doc)
             else:
-                # Initialise a bluesky handler (consolidator) for the StreamResource
-                handler = consolidator_factory(sres_doc, {"data_keys": desc_node.metadata})
-                sres_node = desc_node.new(
-                    key=handler.data_key,
+                # Initialise a bluesky consolidator for the StreamResource
+                consolidator = consolidator_factory(sres_doc, dict(desc_node.metadata))
+
+                sres_node = desc_node["external"].new(
+                    key=consolidator.data_key,
                     structure_family=StructureFamily.array,
-                    data_sources=[handler.get_data_source()],
-                    metadata=sres_doc,
+                    data_sources=[consolidator.get_data_source()],
+                    metadata={},
+                    specs=[],
                 )
 
-            self._handlers[sres_uid] = handler
+            self._consolidators[sres_uid] = consolidator
             self._sres_nodes[sres_uid] = sres_node
         else:
             raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being declared.")
 
-        return sres_node, handler
+        return sres_node, consolidator
 
     def _update_data_source_for_node(self, node: BaseClient, data_source: DataSource):
         """Update StreamResource node in Tiled"""
@@ -430,6 +432,6 @@ class _RunWriter(CallbackBase):
 
     def stream_datum(self, doc: StreamDatum):
         # Get the Stream Resource node and the associtaed handler (consolidator)
-        sres_node, handler = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
-        handler.consume_stream_datum(doc)
-        self._update_data_source_for_node(sres_node, handler.get_data_source())
+        sres_node, consolidator = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
+        consolidator.consume_stream_datum(doc)
+        self._update_data_source_for_node(sres_node, consolidator.get_data_source())

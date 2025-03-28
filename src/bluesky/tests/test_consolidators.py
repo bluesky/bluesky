@@ -105,9 +105,15 @@ def hdf5_stream_resource_factory():
 
 @pytest.fixture
 def image_seq_stream_resource_factory():
+    format_to_mimetype = {
+        "jpeg": "image/jpeg",
+        "jpg": "image/jpeg",
+        "tiff": "image/tiff",
+        "tif": "image/tiff",
+    }
     return lambda image_format, data_key, chunk_shape: {
         "data_key": data_key,
-        "mimetype": f"multipart/related;type=image/{image_format}",
+        "mimetype": f"multipart/related;type={format_to_mimetype[image_format]}",
         "uri": "file://localhost/test/file/path",
         "parameters": {"chunk_shape": chunk_shape, "template": "img_{:06d}." + image_format},
         "uid": f"stream-resource-uid-{data_key}",
@@ -137,38 +143,44 @@ def stream_datum_factory():
     }
 
 
-# Tuples of (data_key, frames_per_datum, stackable, expected_shape)
+# Tuples of (data_key, frames_per_datum, join_method, expected_shape)
 shape_testdata = [
     # 5 events, 1 or 7 image per event, 10x15 pixels
-    ("test_img", 1, False, (5, 10, 15)),
-    ("test_7_imgs", 7, False, (35, 10, 15)),
-    ("test_img", 1, True, (5, 1, 10, 15)),
-    ("test_7_imgs", 7, True, (5, 7, 10, 15)),
+    ("test_img", 1, "concat", (5, 10, 15)),
+    ("test_7_imgs", 7, "concat", (35, 10, 15)),
+    ("test_img", 1, "stack", (5, 1, 10, 15)),
+    ("test_7_imgs", 7, "stack", (5, 7, 10, 15)),
     # 5 events, 1 or 7 cube per event, 10x15x3 pixels
-    ("test_cube", 1, False, (5, 10, 15, 3)),
-    ("test_7_cubes", 7, False, (35, 10, 15, 3)),
-    ("test_cube", 1, True, (5, 1, 10, 15, 3)),
-    ("test_7_cubes", 7, True, (5, 7, 10, 15, 3)),
+    ("test_cube", 1, "concat", (5, 10, 15, 3)),
+    ("test_7_cubes", 7, "concat", (35, 10, 15, 3)),
+    ("test_cube", 1, "stack", (5, 1, 10, 15, 3)),
+    ("test_7_cubes", 7, "stack", (5, 7, 10, 15, 3)),
     # 5 events, 1 or 7 array per event, 1 element in array
-    ("test_arr", 1, False, (5, 3)),
-    ("test_7_arrs", 7, False, (35, 3)),
-    ("test_arr", 1, True, (5, 1, 3)),
-    ("test_7_arrs", 7, True, (5, 7, 3)),
+    ("test_arr", 1, "concat", (5, 3)),
+    ("test_7_arrs", 7, "concat", (35, 3)),
+    ("test_arr", 1, "stack", (5, 1, 3)),
+    ("test_7_arrs", 7, "stack", (5, 7, 3)),
     # 5 events, 1 or 7 number per event
-    ("test_num", 1, False, (5,)),
-    ("test_7_nums", 7, False, (35,)),
-    ("test_num", 1, True, (5, 1)),
-    ("test_7_nums", 7, True, (5, 7)),
+    ("test_num", 1, "concat", (5,)),
+    ("test_7_nums", 7, "concat", (35,)),
+    ("test_num", 1, "stack", (5, 1)),
+    ("test_7_nums", 7, "stack", (5, 7)),
 ]
 
 
-@pytest.mark.parametrize("data_key, frames_per_datum, stackable, expected", shape_testdata)
+@pytest.mark.parametrize("data_key, frames_per_datum, join_method, expected", shape_testdata)
 def test_hdf5_shape(
-    descriptor, hdf5_stream_resource_factory, stream_datum_factory, data_key, frames_per_datum, stackable, expected
+    descriptor,
+    hdf5_stream_resource_factory,
+    stream_datum_factory,
+    data_key,
+    frames_per_datum,
+    join_method,
+    expected,
 ):
     stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=())
     cons = HDF5Consolidator(stream_resource, descriptor)
-    cons.stackable = stackable
+    cons.join_method = join_method
     assert cons.shape == (0, *expected[1:])
     for i in range(5):
         doc = stream_datum_factory(data_key, i, i, i + 1)
@@ -176,10 +188,10 @@ def test_hdf5_shape(
     assert cons.shape == expected
 
 
-supported_image_seq_formats = ["jpeg", "tiff"]
+supported_image_seq_formats = ["jpeg", "tiff", "jpg", "tif"]
 
 
-@pytest.mark.parametrize("data_key, frames_per_datum, stackable, expected", shape_testdata)
+@pytest.mark.parametrize("data_key, frames_per_datum, join_method, expected", shape_testdata)
 @pytest.mark.parametrize("image_format", supported_image_seq_formats)
 @pytest.mark.parametrize("indx_per_stream_datum_doc", [1, 2, 3, 5])
 def test_tiff_and_jpeg_shape(
@@ -189,7 +201,7 @@ def test_tiff_and_jpeg_shape(
     image_format,
     data_key,
     frames_per_datum,
-    stackable,
+    join_method,
     expected,
     indx_per_stream_datum_doc,
 ):
@@ -197,7 +209,7 @@ def test_tiff_and_jpeg_shape(
         image_format=image_format, data_key=data_key, chunk_shape=(1,)
     )
     cons = consolidator_factory(stream_resource, descriptor)
-    cons.stackable = stackable
+    cons.join_method = join_method
     assert cons.shape == (0, *expected[1:])
     for i in range(ceil(5 / indx_per_stream_datum_doc)):
         doc = stream_datum_factory(
@@ -207,7 +219,7 @@ def test_tiff_and_jpeg_shape(
     assert cons.shape == expected
 
     # Stackable case here corresponds to multipage tiffs (AD does not support them though)
-    assert len(cons.assets) == 5 * frames_per_datum if not stackable else 5
+    assert len(cons.assets) == 5 * frames_per_datum if join_method == "concat" else 5
 
 
 # Tuples of (data_key, chunk_shape, expected_shape, expected_chunks)
@@ -235,7 +247,7 @@ def test_csv_shape_and_chunks(
 ):
     stream_resource = csv_stream_resource_factory(data_key=data_key, chunk_shape=chunk_shape)
     cons = consolidator_factory(stream_resource, descriptor)
-    assert not cons.stackable
+    assert cons.join_method == "concat"
     assert not cons.join_chunks
     assert cons.shape == (0, *expected_shape[1:])
     for i in range(5):
@@ -245,22 +257,22 @@ def test_csv_shape_and_chunks(
     assert cons.chunks == expected_chunks
 
 
-# Tuples of (data_key, stackable, join_chunks, chunk_shape, expected_chunks)
+# Tuples of (data_key, join_method, join_chunks, chunk_shape, expected_chunks)
 chunk_hdf5_testdata = [
-    ("test_img", True, True, (), ((5,), (1,), (10,), (15,))),
-    ("test_img", True, True, (1, 1, 10, 15), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
-    ("test_img", True, True, (2,), ((2, 2, 1), (1,), (10,), (15,))),
-    ("test_img", True, True, (5, 1, 10, 15), ((5,), (1,), (10,), (15,))),
-    ("test_img", True, True, (10, 1), ((5,), (1,), (10,), (15,))),
-    ("test_img", True, True, (3, 1, 4, 5), ((3, 2), (1,), (4, 4, 2), (5, 5, 5))),
-    ("test_7_imgs", True, True, (), ((5,), (7,), (10,), (15,))),
-    ("test_7_imgs", True, True, (1, 1), ((1, 1, 1, 1, 1), (1, 1, 1, 1, 1, 1, 1), (10,), (15,))),
-    ("test_7_imgs", True, True, (2,), ((2, 2, 1), (7,), (10,), (15,))),
-    ("test_7_imgs", True, True, (5, 1, 10, 15), ((5,), (1, 1, 1, 1, 1, 1, 1), (10,), (15,))),
-    ("test_7_imgs", True, True, (10, 5), ((5,), (5, 2), (10,), (15,))),
+    ("test_img", "stack", True, (), ((5,), (1,), (10,), (15,))),
+    ("test_img", "stack", True, (1, 1, 10, 15), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_img", "stack", True, (2,), ((2, 2, 1), (1,), (10,), (15,))),
+    ("test_img", "stack", True, (5, 1, 10, 15), ((5,), (1,), (10,), (15,))),
+    ("test_img", "stack", True, (10, 1), ((5,), (1,), (10,), (15,))),
+    ("test_img", "stack", True, (3, 1, 4, 5), ((3, 2), (1,), (4, 4, 2), (5, 5, 5))),
+    ("test_7_imgs", "stack", True, (), ((5,), (7,), (10,), (15,))),
+    ("test_7_imgs", "stack", True, (1, 1), ((1, 1, 1, 1, 1), (1, 1, 1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_7_imgs", "stack", True, (2,), ((2, 2, 1), (7,), (10,), (15,))),
+    ("test_7_imgs", "stack", True, (5, 1, 10, 15), ((5,), (1, 1, 1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_7_imgs", "stack", True, (10, 5), ((5,), (5, 2), (10,), (15,))),
     (
         "test_7_imgs",
-        True,
+        "stack",
         True,
         (3, 4, 5, 6),
         (
@@ -270,35 +282,35 @@ chunk_hdf5_testdata = [
             (6, 6, 3),
         ),
     ),
-    ("test_cube", True, True, (3, 1, 4, 5, 3), ((3, 2), (1,), (4, 4, 2), (5, 5, 5), (3,))),
-    ("test_7_cubes", True, True, (3, 4, 5, 6, 7), ((3, 2), (4, 3), (5, 5), (6, 6, 3), (3,))),
-    ("test_arr", True, True, (5, 1, 1), ((5,), (1,), (1, 1, 1))),
-    ("test_arr", True, True, (2,), ((2, 2, 1), (1,), (3,))),
-    ("test_7_arrs", True, True, (5, 1, 1), ((5,), (1, 1, 1, 1, 1, 1, 1), (1, 1, 1))),
-    ("test_7_arrs", True, True, (2,), ((2, 2, 1), (7,), (3,))),
-    ("test_num", True, True, (), ((5,), (1,))),
-    ("test_num", True, True, (2,), ((2, 2, 1), (1,))),
-    ("test_7_nums", True, True, (), ((5,), (7,))),
-    ("test_7_nums", True, True, (2,), ((2, 2, 1), (7,))),
-    ("test_7_nums", True, True, (2, 3), ((2, 2, 1), (3, 3, 1))),
-    ("test_img", False, True, (), ((5,), (10,), (15,))),
-    ("test_img", False, True, (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
-    ("test_img", False, True, (2,), ((2, 2, 1), (10,), (15,))),
-    ("test_img", False, True, (5, 10, 15), ((5,), (10,), (15,))),
-    ("test_img", False, True, (10, 1), ((5,), (1,) * 10, (15,))),
-    ("test_img", False, True, (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
-    ("test_7_imgs", False, True, (), ((35,), (10,), (15,))),
-    ("test_7_imgs", False, False, (), ((35,), (10,), (15,))),
-    ("test_7_imgs", False, True, (1, 1), ((1,) * 35, (1,) * 10, (15,))),
-    ("test_7_imgs", False, False, (2,), ((2, 2, 2, 1) * 5, (10,), (15,))),
-    ("test_7_imgs", False, True, (2,), ((2,) * 17 + (1,), (10,), (15,))),
-    ("test_7_imgs", False, True, (5, 10, 15), ((5,) * 7, (10,), (15,))),
-    ("test_7_imgs", False, False, (5, 10, 15), ((5, 2) * 5, (10,), (15,))),
-    ("test_7_imgs", False, True, (10, 5), ((10, 10, 10, 5), (5, 5), (15,))),
-    ("test_7_imgs", False, False, (10, 5), ((7,) * 5, (5, 5), (15,))),
+    ("test_cube", "stack", True, (3, 1, 4, 5, 3), ((3, 2), (1,), (4, 4, 2), (5, 5, 5), (3,))),
+    ("test_7_cubes", "stack", True, (3, 4, 5, 6, 7), ((3, 2), (4, 3), (5, 5), (6, 6, 3), (3,))),
+    ("test_arr", "stack", True, (5, 1, 1), ((5,), (1,), (1, 1, 1))),
+    ("test_arr", "stack", True, (2,), ((2, 2, 1), (1,), (3,))),
+    ("test_7_arrs", "stack", True, (5, 1, 1), ((5,), (1, 1, 1, 1, 1, 1, 1), (1, 1, 1))),
+    ("test_7_arrs", "stack", True, (2,), ((2, 2, 1), (7,), (3,))),
+    ("test_num", "stack", True, (), ((5,), (1,))),
+    ("test_num", "stack", True, (2,), ((2, 2, 1), (1,))),
+    ("test_7_nums", "stack", True, (), ((5,), (7,))),
+    ("test_7_nums", "stack", True, (2,), ((2, 2, 1), (7,))),
+    ("test_7_nums", "stack", True, (2, 3), ((2, 2, 1), (3, 3, 1))),
+    ("test_img", "concat", True, (), ((5,), (10,), (15,))),
+    ("test_img", "concat", True, (1, 10, 15), ((1, 1, 1, 1, 1), (10,), (15,))),
+    ("test_img", "concat", True, (2,), ((2, 2, 1), (10,), (15,))),
+    ("test_img", "concat", True, (5, 10, 15), ((5,), (10,), (15,))),
+    ("test_img", "concat", True, (10, 1), ((5,), (1,) * 10, (15,))),
+    ("test_img", "concat", True, (3, 4, 5), ((3, 2), (4, 4, 2), (5, 5, 5))),
+    ("test_7_imgs", "concat", True, (), ((35,), (10,), (15,))),
+    ("test_7_imgs", "concat", False, (), ((35,), (10,), (15,))),
+    ("test_7_imgs", "concat", True, (1, 1), ((1,) * 35, (1,) * 10, (15,))),
+    ("test_7_imgs", "concat", False, (2,), ((2, 2, 2, 1) * 5, (10,), (15,))),
+    ("test_7_imgs", "concat", True, (2,), ((2,) * 17 + (1,), (10,), (15,))),
+    ("test_7_imgs", "concat", True, (5, 10, 15), ((5,) * 7, (10,), (15,))),
+    ("test_7_imgs", "concat", False, (5, 10, 15), ((5, 2) * 5, (10,), (15,))),
+    ("test_7_imgs", "concat", True, (10, 5), ((10, 10, 10, 5), (5, 5), (15,))),
+    ("test_7_imgs", "concat", False, (10, 5), ((7,) * 5, (5, 5), (15,))),
     (
         "test_7_imgs",
-        False,
+        "concat",
         True,
         (3, 5, 6),
         (
@@ -309,7 +321,7 @@ chunk_hdf5_testdata = [
     ),
     (
         "test_7_imgs",
-        False,
+        "concat",
         False,
         (3, 5, 6),
         (
@@ -318,38 +330,38 @@ chunk_hdf5_testdata = [
             (6, 6, 3),
         ),
     ),
-    ("test_cube", False, True, (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
-    ("test_7_cubes", False, True, (3, 5, 6, 7), ((3,) * 11 + (2,), (5, 5), (6, 6, 3), (3,))),
-    ("test_7_cubes", False, False, (3, 5, 6, 7), ((3, 3, 1) * 5, (5, 5), (6, 6, 3), (3,))),
-    ("test_arr", False, True, (5, 1), ((5,), (1, 1, 1))),
-    ("test_arr", False, True, (2,), ((2, 2, 1), (3,))),
-    ("test_7_arrs", False, True, (5, 1), ((5,) * 7, (1, 1, 1))),
-    ("test_7_arrs", False, False, (5, 1), ((5, 2) * 5, (1, 1, 1))),
-    ("test_7_arrs", False, True, (2,), ((2,) * 17 + (1,), (3,))),
-    ("test_7_arrs", False, False, (2,), ((2, 2, 2, 1) * 5, (3,))),
-    ("test_num", False, True, (), ((5,),)),
-    ("test_num", False, True, (2,), ((2, 2, 1),)),
-    ("test_7_nums", False, True, (), ((35,),)),
-    ("test_7_nums", False, False, (), ((35,),)),
-    ("test_7_nums", False, True, (3,), ((3,) * 11 + (2,),)),
-    ("test_7_nums", False, False, (3,), ((3, 3, 1) * 5,)),
+    ("test_cube", "concat", True, (3, 4, 5, 3), ((3, 2), (4, 4, 2), (5, 5, 5), (3,))),
+    ("test_7_cubes", "concat", True, (3, 5, 6, 7), ((3,) * 11 + (2,), (5, 5), (6, 6, 3), (3,))),
+    ("test_7_cubes", "concat", False, (3, 5, 6, 7), ((3, 3, 1) * 5, (5, 5), (6, 6, 3), (3,))),
+    ("test_arr", "concat", True, (5, 1), ((5,), (1, 1, 1))),
+    ("test_arr", "concat", True, (2,), ((2, 2, 1), (3,))),
+    ("test_7_arrs", "concat", True, (5, 1), ((5,) * 7, (1, 1, 1))),
+    ("test_7_arrs", "concat", False, (5, 1), ((5, 2) * 5, (1, 1, 1))),
+    ("test_7_arrs", "concat", True, (2,), ((2,) * 17 + (1,), (3,))),
+    ("test_7_arrs", "concat", False, (2,), ((2, 2, 2, 1) * 5, (3,))),
+    ("test_num", "concat", True, (), ((5,),)),
+    ("test_num", "concat", True, (2,), ((2, 2, 1),)),
+    ("test_7_nums", "concat", True, (), ((35,),)),
+    ("test_7_nums", "concat", False, (), ((35,),)),
+    ("test_7_nums", "concat", True, (3,), ((3,) * 11 + (2,),)),
+    ("test_7_nums", "concat", False, (3,), ((3, 3, 1) * 5,)),
 ]
 
 
-@pytest.mark.parametrize("data_key, stackable, join_chunks, chunk_shape, expected", chunk_hdf5_testdata)
+@pytest.mark.parametrize("data_key, join_method, join_chunks, chunk_shape, expected", chunk_hdf5_testdata)
 def test_hdf5_chunks(
     descriptor,
     hdf5_stream_resource_factory,
     stream_datum_factory,
     data_key,
-    stackable,
+    join_method,
     join_chunks,
     chunk_shape,
     expected,
 ):
     stream_resource = hdf5_stream_resource_factory(data_key=data_key, chunk_shape=chunk_shape)
     cons = HDF5Consolidator(stream_resource, descriptor)
-    cons.stackable = stackable
+    cons.join_method = join_method
     cons.join_chunks = join_chunks
     assert cons.chunks == ((0,), *expected[1:])
     for i in range(5):
@@ -358,25 +370,25 @@ def test_hdf5_chunks(
     assert cons.chunks == expected
 
 
-# Tuples of (data_key, stackable, join_chunks, frames_per_datum, indx_per_stream_datum_doc, chunk_shape, expected_chunks) # noqa
+# Tuples of (data_key, join_method, join_chunks, frames_per_datum, indx_per_stream_datum_doc, chunk_shape, expected_chunks) # noqa
 chunk_tiff_testdata = [
-    ("test_img", True, True, 1, 1, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
-    ("test_img", True, True, 1, 2, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
-    ("test_img", True, True, 1, 5, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
-    ("test_6_imgs", True, True, 6, 1, (1,), ((1,) * 5, (6,), (10,), (15,))),
-    ("test_6_imgs", False, True, 6, 1, (1,), ((1,) * 30, (10,), (15,))),
-    ("test_6_imgs", True, True, 6, 2, (2,), ((2, 2, 1), (6,), (10,), (15,))),
-    ("test_6_imgs", False, True, 6, 2, (2,), ((2,) * 15, (10,), (15,))),
-    ("test_6_imgs", True, True, 6, 4, (3,), ((3, 2), (6,), (10,), (15,))),
-    ("test_6_imgs", False, True, 6, 4, (3,), ((3,) * 10, (10,), (15,))),
-    ("test_6_imgs", True, True, 6, 1, (5,), None),  # chunk_shape[0] must devide the number of frames
-    ("test_6_imgs", False, True, 6, 1, (5,), None),
-    ("test_6_imgs", False, True, 6, 10, (10,), None),
+    ("test_img", "stack", True, 1, 1, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_img", "stack", True, 1, 2, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_img", "stack", True, 1, 5, (1,), ((1, 1, 1, 1, 1), (1,), (10,), (15,))),
+    ("test_6_imgs", "stack", True, 6, 1, (1,), ((1,) * 5, (6,), (10,), (15,))),
+    ("test_6_imgs", "concat", True, 6, 1, (1,), ((1,) * 30, (10,), (15,))),
+    ("test_6_imgs", "stack", True, 6, 2, (2,), ((2, 2, 1), (6,), (10,), (15,))),
+    ("test_6_imgs", "concat", True, 6, 2, (2,), ((2,) * 15, (10,), (15,))),
+    ("test_6_imgs", "stack", True, 6, 4, (3,), ((3, 2), (6,), (10,), (15,))),
+    ("test_6_imgs", "concat", True, 6, 4, (3,), ((3,) * 10, (10,), (15,))),
+    ("test_6_imgs", "stack", True, 6, 1, (5,), None),  # chunk_shape[0] must devide the number of frames
+    ("test_6_imgs", "concat", True, 6, 1, (5,), None),
+    ("test_6_imgs", "concat", True, 6, 10, (10,), None),
 ]
 
 
 @pytest.mark.parametrize(
-    "data_key, stackable, join_chunks, frames_per_datum, indx_per_stream_datum_doc, chunk_shape, expected_chunks",
+    "data_key, join_method, join_chunks, frames_per_datum, indx_per_stream_datum_doc, chunk_shape, expected_chunks",  # noqa
     chunk_tiff_testdata,
 )
 @pytest.mark.parametrize("image_format", supported_image_seq_formats)
@@ -386,7 +398,7 @@ def test_tiff_and_jpeg_chunks(
     stream_datum_factory,
     image_format,
     data_key,
-    stackable,
+    join_method,
     join_chunks,
     frames_per_datum,
     indx_per_stream_datum_doc,
@@ -404,7 +416,7 @@ def test_tiff_and_jpeg_chunks(
         return
 
     cons = consolidator_factory(stream_resource, descriptor)
-    cons.stackable = stackable
+    cons.join_method = join_method
     cons.join_chunks = join_chunks
     assert cons.chunks == ((0,), *expected_chunks[1:])
     for i in range(ceil(5 / indx_per_stream_datum_doc)):
@@ -415,4 +427,40 @@ def test_tiff_and_jpeg_chunks(
     assert cons.chunks == expected_chunks
 
     # Check the number of registered files
-    assert len(cons.assets) == 5 * frames_per_datum / expected_chunks[0][0] if not stackable else 5
+    assert len(cons.assets) == 5 * frames_per_datum / expected_chunks[0][0] if join_method == "concat" else 5
+
+
+template_testdata = [
+    ("", "img_{:06d}", "img_{:06d}", "img_000042"),
+    ("img", "{:s}_{:06d}", "img_{:06d}", "img_000042"),
+    ("img", "%s_%06d", "img_{:06d}", "img_000042"),
+    ("", "img%s_%06d", "img_{:06d}", "img_000042"),
+    ("img", "%s_%1d", "img_{:1d}", "img_42"),
+    ("img", "%s_%-6d", "img_{:<6d}", "img_42    "),
+    ("img", "%s_%+06d", "img_{:+06d}", "img_+00042"),
+    ("img", "%s_% 06d", "img_{: 06d}", "img_ 00042"),
+    ("img", "%s_%-+6d", "img_{:<+6d}", "img_+42   "),
+    ("img", "%s_%- 6d", "img_{:< 6d}", "img_ 42   "),
+]
+
+
+@pytest.mark.parametrize("image_format", supported_image_seq_formats)
+@pytest.mark.parametrize("filename, original_template, expected_template, formatted", template_testdata)
+def test_name_templating(
+    descriptor,
+    image_seq_stream_resource_factory,
+    image_format,
+    filename,
+    original_template,
+    expected_template,
+    formatted,
+):
+    stream_resource = image_seq_stream_resource_factory(
+        image_format=image_format, data_key="test_img", chunk_shape=((1),)
+    )
+    stream_resource["parameters"]["template"] = f"{original_template}.{image_format}"
+    if filename:
+        stream_resource["parameters"]["filename"] = filename
+    cons = consolidator_factory(stream_resource, descriptor)
+    assert cons.template == f"{expected_template}.{image_format}"
+    assert cons.template.format(42) == f"{formatted}.{image_format}"
