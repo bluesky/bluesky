@@ -2338,7 +2338,7 @@ def fly(
     # Kickoff all flyers
     yield from bps.kickoff_all(*flyers, wait=True)
 
-    # Get list of detectors from flyers
+    # Get list of collectable detectors from flyers
     dets = [flyer for flyer in flyers if isinstance(flyer, Collectable)]
 
     # If provided, try to fit all detector datasets into a single stream
