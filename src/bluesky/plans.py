@@ -2352,7 +2352,7 @@ def fly(
             raise ValueError("stream_name must be provided when using collect_flush_period!")
         yield from bps.collect_while_completing(flyers, dets, flush_period=collect_flush_period)
     else:
-        yield from bps.complete_all(*dets, wait=True)
+        yield from bps.complete_all(*flyers, wait=True)
         if stream_name is not None:
             yield from bps.collect(*dets, name=stream_name)
         else:
