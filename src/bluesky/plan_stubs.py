@@ -1006,7 +1006,6 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     flyers: An iterable sequence of fly-able devices with 'kickoff', 'complete' and
         'collect' methods.
     dets: An iterable sequence of collectable devices with 'describe_collect' method.
-        If None, flyers arg will also be used as dets.
     flush_period: float, int
         Time period in seconds between each yield from collect while waiting for triggered
         objects to be done
