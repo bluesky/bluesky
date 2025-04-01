@@ -318,7 +318,7 @@ class ConsolidatorBase:
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
         # TODO: How to pass the `node` argument here?
-        uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uri"]
+        uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uris"]
         structure = adapter_class.from_uris(*uris, **self.adapter_parameters()).structure()
 
         if self.shape != structure.shape:
@@ -372,7 +372,7 @@ class HDF5Consolidator(ConsolidatorBase):
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
-        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri", num=0))
+        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uris", num=0))
         self.swmr = self._sres_parameters.get("swmr", True)
 
     def adapter_parameters(self) -> dict:
@@ -397,7 +397,7 @@ class HDF5Consolidator(ConsolidatorBase):
             raise ValueError("All StreamResource documents must have the same chunk shape.")
 
         asset = Asset(
-            data_uri=stream_resource["uri"], is_directory=False, parameter="data_uri", num=len(self.assets)
+            data_uri=stream_resource["uri"], is_directory=False, parameter="data_uris", num=len(self.assets)
         )
         self.assets.append(asset)
 
