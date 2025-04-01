@@ -21,7 +21,7 @@ from bluesky.plan_stubs import (
     wait,
 )
 from bluesky.plans import count, fly
-from bluesky.protocols import Preparable
+from bluesky.protocols import Collectable, Preparable
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
@@ -31,7 +31,7 @@ def collect_while_completing_plan(flyers, dets, stream_name: str = "test_stream"
     yield from open_run()
     if pre_declare:
         yield from declare_stream(*dets, name=stream_name, collect=True)
-    yield from collect_while_completing(flyers, dets, flush_period=0.1, stream_name=stream_name)
+    yield from collect_while_completing(flyers, dets=dets, flush_period=0.1, stream_name=stream_name)
     yield from close_run()
 
 
@@ -388,7 +388,7 @@ def call_counter(func):
     return inner
 
 
-class FlyerDevice(Device):
+class FlyerDevice(Device, Collectable):
     detector = Cpt(FlyerDetector, name="flyer-detector")
 
     def __init__(self, *args, **kwargs):
@@ -623,3 +623,13 @@ def test_kickoff_seperately_complete_all(RE):
     assert flyer2.call_counts["kickoff"] == 1
     assert flyer1.call_counts["complete"] == 1
     assert flyer2.call_counts["complete"] == 1
+
+
+def test_fly_plan_flush_period_no_stream_name(RE):
+    flyer1 = FlyerDevice(name="flyer1")
+
+    with pytest.raises(
+        ValueError,
+        match="stream_name must be provided when using collect_flush_period!",
+    ):
+        RE(fly([flyer1], collect_flush_period=0.1))
