@@ -142,7 +142,9 @@ class _RunWriter(CallbackBase):
             resource_dict = cast(dict, doc)
             stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
             stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
-            file_path = Path(resource_dict.pop("root").strip("/")).joinpath(resource_dict.pop("resource_path").strip("/"))
+            file_path = Path(resource_dict.pop("root").strip("/")).joinpath(
+                resource_dict.pop("resource_path").strip("/")
+            )
             stream_resource_doc["uri"] = "file://localhost/" + str(file_path)
 
         # Ensure that the internal path within HDF5 files is referenced with "dataset" parameter
@@ -181,10 +183,10 @@ class _RunWriter(CallbackBase):
 
         # Validate structure for some StreamResource nodes
         for sres_uid, sres_node in self._sres_nodes.items():
-            handler = self._consolidators[sres_uid]
-            if handler._sres_parameters.get("_validate", False):
-                handler.validate(fix_errors=True)
-                self._update_data_source_for_node(sres_node, handler.get_data_source())
+            consolidator = self._consolidators[sres_uid]
+            if consolidator._sres_parameters.get("_validate", False):
+                consolidator.validate(fix_errors=True)
+                self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Update the summary metadata with the stop document
         stream_names = list(self.root_node.keys())
@@ -258,7 +260,9 @@ class _RunWriter(CallbackBase):
         data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
         row = {"seq_num": doc["seq_num"], "time": int(doc["time"])}
         row.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
-        row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()})  # Keep all timestamps
+        row.update(
+            {f"ts_{k}": int(v) for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()}
+        )  # Keep all timestamps
         data_cache.append(row)
 
         if self._node_exists[f"{desc_name}/internal"]:
@@ -385,7 +389,7 @@ class _RunWriter(CallbackBase):
             sres_doc = self._stream_resource_cache.get(sres_uid)
             desc_node = self._desc_nodes[desc_uid]
 
-            # Check if there already exists a Node and a Handler for this data_key
+            # Check if there already exists a Node and a Consolidator for this data_key
             if sres_doc["data_key"] in desc_node.keys():
                 sres_node = desc_node[sres_doc["data_key"]]
                 # Find the id of the original cached StreamResource node in the tree
@@ -394,11 +398,11 @@ class _RunWriter(CallbackBase):
                         sres_uid_old = id
                         sres_node = node  # Keep the reference to the same node
                         break
-                handler = self._consolidators[sres_uid_old]
-                handler.consume_stream_resource(sres_doc)
+                consolidator = self._consolidators[sres_uid_old]
+                consolidator.consume_stream_resource(sres_doc)
             else:
                 # Initialise a bluesky consolidator for the StreamResource
-                consolidator = consolidator_factory(sres_doc, {"data_keys":dict(desc_node.metadata)})
+                consolidator = consolidator_factory(sres_doc, {"data_keys": dict(desc_node.metadata)})
 
                 sres_node = desc_node.new(
                     key=consolidator.data_key,
@@ -431,7 +435,7 @@ class _RunWriter(CallbackBase):
         ).json()
 
     def stream_datum(self, doc: StreamDatum):
-        # Get the Stream Resource node and the associtaed handler (consolidator)
+        # Get the Stream Resource node and the associtaed Consolidator
         sres_node, consolidator = self.get_sres_node(doc["stream_resource"], desc_uid=doc["descriptor"])
         consolidator.consume_stream_datum(doc)
         self._update_data_source_for_node(sres_node, consolidator.get_data_source())
