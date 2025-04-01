@@ -2,6 +2,7 @@ import copy
 import itertools
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional, Union, cast
 from warnings import warn
 
@@ -30,7 +31,7 @@ from tiled.utils import safe_json_dump
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
-BATCH_SIZE = 100
+BATCH_SIZE = 10000
 
 
 def build_summary(start_doc, stop_doc, stream_names):
@@ -141,8 +142,8 @@ class _RunWriter(CallbackBase):
             resource_dict = cast(dict, doc)
             stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
             stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
-            file_path = resource_dict.pop("root").strip("/") + "/" + resource_dict.pop("resource_path").strip("/")
-            stream_resource_doc["uri"] = "file://localhost/" + file_path
+            file_path = Path(resource_dict.pop("root").strip("/")).joinpath(resource_dict.pop("resource_path").strip("/"))
+            stream_resource_doc["uri"] = "file://localhost/" + str(file_path)
 
         # Ensure that the internal path within HDF5 files is referenced with "dataset" parameter
         if stream_resource_doc["mimetype"] == "application/x-hdf5":
@@ -174,14 +175,13 @@ class _RunWriter(CallbackBase):
                 table = pyarrow.Table.from_pylist(data_cache)
                 self.root_node[f"streams/{desc_name}"].parts["internal"].append_partition(table, 0)
                 data_cache.clear()
-
         # Write the cached external data
         for stream_datum_doc in self._external_data_cache.values():
             self.stream_datum(stream_datum_doc)
 
         # Validate structure for some StreamResource nodes
         for sres_uid, sres_node in self._sres_nodes.items():
-            handler = self._handlers[sres_uid]
+            handler = self._consolidators[sres_uid]
             if handler._sres_parameters.get("_validate", False):
                 handler.validate(fix_errors=True)
                 self._update_data_source_for_node(sres_node, handler.get_data_source())
@@ -258,7 +258,7 @@ class _RunWriter(CallbackBase):
         data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
         row = {"seq_num": doc["seq_num"], "time": int(doc["time"])}
         row.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
-        row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items()})  # Keep all timestamps
+        row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()})  # Keep all timestamps
         data_cache.append(row)
 
         if self._node_exists[f"{desc_name}/internal"]:
@@ -394,13 +394,13 @@ class _RunWriter(CallbackBase):
                         sres_uid_old = id
                         sres_node = node  # Keep the reference to the same node
                         break
-                handler = self._handlers[sres_uid_old]
+                handler = self._consolidators[sres_uid_old]
                 handler.consume_stream_resource(sres_doc)
             else:
                 # Initialise a bluesky consolidator for the StreamResource
-                consolidator = consolidator_factory(sres_doc, dict(desc_node.metadata))
+                consolidator = consolidator_factory(sres_doc, {"data_keys":dict(desc_node.metadata)})
 
-                sres_node = desc_node["external"].new(
+                sres_node = desc_node.new(
                     key=consolidator.data_key,
                     structure_family=StructureFamily.array,
                     data_sources=[consolidator.get_data_source()],

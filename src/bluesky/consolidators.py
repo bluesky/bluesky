@@ -302,7 +302,7 @@ class ConsolidatorBase:
 
         # TODO: How to pass the `node` argument here?
         return adapter_class.from_catalog(
-            self.get_data_source(), structure=self.structure, **self.adapter_parameters
+            self.get_data_source(), structure=self.structure, **self.adapter_parameters()
         )
 
     def consume_stream_resource(self, stream_resource: StreamResource):
@@ -319,17 +319,17 @@ class ConsolidatorBase:
 
         # TODO: How to pass the `node` argument here?
         uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uri"]
-        structure = adapter_class.from_uris(*uris, **self.adapter_parameters).structure()
+        structure = adapter_class.from_uris(*uris, **self.adapter_parameters()).structure()
 
         if self.shape != structure.shape:
             if not fix_errors:
                 raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
             else:
                 warnings.warn(f"Fixing shape mismatch: {self.shape} -> {structure.shape}", stacklevel=2)
-                if self.stackable:
+                if self.join_method == "stack":
                     self._num_rows = structure.shape[0]
                     self.datum_shape = structure.shape[1:]
-                else:
+                elif self.join_method == "concat":
                     # Estimate the number of frames_per_event (multiplier)
                     multiplier = 1 if structure.shape[0] % structure.chunks[0][0] else structure.chunks[0][0]
                     self._num_rows = structure.shape[0] // multiplier
