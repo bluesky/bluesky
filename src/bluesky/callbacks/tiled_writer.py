@@ -260,9 +260,7 @@ class _RunWriter(CallbackBase):
         data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
         row = {"seq_num": doc["seq_num"], "time": int(doc["time"])}
         row.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
-        row.update(
-            {f"ts_{k}": int(v) for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()}
-        )  # Keep all timestamps
+        row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()})
         data_cache.append(row)
 
         if self._node_exists[f"{desc_name}/internal"]:
