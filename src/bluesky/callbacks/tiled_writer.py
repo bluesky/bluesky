@@ -177,7 +177,7 @@ class _RunWriter(CallbackBase):
         self.root_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": dict(doc)},
-            specs=[Spec("BlueskyRunV2", version="1.0")],
+            specs=[Spec("BlueskyRun", version="2.0")],
         )
 
         # Create the backbone structure for the BlueskyRun container
