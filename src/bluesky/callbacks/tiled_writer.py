@@ -31,7 +31,7 @@ from tiled.utils import safe_json_dump
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
-BATCH_SIZE = 10000
+TABLE_UPDATE_BATCH_SIZE = 10000
 
 
 def build_summary(start_doc, stop_doc, stream_names):
@@ -155,6 +155,24 @@ class _RunWriter(CallbackBase):
 
         return stream_resource_doc
 
+    def _write_internal_data(self, data_cache: list[dict[str, Any]], desc_name: str):
+        """Write the internal data table to Tiled and clear the cache."""
+
+        parent_node = self.root_node[f"streams/{desc_name}"]
+        table = pyarrow.Table.from_pylist(data_cache)
+
+        if self._node_exists[f"{desc_name}/internal"]:
+            parent_node.parts["internal"].append_partition(table, 0)
+        else:
+            # Create a new "internal" data node and write the initial piece of data
+            metadata = {
+                k: v for k, v in (self.data_keys_ext | self.data_keys_int).items() if k in table.column_names
+            }
+            parent_node.create_appendable_table(schema=table.schema, key="internal", metadata=metadata)
+            parent_node.parts["internal"].append_partition(table, 0)
+            # Mark the node as existing to avoid making API calls for each subsequent inserts
+            self._node_exists[f"{desc_name}/internal"] = True
+
     def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
             key=doc["uid"],
@@ -175,9 +193,9 @@ class _RunWriter(CallbackBase):
         # Write the cached internal data
         for desc_name, data_cache in self._internal_data_cache.items():
             if data_cache:
-                table = pyarrow.Table.from_pylist(data_cache)
-                self.root_node[f"streams/{desc_name}"].parts["internal"].append_partition(table, 0)
+                self._write_internal_data(data_cache, desc_name)
                 data_cache.clear()
+
         # Write the cached external data
         for stream_datum_doc in self._external_data_cache.values():
             self.stream_datum(stream_datum_doc)
@@ -190,14 +208,19 @@ class _RunWriter(CallbackBase):
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Update the summary metadata with the stop document
-        stream_names = list(self.root_node.keys())
+        stream_names = list(self.root_node["streams"].keys())
         summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
         metadata = {"stop": doc, "summary": summary, **dict(self.root_node.metadata)}
         self.root_node.update_metadata(metadata=metadata)
 
+        # Remove empty nodes
+        for key in list(self.root_node.keys()):
+            if not self.root_node[key].keys():
+                self.root_node.delete(key)
+
     def descriptor(self, doc: EventDescriptor):
         if self.root_node is None:
-            raise RuntimeError("RunWriter is not roperly initialized: no Start document has been recorded.")
+            raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
 
         desc_name = doc["name"]  # Name of the descriptor/stream
 
@@ -265,21 +288,10 @@ class _RunWriter(CallbackBase):
         row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()})
         data_cache.append(row)
 
-        if self._node_exists[f"{desc_name}/internal"]:
-            # Do not write the data immediately; collect it in a cache and write in bulk
-            if len(data_cache) >= BATCH_SIZE:
-                table = pyarrow.Table.from_pylist(data_cache)
-                parent_node.parts["internal"].append_partition(table, 0)
-                data_cache.clear()
-        else:
-            # Create a new "internal" data node and write the initial piece of data
-            table = pyarrow.Table.from_pylist(data_cache)
-            metadata = {k: v for k, v in data_keys_spec.items() if k in table.column_names}
-            parent_node.create_appendable_table(schema=table.schema, key="internal", metadata=metadata)
-            parent_node.parts["internal"].append_partition(table, 0)
+        # Do not write the data immediately; collect it in a cache and write in bulk later
+        if len(data_cache) >= TABLE_UPDATE_BATCH_SIZE:
+            self._write_internal_data(data_cache, desc_name)
             data_cache.clear()
-            # Mark the node as existing to avoid making API calls for each subsequent inserts
-            self._node_exists[f"{desc_name}/internal"] = True
 
         # Process _external_ data: Loop over all referenced Datums
         for data_key in self.data_keys_ext.keys():
@@ -329,7 +341,7 @@ class _RunWriter(CallbackBase):
                         sres_doc["parameters"].update(datum_kwargs)
                         self._stream_resource_cache[sres_uid_key] = sres_doc
 
-                    # Produce the StreamDatum document and process it as usual
+                    # Produce the StreamDatum document
                     stream_datum_doc = StreamDatum(
                         uid=uid,
                         stream_resource=sres_uid_key,
@@ -338,11 +350,11 @@ class _RunWriter(CallbackBase):
                         seq_nums=seq_nums,
                     )
 
-                    # Try to concatenate and cache the StreamDatum document to process later
+                    # Try to concatenate and cache the StreamDatum document to process it later
                     if cached_stream_datum_doc := self._external_data_cache.pop(data_key, None):
                         try:
                             _doc = concatenate_stream_datums(cached_stream_datum_doc, stream_datum_doc)
-                            if _doc["indices"]["stop"] - _doc["indices"]["start"] > BATCH_SIZE:
+                            if _doc["indices"]["stop"] - _doc["indices"]["start"] > TABLE_UPDATE_BATCH_SIZE:
                                 # Write the (large) concatenated StreamDatum document immediately
                                 self.stream_datum(_doc)
                             else:
