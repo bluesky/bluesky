@@ -166,6 +166,7 @@ class _RunWriter(CallbackBase):
         self.root_node.create_container(key="config")
         self.root_node.create_container(key="streams")
         self.root_node.create_container(key="views")
+        self.root_node.create_container(key="aux")
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -233,7 +234,8 @@ class _RunWriter(CallbackBase):
 
         # Rename some fields to match the current schema
         for dk_dict in conf_list:
-            dk_dict["dtype_numpy"] = dk_dict.pop("dtype_str", None)
+            if dtype_str := dk_dict.pop("dtype_str", None):
+                dk_dict["dtype_numpy"] = dtype_str
 
         ### Write configs and data_keys descriptions in an awkward array of "records" (dicts)
         if conf_list:

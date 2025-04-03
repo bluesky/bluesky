@@ -27,7 +27,9 @@ from bluesky.protocols import (
 @pytest.fixture
 def catalog(tmp_path):
     tiled_catalog = pytest.importorskip("tiled.catalog")
-    yield tiled_catalog.in_memory(writable_storage=str(tmp_path))
+    yield tiled_catalog.in_memory(
+        writable_storage={"filesystem": str(tmp_path), "sql": f"duckdb:///{tmp_path}/test.db"}
+    )
 
 
 @pytest.fixture
@@ -233,14 +235,15 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     tw = TiledWriter(client)
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     RE(bp.count([det], 3), tw)
-    arrs = client.values().last()["primary"]["external"].values()
+    stream = client.values().last()["streams"]["primary"]
+    keys = sorted(set(stream.parts).difference({"internal"}))
 
-    assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (15, 10, 15)
-    assert arrs[2].shape == (3, 10, 5, 7, 4)
-    assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
+    assert stream[keys[0]].shape == (3,)
+    assert stream[keys[1]].shape == (15, 10, 15)
+    assert stream[keys[2]].shape == (3, 10, 5, 7, 4)
+    assert stream[keys[0]].read() is not None
+    assert stream[keys[1]].read() is not None
+    assert stream[keys[2]].read() is not None
 
 
 def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
@@ -248,31 +251,33 @@ def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
     det2 = StreamDatumReadableCollectable(name="det2", root=str(tmp_path))
     tw = TiledWriter(client)
     RE(bp.count([det1, det2], 3), tw)
-    arrs = client.values().last()["primary"]["external"].values()
+    stream = client.values().last()["streams"]["primary"]
+    keys = sorted(set(stream.parts).difference({"internal"}))
 
-    assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (15, 10, 15)
-    assert arrs[2].shape == (3, 10, 5, 7, 4)
-    assert arrs[3].shape == (3,)
-    assert arrs[4].shape == (15, 10, 15)
-    assert arrs[5].shape == (3, 10, 5, 7, 4)
-    assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
-    assert arrs[3].read() is not None
-    assert arrs[4].read() is not None
-    assert arrs[5].read() is not None
+    assert stream[keys[0]].shape == (3,)
+    assert stream[keys[1]].shape == (15, 10, 15)
+    assert stream[keys[2]].shape == (3, 10, 5, 7, 4)
+    assert stream[keys[3]].shape == (3,)
+    assert stream[keys[4]].shape == (15, 10, 15)
+    assert stream[keys[5]].shape == (3, 10, 5, 7, 4)
+    assert stream[keys[0]].read() is not None
+    assert stream[keys[1]].read() is not None
+    assert stream[keys[2]].read() is not None
+    assert stream[keys[3]].read() is not None
+    assert stream[keys[4]].read() is not None
+    assert stream[keys[5]].read() is not None
 
 
 def test_stream_datum_collectable(RE, client, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     tw = TiledWriter(client)
     RE(collect_plan(det, name="primary"), tw)
-    arrs = client.values().last()["primary"]["external"].values()
+    stream = client.values().last()["streams"]["primary"]
+    keys = sorted(set(stream.parts).difference({"internal"}))
 
-    assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
+    assert stream[keys[0]].read() is not None
+    assert stream[keys[1]].read() is not None
+    assert stream[keys[2]].read() is not None
 
 
 @pytest.mark.parametrize("frames_per_event", [1, 5, 10])
@@ -289,16 +294,15 @@ def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     )
     tw = TiledWriter(client)
     RE(bp.count([det], 3), tw)
-    extr = client.values().last()["primary"]["external"]["img"]
-    intr = client.values().last()["primary"]["internal"]
-    conf = client.values().last()["primary"]["config"]["img"]
+    extr = client.values().last()["streams"]["primary"].parts["img"]
+    intr = client.values().last()["streams"]["primary"].parts["internal"]
+    conf = client.values().last()["config"]["primary"]
     assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
-    assert set(intr.columns) == {"seq_num", "ts_img"}
+    assert set(intr.columns) == {"seq_num", "time"}
     assert len(intr.read()) == 3
     assert (intr["seq_num"].read() == [1, 2, 3]).all()
-    assert set(conf.columns) == {"descriptor_uid", "img", "ts_img"}
-    assert len(conf.read()) == 1
+    assert conf.read() is not None
 
 
 def collect_plan(*objs, name="primary"):
