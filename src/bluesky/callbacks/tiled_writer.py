@@ -1,7 +1,6 @@
 import copy
 import itertools
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union, cast
 from warnings import warn
@@ -32,22 +31,6 @@ from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, conso
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
 TABLE_UPDATE_BATCH_SIZE = 10000
-
-
-def build_summary(start_doc, stop_doc, stream_names):
-    summary = {
-        "uid": start_doc["uid"],
-        "scan_id": start_doc.get("scan_id"),
-        "timestamp": start_doc["time"],
-        "datetime": datetime.fromtimestamp(start_doc["time"]).isoformat(),
-        "plan_name": start_doc.get("plan_name"),
-        "stream_names": stream_names,
-    }
-    if stop_doc is None:
-        summary["duration"] = None
-    else:
-        summary["duration"] = stop_doc["time"] - start_doc["time"]
-    return summary
 
 
 def concatenate_stream_datums(*docs: StreamDatum):
@@ -183,8 +166,6 @@ class _RunWriter(CallbackBase):
         # Create the backbone structure for the BlueskyRun container
         self.root_node.create_container(key="config")
         self.root_node.create_container(key="streams")
-        self.root_node.create_container(key="views")
-        self.root_node.create_container(key="aux")
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -204,14 +185,14 @@ class _RunWriter(CallbackBase):
         for sres_uid, sres_node in self._sres_nodes.items():
             consolidator = self._consolidators[sres_uid]
             if consolidator._sres_parameters.get("_validate", False):
-                consolidator.validate(fix_errors=True)
+                try:
+                    consolidator.validate(fix_errors=True)
+                except Exception as e:
+                    warn(
+                        f"Validation of StreamResource {sres_uid} failed with error: {e}",
+                        stacklevel=2,
+                    )
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
-
-        # Update the summary metadata with the stop document
-        stream_names = list(self.root_node["streams"].keys())
-        summary = build_summary(self.root_node.metadata["start"], dict(doc), stream_names)
-        metadata = {"stop": doc, "summary": summary, **dict(self.root_node.metadata)}
-        self.root_node.update_metadata(metadata=metadata)
 
         # Remove empty nodes
         for key in list(self.root_node.keys()):
@@ -224,15 +205,18 @@ class _RunWriter(CallbackBase):
 
         desc_name = doc["name"]  # Name of the descriptor/stream
 
-        # Create a new stream node (container) for the descriptor if it does not exist
+        # Create a new Composite node for the stream if it does not exist
         data_keys = doc.get("data_keys", {})
         if desc_name not in self.root_node["streams"].keys():
-            # NOTE: Maybe don't store data_keys in metadata?
-            metadata = data_keys | {"uid": doc["uid"], "time": doc["time"]}
+            desc_count = 1  # Total number of descriptors received so far for this stream (almost always 1)
+            metadata = data_keys | {"uid": doc["uid"], "time": int(doc["time"]), "desc_count": desc_count}
             desc_node = self.root_node["streams"].create_composite(key=desc_name, metadata=metadata)
         else:
+            # This new descriptor likley updates stream configs mid-experiment (rare case)
             desc_node = self.root_node["streams"][desc_name]
-        self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the descriptor node by its uid
+            desc_count = desc_node.metadata["desc_count"] + 1
+            desc_node.update_metadata({"desc_count": desc_count})
+        self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
 
         # Keep specifications for external and internal data_keys for faster access
         self.data_keys_int.update({k: v for k, v in data_keys.items() if "external" not in v.keys()})
@@ -248,31 +232,30 @@ class _RunWriter(CallbackBase):
                 dk_dict["timestamp"] = None if dk_dict["timestamp"] is None else int(dk_dict["timestamp"])
                 conf_list.append(dk_dict)  # awkward does not like None
 
-        # Add the usual data_keys descriptions as well
-        for obj_name, data_keys_list in doc.get("object_keys", {}).items():
-            for key in data_keys_list:
-                dk_dict = doc.get("data_keys", {})[key]
-                dk_dict.update({"data_key": key, "object_name": obj_name})
-                conf_list.append(dk_dict)
+        # Add the usual data_keys descriptions as well if this is the first time we see this descriptor
+        if desc_count == 1:
+            for obj_name, data_keys_list in doc.get("object_keys", {}).items():
+                for key in data_keys_list:
+                    dk_dict = doc.get("data_keys", {})[key]
+                    dk_dict.update({"data_key": key, "object_name": obj_name})
+                    conf_list.append(dk_dict)
 
         # Rename some fields to match the current schema
         for dk_dict in conf_list:
             if dtype_str := dk_dict.pop("dtype_str", None):
                 dk_dict["dtype_numpy"] = dtype_str
 
-        ### Write configs and data_keys descriptions in an awkward array of "records" (dicts)
+        # Write configs and data_keys descriptions in an awkward array of "records" (dicts)
+        # If the config already exists, append the new data to it by reading and overwriting
         if conf_list:
-            # Define the key (name) and metadata for the configuration node
-            conf_meta = {"uid": doc["uid"], "time": int(doc["time"])}
-            conf_key = desc_name
-            if conf_key in self.root_node["config"].keys():
-                conf_key = f"{desc_name}-{doc['uid'][:8]}"
-                warn(
-                    f"Configuration node for the '{desc_name}' stream already exists."
-                    f"The updated configuration will be stored under a new key, '{conf_key}'.",
-                    stacklevel=2,
-                )
-            self.root_node["config"].write_awkward(conf_list, key=conf_key, metadata=conf_meta)
+            if desc_name in self.root_node["config"].keys():
+                conf_list += self.root_node["config"][desc_name].read().to_list()
+                conf_meta = dict(self.root_node["config"][desc_name].metadata)
+                self.root_node["config"].delete(key=desc_name)
+            else:
+                conf_meta = {"descriptors": []}
+            conf_meta["descriptors"].append({"uid": doc["uid"], "time": int(doc["time"])})
+            self.root_node["config"].write_awkward(conf_list, key=desc_name, metadata=conf_meta)
 
     def event(self, doc: Event):
         desc_uid = doc["descriptor"]
