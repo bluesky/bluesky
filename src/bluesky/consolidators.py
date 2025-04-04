@@ -3,6 +3,7 @@ import dataclasses
 import enum
 import os
 import re
+import warnings
 from typing import Any, Literal, Optional, Union
 
 import numpy as np
@@ -107,6 +108,15 @@ class ConsolidatorBase:
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
         self.datum_shape = () if self.datum_shape == (1,) and self.join_method == "stack" else self.datum_shape
+        # Check that the datum shape is consistent between the StreamResource and the Descriptor
+        if multiplier := self._sres_parameters.get("multiplier"):
+            self.datum_shape = self.datum_shape or (multiplier,)  # If datum_shape is not set
+            if self.datum_shape[0] != multiplier:
+                if self.datum_shape[0] == 1:
+                    self.datum_shape = (multiplier,) + self.datum_shape[1:]
+                else:
+                    self.datum_shape = (multiplier,) + self.datum_shape
+                    # TODO: Check consistency with chunk_shape
 
         # Determine data type. From highest precedent to lowest:
         # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
@@ -290,7 +300,58 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
-        return adapter_class.from_assets(self.assets, structure=self.structure(), **self.adapter_parameters())
+        # TODO: How to pass the `node` argument here?
+        return adapter_class.from_catalog(
+            self.get_data_source(), structure=self.structure, **self.adapter_parameters()
+        )
+
+    def consume_stream_resource(self, stream_resource: StreamResource):
+        """Consume an additional related StreamResource document for the same data_key"""
+
+        raise NotImplementedError("This method is not implemented in the base Consolidator class.")
+
+    def validate(self, adapters_by_mimetype=None, fix_errors=False):
+        """Validate the Consolidator's state against the expected structure"""
+
+        # User-provided adapters take precedence over defaults.
+        all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
+        adapter_class = all_adapters_by_mimetype[self.mimetype]
+
+        # TODO: How to pass the `node` argument here?
+        uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uris"]
+        structure = adapter_class.from_uris(*uris, **self.adapter_parameters()).structure()
+
+        if self.shape != structure.shape:
+            if not fix_errors:
+                raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
+            else:
+                warnings.warn(f"Fixing shape mismatch: {self.shape} -> {structure.shape}", stacklevel=2)
+                if self.join_method == "stack":
+                    self._num_rows = structure.shape[0]
+                    self.datum_shape = structure.shape[1:]
+                elif self.join_method == "concat":
+                    # Estimate the number of frames_per_event (multiplier)
+                    multiplier = 1 if structure.shape[0] % structure.chunks[0][0] else structure.chunks[0][0]
+                    self._num_rows = structure.shape[0] // multiplier
+                    self.datum_shape = (multiplier,) + structure.shape[1:]
+
+        if self.chunks != structure.chunks:
+            if not fix_errors:
+                raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
+            else:
+                _chunk_shape = tuple(c[0] for c in structure.chunks)
+                warnings.warn(f"Fixing chunk shape mismatch: {self.chunk_shape} -> {_chunk_shape}", stacklevel=2)
+                self.chunk_shape = _chunk_shape
+
+        if self.data_type != structure.data_type:
+            if not fix_errors:
+                raise ValueError(f"dtype mismatch: {self.data_type} != {structure.data_type}")
+            else:
+                warnings.warn(
+                    f"Fixing dtype mismatch: {self.data_type.to_numpy_dtype()} -> {structure.data_type.to_numpy_dtype()}",  # noqa
+                    stacklevel=2,
+                )
+                self.data_type = structure.data_type
 
 
 class CSVConsolidator(ConsolidatorBase):
@@ -311,7 +372,7 @@ class HDF5Consolidator(ConsolidatorBase):
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
-        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
+        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uris", num=0))
         self.swmr = self._sres_parameters.get("swmr", True)
 
     def adapter_parameters(self) -> dict:
@@ -320,7 +381,30 @@ class HDF5Consolidator(ConsolidatorBase):
         dataset: list[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+        params = {"dataset": self._sres_parameters["dataset"], "swmr": self.swmr}
+        if slice := self._sres_parameters.get("slice", False):
+            params["slice"] = slice
+        if squeeze := self._sres_parameters.get("squeeze", False):
+            params["squeeze"] = squeeze
+
+        return params
+
+    def consume_stream_resource(self, stream_resource: StreamResource):
+        """Add an Asset for a new StreamResource document"""
+        if stream_resource["parameters"]["dataset"] != self._sres_parameters["dataset"]:
+            raise ValueError("All StreamResource documents must have the same dataset path.")
+        if stream_resource["parameters"].get("chunk_shape", ()) != self._sres_parameters.get("chunk_shape", ()):
+            raise ValueError("All StreamResource documents must have the same chunk shape.")
+
+        asset = Asset(
+            data_uri=stream_resource["uri"], is_directory=False, parameter="data_uris", num=len(self.assets)
+        )
+        self.assets.append(asset)
+
+    def get_adapter(self, adapters_by_mimetype=None):
+        from tiled.adapters.hdf5 import HDF5ArrayAdapter
+
+        return super().get_adapter(adapters_by_mimetype={self.mimetype: HDF5ArrayAdapter})
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):
