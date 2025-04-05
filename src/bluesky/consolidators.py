@@ -317,7 +317,7 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
-        # TODO: How to pass the `node` argument here?
+        # TODO: How to pass the `node` argument here? Do we need it at all?
         uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uris"]
         structure = adapter_class.from_uris(*uris, **self.adapter_parameters()).structure()
 

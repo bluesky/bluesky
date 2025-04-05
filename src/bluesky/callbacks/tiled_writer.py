@@ -30,7 +30,7 @@ from tiled.utils import safe_json_dump
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
-TABLE_UPDATE_BATCH_SIZE = 10000
+TABLE_UPDATE_BATCH_SIZE = 0  # 10000
 
 
 def concatenate_stream_datums(*docs: StreamDatum):
@@ -147,11 +147,18 @@ class _RunWriter(CallbackBase):
         if self._node_exists[f"{desc_name}/internal"]:
             parent_node.parts["internal"].append_partition(table, 0)
         else:
+            # Replace any nulls in the schema with string type
+            schema = copy.copy(table.schema)
+            for i, field in enumerate(table.schema):
+                if pyarrow.types.is_null(field.type):
+                    schema = schema.set(i, field.with_type(pyarrow.string()))
+                elif pyarrow.types.is_list(field.type) and pyarrow.types.is_null(field.type.value_type):
+                    schema = schema.set(i, field.with_type(pyarrow.list_(pyarrow.string())))
             # Create a new "internal" data node and write the initial piece of data
             metadata = {
                 k: v for k, v in (self.data_keys_ext | self.data_keys_int).items() if k in table.column_names
             }
-            parent_node.create_appendable_table(schema=table.schema, key="internal", metadata=metadata)
+            parent_node.create_appendable_table(schema=schema, key="internal", metadata=metadata)
             parent_node.parts["internal"].append_partition(table, 0)
             # Mark the node as existing to avoid making API calls for each subsequent inserts
             self._node_exists[f"{desc_name}/internal"] = True
