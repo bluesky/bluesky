@@ -144,9 +144,11 @@ class _RunWriter(CallbackBase):
         parent_node = self.root_node[f"streams/{desc_name}"]
         table = pyarrow.Table.from_pylist(data_cache)
 
-        if self._node_exists[f"{desc_name}/internal"]:
-            parent_node.parts["internal"].append_partition(table, 0)
-        else:
+        if not self._node_exists[f"{desc_name}/internal"]:
+            # Create a new "internal" data node and write the initial piece of data
+            metadata = {
+                k: v for k, v in (self.data_keys_ext | self.data_keys_int).items() if k in table.column_names
+            }
             # Replace any nulls in the schema with string type
             schema = copy.copy(table.schema)
             for i, field in enumerate(table.schema):
@@ -154,14 +156,11 @@ class _RunWriter(CallbackBase):
                     schema = schema.set(i, field.with_type(pyarrow.string()))
                 elif pyarrow.types.is_list(field.type) and pyarrow.types.is_null(field.type.value_type):
                     schema = schema.set(i, field.with_type(pyarrow.list_(pyarrow.string())))
-            # Create a new "internal" data node and write the initial piece of data
-            metadata = {
-                k: v for k, v in (self.data_keys_ext | self.data_keys_int).items() if k in table.column_names
-            }
             parent_node.create_appendable_table(schema=schema, key="internal", metadata=metadata)
-            parent_node.parts["internal"].append_partition(table, 0)
             # Mark the node as existing to avoid making API calls for each subsequent inserts
             self._node_exists[f"{desc_name}/internal"] = True
+
+        parent_node.parts["internal"].append_partition(table, 0)
 
     def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
@@ -195,10 +194,7 @@ class _RunWriter(CallbackBase):
                 try:
                     consolidator.validate(fix_errors=True)
                 except Exception as e:
-                    warn(
-                        f"Validation of StreamResource {sres_uid} failed with error: {e}",
-                        stacklevel=2,
-                    )
+                    warn(f"Validation of StreamResource {sres_uid} failed with error: {e}", stacklevel=2)
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Remove empty nodes
