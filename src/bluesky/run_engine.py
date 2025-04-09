@@ -466,6 +466,13 @@ class RunEngine:
         except ImportError:
             self.log.debug("Failed to import ophyd.")
 
+        try:
+            import ophyd_async
+
+            self.md["versions"]["ophyd_async"] = ophyd_async.__version__
+        except ImportError:
+            self.log.debug("Failed to import ophyd_async.")
+
         from ._version import __version__
 
         self.md["versions"]["bluesky"] = __version__
