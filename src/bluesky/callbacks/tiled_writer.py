@@ -197,6 +197,9 @@ class _RunWriter(CallbackBase):
                     warn(f"Validation of StreamResource {sres_uid} failed with error: {e}", stacklevel=2)
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
+        # Write the stop document to the metadata
+        self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)})
+
         # Remove empty nodes
         for key in list(self.root_node.keys()):
             if not self.root_node[key].keys():
@@ -208,11 +211,27 @@ class _RunWriter(CallbackBase):
 
         desc_name = doc["name"]  # Name of the descriptor/stream
 
-        # Create a new Composite node for the stream if it does not exist
+        # Keep specifications for external and internal data_keys for faster access
         data_keys = doc.get("data_keys", {})
+        self.data_keys_int.update({k: v for k, v in data_keys.items() if "external" not in v.keys()})
+        self.data_keys_ext.update({k: v for k, v in data_keys.items() if "external" in v.keys()})
+        for item in self.data_keys_ext.values():
+            item["external"] = item.pop("external", "")  # Make sure the value set to external key is not None
+
+        # Create a new Composite node for the stream if it does not exist
         if desc_name not in self.root_node["streams"].keys():
             desc_count = 1  # Total number of descriptors received so far for this stream (almost always 1)
-            metadata = data_keys | {"uid": doc["uid"], "time": int(doc["time"]), "desc_count": desc_count}
+            extra = {
+                k: v
+                for k, v in doc.items()
+                if k not in {"name", "data_keys", "configuration", "uid", "time", "object_keys", "run_start"}
+            }
+            metadata = data_keys | {
+                "uid": doc["uid"],
+                "time": int(doc["time"]),
+                "desc_count": desc_count,
+                "extra": extra,
+            }
             desc_node = self.root_node["streams"].create_composite(key=desc_name, metadata=metadata)
         else:
             # This new descriptor likley updates stream configs mid-experiment (rare case)
@@ -220,10 +239,6 @@ class _RunWriter(CallbackBase):
             desc_count = desc_node.metadata["desc_count"] + 1
             desc_node.update_metadata({"desc_count": desc_count})
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
-
-        # Keep specifications for external and internal data_keys for faster access
-        self.data_keys_int.update({k: v for k, v in data_keys.items() if "external" not in v.keys()})
-        self.data_keys_ext.update({k: v for k, v in data_keys.items() if "external" in v.keys()})
 
         # Construct a list of configuration data_keys descriptions with values
         conf_list = []
@@ -239,14 +254,15 @@ class _RunWriter(CallbackBase):
         if desc_count == 1:
             for obj_name, data_keys_list in doc.get("object_keys", {}).items():
                 for key in data_keys_list:
-                    dk_dict = doc.get("data_keys", {})[key]
+                    dk_dict = data_keys[key]
                     dk_dict.update({"data_key": key, "object_name": obj_name})
                     conf_list.append(dk_dict)
 
-        # Rename some fields to match the current schema
+        # Rename some fields to match the current schema; add the positional index of the descriptor
         for dk_dict in conf_list:
             if dtype_str := dk_dict.pop("dtype_str", None):
                 dk_dict["dtype_numpy"] = dtype_str
+            dk_dict["desc_indx"] = desc_count - 1  # 0-based index
 
         # Write configs and data_keys descriptions in an awkward array of "records" (dicts)
         # If the config already exists, append the new data to it by reading and overwriting
