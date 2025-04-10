@@ -169,7 +169,7 @@ class _RunWriter(CallbackBase):
             specs=[Spec("BlueskyRun", version="2.0")],
         )
 
-        # Create the backbone structure for the BlueskyRun container
+        # Create the backbone structure for the BlueskyRun container; keep references to the nodes
         self.root_node.create_container(key="config")
         self.root_node.create_container(key="streams")
 
@@ -219,7 +219,8 @@ class _RunWriter(CallbackBase):
             item["external"] = item.pop("external", "")  # Make sure the value set to external key is not None
 
         # Create a new Composite node for the stream if it does not exist
-        if desc_name not in self.root_node["streams"].keys():
+        streams_node = self.root_node["streams"]  # Assign to variable to avoid making one extra request
+        if desc_name not in streams_node.keys():
             desc_count = 1  # Total number of descriptors received so far for this stream (almost always 1)
             extra = {
                 k: v
@@ -232,10 +233,10 @@ class _RunWriter(CallbackBase):
                 "desc_count": desc_count,
                 "extra": extra,
             }
-            desc_node = self.root_node["streams"].create_composite(key=desc_name, metadata=metadata)
+            desc_node = streams_node.create_composite(key=desc_name, metadata=metadata)
         else:
             # This new descriptor likley updates stream configs mid-experiment (rare case)
-            desc_node = self.root_node["streams"][desc_name]
+            desc_node = streams_node[desc_name]
             desc_count = desc_node.metadata["desc_count"] + 1
             desc_node.update_metadata({"desc_count": desc_count})
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
@@ -267,14 +268,16 @@ class _RunWriter(CallbackBase):
         # Write configs and data_keys descriptions in an awkward array of "records" (dicts)
         # If the config already exists, append the new data to it by reading and overwriting
         if conf_list:
-            if desc_name in self.root_node["config"].keys():
-                conf_list += self.root_node["config"][desc_name].read().to_list()
-                conf_meta = dict(self.root_node["config"][desc_name].metadata)
-                self.root_node["config"].delete(key=desc_name)
+            conf_node = self.root_node["config"]
+            if desc_name in conf_node.keys():
+                conf_client = conf_node[desc_name]
+                conf_list += conf_client.read().to_list()
+                conf_meta = dict(conf_client.metadata)
+                conf_node.delete(key=desc_name)
             else:
                 conf_meta = {"descriptors": []}
             conf_meta["descriptors"].append({"uid": doc["uid"], "time": int(doc["time"])})
-            self.root_node["config"].write_awkward(conf_list, key=desc_name, metadata=conf_meta)
+            conf_node.write_awkward(conf_list, key=desc_name, metadata=conf_meta)
 
     def event(self, doc: Event):
         desc_uid = doc["descriptor"]
