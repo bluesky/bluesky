@@ -349,8 +349,9 @@ def print_summary_wrapper(plan):
     return (yield from msg_mutator(plan, spy))
 
 
-def run_wrapper(plan, *, md=None):
-    """Enclose in 'open_run' and 'close_run' messages.
+def run_wrapper(plan, *, md=None, auto_raise=False):
+    """
+    Enclose in 'open_run' and 'close_run' messages.
 
     Parameters
     ----------
@@ -358,6 +359,11 @@ def run_wrapper(plan, *, md=None):
         a generator, list, or similar containing `Msg` objects
     md : dict, optional
         metadata to be passed into the 'open_run' message
+    auto_raise : bool, optional
+        If the exception should be always be re-raised, reagardless of what
+        except_plan does. Note this defaults to True for backwards
+        compatibility, which is not the usual behaviour of an except statement
+
     """
     rs_uid = yield from open_run(md)
 
@@ -367,7 +373,7 @@ def run_wrapper(plan, *, md=None):
         else:
             yield from close_run(exit_status="fail", reason=str(e))
 
-    yield from contingency_wrapper(plan, except_plan=except_plan, else_plan=close_run)
+    yield from contingency_wrapper(plan, except_plan=except_plan, else_plan=close_run, auto_raise=auto_raise)
     return rs_uid
 
 
