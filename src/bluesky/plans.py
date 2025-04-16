@@ -2335,29 +2335,25 @@ def fly(
     """
     uid = yield from bps.open_run(md)
 
-    # Kickoff all flyers
-    yield from bps.kickoff_all(*flyers, wait=True)
-
-    # Get list of collectable detectors from flyers
+    # Extract list of collectable detectors from flyers
     dets = [flyer for flyer in flyers if isinstance(flyer, Collectable)]
 
-    # If provided, try to fit all detector datasets into a single stream
+    # If provided, attempt to declare single stream for all flyers
+    # note that if set, all flyers must produce the same number of events.
     if stream_name is not None:
         yield from bps.declare_stream(*dets, name=stream_name)
 
-    # If a flush period is specified, then we collect while we are waiting for the
-    # flyers to complete.
+    # Kickoff all flyers
+    yield from bps.kickoff_all(*flyers, wait=True)
+
+    # If flush period given, collect while completing.
     if collect_flush_period is not None:
-        if stream_name is None:
-            raise ValueError("stream_name must be provided when using collect_flush_period!")
-        yield from bps.collect_while_completing(flyers, dets, flush_period=collect_flush_period)
+        yield from bps.collect_while_completing(flyers, dets, flush_period=collect_flush_period, stream_name=stream_name)
     else:
+        # Otherwise, wait for all flyers to complete before collecting.
         yield from bps.complete_all(*flyers, wait=True)
-        if stream_name is not None:
-            yield from bps.collect(*dets, name=stream_name)
-        else:
-            for det in dets:
-                yield from bps.collect(det)
+        for det in dets:
+            yield from bps.collect(det, name=stream_name)
 
     yield from bps.close_run()
     return uid
