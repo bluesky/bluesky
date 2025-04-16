@@ -4,6 +4,7 @@ import warnings
 from collections import namedtuple
 
 import numpy as np
+import numpy.typing as npt
 
 from .core import CallbackBase, CollectThenCompute
 
@@ -176,6 +177,40 @@ def center_of_mass(input, labels=None, index=None):
     return [tuple(v) for v in np.array(results).T]
 
 
+def center_of_mass_of_area_under_curve(x: npt.NDArray[np.float64], y: npt.NDArray[np.float64]) -> float:
+    """Compute the centre of mass of the area under a curve defined by a series of (x, y) points.
+
+    The "area under the curve" is a shape bounded by:
+    - min(y), along the bottom edge
+    - min(x), on the left-hand edge
+    - max(x), on the right-hand edge
+    - straight lines joining (x, y) data points to their nearest neighbours
+        along the x-axis, along the top edge
+
+    This is implemented by geometric decomposition of the shape into a series of trapezoids,
+    which are further decomposed into rectangular and triangular regions.
+    """
+    sort_indices = np.argsort(x, kind="stable")
+    x = np.take_along_axis(x, sort_indices, axis=None)
+    y = np.take_along_axis(y - np.min(y), sort_indices, axis=None)
+    widths = np.diff(x)
+
+    # Area under the curve for two adjacent points is a right trapezoid.
+    # Split that trapezoid into a rectangular region, plus a right triangle.
+    # Find area and effective X CoM for each.
+    rect_areas = widths * np.minimum(y[:-1], y[1:])
+    rect_x_com = (x[:-1] + x[1:]) / 2.0
+    triangle_areas = widths * np.abs(y[:-1] - y[1:]) / 2.0
+    triangle_x_com = np.where(y[:-1] > y[1:], x[:-1] + (widths / 3.0), x[:-1] + (2.0 * widths / 3.0))
+
+    total_area = np.sum(rect_areas + triangle_areas)
+    if total_area == 0.0:
+        # If all data was flat, return central x
+        return (x[0] + x[-1]) / 2.0
+
+    return np.sum(rect_areas * rect_x_com + triangle_areas * triangle_x_com) / total_area
+
+
 class PeakStats(CollectThenCompute):
     """
     Compute peak statsitics after a run finishes.
@@ -193,6 +228,12 @@ class PeakStats(CollectThenCompute):
     edge_count : int or None, optional
         If not None, number of points at beginning and end to use
         for quick and dirty background subtraction.
+    com_method : str, optional
+        "array_at_labels" (default) - Calculate the center of mass of the values of an array
+            at labels, linearly interpolating between points where required.
+        "area_under_curve" - calculates the CoM of the 2D region bounded by
+            min(y), min(x), max(x), and straight-line segments joining (x, y) data points
+            with their nearest neighbours along the x axis.
 
     Notes
     -----
@@ -229,13 +270,14 @@ class PeakStats(CollectThenCompute):
         "lin_bkg",
     )
 
-    def __init__(self, x, y, *, edge_count=None, calc_derivative_and_stats=False):
+    def __init__(self, x, y, *, edge_count=None, calc_derivative_and_stats=False, com_method="array_at_labels"):
         self.x = x
         self.y = y
         self._edge_count = edge_count
         self._calc_derivative_and_stats = calc_derivative_and_stats
         self.stats = None
         self.derivative_stats = None
+        self.com_method = com_method
 
         self._stats_fields = {
             "min": None,
@@ -271,7 +313,7 @@ class PeakStats(CollectThenCompute):
         return pprint.pformat(self.__dict__())
 
     @staticmethod
-    def _calc_stats(x, y, fields, edge_count=None):
+    def _calc_stats(x, y, fields, edge_count=None, com_method="array_at_labels"):
         y_orig = np.copy(y)
         if edge_count is not None:
             left_x = np.mean(x[:edge_count])
@@ -290,7 +332,10 @@ class PeakStats(CollectThenCompute):
 
         fields["min"] = (x[argmin_y], y_orig[argmin_y])
         fields["max"] = (x[argmax_y], y_orig[argmax_y])
-        (fields["com"],) = np.interp(center_of_mass(y), np.arange(len(x)), x)
+        if com_method == "array_at_labels":
+            (fields["com"],) = np.interp(center_of_mass(y), np.arange(len(x)), x)
+        elif com_method == "area_under_curve":
+            fields["com"] = center_of_mass_of_area_under_curve(x=x, y=y)
         mid = (np.max(y) + np.min(y)) / 2
         crossings = np.where(np.diff((y > mid).astype(int)))[0]
         _cen_list = []
@@ -340,7 +385,7 @@ class PeakStats(CollectThenCompute):
         self.y_data = y
 
         stats_fields = copy.deepcopy(self._stats_fields)
-        self.stats = self._calc_stats(x, y, stats_fields, edge_count=self._edge_count)
+        self.stats = self._calc_stats(x, y, stats_fields, edge_count=self._edge_count, com_method=self.com_method)
 
         for field in self._stats_fields:
             setattr(self, field, getattr(self.stats, field))
@@ -352,7 +397,9 @@ class PeakStats(CollectThenCompute):
 
             stats_fields = copy.deepcopy(self._stats_fields)
             stats_fields.update({"x": x_der, "y": y_der})
-            self.derivative_stats = self._calc_stats(x_der, y_der, stats_fields, edge_count=self._edge_count)
+            self.derivative_stats = self._calc_stats(
+                x_der, y_der, stats_fields, edge_count=self._edge_count, com_method=self.com_method
+            )
 
         # reset y data
         y = self.y_data
