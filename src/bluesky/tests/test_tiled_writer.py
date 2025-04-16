@@ -68,14 +68,13 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
         data_shape = tuple(data_desc["shape"])
-        data_shape = data_shape if data_shape != (1,) else ()
         hdf5_dataset = f"/{data_key}/VALUE"
 
         stream_resource = None
         if self.counter == 0:
             # Backward compatibility test, ignore typing errors
             stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
-                parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape)},
+                parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape[1:])},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
@@ -88,10 +87,10 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             with h5py.File(file_path, "a") as f:
                 dset = f.require_dataset(
                     hdf5_dataset,
-                    (0, *data_shape),
-                    maxshape=(None, *data_shape),
+                    data_shape,
+                    maxshape=(None, *data_shape[1:]),
                     dtype=np.dtype("float64"),
-                    chunks=(100, *data_shape),
+                    chunks=(100, *data_shape[1:]),
                 )
 
         indx_min, indx_max = self.counter, self.counter + index
@@ -106,8 +105,10 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         # Write (append to) the hdf5 dataset
         with h5py.File(file_path, "a") as f:
             dset = f[hdf5_dataset]
-            dset.resize([indx_max, *data_shape])
-            dset[indx_min:indx_max, ...] = np.random.randn(indx_max - indx_min, *data_shape)
+            dset.resize([indx_max * data_shape[0], *data_shape[1:]])
+            dset[indx_min * data_shape[0] : indx_max * data_shape[0], ...] = np.random.randn(
+                (indx_max - indx_min) * data_shape[0], *data_shape[1:]
+            )
 
         return stream_resource, stream_datum
 
@@ -121,7 +122,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             if self.counter == 0:
                 # Backward compatibility test, ignore typing errors
                 stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
-                    parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif"},
+                    parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif", "join_method": "stack"},
                     data_key=data_key,
                     root=self.root,
                     uri="file://localhost/" + self.root + "/",
@@ -148,25 +149,30 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     def describe(self) -> dict[str, DataKey]:
         """Describe datasets which will be backed by StreamResources"""
         return {
+            # Numerical data with 1 number per event in hdf5 format
             f"{self.name}-sd1": DataKey(
                 source="file",
                 dtype="number",
                 dtype_numpy=np.dtype("float64").str,
-                shape=[1],
+                shape=[
+                    1,
+                ],
                 external="STREAM:",
             ),
+            # 2-D data with 5 frames per event in hdf5 format
             f"{self.name}-sd2": DataKey(
                 source="file",
                 dtype="array",
                 dtype_numpy=np.dtype("float64").str,
-                shape=[10, 15],
+                shape=[5, 10, 15],
                 external="STREAM:",
             ),
+            # 3-D data with 10 frames per event in tiff format
             f"{self.name}-sd3": DataKey(
                 source="file",
                 dtype="array",
                 dtype_numpy=np.dtype("uint8").str,
-                shape=[5, 7, 4],
+                shape=[10, 5, 7, 4],
                 external="STREAM:",
             ),
         }
@@ -212,7 +218,7 @@ class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
 
     def stage(self):
         super().stage()
-        parameters = {"chunk_shape": (1,), "template": "_{:d}." + self.save_ext}
+        parameters = {"chunk_shape": (1,), "template": "_{:d}." + self.save_ext, "join_method": "stack"}
         self._asset_docs_cache[-1][1]["resource_kwargs"].update(parameters)
 
     def describe(self):
@@ -230,11 +236,32 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     arrs = client.values().last()["primary"]["external"].values()
 
     assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (3, 10, 15)
-    assert arrs[2].shape == (3, 5, 7, 4)
+    assert arrs[1].shape == (15, 10, 15)
+    assert arrs[2].shape == (3, 10, 5, 7, 4)
     assert arrs[0].read() is not None
     assert arrs[1].read() is not None
     assert arrs[2].read() is not None
+
+
+def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
+    det1 = StreamDatumReadableCollectable(name="det1", root=str(tmp_path))
+    det2 = StreamDatumReadableCollectable(name="det2", root=str(tmp_path))
+    tw = TiledWriter(client)
+    RE(bp.count([det1, det2], 3), tw)
+    arrs = client.values().last()["primary"]["external"].values()
+
+    assert arrs[0].shape == (3,)
+    assert arrs[1].shape == (15, 10, 15)
+    assert arrs[2].shape == (3, 10, 5, 7, 4)
+    assert arrs[3].shape == (3,)
+    assert arrs[4].shape == (15, 10, 15)
+    assert arrs[5].shape == (3, 10, 5, 7, 4)
+    assert arrs[0].read() is not None
+    assert arrs[1].read() is not None
+    assert arrs[2].read() is not None
+    assert arrs[3].read() is not None
+    assert arrs[4].read() is not None
+    assert arrs[5].read() is not None
 
 
 def test_stream_datum_collectable(RE, client, tmp_path):
@@ -248,9 +275,10 @@ def test_stream_datum_collectable(RE, client, tmp_path):
     assert arrs[2].read() is not None
 
 
-def test_handling_non_stream_resource(RE, client, tmp_path):
+@pytest.mark.parametrize("frames_per_event", [1, 5, 10])
+def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     det = SynSignalWithRegistry(
-        func=lambda: np.random.randint(0, 255, (10, 15), dtype="uint8"),
+        func=lambda: np.random.randint(0, 255, (frames_per_event, 10, 15), dtype="uint8"),
         dtype_numpy=np.dtype("uint8").str,
         name="img",
         labels={"detectors"},
@@ -264,8 +292,7 @@ def test_handling_non_stream_resource(RE, client, tmp_path):
     extr = client.values().last()["primary"]["external"]["img"]
     intr = client.values().last()["primary"]["internal"]["events"]
     conf = client.values().last()["primary"]["config"]["img"]
-
-    assert extr.shape == (3, 10, 15)
+    assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
     assert set(intr.columns) == {"seq_num", "ts_img"}
     assert len(intr.read()) == 3
