@@ -1029,7 +1029,11 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     done = False
     while not done:
         done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False)
-        yield from collect(*dets, name=stream_name)
+        if stream_name is not None:
+            yield from collect(*dets, name=stream_name)
+        else:
+            for det in dets:
+                yield from collect(det)
 
 
 @plan
