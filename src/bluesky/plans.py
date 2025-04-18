@@ -2356,7 +2356,7 @@ def fly(
         yield from bps.complete_all(*flyers, wait=True)
         if stream_name is not None:
             # If stream name given, collect all flyers under that stream
-            yield from bps.collect(*dets, stream_name=stream_name)
+            yield from bps.collect(*dets, name=stream_name)
         else:
             for det in dets:
                 yield from bps.collect(det)
