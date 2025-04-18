@@ -1,8 +1,11 @@
+import functools
 from collections import defaultdict
 from time import time
 
 import pytest
 from event_model.documents.event import PartialEvent
+from ophyd import Component as Cpt
+from ophyd import Device
 from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
 
 from bluesky import Msg
@@ -353,6 +356,110 @@ def test_device_redundent_config_reading(RE):
     assert flyer.call_counts["describe_configuration"] == 1
     assert flyer.call_counts["kickoff"] == 1
     assert flyer.call_counts["complete"] == 1
+
+
+class FlyerDetector(Device):
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name=name, *args, **kwargs)  # noqa: B026
+
+    def describe_configuration(self):
+        return {
+            "config_key_1": {"dtype": "string", "shape": [], "source": "PV:Config:1"},
+            "config_key_2": {"dtype": "number", "shape": [], "source": "PV:Config:2"},
+            "config_key_3": {"dtype": "string", "shape": [], "source": "PV:Config:3"},
+            "config_key_4": {"dtype": "number", "shape": [], "source": "PV:Config:4"},
+        }
+
+    def read_configuration(self):
+        return {
+            "config_key_1": {"value": "1", "timestamp": 1},
+            "config_key_2": {"value": 2, "timestamp": 2},
+            "config_key_3": {"value": "3", "timestamp": 3},
+            "config_key_4": {"value": 4, "timestamp": 4},
+        }
+
+
+def call_counter(func):
+    @functools.wraps(func)
+    def inner(self, *args, **kwargs):
+        self.call_counts[func.__name__] += 1
+        return func(self, *args, **kwargs)
+
+    return inner
+
+
+class FlyerDevice(Device):
+    detector = Cpt(FlyerDetector, name="flyer-detector")
+
+    def __init__(self, *args, **kwargs):
+        self.call_counts = defaultdict(int)
+        super().__init__(*args, **kwargs)
+
+    @call_counter
+    def kickoff(self):
+        return NullStatus()
+
+    @call_counter
+    def complete(self):
+        return NullStatus()
+
+    def stop(self, *, success=False):
+        pass
+
+    @call_counter
+    def describe_collect(self):
+        return {
+            "primary": {
+                "data_key_1": {
+                    "dims": [],
+                    "dtype": "string",
+                    "shape": [],
+                    "source": "",
+                },
+                "data_key_2": {
+                    "dims": [],
+                    "dtype": "number",
+                    "shape": [],
+                    "source": "",
+                },
+            },
+            "secondary": {
+                "data_key_3": {
+                    "dims": [],
+                    "dtype": "string",
+                    "shape": [],
+                    "source": "",
+                },
+                "data_key_4": {
+                    "dims": [],
+                    "dtype": "number",
+                    "shape": [],
+                    "source": "",
+                },
+            },
+        }
+
+    @call_counter
+    def collect(self):
+        yield {
+            "data": {"data_key_1": "", "data_key_2": 0},
+            "timestamps": {"data_key_1": 0, "data_key_2": 0},
+            "time": 0,
+        }
+
+        yield {
+            "data": {"data_key_3": "", "data_key_4": 0},
+            "timestamps": {"data_key_3": 0, "data_key_4": 0},
+            "time": 0,
+        }
+
+    @call_counter
+    def read_configuration(self):
+        return super().read_configuration()
+
+    @call_counter
+    def describe_configuration(self):
+        return super().describe_configuration()
 
 
 def test_describe_config_optional(RE):
