@@ -2348,12 +2348,18 @@ def fly(
 
     # If flush period given, collect while completing.
     if collect_flush_period is not None:
-        yield from bps.collect_while_completing(flyers, dets, flush_period=collect_flush_period, stream_name=stream_name)
+        yield from bps.collect_while_completing(
+            flyers, dets, flush_period=collect_flush_period, stream_name=stream_name
+        )
     else:
         # Otherwise, wait for all flyers to complete before collecting.
         yield from bps.complete_all(*flyers, wait=True)
-        for det in dets:
-            yield from bps.collect(det, name=stream_name)
+        if stream_name is not None:
+            # If stream name given, collect all flyers under that stream
+            yield from bps.collect(*dets, stream_name=stream_name)
+        else:
+            for det in dets:
+                yield from bps.collect(det)
 
     yield from bps.close_run()
     return uid
