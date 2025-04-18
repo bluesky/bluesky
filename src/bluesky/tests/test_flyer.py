@@ -1,11 +1,8 @@
-import functools
 from collections import defaultdict
 from time import time
 
 import pytest
 from event_model.documents.event import PartialEvent
-from ophyd import Component as Cpt
-from ophyd import Device
 from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
 
 from bluesky import Msg
@@ -21,7 +18,7 @@ from bluesky.plan_stubs import (
     wait,
 )
 from bluesky.plans import count, fly
-from bluesky.protocols import Collectable, Preparable
+from bluesky.protocols import Preparable
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector

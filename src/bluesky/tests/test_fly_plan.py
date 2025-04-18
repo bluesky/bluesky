@@ -1,30 +1,11 @@
 import functools
 from collections import defaultdict
-from time import time
 
-import pytest
-from event_model.documents.event import PartialEvent
-from ophyd import Component as Cpt
 from ophyd import Device
-from ophyd.sim import StatusBase, NewTrivialFlyer
+from ophyd.sim import NewTrivialFlyer, StatusBase
 
-from bluesky import Msg
-from bluesky.plan_stubs import (
-    close_run,
-    collect_while_completing,
-    complete,
-    complete_all,
-    declare_stream,
-    kickoff,
-    kickoff_all,
-    open_run,
-    wait,
-)
-from bluesky.plans import count, fly
-from bluesky.protocols import Collectable, Preparable
-from bluesky.run_engine import IllegalMessageSequence
+from bluesky.plans import fly
 from bluesky.tests import requires_ophyd
-from bluesky.tests.utils import DocCollector
 
 
 def call_counter(func):
@@ -68,7 +49,7 @@ class SlowFlyer(NewTrivialFlyer, Device):
                 'spec': 'AD_HDF5',
                 'uid': '9123df61-a09f-49ae-9d23-41d4d6c6d788'
             }
-        
+
         yield 'datum', {
             'datum_id': '9123df61-a09f-49ae-9d23-41d4d6c6d788/0',
             'datum_kwargs': {'point_number': index},
