@@ -30,7 +30,7 @@ from tiled.utils import safe_json_dump
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
-TABLE_UPDATE_BATCH_SIZE = 0  # 10000
+TABLE_UPDATE_BATCH_SIZE = 10000
 
 
 def concatenate_stream_datums(*docs: StreamDatum):
@@ -170,7 +170,7 @@ class _RunWriter(CallbackBase):
         )
 
         # Create the backbone structure for the BlueskyRun container; keep references to the nodes
-        self.root_node.create_container(key="config")
+        self.root_node.create_container(key="configs")
         self.root_node.create_container(key="streams")
 
     def stop(self, doc: RunStop):
@@ -229,11 +229,15 @@ class _RunWriter(CallbackBase):
             }
             metadata = data_keys | {
                 "uid": doc["uid"],
-                "time": int(doc["time"]),
+                "time": doc["time"],
                 "desc_count": desc_count,
                 "extra": extra,
             }
-            desc_node = streams_node.create_composite(key=desc_name, metadata=metadata)
+            desc_node = streams_node.create_composite(
+                key=desc_name,
+                metadata=metadata,
+                specs=[Spec("BlueskyEventStream", version="3.0")],
+            )
         else:
             # This new descriptor likley updates stream configs mid-experiment (rare case)
             desc_node = streams_node[desc_name]
@@ -248,7 +252,6 @@ class _RunWriter(CallbackBase):
                 dk_dict.update({"object_name": obj_name, "data_key": key})
                 dk_dict["value"] = obj_dict.get("data", {}).get(key, None)
                 dk_dict["timestamp"] = obj_dict.get("timestamps", {}).get(key, None)
-                dk_dict["timestamp"] = None if dk_dict["timestamp"] is None else int(dk_dict["timestamp"])
                 conf_list.append(dk_dict)  # awkward does not like None
 
         # Add the usual data_keys descriptions as well if this is the first time we see this descriptor
@@ -266,9 +269,9 @@ class _RunWriter(CallbackBase):
             dk_dict["desc_indx"] = desc_count - 1  # 0-based index
 
         # Write configs and data_keys descriptions in an awkward array of "records" (dicts)
-        # If the config already exists, append the new data to it by reading and overwriting
+        # If the configs node already exists, append the new data to it by reading and overwriting
         if conf_list:
-            conf_node = self.root_node["config"]
+            conf_node = self.root_node["configs"]
             if desc_name in conf_node.keys():
                 conf_client = conf_node[desc_name]
                 conf_list += conf_client.read().to_list()
@@ -276,7 +279,7 @@ class _RunWriter(CallbackBase):
                 conf_node.delete(key=desc_name)
             else:
                 conf_meta = {"descriptors": []}
-            conf_meta["descriptors"].append({"uid": doc["uid"], "time": int(doc["time"])})
+            conf_meta["descriptors"].append({"uid": doc["uid"], "time": doc["time"]})
             conf_node.write_awkward(conf_list, key=desc_name, metadata=conf_meta)
 
     def event(self, doc: Event):
@@ -288,9 +291,9 @@ class _RunWriter(CallbackBase):
         data_cache = self._internal_data_cache[desc_name]
         data_keys_spec = {k: v for k, v in self.data_keys_int.items() if doc["filled"].get(k, True)}
         data_keys_spec.update({k: v for k, v in self.data_keys_ext.items() if doc["filled"].get(k, False)})
-        row = {"seq_num": doc["seq_num"], "time": int(doc["time"])}
+        row = {"seq_num": doc["seq_num"], "time": doc["time"]}
         row.update({k: v for k, v in doc["data"].items() if k in data_keys_spec.keys()})
-        row.update({f"ts_{k}": int(v) for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()})
+        row.update({f"ts_{k}": v for k, v in doc["timestamps"].items() if k in data_keys_spec.keys()})
         data_cache.append(row)
 
         # Do not write the data immediately; collect it in a cache and write in bulk later
