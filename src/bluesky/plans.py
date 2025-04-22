@@ -2354,12 +2354,7 @@ def fly(
     else:
         # Otherwise, wait for all flyers to complete before collecting.
         yield from bps.complete_all(*flyers, wait=True)
-        if stream_name is not None:
-            # If stream name given, collect all flyers under that stream
-            yield from bps.collect(*dets, name=stream_name)
-        else:
-            for det in dets:
-                yield from bps.collect(det)
+        yield from bps.collect(*dets, name=stream_name)
 
     yield from bps.close_run()
     return uid
