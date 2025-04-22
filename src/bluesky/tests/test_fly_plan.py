@@ -12,8 +12,9 @@ from bluesky.tests import requires_ophyd
 def call_counter(func):
     @functools.wraps(func)
     def inner(self, *args, **kwargs):
+        ret = func(self, *args, **kwargs)
         self.call_counts[func.__name__] += 1
-        return func(self, *args, **kwargs)
+        return ret
 
     return inner
 
