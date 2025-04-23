@@ -76,7 +76,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         if self.counter == 0:
             # Backward compatibility test, ignore typing errors
             stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
-                parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape[1:])},
+                parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape[1:]), "_validate": True},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
@@ -124,7 +124,12 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             if self.counter == 0:
                 # Backward compatibility test, ignore typing errors
                 stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
-                    parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif", "join_method": "stack"},
+                    parameters={
+                        "chunk_shape": (1, *data_shape),
+                        "template": "{:05d}.tif",
+                        "join_method": "stack",
+                        "_validate": True,
+                    },
                     data_key=data_key,
                     root=self.root,
                     uri="file://localhost/" + self.root + "/",
@@ -220,7 +225,12 @@ class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
 
     def stage(self):
         super().stage()
-        parameters = {"chunk_shape": (1,), "template": "_{:d}." + self.save_ext, "join_method": "stack"}
+        parameters = {
+            "chunk_shape": (1,),
+            "template": "_{:d}." + self.save_ext,
+            "join_method": "stack",
+            "_validate": True,
+        }
         self._asset_docs_cache[-1][1]["resource_kwargs"].update(parameters)
 
     def describe(self):
