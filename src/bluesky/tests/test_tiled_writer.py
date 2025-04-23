@@ -296,7 +296,7 @@ def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     RE(bp.count([det], 3), tw)
     extr = client.values().last()["streams"]["primary"].parts["img"]
     intr = client.values().last()["streams"]["primary"].parts["internal"]
-    conf = client.values().last()["config"]["primary"]
+    conf = client.values().last()["configs"]["primary"]
     assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
     assert set(intr.columns) == {"seq_num", "time"}
