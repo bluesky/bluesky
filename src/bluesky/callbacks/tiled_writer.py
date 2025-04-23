@@ -1,5 +1,4 @@
 import copy
-import itertools
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Optional, Union, cast
@@ -43,8 +42,8 @@ def concatenate_stream_datums(*docs: StreamDatum):
         raise ValueError("All StreamDatum documents must reference the same descriptor.")
     if len({doc["stream_resource"] for doc in docs}) > 1:
         raise ValueError("All StreamDatum documents must reference the same stream_resource.")
-    docs = sorted(docs, key=lambda doc: doc["indices"]["start"])
-    for d1, d2 in itertools.pairwise(docs):
+    docs = tuple(sorted(docs, key=lambda doc: doc["indices"]["start"]))
+    for d1, d2 in zip(docs[:-1], docs[1:]):  # TODO: use itertools.pairwise(docs) in python 3.10+
         if d1["indices"]["stop"] != d2["indices"]["start"]:
             raise ValueError("StreamDatum documents must be consecutive.")
 
@@ -99,7 +98,9 @@ class _RunWriter(CallbackBase):
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}
         self._node_exists: dict[str, bool] = defaultdict(lambda: False)  # Keep track of existing nodes
-        self._next_frame_index: dict[tuple[str, str], int] = defaultdict(lambda: {"carry": 0, "index": 0})
+        self._next_frame_index: dict[tuple[str, str], dict[str, int]] = defaultdict(
+            lambda: {"carry": 0, "index": 0}
+        )
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
 
@@ -141,7 +142,7 @@ class _RunWriter(CallbackBase):
     def _write_internal_data(self, data_cache: list[dict[str, Any]], desc_name: str):
         """Write the internal data table to Tiled and clear the cache."""
 
-        parent_node = self.root_node[f"streams/{desc_name}"]
+        parent_node = self.root_node[f"streams/{desc_name}"]  # type: ignore[index]
         table = pyarrow.Table.from_pylist(data_cache)
 
         if not self._node_exists[f"{desc_name}/internal"]:
@@ -406,7 +407,7 @@ class _RunWriter(CallbackBase):
             if not desc_uid:
                 raise RuntimeError("Descriptor uid must be specified to initialise a Stream Resource node")
 
-            sres_doc = self._stream_resource_cache.get(sres_uid)
+            sres_doc = self._stream_resource_cache[sres_uid]
             desc_node = self._desc_nodes[desc_uid]
 
             # Check if there already exists a Node and a Consolidator for this data_key
