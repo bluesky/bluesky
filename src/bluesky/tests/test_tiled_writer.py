@@ -68,13 +68,13 @@ def external_assets_folder(tmp_path_factory):
     # Create an external hdf5 file
     with h5py.File(temp_dir.joinpath("dataset.h5"), "w") as file:
         grp = file.create_group("entry").create_group("data")
-        grp.create_dataset("data_1", data=rng.random(size=(3, 1), dtype="float64"))
+        grp.create_dataset("data_1", data=rng.random(size=(3,), dtype="float64"))
         grp.create_dataset("data_2", data=rng.integers(-10, 10, size=(3, 13, 17)), dtype="<i8")
 
     # Create a sequence of tiff files
     (temp_dir / "tiff_files").mkdir(parents=True, exist_ok=True)
     for i in range(3):
-        data = rng.integers(0, 255, size=(10, 15), dtype="uint8")
+        data = rng.integers(0, 255, size=(1, 10, 15), dtype="uint8")
         tf.imwrite(temp_dir.joinpath("tiff_files", f"img_{i:05}.tif"), data)
 
     yield str(temp_dir.absolute()).replace("\\", "/")
@@ -360,7 +360,7 @@ def collect_plan(*objs, name="primary"):
     yield from bps.close_run()
 
 
-@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets", "internal_events_two_descriptors"])
 def test_with_correct_sample_runs(client, external_assets_folder, fname):
     tw = TiledWriter(client)
     for item in render_templated_documents(fname + ".json", external_assets_folder):
@@ -375,6 +375,11 @@ def test_with_correct_sample_runs(client, external_assets_folder, fname):
 
     for config in run["configs"].values():
         assert config.read() is not None
+
+    # Check that both descriptors are referenced in configs
+    if fname == "internal_events_two_descriptors":
+        awk_arr = run["configs"]["primary"].read()
+        assert set(awk_arr["desc_indx"].to_list()) == {0, 1}
 
 
 @pytest.mark.parametrize("error_type", ["shape", "chunks", "dtype"])
