@@ -368,8 +368,8 @@ def test_with_sample_runs(client, example_documents):
         tw(**item)
     run = client[uid]
 
-    for stream in run.streams.values():
+    for stream in run["streams"].values():
         assert stream.read() is not None
 
-    for config in run.configs.values():
+    for config in run["configs"].values():
         assert config.read() is not None
