@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Optional, Union
@@ -79,16 +80,13 @@ def external_assets_folder(tmp_path_factory):
     yield str(temp_dir.absolute()).replace("\\", "/")
 
 
-@pytest.fixture(params=["internal_events", "external_assets", "external_assets_with_wrong_shape"])  #
-def example_documents(external_assets_folder, request):
-    fname = request.param + ".json"
-    fpath = Path(__file__).parent.joinpath("examples")
-    env = jinja2.Environment(loader=jinja2.FileSystemLoader(str(fpath)), autoescape=False)
+def render_templated_documents(fname: str, data_dir: str):
+    dirpath = str(Path(__file__).parent.joinpath("examples"))
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(dirpath), autoescape=False)
     template = env.get_template(fname)
-    rendered = template.render(root_path=external_assets_folder, uuid=request.param)
-    documents = json.loads(rendered)
+    rendered = template.render(root_path=data_dir, uuid=str(uuid.uuid4())[:-12])
 
-    yield documents
+    yield from json.loads(rendered)
 
 
 class Named(HasName):
@@ -362,12 +360,14 @@ def collect_plan(*objs, name="primary"):
     yield from bps.close_run()
 
 
-def test_with_sample_runs(client, example_documents):
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
+def test_with_correct_sample_runs(client, external_assets_folder, fname):
     tw = TiledWriter(client)
-    for item in example_documents:
+    for item in render_templated_documents(fname + ".json", external_assets_folder):
         if item["name"] == "start":
             uid = item["doc"]["uid"]
         tw(**item)
+
     run = client[uid]
 
     for stream in run["streams"].values():
@@ -375,3 +375,67 @@ def test_with_sample_runs(client, example_documents):
 
     for config in run["configs"].values():
         assert config.read() is not None
+
+
+@pytest.mark.parametrize("error_type", ["shape", "chunks", "dtype"])
+@pytest.mark.parametrize("validate", [True, False])
+def test_validate_external_data(client, external_assets_folder, error_type, validate):
+    tw = TiledWriter(client)
+
+    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    for item in documents:
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Modify the document to introduce an error
+        if (error_type == "shape") and (name == "descriptor"):
+            doc["data_keys"]["det-key2"]["shape"] = [1, 2, 3]  # should be [1, 13, 17]
+        elif (error_type == "chunks") and name in {"resource", "stream_resource"}:
+            doc["parameters"]["chunk_shape"] = [1, 2, 3]  # should be [100, 13, 17]
+        elif (error_type == "dtype") and (name == "descriptor"):
+            doc["data_keys"]["det-key2"]["dtype_numpy"] = np.dtype("int32").str  # should be "int64"
+
+        # Add flag to trigger validation
+        if name in {"resource", "stream_resource"} and validate:
+            doc["parameters"]["_validate"] = True
+
+        # Check that the warning is issued when data changes during the validation
+        if name == "stop" and validate:
+            with pytest.warns(UserWarning):
+                tw(name, doc)
+        else:
+            tw(name, doc)
+
+    # Try reading the imported data
+    run = client[uid]
+    if not validate and not error_type == "chunks":
+        with pytest.raises(ValueError):
+            assert run["streams"]["primary"].read() is not None
+    else:
+        assert run["streams"]["primary"].read() is not None
+
+
+@pytest.mark.parametrize("squeeze", [True, False])
+def test_slice_and_squeeze(client, external_assets_folder, squeeze):
+    tw = TiledWriter(client)
+
+    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    for item in documents:
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Modify the documents to add slice and squeeze parameters
+        if name == "descriptor":
+            doc["data_keys"]["det-key2"]["shape"] = [1, 17] if squeeze else [1, 5, 17]
+        elif name in {"resource", "stream_resource"}:
+            doc["parameters"]["slice"] = ":,5,:" if squeeze else ":,:5,:"
+            doc["parameters"]["squeeze"] = squeeze
+            doc["parameters"]["chunk_shape"] = [1]
+
+        tw(name, doc)
+
+    # Try reading the imported data
+    run = client[uid]
+    assert run["streams"]["primary"].read() is not None

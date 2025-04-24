@@ -79,8 +79,7 @@
                 "dataset": "/entry/data/data_1",
                 "chunk_shape": [
                     100
-                ],
-                "_validate": true
+                ]
             },
             "data_key": "det-key1",
             "root": "{{ root_path }}",
@@ -117,8 +116,7 @@
                     100,
                     13,
                     17
-                ],
-                "_validate": true
+                ]
             },
             "data_key": "det-key2",
             "root": "{{ root_path }}",
@@ -156,8 +154,7 @@
                     15
                 ],
                 "template": "img_{:05d}.tif",
-                "join_method": "stack",
-                "_validate": true
+                "join_method": "stack"
             },
             "data_key": "det-key3",
             "root": "{{ root_path }}/tiff_files",
