@@ -155,7 +155,7 @@
                     10,
                     15
                 ],
-                "template": "{:05d}.tif",
+                "template": "img_{:05d}.tif",
                 "join_method": "stack",
                 "_validate": true
             },

@@ -74,16 +74,17 @@ def external_assets_folder(tmp_path_factory):
     (temp_dir / "tiff_files").mkdir(parents=True, exist_ok=True)
     for i in range(3):
         data = rng.integers(0, 255, size=(10, 15), dtype="uint8")
-        tf.imwrite(temp_dir.joinpath("tiff_files", f"{i:05}.tif"), data)
+        tf.imwrite(temp_dir.joinpath("tiff_files", f"img_{i:05}.tif"), data)
 
-    yield str(temp_dir.absolute())
+    yield str(temp_dir.absolute()).replace("\\", "/")
 
 
 @pytest.fixture(params=["internal_events", "external_assets", "external_assets_with_wrong_shape"])  #
 def example_documents(external_assets_folder, request):
     fname = request.param + ".json"
-    fpath = Path(__file__).parent.joinpath("examples", fname)
-    template = jinja2.Environment().from_string(fpath.read_text())
+    fpath = Path(__file__).parent.joinpath("examples")
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(str(fpath)), autoescape=False)
+    template = env.get_template(fname)
     rendered = template.render(root_path=external_assets_folder, uuid=request.param)
     documents = json.loads(rendered)
 
