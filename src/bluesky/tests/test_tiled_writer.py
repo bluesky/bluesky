@@ -1,8 +1,11 @@
+import json
 import os
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Optional, Union
 
 import h5py
+import jinja2
 import numpy as np
 import ophyd.sim
 import pytest
@@ -23,32 +26,67 @@ from bluesky.protocols import (
     WritesStreamAssets,
 )
 
+rng = np.random.default_rng(12345)
 
-@pytest.fixture
-def catalog(tmp_path):
+
+@pytest.fixture(scope="module")
+def catalog(tmp_path_factory):
     tiled_catalog = pytest.importorskip("tiled.catalog")
+    tmp_path = tmp_path_factory.mktemp("tiled_catalog")
     yield tiled_catalog.in_memory(
-        writable_storage={"filesystem": str(tmp_path), "sql": f"duckdb:///{tmp_path}/test.db"}
+        writable_storage={"filesystem": str(tmp_path), "sql": f"duckdb:///{tmp_path}/test.db"},
+        readable_storage=[str(tmp_path.parent)],
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def app(catalog):
     tsa = pytest.importorskip("tiled.server.app")
     yield tsa.build_app(catalog)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def context(app):
     tc = pytest.importorskip("tiled.client")
     with tc.Context.from_app(app) as context:
         yield context
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def client(context):
     tc = pytest.importorskip("tiled.client")
     yield tc.from_context(context)
+
+
+@pytest.fixture(scope="module")
+def external_assets_folder(tmp_path_factory):
+    """External data files used with the saved documents."""
+    # Create a temporary directory
+    temp_dir = tmp_path_factory.mktemp("example_files")
+
+    # Create an external hdf5 file
+    with h5py.File(temp_dir.joinpath("dataset.h5"), "w") as file:
+        grp = file.create_group("entry").create_group("data")
+        grp.create_dataset("data_1", data=rng.random(size=(3, 1), dtype="float64"))
+        grp.create_dataset("data_2", data=rng.integers(-10, 10, size=(3, 13, 17)), dtype="<i8")
+
+    # Create a sequence of tiff files
+    (temp_dir / "tiff_files").mkdir(parents=True, exist_ok=True)
+    for i in range(3):
+        data = rng.integers(0, 255, size=(10, 15), dtype="uint8")
+        tf.imwrite(temp_dir.joinpath("tiff_files", f"{i:05}.tif"), data)
+
+    yield str(temp_dir.absolute())
+
+
+@pytest.fixture(params=["internal_events", "external_assets", "external_assets_with_wrong_shape"])  #
+def example_documents(external_assets_folder, request):
+    fname = request.param + ".json"
+    fpath = Path(__file__).parent.joinpath("examples", fname)
+    template = jinja2.Template(fpath.read_text())
+    documents = json.loads(template.render(root_path=external_assets_folder, uuid=request.param))
+
+    yield documents
 
 
 class Named(HasName):
@@ -320,3 +358,18 @@ def collect_plan(*objs, name="primary"):
     yield from bps.declare_stream(*objs, collect=True, name=name)
     yield from bps.collect(*objs, return_payload=False, name=name)
     yield from bps.close_run()
+
+
+def test_with_sample_runs(client, example_documents):
+    tw = TiledWriter(client)
+    for item in example_documents:
+        if item["name"] == "start":
+            uid = item["doc"]["uid"]
+        tw(**item)
+    run = client[uid]
+
+    for stream in run.streams.values():
+        assert stream.read() is not None
+
+    for config in run.configs.values():
+        assert config.read() is not None

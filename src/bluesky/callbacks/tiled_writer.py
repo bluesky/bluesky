@@ -129,7 +129,7 @@ class _RunWriter(CallbackBase):
             file_path = Path(resource_dict.pop("root").strip("/")).joinpath(
                 resource_dict.pop("resource_path").strip("/")
             )
-            stream_resource_doc["uri"] = "file://localhost/" + str(file_path)
+            stream_resource_doc["uri"] = "file://localhost/" + str(file_path).lstrip("/")
 
         # Ensure that the internal path within HDF5 files is referenced with "dataset" parameter
         if stream_resource_doc["mimetype"] == "application/x-hdf5":
