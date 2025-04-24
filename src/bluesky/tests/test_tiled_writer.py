@@ -83,8 +83,9 @@ def external_assets_folder(tmp_path_factory):
 def example_documents(external_assets_folder, request):
     fname = request.param + ".json"
     fpath = Path(__file__).parent.joinpath("examples", fname)
-    template = jinja2.Template(fpath.read_text())
-    documents = json.loads(template.render(root_path=external_assets_folder, uuid=request.param))
+    template = jinja2.Environment().from_string(fpath.read_text())
+    rendered = template.render(root_path=external_assets_folder, uuid=request.param)
+    documents = json.loads(rendered)
 
     yield documents
 
