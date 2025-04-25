@@ -360,7 +360,7 @@ def collect_plan(*objs, name="primary"):
     yield from bps.close_run()
 
 
-@pytest.mark.parametrize("fname", ["internal_events", "external_assets", "internal_events_two_descriptors"])
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
 def test_with_correct_sample_runs(client, external_assets_folder, fname):
     tw = TiledWriter(client)
     for item in render_templated_documents(fname + ".json", external_assets_folder):
@@ -377,7 +377,7 @@ def test_with_correct_sample_runs(client, external_assets_folder, fname):
         assert config.read() is not None
 
     # Check that both descriptors are referenced in configs
-    if fname == "internal_events_two_descriptors":
+    if fname == "internal_events":
         awk_arr = run["configs"]["primary"].read()
         assert set(awk_arr["desc_indx"].to_list()) == {0, 1}
 

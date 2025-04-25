@@ -154,15 +154,122 @@
         }
     },
     {
+        "name": "descriptor",
+        "doc": {
+            "configuration": {
+                "det": {
+                    "data": {
+                        "det_Imax": 2,
+                        "det_center": 0.5,
+                        "det_sigma": 2,
+                        "det_noise": "none",
+                        "det_noise_multiplier": 2
+                    },
+                    "timestamps": {
+                        "det_Imax": 1745338532.894953,
+                        "det_center": 1745338532.894945,
+                        "det_sigma": 1745338532.894964,
+                        "det_noise": 1745338532.894911,
+                        "det_noise_multiplier": 1745338532.894936
+                    },
+                    "data_keys": {
+                        "det_Imax": {
+                            "source": "SIM:det_Imax",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det",
+                            "data_key": "det_Imax",
+                            "value": 2,
+                            "timestamp": 1745338532.894953,
+                            "desc_indx": 0
+                        },
+                        "det_center": {
+                            "source": "SIM:det_center",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det",
+                            "data_key": "det_center",
+                            "value": 0.5,
+                            "timestamp": 1745338532.894945,
+                            "desc_indx": 0
+                        },
+                        "det_sigma": {
+                            "source": "SIM:det_sigma",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det",
+                            "data_key": "det_sigma",
+                            "value": 2,
+                            "timestamp": 1745338532.894964,
+                            "desc_indx": 0
+                        },
+                        "det_noise": {
+                            "source": "SIM:det_noise",
+                            "dtype": "integer",
+                            "shape": [],
+                            "enum_strs": [
+                                "none",
+                                "poisson",
+                                "uniform"
+                            ],
+                            "object_name": "det",
+                            "data_key": "det_noise",
+                            "value": "none",
+                            "timestamp": 1745338532.894911,
+                            "desc_indx": 0
+                        },
+                        "det_noise_multiplier": {
+                            "source": "SIM:det_noise_multiplier",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det",
+                            "data_key": "det_noise_multiplier",
+                            "value": 2,
+                            "timestamp": 1745338532.894936,
+                            "desc_indx": 0
+                        }
+                    }
+                }
+            },
+            "data_keys": {
+                "det": {
+                    "source": "SIM:det",
+                    "dtype": "number",
+                    "shape": [],
+                    "precision": 3,
+                    "object_name": "det",
+                    "data_key": "det",
+                    "desc_indx": 0
+                }
+            },
+            "name": "primary",
+            "object_keys": {
+                "det": [
+                    "det"
+                ]
+            },
+            "run_start": "{{ uuid }}-dc0518f354ee",
+            "time": 1745338532.004459,
+            "uid": "{{ uuid }}-ab0498e83e2b",
+            "hints": {
+                "det": {
+                    "fields": [
+                        "det"
+                    ]
+                }
+            }
+        }
+    },
+    {
         "name": "event",
         "doc": {
             "uid": "{{ uuid }}-bd3438cb9a13",
-            "time": 1745338531.2213702,
+            "time": 1745338533.2213702,
             "data": {
                 "det": 1.0
             },
             "timestamps": {
-                "det": 1745338531.219767
+                "det": 1745338533.219767
             },
             "seq_num": 3,
             "filled": {},
@@ -173,7 +280,7 @@
         "name": "stop",
         "doc": {
             "uid": "{{ uuid }}-98db440e2c8b",
-            "time": 1745338531.2218728,
+            "time": 1745338533.2218728,
             "run_start": "{{ uuid }}-dc0518f354ee",
             "exit_status": "success",
             "reason": "",
