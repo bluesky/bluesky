@@ -350,6 +350,8 @@ class ConsolidatorBase:
                 )
                 self.data_type = structure.data_type
 
+        assert self.get_adapter() is not None, "Adapter can not not initialized"
+
 
 class CSVConsolidator(ConsolidatorBase):
     supported_mimetypes: set[str] = {"text/csv;header=absent"}
