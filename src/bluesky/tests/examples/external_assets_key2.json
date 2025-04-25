@@ -86,6 +86,43 @@
         }
     },
     {
+        "name": "stream_resource",
+        "doc": {
+            "parameters": {
+                "dataset": "/entry/data/data_2",
+                "chunk_shape": [
+                    100,
+                    13,
+                    17
+                ]
+            },
+            "data_key": "det-key2",
+            "root": "{{ root_path }}",
+            "resource_path": "/dataset_part2.h5",
+            "uri": "file://localhost/{{ root_path }}/dataset_part2.h5",
+            "spec": "AD_HDF5_SWMR_STREAM",
+            "mimetype": "application/x-hdf5",
+            "uid": "det-key2-uid-part2",
+            "run_start": "{{ uuid }}-9724b2201fe7"
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key2-uid-part2",
+            "descriptor": "{{ uuid }}-8c00740d9771",
+            "uid": "det-key2-uid-part2/0",
+            "indices": {
+                "start": 0,
+                "stop": 5
+            },
+            "seq_nums": {
+                "start": 1,
+                "stop": 6
+            }
+        }
+    },
+    {
         "name": "stop",
         "doc": {
             "uid": "{{ uuid }}-fe2748f474de",

@@ -71,6 +71,11 @@ def external_assets_folder(tmp_path_factory):
         grp.create_dataset("data_1", data=rng.random(size=(3,), dtype="float64"))
         grp.create_dataset("data_2", data=rng.integers(-10, 10, size=(3, 13, 17)), dtype="<i8")
 
+    # Create a second external hdf5 file to be declared in a different stream resource
+    with h5py.File(temp_dir.joinpath("dataset_part2.h5"), "w") as file:
+        grp = file.create_group("entry").create_group("data")
+        grp.create_dataset("data_2", data=rng.integers(-10, 10, size=(5, 13, 17)), dtype="<i8")
+
     # Create a sequence of tiff files
     (temp_dir / "tiff_files").mkdir(parents=True, exist_ok=True)
     for i in range(3):
@@ -419,6 +424,7 @@ def test_validate_external_data(client, external_assets_folder, error_type, vali
             assert run["streams"]["primary"].read() is not None
     else:
         assert run["streams"]["primary"].read() is not None
+        assert run["streams"]["primary"]["det-key2"].read().shape == (8, 13, 17)
 
 
 @pytest.mark.parametrize("squeeze", [True, False])
@@ -442,5 +448,25 @@ def test_slice_and_squeeze(client, external_assets_folder, squeeze):
         tw(name, doc)
 
     # Try reading the imported data
-    run = client[uid]
-    assert run["streams"]["primary"].read() is not None
+    assert client[uid]["streams"]["primary"].read() is not None
+
+
+def test_legacy_multiplier(client, external_assets_folder):
+    tw = TiledWriter(client)
+
+    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    for item in documents:
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Modify the documents to add slice and squeeze parameters
+        if name == "descriptor":
+            doc["data_keys"]["det-key2"]["shape"] = [13, 17]
+        elif name in {"resource", "stream_resource"}:
+            doc["parameters"]["multiplier"] = 1
+
+        tw(name, doc)
+
+    # Try reading the imported data
+    assert client[uid]["streams"]["primary"].read() is not None

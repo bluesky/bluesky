@@ -291,19 +291,16 @@ class ConsolidatorBase:
     def get_adapter(self, adapters_by_mimetype=None):
         """Return an Adapter suitable for reading the data
 
-        Uses a dictionary mapping of a mimetype to a callable that returns an Adapter instance.
-        This might be a class, classmethod constructor, factory function...
-        it does not matter here; it is just a callable.
+        Uses a dictionary mapping of a mimetype to a callable that returns an Adapter instance from_catalog.
         """
 
         # User-provided adapters take precedence over defaults.
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
-        # TODO: How to pass the `node` argument here?
-        return adapter_class.from_catalog(
-            self.get_data_source(), structure=self.structure, **self.adapter_parameters()
-        )
+        # Mimic the necessary aspects of a tiled node with a namedtuple
+        _Node = collections.namedtuple("Node", ["metadata_", "specs"])
+        return adapter_class.from_catalog(self.get_data_source(), _Node({}, []), **self.adapter_parameters())
 
     def consume_stream_resource(self, stream_resource: StreamResource):
         """Consume an additional related StreamResource document for the same data_key"""
@@ -317,7 +314,7 @@ class ConsolidatorBase:
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
-        # TODO: How to pass the `node` argument here? Do we need it at all?
+        # Initialize adapter from uris and determine the structure
         uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uris"]
         structure = adapter_class.from_uris(*uris, **self.adapter_parameters()).structure()
 
@@ -400,11 +397,6 @@ class HDF5Consolidator(ConsolidatorBase):
             data_uri=stream_resource["uri"], is_directory=False, parameter="data_uris", num=len(self.assets)
         )
         self.assets.append(asset)
-
-    def get_adapter(self, adapters_by_mimetype=None):
-        from tiled.adapters.hdf5 import HDF5ArrayAdapter
-
-        return super().get_adapter(adapters_by_mimetype={self.mimetype: HDF5ArrayAdapter})
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):

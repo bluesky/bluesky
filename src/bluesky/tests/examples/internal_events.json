@@ -38,31 +38,19 @@
                             "source": "SIM:det_Imax",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_Imax",
-                            "value": 1,
-                            "timestamp": 1745338530.894953,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_center": {
                             "source": "SIM:det_center",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_center",
-                            "value": 0,
-                            "timestamp": 1745338530.894945,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_sigma": {
                             "source": "SIM:det_sigma",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_sigma",
-                            "value": 1,
-                            "timestamp": 1745338530.894964,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_noise": {
                             "source": "SIM:det_noise",
@@ -73,21 +61,13 @@
                                 "poisson",
                                 "uniform"
                             ],
-                            "object_name": "det",
-                            "data_key": "det_noise",
-                            "value": "none",
-                            "timestamp": 1745338530.894911,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_noise_multiplier": {
                             "source": "SIM:det_noise_multiplier",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_noise_multiplier",
-                            "value": 1,
-                            "timestamp": 1745338530.894936,
-                            "desc_indx": 0
+                            "object_name": "det"
                         }
                     }
                 }
@@ -98,15 +78,20 @@
                     "dtype": "number",
                     "shape": [],
                     "precision": 3,
-                    "object_name": "det",
-                    "data_key": "det",
-                    "desc_indx": 0
+                    "object_name": "det"
+                },
+                "empty": {
+                    "source": "SIM:det",
+                    "dtype": "array",
+                    "shape": [],
+                    "object_name": "det"
                 }
             },
             "name": "primary",
             "object_keys": {
                 "det": [
-                    "det"
+                    "det",
+                    "empty"
                 ]
             },
             "run_start": "{{ uuid }}-dc0518f354ee",
@@ -115,7 +100,8 @@
             "hints": {
                 "det": {
                     "fields": [
-                        "det"
+                        "det",
+                        "empty"
                     ]
                 }
             }
@@ -127,10 +113,12 @@
             "uid": "{{ uuid }}-be1c4e7ea7d1",
             "time": 1745338531.215753,
             "data": {
-                "det": 1.0
+                "det": 1.0,
+                "empty": []
             },
             "timestamps": {
-                "det": 1745338531.001646
+                "det": 1745338531.001646,
+                "empty": 1745338531.001647
             },
             "seq_num": 1,
             "filled": {},
@@ -143,10 +131,12 @@
             "uid": "31064b7c-7818-49a2-a2f3-7596887522ce",
             "time": 1745338531.218661,
             "data": {
-                "det": 1.0
+                "det": 1.0,
+                "empty": []
             },
             "timestamps": {
-                "det": 1745338531.217144
+                "det": 1745338531.217144,
+                "empty": 1745338531.217145
             },
             "seq_num": 2,
             "filled": {},
@@ -177,31 +167,19 @@
                             "source": "SIM:det_Imax",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_Imax",
-                            "value": 2,
-                            "timestamp": 1745338532.894953,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_center": {
                             "source": "SIM:det_center",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_center",
-                            "value": 0.5,
-                            "timestamp": 1745338532.894945,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_sigma": {
                             "source": "SIM:det_sigma",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_sigma",
-                            "value": 2,
-                            "timestamp": 1745338532.894964,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_noise": {
                             "source": "SIM:det_noise",
@@ -212,21 +190,13 @@
                                 "poisson",
                                 "uniform"
                             ],
-                            "object_name": "det",
-                            "data_key": "det_noise",
-                            "value": "none",
-                            "timestamp": 1745338532.894911,
-                            "desc_indx": 0
+                            "object_name": "det"
                         },
                         "det_noise_multiplier": {
                             "source": "SIM:det_noise_multiplier",
                             "dtype": "integer",
                             "shape": [],
-                            "object_name": "det",
-                            "data_key": "det_noise_multiplier",
-                            "value": 2,
-                            "timestamp": 1745338532.894936,
-                            "desc_indx": 0
+                            "object_name": "det"
                         }
                     }
                 }
@@ -237,15 +207,20 @@
                     "dtype": "number",
                     "shape": [],
                     "precision": 3,
-                    "object_name": "det",
-                    "data_key": "det",
-                    "desc_indx": 0
+                    "object_name": "det"
+                },
+                "empty": {
+                    "source": "SIM:det",
+                    "dtype": "array",
+                    "shape": [],
+                    "object_name": "det"
                 }
             },
             "name": "primary",
             "object_keys": {
                 "det": [
-                    "det"
+                    "det",
+                    "empty"
                 ]
             },
             "run_start": "{{ uuid }}-dc0518f354ee",
@@ -254,7 +229,8 @@
             "hints": {
                 "det": {
                     "fields": [
-                        "det"
+                        "det",
+                        "empty"
                     ]
                 }
             }
@@ -266,10 +242,12 @@
             "uid": "{{ uuid }}-bd3438cb9a13",
             "time": 1745338533.2213702,
             "data": {
-                "det": 1.0
+                "det": 1.0,
+                "empty": []
             },
             "timestamps": {
-                "det": 1745338533.219767
+                "det": 1745338533.219767,
+                "empty": 1745338533.219768
             },
             "seq_num": 3,
             "filled": {},
