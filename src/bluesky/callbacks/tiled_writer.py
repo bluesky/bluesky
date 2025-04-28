@@ -201,11 +201,6 @@ class _RunWriter(CallbackBase):
         # Write the stop document to the metadata
         self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)})
 
-        # Remove empty nodes
-        for key in list(self.root_node.keys()):
-            if not self.root_node[key].keys():
-                self.root_node.delete(key)
-
     def descriptor(self, doc: EventDescriptor):
         if self.root_node is None:
             raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
