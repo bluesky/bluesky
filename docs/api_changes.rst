@@ -2,6 +2,12 @@
  Release History
 =================
 
+..
+    Fixed
+    -----
+
+    * Resolve ZeroDivisionError when computing peak center and Y values are all zero by @prjemian in https://github.com/bluesky/bluesky/pull/1792
+
 v1.13.1 (2024-12-12)
 ====================
 
