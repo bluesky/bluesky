@@ -199,14 +199,7 @@ class _RunWriter(CallbackBase):
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Write the stop document to the metadata
-        try:
-            self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)})
-        except TypeError:
-            # Handle rare case where self.root_node.metadata contains unusual types.
-            # Sync metadata that was sanitized/normalized by JSON serializer
-            # and try again.
-            self.root_node.refresh()
-            self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)})
+        self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)})
 
     def descriptor(self, doc: EventDescriptor):
         if self.root_node is None:
