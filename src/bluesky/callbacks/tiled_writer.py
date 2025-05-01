@@ -170,10 +170,7 @@ class _RunWriter(CallbackBase):
             metadata={"start": dict(doc)},
             specs=[Spec("BlueskyRun", version="3.0")],
         )
-
-        # Create the backbone structure for the BlueskyRun container; keep references to the nodes
-        self.root_node.create_container(key="configs")
-        self.root_node.create_container(key="streams")
+        self.streams_node = self.root_node.create_container(key="streams")
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -206,14 +203,16 @@ class _RunWriter(CallbackBase):
         if self.root_node is None:
             raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
 
-        desc_name = doc["name"]  # Name of the descriptor/stream
-
         # Rename some fields to match the current schema (in-place)
-        # Loop over all dictionaries that specify data_keys (both pure data_keys or configuration data_keys)
+        # Loop over all dictionaries that specify data_keys (both event data_keys or configuration data_keys)
         conf_data_keys = (obj["data_keys"].values() for obj in doc["configuration"].values())
-        for data_keys_spec in itertools.chain([doc["data_keys"].values(), conf_data_keys]):
+        for data_keys_spec in itertools.chain(doc["data_keys"].values(), *conf_data_keys):
             if dtype_str := data_keys_spec.pop("dtype_str", None):
                 data_keys_spec["dtype_numpy"] = data_keys_spec.get("dtype_numpy") or dtype_str
+        # Ensure that all event data_keys have object_name assigned
+        for obj_name, data_keys_list in doc["object_keys"].items():
+            for key in data_keys_list:
+                doc["data_keys"][key]["object_name"] = obj_name
 
         # Keep specifications for external and internal data_keys for faster access
         data_keys = doc.get("data_keys", {})
@@ -223,8 +222,8 @@ class _RunWriter(CallbackBase):
             item["external"] = item.pop("external", "")  # Make sure the value set to external key is not None
 
         # Create a new Composite node for the stream if it does not exist
-        streams_node = self.root_node["streams"]  # Assign to variable to avoid making one extra request
-        if desc_name not in streams_node.keys():
+        desc_name = doc["name"]  # Name of the descriptor/stream
+        if desc_name not in self.streams_node.keys():
             extra = {
                 k: v
                 for k, v in doc.items()
@@ -237,11 +236,16 @@ class _RunWriter(CallbackBase):
             }
             if conf_meta := doc.get("configuration"):
                 metadata.update({"configuration": conf_meta})
+            desc_node = self.streams_node.create_composite(
+                key=desc_name,
+                metadata=metadata,
+                specs=[Spec("BlueskyEventStream", version="3.0")],
+            )
         else:
             # Rare Case: This new descriptor likely updates stream configs mid-experiment
             # We assume tha the full descriptor has been already received, so we don't need to store everything
             # but only the uid, timestamp, and also data and timestamps in configuration (without conf specs).
-            desc_node = streams_node[desc_name]
+            desc_node = self.streams_node[desc_name]
             revisions = desc_node.metdata.get("revisions", []) + [{"uid": doc["uid"], "time": doc["time"]}]
             if conf_meta := doc.get("configuration"):
                 revisions[-1].update({"configuration": conf_meta})
