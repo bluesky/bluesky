@@ -1,4 +1,5 @@
 import copy
+import itertools
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Optional, Union, cast
@@ -207,6 +208,13 @@ class _RunWriter(CallbackBase):
 
         desc_name = doc["name"]  # Name of the descriptor/stream
 
+        # Rename some fields to match the current schema (in-place)
+        # Loop over all dictionaries that specify data_keys (both pure data_keys or configuration data_keys)
+        conf_data_keys = (obj["data_keys"].values() for obj in doc["configuration"].values())
+        for data_keys_spec in itertools.chain([doc["data_keys"].values(), conf_data_keys]):
+            if dtype_str := data_keys_spec.pop("dtype_str", None):
+                data_keys_spec["dtype_numpy"] = data_keys_spec.get("dtype_numpy") or dtype_str
+
         # Keep specifications for external and internal data_keys for faster access
         data_keys = doc.get("data_keys", {})
         self.data_keys_int.update({k: v for k, v in data_keys.items() if "external" not in v.keys()})
@@ -217,7 +225,6 @@ class _RunWriter(CallbackBase):
         # Create a new Composite node for the stream if it does not exist
         streams_node = self.root_node["streams"]  # Assign to variable to avoid making one extra request
         if desc_name not in streams_node.keys():
-            desc_count = 1  # Total number of descriptors received so far for this stream (almost always 1)
             extra = {
                 k: v
                 for k, v in doc.items()
@@ -226,57 +233,21 @@ class _RunWriter(CallbackBase):
             metadata = data_keys | {
                 "uid": doc["uid"],
                 "time": doc["time"],
-                "desc_count": desc_count,
                 "extra": extra,
             }
-            desc_node = streams_node.create_composite(
-                key=desc_name,
-                metadata=metadata,
-                specs=[Spec("BlueskyEventStream", version="3.0")],
-            )
+            if conf_meta := doc.get("configuration"):
+                metadata.update({"configuration": conf_meta})
         else:
-            # This new descriptor likley updates stream configs mid-experiment (rare case)
+            # Rare Case: This new descriptor likely updates stream configs mid-experiment
+            # We assume tha the full descriptor has been already received, so we don't need to store everything
+            # but only the uid, timestamp, and also data and timestamps in configuration (without conf specs).
             desc_node = streams_node[desc_name]
-            desc_count = desc_node.metadata["desc_count"] + 1
-            desc_node.update_metadata({"desc_count": desc_count})
+            revisions = desc_node.metdata.get("revisions", []) + [{"uid": doc["uid"], "time": doc["time"]}]
+            if conf_meta := doc.get("configuration"):
+                revisions[-1].update({"configuration": conf_meta})
+            desc_node.update_metadata(metadata={"revisions": revisions})
+
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
-
-        # Construct a list of configuration data_keys descriptions with values
-        conf_list = []
-        for obj_name, obj_dict in doc.get("configuration", {}).items():
-            for key, dk_dict in obj_dict.get("data_keys", {}).items():
-                dk_dict.update({"object_name": obj_name, "data_key": key})
-                dk_dict["value"] = obj_dict.get("data", {}).get(key, None)
-                dk_dict["timestamp"] = obj_dict.get("timestamps", {}).get(key, None)
-                conf_list.append(dk_dict)  # awkward does not like None
-
-        # Add the usual data_keys descriptions as well if this is the first time we see this descriptor
-        if desc_count == 1:
-            for obj_name, data_keys_list in doc.get("object_keys", {}).items():
-                for key in data_keys_list:
-                    dk_dict = data_keys[key]
-                    dk_dict.update({"data_key": key, "object_name": obj_name})
-                    conf_list.append(dk_dict)
-
-        # Rename some fields to match the current schema; add the positional index of the descriptor
-        for dk_dict in conf_list:
-            if dtype_str := dk_dict.pop("dtype_str", None):
-                dk_dict["dtype_numpy"] = dtype_str
-            dk_dict["desc_indx"] = desc_count - 1  # 0-based index
-
-        # Write configs and data_keys descriptions in an awkward array of "records" (dicts)
-        # If the configs node already exists, append the new data to it by reading and overwriting
-        if conf_list:
-            conf_node = self.root_node["configs"]
-            if desc_name in conf_node.keys():
-                conf_client = conf_node[desc_name]
-                conf_list += conf_client.read().to_list()
-                conf_meta = dict(conf_client.metadata)
-                conf_node.delete(key=desc_name)
-            else:
-                conf_meta = {"descriptors": []}
-            conf_meta["descriptors"].append({"uid": doc["uid"], "time": doc["time"]})
-            conf_node.write_awkward(conf_list, key=desc_name, metadata=conf_meta)
 
     def event(self, doc: Event):
         desc_uid = doc["descriptor"]
