@@ -1,3 +1,4 @@
+from enum import Enum
 import time
 from collections import defaultdict
 from io import StringIO
@@ -245,6 +246,120 @@ def test_evil_table_names(RE):
 |         1  |  12:47:09.7  |     0  |     0  |     0  |     0  |
 |         2  |  12:47:09.7  |     0  |     0  |     0  |     0  |
 +------------+--------------+--------+--------+--------+--------+"""
+    _compare_tables(fout, reference)
+    fout.close()
+
+
+class TableTestEnum(str, Enum):
+    """Enum for testing LiveTable with enum values."""
+
+    OK = "OK"
+    NOT_OK = "NOT_OK"
+
+_BOOL_ENUM_DOCS = [
+("descriptor", 
+{
+    "configuration": {},
+    "data_keys": {
+        "enum_test_sig": {
+            "dtype": "string",
+            "shape": [],
+            "dtype_numpy": "|S40",
+            "source": "ca://DEV:RBD9103:InRange_RBV",
+            "choices": [
+                "OK",
+                "Under",
+                "Over"
+            ],
+            "object_name": "rbd9103"
+        },
+        "bool_test_sig": {
+            "dtype": "boolean",
+            "shape": [],
+            "dtype_numpy": "|b1",
+            "source": "ca://DEV:RBD9103:Stable_RBV",
+            "object_name": "rbd9103"
+        }
+    },
+    "name": "primary",
+    "object_keys": {
+        "rbd9103": [
+            "enum_test_sig",
+            "bool_test_sig"
+        ]
+    },
+    "run_start": "d8e2afc6-2c79-4786-8a2e-b1245b2be578",
+    "time": 1746210217.2738924,
+    "uid": "2d29452a-a2e3-4697-8db2-423b8cae5065",
+    "hints": {
+        "rbd9103": {
+            "fields": [
+                "enum_test_sig",
+                "bool_test_sig"
+            ]
+        }
+    }
+}
+),
+('event',
+{
+    "uid": "69b921f3-6037-477b-8d76-731c330c654a",
+    "time": 1746210217.2745216,
+    "data": {
+        "enum_test_sig": TableTestEnum.OK,
+        "bool_test_sig": False
+    },
+    "timestamps": {
+        "enum_test_sig": 631152000.0,
+        "bool_test_sig": 631152000.0
+    },
+    "seq_num": 1,
+    "filled": {},
+    "descriptor": "2d29452a-a2e3-4697-8db2-423b8cae5065"
+}),
+('event',
+{
+    "uid": "69b921f3-6037-477b-8d76-731c330c654a",
+    "time": 1746210217.2745216,
+    "data": {
+        "enum_test_sig": TableTestEnum.NOT_OK,
+        "bool_test_sig": True
+    },
+    "timestamps": {
+        "enum_test_sig": 631152000.0,
+        "bool_test_sig": 631152000.0
+    },
+    "seq_num": 1,
+    "filled": {},
+    "descriptor": "2d29452a-a2e3-4697-8db2-423b8cae5065"
+}),
+('stop',
+{
+    "uid": "0c862732-f3a2-4ee6-8ef8-7aed0cf4a408",
+    "time": 1746210217.2791321,
+    "run_start": "d8e2afc6-2c79-4786-8a2e-b1245b2be578",
+    "exit_status": "success",
+    "reason": "",
+    "num_events": {
+        "primary": 1
+    }
+}),
+]
+
+
+def test_table_bool_enum_doc_inputs(RE):
+    table = LiveTable([s for s in _BOOL_ENUM_DOCS[0][1]["data_keys"]])
+    with _print_redirect() as fout:
+        print()  # get a blank line in camptured output
+        for name, doc in _BOOL_ENUM_DOCS:
+            table(name, doc)
+    reference = """
++-----------+------------+---------------+---------------+
+|   seq_num |       time | enum_test_sig | bool_test_sig |
++-----------+------------+---------------+---------------+
+|         1 | 14:23:37.2 |            OK |         False |
+|         2 | 14:23:37.2 |        NOT_OK |          True |
++-----------+------------+---------------+---------------+"""
     _compare_tables(fout, reference)
     fout.close()
 
