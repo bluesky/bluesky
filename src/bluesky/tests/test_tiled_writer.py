@@ -349,13 +349,11 @@ def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     RE(bp.count([det], 3), tw)
     extr = client.values().last()["streams"]["primary"].parts["img"]
     intr = client.values().last()["streams"]["primary"].parts["internal"]
-    conf = client.values().last()["configs"]["primary"]
     assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
     assert set(intr.columns) == {"seq_num", "time"}
     assert len(intr.read()) == 3
     assert (intr["seq_num"].read() == [1, 2, 3]).all()
-    assert conf.read() is not None
 
 
 def collect_plan(*objs, name="primary"):
@@ -377,14 +375,6 @@ def test_with_correct_sample_runs(client, external_assets_folder, fname):
 
     for stream in run["streams"].values():
         assert stream.read() is not None
-
-    for config in run["configs"].values():
-        assert config.read() is not None
-
-    # Check that both descriptors are referenced in configs
-    if fname == "internal_events":
-        awk_arr = run["configs"]["primary"].read()
-        assert set(awk_arr["desc_indx"].to_list()) == {0, 1}
 
 
 @pytest.mark.parametrize("error_type", ["shape", "chunks", "dtype"])

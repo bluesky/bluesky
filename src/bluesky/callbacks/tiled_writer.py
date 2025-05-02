@@ -246,7 +246,7 @@ class _RunWriter(CallbackBase):
             # We assume tha the full descriptor has been already received, so we don't need to store everything
             # but only the uid, timestamp, and also data and timestamps in configuration (without conf specs).
             desc_node = self.streams_node[desc_name]
-            revisions = desc_node.metdata.get("revisions", []) + [{"uid": doc["uid"], "time": doc["time"]}]
+            revisions = desc_node.metadata.get("revisions", []) + [{"uid": doc["uid"], "time": doc["time"]}]
             if conf_meta := doc.get("configuration"):
                 revisions[-1].update({"configuration": conf_meta})
             desc_node.update_metadata(metadata={"revisions": revisions})

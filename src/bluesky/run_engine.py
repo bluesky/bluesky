@@ -906,7 +906,7 @@ class RunEngine:
         if self.state == "panicked":
             raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
         # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
-        # all keyword arguments for user metdata.
+        # all keyword arguments for user metadata.
         arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
         plan = arguments["plan"]
         subs = arguments.get("subs", None)
