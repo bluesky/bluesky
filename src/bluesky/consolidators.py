@@ -519,6 +519,8 @@ class NPYConsolidator(MultipartRelatedConsolidator):
         # here so that the rest of the processing can be handled
         # generically by ConsolidatorBase.
         stream_resource["parameters"]["template"] = "%s_%d.npy"
+        data_key = stream_resource["data_key"]
+        stream_resource["parameters"]["chunk_shape"] = descriptor["data_keys"][data_key]["shape"]
         super().__init__({".npy"}, stream_resource, descriptor)
 
 
