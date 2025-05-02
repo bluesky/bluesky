@@ -229,7 +229,8 @@ class _RunWriter(CallbackBase):
                 for k, v in doc.items()
                 if k not in {"name", "data_keys", "configuration", "uid", "time", "object_keys", "run_start"}
             }
-            metadata = data_keys | {
+            metadata = {
+                "data_keys": data_keys,
                 "uid": doc["uid"],
                 "time": doc["time"],
                 "extra": extra,
@@ -246,10 +247,10 @@ class _RunWriter(CallbackBase):
             # We assume tha the full descriptor has been already received, so we don't need to store everything
             # but only the uid, timestamp, and also data and timestamps in configuration (without conf specs).
             desc_node = self.streams_node[desc_name]
-            revisions = desc_node.metadata.get("revisions", []) + [{"uid": doc["uid"], "time": doc["time"]}]
+            updates = desc_node.metadata.get("config_updates", []) + [{"uid": doc["uid"], "time": doc["time"]}]
             if conf_meta := doc.get("configuration"):
-                revisions[-1].update({"configuration": conf_meta})
-            desc_node.update_metadata(metadata={"revisions": revisions})
+                updates[-1].update({"configuration": conf_meta})
+            desc_node.update_metadata(metadata={"config_updates": updates})
 
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
 
