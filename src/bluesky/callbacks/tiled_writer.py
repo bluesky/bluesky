@@ -369,7 +369,7 @@ class _RunWriter(CallbackBase):
             sres_doc = self._stream_resource_cache[sres_uid]
             desc_node = self._desc_nodes[desc_uid]
 
-            # Check if there already exists a Node and a Consolidator for this data_key
+            # Check if there already exists a Node and a Consolidator for this data_key, or initialise new ones
             if sres_doc["data_key"] in desc_node.keys():
                 sres_node = desc_node[sres_doc["data_key"]]
                 # Find the id of the original cached StreamResource node in the tree
@@ -381,9 +381,7 @@ class _RunWriter(CallbackBase):
                 consolidator = self._consolidators[sres_uid_old]
                 consolidator.consume_stream_resource(sres_doc)
             else:
-                # Initialise a bluesky consolidator for the StreamResource
-                consolidator = consolidator_factory(sres_doc, {"data_keys": dict(desc_node.metadata)})
-
+                consolidator = consolidator_factory(sres_doc, desc_node.metadata)
                 sres_node = desc_node.new(
                     key=consolidator.data_key,
                     structure_family=StructureFamily.array,
