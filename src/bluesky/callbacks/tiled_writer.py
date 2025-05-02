@@ -224,19 +224,7 @@ class _RunWriter(CallbackBase):
         # Create a new Composite node for the stream if it does not exist
         desc_name = doc["name"]  # Name of the descriptor/stream
         if desc_name not in self.streams_node.keys():
-            extra = {
-                k: v
-                for k, v in doc.items()
-                if k not in {"name", "data_keys", "configuration", "uid", "time", "object_keys", "run_start"}
-            }
-            metadata = {
-                "data_keys": data_keys,
-                "uid": doc["uid"],
-                "time": doc["time"],
-                "extra": extra,
-            }
-            if conf_meta := doc.get("configuration"):
-                metadata.update({"configuration": conf_meta})
+            metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
             desc_node = self.streams_node.create_composite(
                 key=desc_name,
                 metadata=metadata,
@@ -247,17 +235,17 @@ class _RunWriter(CallbackBase):
             # We assume tha the full descriptor has been already received, so we don't need to store everything
             # but only the uid, timestamp, and also data and timestamps in configuration (without conf specs).
             desc_node = self.streams_node[desc_name]
-            updates = desc_node.metadata.get("config_updates", []) + [{"uid": doc["uid"], "time": doc["time"]}]
+            updates = desc_node.metadata.get("_config_updates", []) + [{"uid": doc["uid"], "time": doc["time"]}]
             if conf_meta := doc.get("configuration"):
                 updates[-1].update({"configuration": conf_meta})
-            desc_node.update_metadata(metadata={"config_updates": updates})
+            desc_node.update_metadata(metadata={"_config_updates": updates})
 
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
 
     def event(self, doc: Event):
         desc_uid = doc["descriptor"]
         parent_node = self._desc_nodes[desc_uid]
-        desc_name = parent_node.item["id"]  # Name of the descriptor/stream
+        desc_name = parent_node.item["id"]  # Name of the descriptor (stream)
 
         # Process _internal_ data -- those keys without 'external' flag or those that have been filled
         data_cache = self._internal_data_cache[desc_name]
