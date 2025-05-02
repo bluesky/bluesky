@@ -38,6 +38,7 @@ MIMETYPE_LOOKUP = defaultdict(
         "MERLIN_HDF5_BULK": "application/x-hdf5",
         "TPX_HDF5": "application/x-hdf5",
         "EIGER2_STREAM": "application/x-hdf5",
+        "NPY_SEQ": "multipart/related;type=application/x-npy",
     },
 )
 

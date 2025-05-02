@@ -510,6 +510,18 @@ class JPEGConsolidator(MultipartRelatedConsolidator):
         super().__init__({".jpeg", ".jpg"}, stream_resource, descriptor)
 
 
+class NPYConsolidator(MultipartRelatedConsolidator):
+    supported_mimetypes = {"multipart/related;type=application/x-npy"}
+
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        # Unlike other image sequence formats (e.g. TIFF) the filename
+        # template is hard-coded in the NPY_SEQ handler. We inject it
+        # here so that the rest of the processing can be handled
+        # generically by ConsolidatorBase.
+        stream_resource["parameters"]["template"] = "%s_%d.npy"
+        super().__init__({".npy"}, stream_resource, descriptor)
+
+
 CONSOLIDATOR_REGISTRY = collections.defaultdict(
     lambda: ConsolidatorBase,
     {
@@ -517,6 +529,7 @@ CONSOLIDATOR_REGISTRY = collections.defaultdict(
         "application/x-hdf5": HDF5Consolidator,
         "multipart/related;type=image/tiff": TIFFConsolidator,
         "multipart/related;type=image/jpeg": JPEGConsolidator,
+        "multipart/related;type=application/x-npy": NPYConsolidator,
     },
 )
 
