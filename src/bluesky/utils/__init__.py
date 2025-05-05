@@ -2023,7 +2023,7 @@ def truncate_json_overflow(data):
     the JSON limits for integers, i.e. (-2^53, 2^53 - 1], in case the values are implicitly
     converted during serialization.
     """
-    if isinstance(data, dict):
+    if isinstance(data, collections.abc.Mapping):
         return {k: truncate_json_overflow(v) for k, v in data.items()}
     elif hasattr(data, "__iter__") and not isinstance(data, str):
         # Handle lists, tuples, arrays, etc., but not strings

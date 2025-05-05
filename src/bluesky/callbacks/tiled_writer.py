@@ -22,7 +22,9 @@ from event_model.documents import (
 from event_model.documents.stream_datum import StreamRange
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
+from tiled.client.composite import Composite
 from tiled.client.container import Container
+from tiled.client.dataframe import DataFrameClient
 from tiled.client.utils import handle_error
 from tiled.structures.core import Spec
 from tiled.utils import safe_json_dump
@@ -92,14 +94,14 @@ class _RunWriter(CallbackBase):
     def __init__(self, client: BaseClient):
         self.client = client
         self.root_node: Union[None, Container] = None
-        self._desc_nodes: dict[str, Container] = {}  # references to descriptor containers by their uid's
+        self._desc_nodes: dict[str, Composite] = {}  # references to the descriptor nodes by their uid's and names
         self._sres_nodes: dict[str, BaseClient] = {}
+        self._internal_tables: dict[str, DataFrameClient] = {}  # references to the internal tables by desc_names
         self._datum_cache: dict[str, Datum] = {}
         self._stream_resource_cache: dict[str, StreamResource] = {}
         self._consolidators: dict[str, ConsolidatorBase] = {}
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}
-        self._node_exists: dict[str, bool] = defaultdict(lambda: False)  # Keep track of existing nodes
         self._next_frame_index: dict[tuple[str, str], dict[str, int]] = defaultdict(
             lambda: {"carry": 0, "index": 0}
         )
@@ -141,15 +143,13 @@ class _RunWriter(CallbackBase):
 
         return stream_resource_doc
 
-    def _write_internal_data(self, data_cache: list[dict[str, Any]], desc_name: str):
+    def _write_internal_data(self, data_cache: list[dict[str, Any]], desc_node: Composite):
         """Write the internal data table to Tiled and clear the cache."""
 
-        parent_node = self.root_node[f"streams/{desc_name}"]  # type: ignore[index]
+        desc_name = desc_node.item["id"]  # Name of the descriptor (stream)
         table = pyarrow.Table.from_pylist(data_cache)
 
-        breakpoint()
-
-        if not self._node_exists[f"{desc_name}/internal"]:
+        if not (df_client := self._internal_tables.get(desc_name)):
             # Create a new "internal" data node and write the initial piece of data
             metadata = {
                 k: v for k, v in (self.data_keys_ext | self.data_keys_int).items() if k in table.column_names
@@ -161,11 +161,11 @@ class _RunWriter(CallbackBase):
                     schema = schema.set(i, field.with_type(pyarrow.string()))
                 elif pyarrow.types.is_list(field.type) and pyarrow.types.is_null(field.type.value_type):
                     schema = schema.set(i, field.with_type(pyarrow.list_(pyarrow.string())))
-            parent_node.create_appendable_table(schema=schema, key="internal", metadata=metadata)
-            # Mark the node as existing to avoid making API calls for each subsequent inserts
-            self._node_exists[f"{desc_name}/internal"] = True
+            # Initialize the table and keep a reference to the client
+            df_client = desc_node.create_appendable_table(schema=schema, key="internal", metadata=metadata)
+            self._internal_tables[desc_name] = df_client
 
-        parent_node.parts["internal"].append_partition(table, 0)
+        df_client.append_partition(table, 0)
 
     def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
@@ -182,7 +182,7 @@ class _RunWriter(CallbackBase):
         # Write the cached internal data
         for desc_name, data_cache in self._internal_data_cache.items():
             if data_cache:
-                self._write_internal_data(data_cache, desc_name)
+                self._write_internal_data(data_cache, desc_node=self._desc_nodes[desc_name])
                 data_cache.clear()
 
         # Write the cached external data
@@ -244,12 +244,11 @@ class _RunWriter(CallbackBase):
             # Update the metadata with the new configuration
             desc_node.update_metadata(metadata={"_config_updates": truncate_json_overflow(updates)})
 
-        self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
+        self._desc_nodes[doc["uid"]] = self._desc_nodes[desc_name] = desc_node  # Keep a reference to the node
 
     def event(self, doc: Event):
         desc_uid = doc["descriptor"]
-        parent_node = self._desc_nodes[desc_uid]
-        desc_name = parent_node.item["id"]  # Name of the descriptor (stream)
+        desc_name = self._desc_nodes[desc_uid].item["id"]  # Name of the descriptor (stream)
 
         # Process _internal_ data -- those keys without 'external' flag or those that have been filled
         data_cache = self._internal_data_cache[desc_name]
@@ -262,7 +261,7 @@ class _RunWriter(CallbackBase):
 
         # Do not write the data immediately; collect it in a cache and write in bulk later
         if len(data_cache) >= TABLE_UPDATE_BATCH_SIZE:
-            self._write_internal_data(data_cache, desc_name)
+            self._write_internal_data(data_cache, desc_node=self._desc_nodes[desc_uid])
             data_cache.clear()
 
         # Process _external_ data: Loop over all referenced Datums
