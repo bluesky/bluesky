@@ -428,7 +428,7 @@ class LiveTable(CallbackBase):
                 f.format(**{f"h{str(hash(k))}": str(data[k])})
                 if ((k in data) and isinstance(data[k], (bool)))
                 # If we have an enum, `str` the value
-                else f.format(**{f"h{str(hash(k))}": str(data[k].value)})
+                else f.format(**{f"h{str(hash(k))}": data[k].value})
                 if ((k in data) and isinstance(data[k], (Enum)))
                 else f.format(**{f"h{str(hash(k))}": data[k]})
                 # Show data[k] if k exists in this Event and is 'filled'.
