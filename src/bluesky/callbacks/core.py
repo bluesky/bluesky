@@ -427,7 +427,7 @@ class LiveTable(CallbackBase):
                 # If we have a bool, just `str` it.
                 f.format(**{f"h{str(hash(k))}": str(data[k])})
                 if ((k in data) and isinstance(data[k], (bool)))
-                # If we have an enum, `str` the value
+                # If we have an enum, format with it's value
                 else f.format(**{f"h{str(hash(k))}": data[k].value})
                 if ((k in data) and isinstance(data[k], (Enum)))
                 else f.format(**{f"h{str(hash(k))}": data[k]})
