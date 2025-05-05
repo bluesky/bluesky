@@ -441,7 +441,7 @@ def test_slice_and_squeeze(client, external_assets_folder, squeeze):
     assert client[uid]["streams"]["primary"].read() is not None
 
 
-def test_legacy_multiplier(client, external_assets_folder):
+def test_legacy_multiplier_parameter(client, external_assets_folder):
     tw = TiledWriter(client)
 
     documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
@@ -460,3 +460,23 @@ def test_legacy_multiplier(client, external_assets_folder):
 
     # Try reading the imported data
     assert client[uid]["streams"]["primary"].read() is not None
+
+
+def test_streams_with_no_events(client, external_assets_folder):
+    tw = TiledWriter(client)
+
+    for item in render_templated_documents("external_assets_key2.json", external_assets_folder):
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Skip the resource and datum documents
+        if name in {"resource", "stream_resource", "datum", "stream_datum", "event"}:
+            continue
+
+        tw(name, doc)
+
+    # Try reading the data -- should return an empty dataset
+    assert client[uid]["streams"]["primary"].read() is not None
+    assert client[uid]["streams"]["primary"].read().data_vars == {}
+    assert client[uid]["streams"]["primary"].metadata is not None
