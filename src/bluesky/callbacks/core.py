@@ -2,13 +2,13 @@
 Useful callbacks for the Run Engine
 """
 
-from enum import Enum
 import logging
 import os
 import time as ttime
 import warnings
 from collections import OrderedDict, defaultdict, deque, namedtuple
 from datetime import datetime
+from enum import Enum
 from functools import partial as _partial
 from functools import wraps as _wraps
 from itertools import count
@@ -368,7 +368,7 @@ class LiveTable(CallbackBase):
                 continue
 
             if dk_entry["dtype"] == "boolean":
-                prec = 5 # 5 is the length of the string "False"
+                prec = 5  # 5 is the length of the string "False"
             elif dk_entry["dtype"] == "string":
                 # If string, set precision to length of the key minus padding
                 prec = width - 1 - 2 * self._pad_len
@@ -426,10 +426,10 @@ class LiveTable(CallbackBase):
             cols = [
                 # If we have a bool, just `str` it.
                 f.format(**{f"h{str(hash(k))}": str(data[k])})
-                if isinstance(data[k], (bool))
+                if ((k in data) and isinstance(data[k], (bool)))
                 # If we have an enum, `str` the value
                 else f.format(**{f"h{str(hash(k))}": str(data[k].value)})
-                if isinstance(data[k], (Enum))
+                if ((k in data) and isinstance(data[k], (Enum)))
                 else f.format(**{f"h{str(hash(k))}": data[k]})
                 # Show data[k] if k exists in this Event and is 'filled'.
                 # (The latter is only applicable if the data is
