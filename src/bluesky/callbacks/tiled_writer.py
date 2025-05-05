@@ -28,6 +28,7 @@ from tiled.structures.core import Spec
 from tiled.utils import safe_json_dump
 
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
+from ..utils import truncate_json_overflow
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
 TABLE_UPDATE_BATCH_SIZE = 10000
@@ -167,7 +168,7 @@ class _RunWriter(CallbackBase):
     def start(self, doc: RunStart):
         self.root_node = self.client.create_container(
             key=doc["uid"],
-            metadata={"start": dict(doc)},
+            metadata={"start": truncate_json_overflow(dict(doc))},
             specs=[Spec("BlueskyRun", version="3.0")],
         )
         self.streams_node = self.root_node.create_container(key="streams")
@@ -227,7 +228,7 @@ class _RunWriter(CallbackBase):
             metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
             desc_node = self.streams_node.create_composite(
                 key=desc_name,
-                metadata=metadata,
+                metadata=truncate_json_overflow(metadata),
                 specs=[Spec("BlueskyEventStream", version="3.0")],
             )
         else:
@@ -238,7 +239,8 @@ class _RunWriter(CallbackBase):
             updates = desc_node.metadata.get("_config_updates", []) + [{"uid": doc["uid"], "time": doc["time"]}]
             if conf_meta := doc.get("configuration"):
                 updates[-1].update({"configuration": conf_meta})
-            desc_node.update_metadata(metadata={"_config_updates": updates})
+            # Update the metadata with the new configuration
+            desc_node.update_metadata(metadata={"_config_updates": truncate_json_overflow(updates)})
 
         self._desc_nodes[doc["uid"]] = desc_node  # Keep a reference to the (same) descriptor node by the uid
 
