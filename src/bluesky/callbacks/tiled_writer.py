@@ -359,7 +359,15 @@ class _RunWriter(CallbackBase):
         self._stream_resource_cache[doc["uid"]] = self._convert_resource_to_stream_resource(doc)
 
     def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> tuple[BaseClient, ConsolidatorBase]:
-        """Get Stream Resource node from Tiled, if it already exists, or register it from a cached SR document"""
+        """Get the Tiled node and the associate Consolidator corresponding to the data_key in StreamResource
+
+        If the node does not exist, register it from a cached StreamResource document. Keep a reference to the
+        node and the corresponding Consolidator object. If the node already exists, return the existing one.
+
+        The nodes and consolidators are referenced by both:
+        - sres_uid: the uid of the StreamResource document
+        - desc_name + data_key: the name of the descriptor (stream) and the data_key
+        """
 
         if sres_uid in self._sres_nodes.keys():
             sres_node = self._sres_nodes[sres_uid]
@@ -371,18 +379,14 @@ class _RunWriter(CallbackBase):
 
             sres_doc = self._stream_resource_cache[sres_uid]
             desc_node = self._desc_nodes[desc_uid]
+            full_data_key = f"{desc_node.item['id']}_{sres_doc['data_key']}"  # desc_name + data_key
 
-            # Check if there already exists a Node and a Consolidator for this data_key, or initialise new ones
-            if sres_doc["data_key"] in desc_node.keys():
-                sres_node = desc_node[sres_doc["data_key"]]
-                # Find the id of the original cached StreamResource node in the tree
-                for id, node in self._sres_nodes.items():
-                    if node.uri == sres_node.uri:
-                        sres_uid_old = id
-                        sres_node = node  # Keep the reference to the same node
-                        break
-                consolidator = self._consolidators[sres_uid_old]
-                consolidator.consume_stream_resource(sres_doc)
+            # Check if there already exists a Node and a Consolidator for this data_key
+            # i.e. this is an additional StreamResource, whose data should be concatenated with the existing one
+            if full_data_key in self._sres_nodes.keys():
+                sres_node = self._sres_nodes[full_data_key]
+                consolidator = self._consolidators[full_data_key]
+                consolidator.update_from_stream_resource(sres_doc)
             else:
                 consolidator = consolidator_factory(sres_doc, desc_node.metadata)
                 sres_node = desc_node.new(
@@ -393,25 +397,20 @@ class _RunWriter(CallbackBase):
                     specs=[],
                 )
 
-            self._consolidators[sres_uid] = consolidator
-            self._sres_nodes[sres_uid] = sres_node
+            self._consolidators[sres_uid] = self._consolidators[full_data_key] = consolidator
+            self._sres_nodes[sres_uid] = self._sres_nodes[full_data_key] = sres_node
         else:
-            raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being declared.")
+            raise RuntimeError(f"Stream Resource {sres_uid} is referenced before being received.")
 
         return sres_node, consolidator
 
     def _update_data_source_for_node(self, node: BaseClient, data_source: DataSource):
         """Update StreamResource node in Tiled"""
-        # NOTE: Assigning data_source.id in the object and passing it in http
-        # params is superfluous, but it is currently required by Tiled.
-        node.refresh()
         data_source.id = node.data_sources()[0].id  # ID of the existing DataSource record
-        endpoint = node.uri.replace("/metadata/", "/data_source/", 1)
         handle_error(
             node.context.http_client.put(
-                endpoint,
+                node.uri.replace("/metadata/", "/data_source/", 1),
                 content=safe_json_dump({"data_source": data_source}),
-                params={"data_source": data_source.id},
             )
         ).json()
 

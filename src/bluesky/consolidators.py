@@ -302,7 +302,7 @@ class ConsolidatorBase:
         _Node = collections.namedtuple("Node", ["metadata_", "specs"])
         return adapter_class.from_catalog(self.get_data_source(), _Node({}, []), **self.adapter_parameters())
 
-    def consume_stream_resource(self, stream_resource: StreamResource):
+    def update_from_stream_resource(self, stream_resource: StreamResource):
         """Consume an additional related StreamResource document for the same data_key"""
 
         raise NotImplementedError("This method is not implemented in the base Consolidator class.")
@@ -388,7 +388,7 @@ class HDF5Consolidator(ConsolidatorBase):
 
         return params
 
-    def consume_stream_resource(self, stream_resource: StreamResource):
+    def update_from_stream_resource(self, stream_resource: StreamResource):
         """Add an Asset for a new StreamResource document"""
         if stream_resource["parameters"]["dataset"] != self._sres_parameters["dataset"]:
             raise ValueError("All StreamResource documents must have the same dataset path.")
