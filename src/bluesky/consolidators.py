@@ -512,6 +512,10 @@ class JPEGConsolidator(MultipartRelatedConsolidator):
 
 class NPYConsolidator(MultipartRelatedConsolidator):
     supported_mimetypes = {"multipart/related;type=application/x-npy"}
+    join_method: Literal["stack", "concat"] = "stack"
+
+    # NOTE: NPYConsolidator is tailored for tests in databroker with ophyd.sim devices.
+    # Use with caution in other settings!
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         # Unlike other image sequence formats (e.g. TIFF) the filename
@@ -520,7 +524,8 @@ class NPYConsolidator(MultipartRelatedConsolidator):
         # generically by ConsolidatorBase.
         stream_resource["parameters"]["template"] = "%s_%d.npy"
         data_key = stream_resource["data_key"]
-        stream_resource["parameters"]["chunk_shape"] = descriptor["data_keys"][data_key]["shape"]
+        datum_shape = descriptor["data_keys"][data_key]["shape"]
+        stream_resource["parameters"]["chunk_shape"] = (1, *datum_shape)
         super().__init__({".npy"}, stream_resource, descriptor)
 
 
