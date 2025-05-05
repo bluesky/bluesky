@@ -147,6 +147,8 @@ class _RunWriter(CallbackBase):
         parent_node = self.root_node[f"streams/{desc_name}"]  # type: ignore[index]
         table = pyarrow.Table.from_pylist(data_cache)
 
+        breakpoint()
+
         if not self._node_exists[f"{desc_name}/internal"]:
             # Create a new "internal" data node and write the initial piece of data
             metadata = {
