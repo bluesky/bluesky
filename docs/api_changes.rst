@@ -23,6 +23,7 @@ Fixed
 -----
 
 - Removed accidental debug prints in `plot_peak_stats`.
+- Fixed `LiveTable` output for boolean and Enum `ophyd-async` signals
 
 Maintenance
 -----------
