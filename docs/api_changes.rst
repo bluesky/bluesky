@@ -2,6 +2,34 @@
  Release History
 =================
 
+v1.14.0 (2025-05-06)
+====================
+
+Added
+-----
+
+- Included `ophyd_async` version in start document metadata.
+- Implemented `close()` on the wrapper object `Plan`.
+
+Changed
+-------
+
+- Reworked `bluesky.callbacks.tiled_writer.TiledWriter` and
+  supporting objects to lay out metadata and data from
+  Bluesky documents in a new way, dubbed version 3 of the
+  Tiled `BlueskyRun` spec.
+
+Fixed
+-----
+
+- Removed accidental debug prints in `plot_peak_stats`.
+
+Maintenance
+-----------
+
+- Fixed minor errors in docstrings and documentation.
+- Refactored plot setup logic in Best-Effort Callback for clarity.
+
 v1.13.1 (2024-12-12)
 ====================
 
@@ -13,9 +41,6 @@ Changed
   process or multiple processes sharing the same files.  ``PersistentDict`` is
   not being removed, but is strongly discouraged for new use.  To get the old pinning use
   ```pip install bluesky[old_persistentdict]`` or install ``zict<3``.
-
-
-
 
 v1.13.0a4 (2024-07-08)
 ======================
