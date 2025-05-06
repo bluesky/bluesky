@@ -2118,7 +2118,7 @@ def test_configure_multiple_descritpors(RE):
 
     (start,) = d.start
     descA, descB = d.descriptor[start["uid"]]
-    stop = d.stop[start['uid']]
+    stop = d.stop[start["uid"]]
 
     assert descA["configuration"]["det"]["data"]["z"] == 3
     assert descB["configuration"]["det"]["data"]["z"] == 4
