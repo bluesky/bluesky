@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.baseline\_wrapper
+=======================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: baseline_wrapper
