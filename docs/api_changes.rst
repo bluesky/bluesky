@@ -24,6 +24,7 @@ Fixed
 
 - Removed accidental debug prints in `plot_peak_stats`.
 - Fixed `LiveTable` output for boolean and Enum `ophyd-async` signals
+- Fixed a critical bug where using the ``configure`` machinery would generate a descriptor with stale configuration.
 
 Maintenance
 -----------
