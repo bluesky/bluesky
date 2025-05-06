@@ -12,7 +12,16 @@ import pytest
 from event_model import DocumentNames
 
 from bluesky import Msg, RunEngine
-from bluesky.plan_stubs import abs_set, checkpoint, declare_stream, pause, trigger_and_read, wait, wait_for
+from bluesky.plan_stubs import (
+    abs_set,
+    checkpoint,
+    configure,
+    declare_stream,
+    pause,
+    trigger_and_read,
+    wait,
+    wait_for,
+)
 from bluesky.plans import count, grid_scan
 from bluesky.preprocessors import (
     SupplementalData,
@@ -2073,3 +2082,49 @@ def test_1event_rewind(RE, hw):
         "save",
         "close_run",
     ]
+
+
+@requires_ophyd
+def test_configure_multiple_descritpors(RE):
+    from ophyd import Component as C
+    from ophyd import Device, sim
+
+    class SynWithConfig(Device):
+        x = C(sim.Signal, value=0)
+        y = C(sim.Signal, value=2)
+        z = C(sim.Signal, value=3)
+
+    det = SynWithConfig(name="det")
+    det.x.name = "x"
+    det.y.name = "y"
+    det.z.name = "z"
+    det.read_attrs = ["x"]
+    det.configuration_attrs = ["y", "z"]
+
+    @run_decorator()
+    def plan(det):
+        # run without an exciting descriptor
+        yield from configure(det, {"z": 3})
+        # force a descriptor to be created
+        yield from declare_stream(det, name="primary")
+        # and an event
+        yield from trigger_and_read([det], name="primary")
+        # update the config which will re-generate the descriptor
+        yield from configure(det, {"z": 4})
+        # and a second event
+        yield from trigger_and_read([det], name="primary")
+
+    d = DocCollector()
+    RE(plan(det), d.insert)
+
+    (start,) = d.start
+    descA, descB = d.descriptor[start["uid"]]
+    stop = d.stop[start["uid"]]
+
+    assert descA["configuration"]["det"]["data"]["z"] == 3
+    assert descB["configuration"]["det"]["data"]["z"] == 4
+
+    for desc in (descA, descB):
+        assert len(d.event[desc["uid"]]) == 1
+
+    assert stop["num_events"]["primary"] == 2

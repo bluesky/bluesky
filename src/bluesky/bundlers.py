@@ -1172,6 +1172,7 @@ class RunBundler:
             object.configure(*args, **kwargs)
         """
         obj = msg.obj
+        await self._cache_read_config(obj)
         # Invalidate any event descriptors that include this object.
         # New event descriptors, with this new configuration, will
         # be created for any future event documents.
@@ -1181,5 +1182,3 @@ class RunBundler:
                 del self._descriptors[name]
                 await self._prepare_stream(name, obj_set)
                 continue
-
-        await self._cache_read_config(obj)
