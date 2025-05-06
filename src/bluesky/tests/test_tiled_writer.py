@@ -383,7 +383,7 @@ def test_with_correct_sample_runs(client, external_assets_folder, fname):
 def test_validate_external_data(client, external_assets_folder, error_type, validate):
     tw = TiledWriter(client)
 
-    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    documents = render_templated_documents("external_assets_single_key.json", external_assets_folder)
     for item in documents:
         name, doc = item["name"], item["doc"]
         if name == "start":
@@ -422,7 +422,7 @@ def test_validate_external_data(client, external_assets_folder, error_type, vali
 def test_slice_and_squeeze(client, external_assets_folder, squeeze):
     tw = TiledWriter(client)
 
-    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    documents = render_templated_documents("external_assets_single_key.json", external_assets_folder)
     for item in documents:
         name, doc = item["name"], item["doc"]
         if name == "start":
@@ -445,7 +445,7 @@ def test_slice_and_squeeze(client, external_assets_folder, squeeze):
 def test_legacy_multiplier_parameter(client, external_assets_folder):
     tw = TiledWriter(client)
 
-    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    documents = render_templated_documents("external_assets_single_key.json", external_assets_folder)
     for item in documents:
         name, doc = item["name"], item["doc"]
         if name == "start":
@@ -466,7 +466,7 @@ def test_legacy_multiplier_parameter(client, external_assets_folder):
 def test_streams_with_no_events(client, external_assets_folder):
     tw = TiledWriter(client)
 
-    for item in render_templated_documents("external_assets_key2.json", external_assets_folder):
+    for item in render_templated_documents("external_assets_single_key.json", external_assets_folder):
         name, doc = item["name"], item["doc"]
         if name == "start":
             uid = doc["uid"]

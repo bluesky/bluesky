@@ -33,6 +33,7 @@ from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, conso
 from ..utils import truncate_json_overflow
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
+# Try to aggregare the table rows in batches of this size before writing to Tiled
 TABLE_UPDATE_BATCH_SIZE = 10000
 
 
@@ -196,7 +197,7 @@ class _RunWriter(CallbackBase):
                 try:
                     consolidator.validate(fix_errors=True)
                 except Exception as e:
-                    warn(f"Validation of StreamResource {sres_uid} failed with error: {e}", stacklevel=2)
+                    warn(f"Validation of StreamResource {sres_uid} failed with error: {e.strip()}", stacklevel=2)
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Write the stop document to the metadata
@@ -206,7 +207,7 @@ class _RunWriter(CallbackBase):
         if self.root_node is None:
             raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
 
-        # Rename some fields to match the current schema (in-place)
+        # Rename some fields (in-place) to match the current schema
         # Loop over all dictionaries that specify data_keys (both event data_keys or configuration data_keys)
         conf_data_keys = (obj["data_keys"].values() for obj in doc["configuration"].values())
         for data_keys_spec in itertools.chain(doc["data_keys"].values(), *conf_data_keys):
