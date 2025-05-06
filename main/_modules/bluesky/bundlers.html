@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.bundlers &#8212; bluesky 1.13.2.dev63+ge341286d documentation</title>
+    <title>bluesky.bundlers &#8212; bluesky 1.13.2.dev67+g60bd719c documentation</title>
   
   
   
@@ -38,14 +38,14 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=ec56e5af"></script>
+    <script src="../../_static/documentation_options.js?v=eb205dac"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/bundlers';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.2.dev63+ge341286d';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.13.2.dev67+g60bd719c';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -53,7 +53,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.13.2.dev63+ge341286d" />
+  <meta name="docsearch:version" content="1.13.2.dev67+g60bd719c" />
   </head>
   
   
@@ -1768,6 +1768,7 @@
 <span class="sd">            object.configure(*args, **kwargs)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="c1"># Invalidate any event descriptors that include this object.</span>
         <span class="c1"># New event descriptors, with this new configuration, will</span>
         <span class="c1"># be created for any future event documents.</span>
@@ -1776,9 +1777,7 @@
             <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">obj_set</span><span class="p">:</span>
                 <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj_set</span><span class="p">)</span>
-                <span class="k">continue</span>
-
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+                <span class="k">continue</span></div>
 </div>
 
 </pre></div>
