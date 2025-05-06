@@ -92,7 +92,7 @@ class _RunWriter(CallbackBase):
     """
 
     def __init__(self, client: BaseClient):
-        self.client = client
+        self.client = client.include_data_sources()
         self.root_node: Union[None, Container] = None
         self._desc_nodes: dict[str, Composite] = {}  # references to the descriptor nodes by their uid's and names
         self._sres_nodes: dict[str, BaseClient] = {}
@@ -173,7 +173,7 @@ class _RunWriter(CallbackBase):
             metadata={"start": truncate_json_overflow(dict(doc))},
             specs=[Spec("BlueskyRun", version="3.0")],
         )
-        self.streams_node = self.root_node.create_container(key="streams")
+        self._streams_node = self.root_node.create_container(key="streams")
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -226,9 +226,9 @@ class _RunWriter(CallbackBase):
 
         # Create a new Composite node for the stream if it does not exist
         desc_name = doc["name"]  # Name of the descriptor/stream
-        if desc_name not in self.streams_node.keys():
+        if desc_name not in self._desc_nodes.keys():
             metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
-            desc_node = self.streams_node.create_composite(
+            desc_node = self._streams_node.create_composite(
                 key=desc_name,
                 metadata=truncate_json_overflow(metadata),
                 specs=[Spec("BlueskyEventStream", version="3.0")],
@@ -237,7 +237,7 @@ class _RunWriter(CallbackBase):
             # Rare Case: This new descriptor likely updates stream configs mid-experiment
             # We assume tha the full descriptor has been already received, so we don't need to store everything
             # but only the uid, timestamp, and also data and timestamps in configuration (without conf specs).
-            desc_node = self.streams_node[desc_name]
+            desc_node = self._desc_nodes[desc_name]
             updates = desc_node.metadata.get("_config_updates", []) + [{"uid": doc["uid"], "time": doc["time"]}]
             if conf_meta := doc.get("configuration"):
                 updates[-1].update({"configuration": conf_meta})
