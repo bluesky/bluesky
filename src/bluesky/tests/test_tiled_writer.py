@@ -1,8 +1,12 @@
+import json
 import os
+import uuid
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Optional, Union
 
 import h5py
+import jinja2
 import numpy as np
 import ophyd.sim
 import pytest
@@ -10,6 +14,7 @@ import tifffile as tf
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
+from tiled.client import record_history
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
@@ -23,30 +28,71 @@ from bluesky.protocols import (
     WritesStreamAssets,
 )
 
+rng = np.random.default_rng(12345)
 
-@pytest.fixture
-def catalog(tmp_path):
+
+@pytest.fixture(scope="module")
+def catalog(tmp_path_factory):
     tiled_catalog = pytest.importorskip("tiled.catalog")
-    yield tiled_catalog.in_memory(writable_storage=str(tmp_path))
+    tmp_path = tmp_path_factory.mktemp("tiled_catalog")
+    yield tiled_catalog.in_memory(
+        writable_storage={"filesystem": str(tmp_path), "sql": f"duckdb:///{tmp_path}/test.db"},
+        readable_storage=[str(tmp_path.parent)],
+    )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def app(catalog):
     tsa = pytest.importorskip("tiled.server.app")
     yield tsa.build_app(catalog)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def context(app):
     tc = pytest.importorskip("tiled.client")
     with tc.Context.from_app(app) as context:
         yield context
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def client(context):
     tc = pytest.importorskip("tiled.client")
     yield tc.from_context(context)
+
+
+@pytest.fixture(scope="module")
+def external_assets_folder(tmp_path_factory):
+    """External data files used with the saved documents."""
+    # Create a temporary directory
+    temp_dir = tmp_path_factory.mktemp("example_files")
+
+    # Create an external hdf5 file
+    with h5py.File(temp_dir.joinpath("dataset.h5"), "w") as file:
+        grp = file.create_group("entry").create_group("data")
+        grp.create_dataset("data_1", data=rng.random(size=(3,), dtype="float64"))
+        grp.create_dataset("data_2", data=rng.integers(-10, 10, size=(3, 13, 17)), dtype="<i8")
+
+    # Create a second external hdf5 file to be declared in a different stream resource
+    with h5py.File(temp_dir.joinpath("dataset_part2.h5"), "w") as file:
+        grp = file.create_group("entry").create_group("data")
+        grp.create_dataset("data_2", data=rng.integers(-10, 10, size=(5, 13, 17)), dtype="<i8")
+
+    # Create a sequence of tiff files
+    (temp_dir / "tiff_files").mkdir(parents=True, exist_ok=True)
+    for i in range(3):
+        data = rng.integers(0, 255, size=(1, 10, 15), dtype="uint8")
+        tf.imwrite(temp_dir.joinpath("tiff_files", f"img_{i:05}.tif"), data)
+
+    yield str(temp_dir.absolute()).replace("\\", "/")
+
+
+def render_templated_documents(fname: str, data_dir: str):
+    dirpath = str(Path(__file__).parent.joinpath("examples"))
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(dirpath), autoescape=False)
+    template = env.get_template(fname)
+    rendered = template.render(root_path=data_dir, uuid=str(uuid.uuid4())[:-12])
+
+    yield from json.loads(rendered)
 
 
 class Named(HasName):
@@ -74,7 +120,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         if self.counter == 0:
             # Backward compatibility test, ignore typing errors
             stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
-                parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape[1:])},
+                parameters={"dataset": hdf5_dataset, "chunk_shape": (100, *data_shape[1:]), "_validate": True},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",
@@ -122,7 +168,12 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
             if self.counter == 0:
                 # Backward compatibility test, ignore typing errors
                 stream_resource = StreamResource(  # type: ignore[typeddict-unknown-key]
-                    parameters={"chunk_shape": (1, *data_shape), "template": "{:05d}.tif", "join_method": "stack"},
+                    parameters={
+                        "chunk_shape": (1, *data_shape),
+                        "template": "{:05d}.tif",
+                        "join_method": "stack",
+                        "_validate": True,
+                    },
                     data_key=data_key,
                     root=self.root,
                     uri="file://localhost/" + self.root + "/",
@@ -218,7 +269,12 @@ class SynSignalWithRegistry(ophyd.sim.SynSignalWithRegistry):
 
     def stage(self):
         super().stage()
-        parameters = {"chunk_shape": (1,), "template": "_{:d}." + self.save_ext, "join_method": "stack"}
+        parameters = {
+            "chunk_shape": (1,),
+            "template": "_{:d}." + self.save_ext,
+            "join_method": "stack",
+            "_validate": True,
+        }
         self._asset_docs_cache[-1][1]["resource_kwargs"].update(parameters)
 
     def describe(self):
@@ -233,14 +289,15 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     tw = TiledWriter(client)
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     RE(bp.count([det], 3), tw)
-    arrs = client.values().last()["primary"]["external"].values()
+    stream = client.values().last()["streams"]["primary"]
+    keys = sorted(set(stream.parts).difference({"internal"}))
 
-    assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (15, 10, 15)
-    assert arrs[2].shape == (3, 10, 5, 7, 4)
-    assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
+    assert stream[keys[0]].shape == (3,)
+    assert stream[keys[1]].shape == (15, 10, 15)
+    assert stream[keys[2]].shape == (3, 10, 5, 7, 4)
+    assert stream[keys[0]].read() is not None
+    assert stream[keys[1]].read() is not None
+    assert stream[keys[2]].read() is not None
 
 
 def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
@@ -248,31 +305,33 @@ def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
     det2 = StreamDatumReadableCollectable(name="det2", root=str(tmp_path))
     tw = TiledWriter(client)
     RE(bp.count([det1, det2], 3), tw)
-    arrs = client.values().last()["primary"]["external"].values()
+    stream = client.values().last()["streams"]["primary"]
+    keys = sorted(set(stream.parts).difference({"internal"}))
 
-    assert arrs[0].shape == (3,)
-    assert arrs[1].shape == (15, 10, 15)
-    assert arrs[2].shape == (3, 10, 5, 7, 4)
-    assert arrs[3].shape == (3,)
-    assert arrs[4].shape == (15, 10, 15)
-    assert arrs[5].shape == (3, 10, 5, 7, 4)
-    assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
-    assert arrs[3].read() is not None
-    assert arrs[4].read() is not None
-    assert arrs[5].read() is not None
+    assert stream[keys[0]].shape == (3,)
+    assert stream[keys[1]].shape == (15, 10, 15)
+    assert stream[keys[2]].shape == (3, 10, 5, 7, 4)
+    assert stream[keys[3]].shape == (3,)
+    assert stream[keys[4]].shape == (15, 10, 15)
+    assert stream[keys[5]].shape == (3, 10, 5, 7, 4)
+    assert stream[keys[0]].read() is not None
+    assert stream[keys[1]].read() is not None
+    assert stream[keys[2]].read() is not None
+    assert stream[keys[3]].read() is not None
+    assert stream[keys[4]].read() is not None
+    assert stream[keys[5]].read() is not None
 
 
 def test_stream_datum_collectable(RE, client, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     tw = TiledWriter(client)
     RE(collect_plan(det, name="primary"), tw)
-    arrs = client.values().last()["primary"]["external"].values()
+    stream = client.values().last()["streams"]["primary"]
+    keys = sorted(set(stream.parts).difference({"internal"}))
 
-    assert arrs[0].read() is not None
-    assert arrs[1].read() is not None
-    assert arrs[2].read() is not None
+    assert stream[keys[0]].read() is not None
+    assert stream[keys[1]].read() is not None
+    assert stream[keys[2]].read() is not None
 
 
 @pytest.mark.parametrize("frames_per_event", [1, 5, 10])
@@ -289,16 +348,13 @@ def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     )
     tw = TiledWriter(client)
     RE(bp.count([det], 3), tw)
-    extr = client.values().last()["primary"]["external"]["img"]
-    intr = client.values().last()["primary"]["internal"]["events"]
-    conf = client.values().last()["primary"]["config"]["img"]
+    extr = client.values().last()["streams"]["primary"].parts["img"]
+    intr = client.values().last()["streams"]["primary"].parts["internal"]
     assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
-    assert set(intr.columns) == {"seq_num", "ts_img"}
+    assert set(intr.columns) == {"seq_num", "time"}
     assert len(intr.read()) == 3
     assert (intr["seq_num"].read() == [1, 2, 3]).all()
-    assert set(conf.columns) == {"descriptor_uid", "img", "ts_img"}
-    assert len(conf.read()) == 1
 
 
 def collect_plan(*objs, name="primary"):
@@ -306,3 +362,138 @@ def collect_plan(*objs, name="primary"):
     yield from bps.declare_stream(*objs, collect=True, name=name)
     yield from bps.collect(*objs, return_payload=False, name=name)
     yield from bps.close_run()
+
+
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
+def test_with_correct_sample_runs(client, external_assets_folder, fname):
+    tw = TiledWriter(client)
+    for item in render_templated_documents(fname + ".json", external_assets_folder):
+        if item["name"] == "start":
+            uid = item["doc"]["uid"]
+        tw(**item)
+
+    run = client[uid]
+
+    for stream in run["streams"].values():
+        assert stream.read() is not None
+
+
+@pytest.mark.parametrize("error_type", ["shape", "chunks", "dtype"])
+@pytest.mark.parametrize("validate", [True, False])
+def test_validate_external_data(client, external_assets_folder, error_type, validate):
+    tw = TiledWriter(client)
+
+    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    for item in documents:
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Modify the document to introduce an error
+        if (error_type == "shape") and (name == "descriptor"):
+            doc["data_keys"]["det-key2"]["shape"] = [1, 2, 3]  # should be [1, 13, 17]
+        elif (error_type == "chunks") and name in {"resource", "stream_resource"}:
+            doc["parameters"]["chunk_shape"] = [1, 2, 3]  # should be [100, 13, 17]
+        elif (error_type == "dtype") and (name == "descriptor"):
+            doc["data_keys"]["det-key2"]["dtype_numpy"] = np.dtype("int32").str  # should be "int64"
+
+        # Add flag to trigger validation
+        if name in {"resource", "stream_resource"} and validate:
+            doc["parameters"]["_validate"] = True
+
+        # Check that the warning is issued when data changes during the validation
+        if name == "stop" and validate:
+            with pytest.warns(UserWarning):
+                tw(name, doc)
+        else:
+            tw(name, doc)
+
+    # Try reading the imported data
+    run = client[uid]
+    if not validate and not error_type == "chunks":
+        with pytest.raises(ValueError):
+            assert run["streams"]["primary"].read() is not None
+    else:
+        assert run["streams"]["primary"].read() is not None
+        assert run["streams"]["primary"]["det-key2"].read().shape == (8, 13, 17)
+
+
+@pytest.mark.parametrize("squeeze", [True, False])
+def test_slice_and_squeeze(client, external_assets_folder, squeeze):
+    tw = TiledWriter(client)
+
+    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    for item in documents:
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Modify the documents to add slice and squeeze parameters
+        if name == "descriptor":
+            doc["data_keys"]["det-key2"]["shape"] = [1, 17] if squeeze else [1, 5, 17]
+        elif name in {"resource", "stream_resource"}:
+            doc["parameters"]["slice"] = ":,5,:" if squeeze else ":,:5,:"
+            doc["parameters"]["squeeze"] = squeeze
+            doc["parameters"]["chunk_shape"] = [1]
+
+        tw(name, doc)
+
+    # Try reading the imported data
+    assert client[uid]["streams"]["primary"].read() is not None
+
+
+def test_legacy_multiplier_parameter(client, external_assets_folder):
+    tw = TiledWriter(client)
+
+    documents = render_templated_documents("external_assets_key2.json", external_assets_folder)
+    for item in documents:
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Modify the documents to add slice and squeeze parameters
+        if name == "descriptor":
+            doc["data_keys"]["det-key2"]["shape"] = [13, 17]
+        elif name in {"resource", "stream_resource"}:
+            doc["parameters"]["multiplier"] = 1
+
+        tw(name, doc)
+
+    # Try reading the imported data
+    assert client[uid]["streams"]["primary"].read() is not None
+
+
+def test_streams_with_no_events(client, external_assets_folder):
+    tw = TiledWriter(client)
+
+    for item in render_templated_documents("external_assets_key2.json", external_assets_folder):
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        # Skip the resource and datum documents
+        if name in {"resource", "stream_resource", "datum", "stream_datum", "event"}:
+            continue
+
+        tw(name, doc)
+
+    # Try reading the data -- should return an empty dataset
+    assert client[uid]["streams"]["primary"].read() is not None
+    assert client[uid]["streams"]["primary"].read().data_vars == {}
+    assert client[uid]["streams"]["primary"].metadata is not None
+
+
+@pytest.mark.parametrize("include_data_sources", [True, False])
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
+def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
+    client = client.new_variation(include_data_sources=include_data_sources)
+    tw = TiledWriter(client)
+    assert client._include_data_sources == include_data_sources
+
+    with record_history() as history:
+        for item in render_templated_documents(fname + ".json", external_assets_folder):
+            tw(**item)
+
+    # Count the number of GET requests
+    num_gets = sum(1 for req in history.requests if req.method == "GET")
+    assert num_gets == 0 if include_data_sources else num_gets == 1

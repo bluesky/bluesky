@@ -3,6 +3,7 @@ import dataclasses
 import enum
 import os
 import re
+import warnings
 from typing import Any, Literal, Optional, Union
 
 import numpy as np
@@ -107,6 +108,15 @@ class ConsolidatorBase:
         data_desc = descriptor["data_keys"][self.data_key]
         self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
         self.datum_shape = () if self.datum_shape == (1,) and self.join_method == "stack" else self.datum_shape
+        # Check that the datum shape is consistent between the StreamResource and the Descriptor
+        if multiplier := self._sres_parameters.get("multiplier"):
+            self.datum_shape = self.datum_shape or (multiplier,)  # If datum_shape is not set
+            if self.datum_shape[0] != multiplier:
+                if self.datum_shape[0] == 1:
+                    self.datum_shape = (multiplier,) + self.datum_shape[1:]
+                else:
+                    self.datum_shape = (multiplier,) + self.datum_shape
+                    # TODO: Check consistency with chunk_shape
 
         # Determine data type. From highest precedent to lowest:
         # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
@@ -281,16 +291,66 @@ class ConsolidatorBase:
     def get_adapter(self, adapters_by_mimetype=None):
         """Return an Adapter suitable for reading the data
 
-        Uses a dictionary mapping of a mimetype to a callable that returns an Adapter instance.
-        This might be a class, classmethod constructor, factory function...
-        it does not matter here; it is just a callable.
+        Uses a dictionary mapping of a mimetype to a callable that returns an Adapter instance from_catalog.
         """
 
         # User-provided adapters take precedence over defaults.
         all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
         adapter_class = all_adapters_by_mimetype[self.mimetype]
 
-        return adapter_class.from_assets(self.assets, structure=self.structure(), **self.adapter_parameters())
+        # Mimic the necessary aspects of a tiled node with a namedtuple
+        _Node = collections.namedtuple("Node", ["metadata_", "specs"])
+        return adapter_class.from_catalog(self.get_data_source(), _Node({}, []), **self.adapter_parameters())
+
+    def update_from_stream_resource(self, stream_resource: StreamResource):
+        """Consume an additional related StreamResource document for the same data_key"""
+
+        raise NotImplementedError("This method is not implemented in the base Consolidator class.")
+
+    def validate(self, adapters_by_mimetype=None, fix_errors=False):
+        """Validate the Consolidator's state against the expected structure"""
+
+        # User-provided adapters take precedence over defaults.
+        all_adapters_by_mimetype = collections.ChainMap((adapters_by_mimetype or {}), DEFAULT_ADAPTERS_BY_MIMETYPE)
+        adapter_class = all_adapters_by_mimetype[self.mimetype]
+
+        # Initialize adapter from uris and determine the structure
+        uris = [asset.data_uri for asset in self.assets if asset.parameter == "data_uris"]
+        structure = adapter_class.from_uris(*uris, **self.adapter_parameters()).structure()
+
+        if self.shape != structure.shape:
+            if not fix_errors:
+                raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
+            else:
+                warnings.warn(f"Fixing shape mismatch: {self.shape} -> {structure.shape}", stacklevel=2)
+                if self.join_method == "stack":
+                    self._num_rows = structure.shape[0]
+                    self.datum_shape = structure.shape[1:]
+                elif self.join_method == "concat":
+                    # Estimate the number of frames_per_event (multiplier)
+                    multiplier = 1 if structure.shape[0] % structure.chunks[0][0] else structure.chunks[0][0]
+                    self._num_rows = structure.shape[0] // multiplier
+                    self.datum_shape = (multiplier,) + structure.shape[1:]
+
+        if self.chunks != structure.chunks:
+            if not fix_errors:
+                raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
+            else:
+                _chunk_shape = tuple(c[0] for c in structure.chunks)
+                warnings.warn(f"Fixing chunk shape mismatch: {self.chunk_shape} -> {_chunk_shape}", stacklevel=2)
+                self.chunk_shape = _chunk_shape
+
+        if self.data_type != structure.data_type:
+            if not fix_errors:
+                raise ValueError(f"dtype mismatch: {self.data_type} != {structure.data_type}")
+            else:
+                warnings.warn(
+                    f"Fixing dtype mismatch: {self.data_type.to_numpy_dtype()} -> {structure.data_type.to_numpy_dtype()}",  # noqa
+                    stacklevel=2,
+                )
+                self.data_type = structure.data_type
+
+        assert self.get_adapter() is not None, "Adapter can not not initialized"
 
 
 class CSVConsolidator(ConsolidatorBase):
@@ -311,7 +371,7 @@ class HDF5Consolidator(ConsolidatorBase):
 
     def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
         super().__init__(stream_resource, descriptor)
-        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uri"))
+        self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uris", num=0))
         self.swmr = self._sres_parameters.get("swmr", True)
 
     def adapter_parameters(self) -> dict:
@@ -320,7 +380,25 @@ class HDF5Consolidator(ConsolidatorBase):
         dataset: list[str] - a path to the dataset within the hdf5 file represented as list split at `/`
         swmr: bool -- True to enable the single writer / multiple readers regime
         """
-        return {"dataset": self._sres_parameters["dataset"].strip("/").split("/"), "swmr": self.swmr}
+        params = {"dataset": self._sres_parameters["dataset"], "swmr": self.swmr}
+        if slice := self._sres_parameters.get("slice", False):
+            params["slice"] = slice
+        if squeeze := self._sres_parameters.get("squeeze", False):
+            params["squeeze"] = squeeze
+
+        return params
+
+    def update_from_stream_resource(self, stream_resource: StreamResource):
+        """Add an Asset for a new StreamResource document"""
+        if stream_resource["parameters"]["dataset"] != self._sres_parameters["dataset"]:
+            raise ValueError("All StreamResource documents must have the same dataset path.")
+        if stream_resource["parameters"].get("chunk_shape", ()) != self._sres_parameters.get("chunk_shape", ()):
+            raise ValueError("All StreamResource documents must have the same chunk shape.")
+
+        asset = Asset(
+            data_uri=stream_resource["uri"], is_directory=False, parameter="data_uris", num=len(self.assets)
+        )
+        self.assets.append(asset)
 
 
 class MultipartRelatedConsolidator(ConsolidatorBase):
@@ -432,6 +510,25 @@ class JPEGConsolidator(MultipartRelatedConsolidator):
         super().__init__({".jpeg", ".jpg"}, stream_resource, descriptor)
 
 
+class NPYConsolidator(MultipartRelatedConsolidator):
+    supported_mimetypes = {"multipart/related;type=application/x-npy"}
+    join_method: Literal["stack", "concat"] = "stack"
+
+    # NOTE: NPYConsolidator is tailored for tests in databroker with ophyd.sim devices.
+    # Use with caution in other settings!
+
+    def __init__(self, stream_resource: StreamResource, descriptor: EventDescriptor):
+        # Unlike other image sequence formats (e.g. TIFF) the filename
+        # template is hard-coded in the NPY_SEQ handler. We inject it
+        # here so that the rest of the processing can be handled
+        # generically by ConsolidatorBase.
+        stream_resource["parameters"]["template"] = "%s_%d.npy"
+        data_key = stream_resource["data_key"]
+        datum_shape = descriptor["data_keys"][data_key]["shape"]
+        stream_resource["parameters"]["chunk_shape"] = (1, *datum_shape)
+        super().__init__({".npy"}, stream_resource, descriptor)
+
+
 CONSOLIDATOR_REGISTRY = collections.defaultdict(
     lambda: ConsolidatorBase,
     {
@@ -439,6 +536,7 @@ CONSOLIDATOR_REGISTRY = collections.defaultdict(
         "application/x-hdf5": HDF5Consolidator,
         "multipart/related;type=image/tiff": TIFFConsolidator,
         "multipart/related;type=image/jpeg": JPEGConsolidator,
+        "multipart/related;type=application/x-npy": NPYConsolidator,
     },
 )
 

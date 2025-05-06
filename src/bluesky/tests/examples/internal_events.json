@@ -1,0 +1,270 @@
+[
+    {
+        "name": "start",
+        "doc": {
+            "uid": "{{ uuid }}-dc0518f354ee",
+            "time": 1745338530.928323,
+            "scan_id": 1,
+            "plan_args": {
+                "detectors": [
+                    "SynGauss(prefix='', name='det', read_attrs=['val'], configuration_attrs=['Imax', 'center', 'sigma', 'noise', 'noise_multiplier'])"
+                ],
+                "num": 3,
+                "delay": 0.0
+            }
+        }
+    },
+    {
+        "name": "descriptor",
+        "doc": {
+            "configuration": {
+                "det": {
+                    "data": {
+                        "det_Imax": 1,
+                        "det_center": 0,
+                        "det_sigma": 1,
+                        "det_noise": "none",
+                        "det_noise_multiplier": 1
+                    },
+                    "timestamps": {
+                        "det_Imax": 1745338530.894953,
+                        "det_center": 1745338530.894945,
+                        "det_sigma": 1745338530.894964,
+                        "det_noise": 1745338530.894911,
+                        "det_noise_multiplier": 1745338530.894936
+                    },
+                    "data_keys": {
+                        "det_Imax": {
+                            "source": "SIM:det_Imax",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        },
+                        "det_center": {
+                            "source": "SIM:det_center",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        },
+                        "det_sigma": {
+                            "source": "SIM:det_sigma",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        },
+                        "det_noise": {
+                            "source": "SIM:det_noise",
+                            "dtype": "integer",
+                            "shape": [],
+                            "enum_strs": [
+                                "none",
+                                "poisson",
+                                "uniform"
+                            ],
+                            "object_name": "det"
+                        },
+                        "det_noise_multiplier": {
+                            "source": "SIM:det_noise_multiplier",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        }
+                    }
+                }
+            },
+            "data_keys": {
+                "det": {
+                    "source": "SIM:det",
+                    "dtype": "number",
+                    "shape": [],
+                    "precision": 3,
+                    "object_name": "det"
+                },
+                "empty": {
+                    "source": "SIM:det",
+                    "dtype": "array",
+                    "shape": [],
+                    "object_name": "det"
+                }
+            },
+            "name": "primary",
+            "object_keys": {
+                "det": [
+                    "det",
+                    "empty"
+                ]
+            },
+            "run_start": "{{ uuid }}-dc0518f354ee",
+            "time": 1745338531.004459,
+            "uid": "{{ uuid }}-ab0498e83e2b",
+            "hints": {
+                "det": {
+                    "fields": [
+                        "det",
+                        "empty"
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "name": "event",
+        "doc": {
+            "uid": "{{ uuid }}-be1c4e7ea7d1",
+            "time": 1745338531.215753,
+            "data": {
+                "det": 1.0,
+                "empty": []
+            },
+            "timestamps": {
+                "det": 1745338531.001646,
+                "empty": 1745338531.001647
+            },
+            "seq_num": 1,
+            "filled": {},
+            "descriptor": "{{ uuid }}-ab0498e83e2b"
+        }
+    },
+    {
+        "name": "event",
+        "doc": {
+            "uid": "31064b7c-7818-49a2-a2f3-7596887522ce",
+            "time": 1745338531.218661,
+            "data": {
+                "det": 1.0,
+                "empty": []
+            },
+            "timestamps": {
+                "det": 1745338531.217144,
+                "empty": 1745338531.217145
+            },
+            "seq_num": 2,
+            "filled": {},
+            "descriptor": "{{ uuid }}-ab0498e83e2b"
+        }
+    },
+    {
+        "name": "descriptor",
+        "doc": {
+            "configuration": {
+                "det": {
+                    "data": {
+                        "det_Imax": 2,
+                        "det_center": 0.5,
+                        "det_sigma": 2,
+                        "det_noise": "none",
+                        "det_noise_multiplier": 2
+                    },
+                    "timestamps": {
+                        "det_Imax": 1745338532.894953,
+                        "det_center": 1745338532.894945,
+                        "det_sigma": 1745338532.894964,
+                        "det_noise": 1745338532.894911,
+                        "det_noise_multiplier": 1745338532.894936
+                    },
+                    "data_keys": {
+                        "det_Imax": {
+                            "source": "SIM:det_Imax",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        },
+                        "det_center": {
+                            "source": "SIM:det_center",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        },
+                        "det_sigma": {
+                            "source": "SIM:det_sigma",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        },
+                        "det_noise": {
+                            "source": "SIM:det_noise",
+                            "dtype": "integer",
+                            "shape": [],
+                            "enum_strs": [
+                                "none",
+                                "poisson",
+                                "uniform"
+                            ],
+                            "object_name": "det"
+                        },
+                        "det_noise_multiplier": {
+                            "source": "SIM:det_noise_multiplier",
+                            "dtype": "integer",
+                            "shape": [],
+                            "object_name": "det"
+                        }
+                    }
+                }
+            },
+            "data_keys": {
+                "det": {
+                    "source": "SIM:det",
+                    "dtype": "number",
+                    "shape": [],
+                    "precision": 3,
+                    "object_name": "det"
+                },
+                "empty": {
+                    "source": "SIM:det",
+                    "dtype": "array",
+                    "shape": [],
+                    "object_name": "det"
+                }
+            },
+            "name": "primary",
+            "object_keys": {
+                "det": [
+                    "det",
+                    "empty"
+                ]
+            },
+            "run_start": "{{ uuid }}-dc0518f354ee",
+            "time": 1745338532.004459,
+            "uid": "{{ uuid }}-ab0498e83e2b",
+            "hints": {
+                "det": {
+                    "fields": [
+                        "det",
+                        "empty"
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "name": "event",
+        "doc": {
+            "uid": "{{ uuid }}-bd3438cb9a13",
+            "time": 1745338533.2213702,
+            "data": {
+                "det": 1.0,
+                "empty": []
+            },
+            "timestamps": {
+                "det": 1745338533.219767,
+                "empty": 1745338533.219768
+            },
+            "seq_num": 3,
+            "filled": {},
+            "descriptor": "{{ uuid }}-ab0498e83e2b"
+        }
+    },
+    {
+        "name": "stop",
+        "doc": {
+            "uid": "{{ uuid }}-98db440e2c8b",
+            "time": 1745338533.2218728,
+            "run_start": "{{ uuid }}-dc0518f354ee",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {
+                "primary": 3
+            }
+        }
+    }
+]
