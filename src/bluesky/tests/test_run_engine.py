@@ -15,12 +15,12 @@ from bluesky import Msg, RunEngine
 from bluesky.plan_stubs import (
     abs_set,
     checkpoint,
+    configure,
     declare_stream,
     pause,
     trigger_and_read,
     wait,
     wait_for,
-    configure,
 )
 from bluesky.plans import count, grid_scan
 from bluesky.preprocessors import (
@@ -2086,7 +2086,8 @@ def test_1event_rewind(RE, hw):
 
 @requires_ophyd
 def test_configure_multiple_descritpors(RE):
-    from ophyd import Device, sim, Component as C
+    from ophyd import Component as C
+    from ophyd import Device, sim
 
     class SynWithConfig(Device):
         x = C(sim.Signal, value=0)
