@@ -155,6 +155,7 @@ class _RunWriter(CallbackBase):
             metadata = {
                 k: v for k, v in (self.data_keys_ext | self.data_keys_int).items() if k in table.column_names
             }
+            metadata = truncate_json_overflow(metadata)
             # Replace any nulls in the schema with string type
             schema = copy.copy(table.schema)
             for i, field in enumerate(table.schema):
@@ -202,7 +203,7 @@ class _RunWriter(CallbackBase):
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Write the stop document to the metadata
-        self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)})
+        self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)}, drop_revision=True)
 
     def descriptor(self, doc: EventDescriptor):
         if self.root_node is None:
@@ -244,7 +245,8 @@ class _RunWriter(CallbackBase):
             if conf_meta := doc.get("configuration"):
                 updates[-1].update({"configuration": conf_meta})
             # Update the metadata with the new configuration
-            desc_node.update_metadata(metadata={"_config_updates": truncate_json_overflow(updates)})
+            metadata = {"_config_updates": truncate_json_overflow(updates)}
+            desc_node.update_metadata(metadata=metadata, drop_revision=True)
 
         self._desc_nodes[doc["uid"]] = self._desc_nodes[desc_name] = desc_node  # Keep a reference to the node
 
