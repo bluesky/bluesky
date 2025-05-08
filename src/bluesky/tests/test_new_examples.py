@@ -113,16 +113,20 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
             mv,
             ("motor1", 1, "motor2", 2),
             {"group": "A"},
-            [Msg("set", "motor1", 1, group="A"), Msg("set", "motor2", 2, group="A"), Msg("wait", None, group="A")],
+            [
+                Msg("set", "motor1", 1, group="A"),
+                Msg("set", "motor2", 2, group="A"),
+                Msg("wait", None, group="A", timeout=None),
+            ],
         ),
         (
             mv,
             ("motor1", 1, "motor2", 2),
             {"group": "A", "timeout": 42},
             [
-                Msg("set", "motor1", 1, group="A", timeout=42),
-                Msg("set", "motor2", 2, group="A", timeout=42),
-                Msg("wait", None, group="A"),
+                Msg("set", "motor1", 1, group="A"),
+                Msg("set", "motor2", 2, group="A"),
+                Msg("wait", None, group="A", timeout=42),
             ],
         ),
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
@@ -163,6 +167,25 @@ def test_stub_plans(plan, plan_args, plan_kwargs, msgs, hw):
     assert list(plan(*plan_args, **plan_kwargs)) == msgs
 
 
+@pytest.mark.parametrize(("timeout", "should_fail"), [(0, True), (1, False), (None, False)])
+def test_mv_timeout(RE, hw, timeout, should_fail):
+    sig = hw.motor
+    sig.delay = 0.01
+
+    def tester(obj):
+        try:
+            yield from mv(obj, 1, timeout=timeout)
+        except TimeoutError:
+            assert should_fail
+        else:
+            assert not should_fail
+
+        # This needs to happen so all Futures can be cleared inside RE.
+        yield from sleep(obj.delay)
+
+    RE(tester(sig))
+
+
 def test_mvr(RE, hw):
     # special-case mvr because the value cannot be pre-defined in test_stub_plans
     # move motors first to ensure that movement is relative, not absolute
@@ -176,7 +199,7 @@ def test_mvr(RE, hw):
     for msg in actual[:2]:
         msg.command == "set"  # noqa: B015
     assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])  # noqa: C403, C405
-    assert actual[2] == Msg("wait", None)
+    assert actual[2] == Msg("wait", None, timeout=None)
 
 
 def test_locatable_message_multiple_objects(RE, hw):
@@ -281,7 +304,8 @@ def test_mvr_with_timeout(hw):
     actual = list(mvr(hw.motor1, 1, hw.motor2, 2, timeout=42))
     for msg in actual[:2]:
         msg.command == "set"  # noqa: B015
-        msg.kwargs["timeout"] == 42  # noqa: B015
+
+    assert actual[2].kwargs["timeout"] == 42
 
 
 def strip_group(plan):
@@ -638,6 +662,7 @@ def test_configure_count_time(RE, hw):
 
     for msg in msgs:
         msg.kwargs.pop("group", None)
+        msg.kwargs.pop("timeout", None)
 
     assert msgs == expected
 

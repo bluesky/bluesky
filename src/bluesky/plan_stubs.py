@@ -351,6 +351,7 @@ def rel_set(
 def mv(
     *args: Union[Movable, Any],
     group: Optional[Hashable] = None,
+    timeout: Optional[float] = None,
     **kwargs,
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
@@ -364,6 +365,8 @@ def mv(
         device1, value1, device2, value2, ...
     group : string, optional
         Used to mark these as a unit to be waited on.
+    timeout : float, optional
+        Specify a maximum time that the move(s) can be waited for.
     kwargs :
         passed to obj.set()
 
@@ -389,7 +392,7 @@ def mv(
     for obj, val in step.items():
         ret = yield Msg("set", obj, val, group=group, **kwargs)
         status_objects.append(ret)
-    yield Msg("wait", None, group=group)
+    yield Msg("wait", None, group=group, timeout=timeout)
     return tuple(status_objects)
 
 
@@ -398,7 +401,7 @@ mov = mv  # synonym
 
 @plan
 def mvr(
-    *args: Union[Movable, Any], group: Optional[Hashable] = None, **kwargs
+    *args: Union[Movable, Any], group: Optional[Hashable] = None, timeout: Optional[float] = None, **kwargs
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -411,6 +414,8 @@ def mvr(
         device1, value1, device2, value2, ...
     group : string, optional
         Used to mark these as a unit to be waited on.
+    timeout : float, optional
+        Specify a maximum time that the move(s) can be waited for.
     kwargs :
         passed to obj.set()
 
@@ -436,7 +441,7 @@ def mvr(
 
     @relative_set_decorator(objs)
     def inner_mvr():
-        return (yield from mv(*args, group=group, **kwargs))
+        return (yield from mv(*args, group=group, timeout=timeout, **kwargs))
 
     return (yield from inner_mvr())
 
