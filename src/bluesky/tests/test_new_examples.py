@@ -109,6 +109,22 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
             {"group": "A", "wait": True},
             [Msg("read", "det"), Msg("set", "det", 5, group="A"), Msg("wait", None, group="A")],
         ),
+        (
+            mv,
+            ("motor1", 1, "motor2", 2),
+            {"group": "A"},
+            [Msg("set", "motor1", 1, group="A"), Msg("set", "motor2", 2, group="A"), Msg("wait", None, group="A")],
+        ),
+        (
+            mv,
+            ("motor1", 1, "motor2", 2),
+            {"group": "A", "timeout": 42},
+            [
+                Msg("set", "motor1", 1, group="A", timeout=42),
+                Msg("set", "motor2", 2, group="A", timeout=42),
+                Msg("wait", None, group="A"),
+            ],
+        ),
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
         (trigger, ("det",), {"group": "A"}, [Msg("trigger", "det", group="A")]),
         (sleep, (2,), {}, [Msg("sleep", None, 2)]),
@@ -147,28 +163,8 @@ def test_stub_plans(plan, plan_args, plan_kwargs, msgs, hw):
     assert list(plan(*plan_args, **plan_kwargs)) == msgs
 
 
-def test_mv(hw):
-    # special-case mv because the group is not configurable
-    # move motors first to ensure that movement is absolute, not relative
-    actual = list(mv(hw.motor1, 1, hw.motor2, 2))
-    strip_group(actual)
-    for msg in actual[:2]:
-        msg.command == "set"  # noqa: B015
-    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])  # noqa: C403, C405
-    assert actual[2] == Msg("wait", None)
-
-
-def test_mv_with_timeout(hw):
-    # special-case mv because the group is not configurable
-    # move motors first to ensure that movement is absolute, not relative
-    actual = list(mv(hw.motor1, 1, hw.motor2, 2, timeout=42))
-    for msg in actual[:2]:
-        msg.command == "set"  # noqa: B015
-        msg.kwargs["timeout"] == 42  # noqa: B015
-
-
 def test_mvr(RE, hw):
-    # special-case mv because the group is not configurable
+    # special-case mvr because the value cannot be pre-defined in test_stub_plans
     # move motors first to ensure that movement is relative, not absolute
     hw.motor1.set(10)
     hw.motor2.set(10)
