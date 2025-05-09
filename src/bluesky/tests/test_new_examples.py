@@ -303,7 +303,7 @@ def test_mvr_with_timeout(hw):
     # move motors first to ensure that movement is absolute, not relative
     actual = list(mvr(hw.motor1, 1, hw.motor2, 2, timeout=42))
     for msg in actual[:2]:
-        msg.command == "set"  # noqa: B015
+        assert msg.command == "set"  # noqa: B015
 
     assert actual[2].kwargs["timeout"] == 42
 
