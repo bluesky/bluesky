@@ -6,7 +6,13 @@ from typing import Any, Optional, Union, cast
 from warnings import warn
 
 import pyarrow
-from event_model import RunRouter, unpack_datum_page, unpack_event_page
+from event_model import (
+    DocumentNames,
+    RunRouter,
+    schema_validators,
+    unpack_datum_page,
+    unpack_event_page,
+)
 from event_model.documents import (
     Datum,
     DatumPage,
@@ -30,6 +36,7 @@ from tiled.structures.core import Spec
 from tiled.utils import safe_json_dump
 
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
+from ..run_engine import Dispatcher
 from ..utils import truncate_json_overflow
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
@@ -62,14 +69,28 @@ def concatenate_stream_datums(*docs: StreamDatum):
 
 
 class TiledWriter:
-    "Write metadata and data from Bluesky documents into Tiled."
+    """Callback for write metadata and data from Bluesky documents into Tiled.
 
-    def __init__(self, client):
-        self.client = client
+    This callback relies on the `RunRouter` to route documents from one or more runs into
+    independent instances of the `_RunWriter` callback. The `RunRouter` is responsible for
+    creating a new instance of the `_RunWriter` for each run.
+
+    Parameters
+    ----------
+        client : `tiled.client.BaseClient`
+            The Tiled client to use for writing data. This client must be initialized with
+            the appropriate credentials and connection parameters to access the Tiled server.
+    """
+
+    def __init__(self, client: BaseClient):
+        self.client = client.include_data_sources()
         self._run_router = RunRouter([self._factory])
 
     def _factory(self, name, doc):
-        return [_RunWriter(self.client)], []
+        # return [_RunWriter(self.client)], []
+        cb = FirstCallback()
+        cb.subscribe(SecondCallback())
+        return [cb], []
 
     @classmethod
     def from_uri(cls, uri, **kwargs):
@@ -85,15 +106,61 @@ class TiledWriter:
         self._run_router(name, doc)
 
 
+class FirstCallback(CallbackBase):
+    def __init__(self):
+        self._token_refs = {}
+        self.dispatcher = Dispatcher()
+
+    def start(self, doc: RunStart):
+        print(f"{self.__class__.__name__}: Start")
+        doc = {"uid": doc["uid"], "time": doc["time"], "attr": 1}
+        self.emit(DocumentNames.start, doc)
+
+    def stop(self, doc: RunStop):
+        print(f"{self.__class__.__name__}: Stop")
+        self.emit(DocumentNames.start, doc)
+
+    def descriptor(self, doc: EventDescriptor):
+        print(f"{self.__class__.__name__}: Descriptor")
+
+    def event(self, doc: Event):
+        print(f"{self.__class__.__name__}: Event")
+
+    def resource(self, doc: Resource):
+        print(f"{self.__class__.__name__}: Resource")
+
+    def emit(self, name, doc):
+        """Check the document schema and send to the dispatcher"""
+        schema_validators[name].validate(doc)
+        self.dispatcher.process(name, doc)
+
+    def subscribe(self, func, name="all"):
+        """Convenience function for dispatcher subscription"""
+        token = self.dispatcher.subscribe(func, name)
+        self._token_refs[token] = func
+        return token
+
+    def unsubscribe(self, token):
+        """Convenience function for dispatcher un-subscription"""
+        self._token_refs.pop(token, None)
+        self.dispatcher.unsubscribe(token)
+
+
+class SecondCallback(FirstCallback):
+    def start(self, doc: RunStart):
+        print(f"{self.__class__.__name__}: Start")
+        print(f"doc: {doc}")
+
+
 class _RunWriter(CallbackBase):
-    """Write documents from one Bluesky Run into Tiled.
+    """Write documents from a single Bluesky Run into Tiled.
 
     Datum, Resource, and StreamResource documents are cached until Event or StreamDatum documents are received,
     after which corresponding nodes are created in Tiled.
     """
 
     def __init__(self, client: BaseClient):
-        self.client = client.include_data_sources()
+        self.client = client
         self.root_node: Union[None, Container] = None
         self._desc_nodes: dict[str, Composite] = {}  # references to the descriptor nodes by their uid's and names
         self._sres_nodes: dict[str, BaseClient] = {}
