@@ -21,7 +21,7 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .protocols import Flyable, Movable, NamedMovable, Readable
+from .protocols import Collectable, Flyable, Movable, NamedMovable, Readable
 from .utils import (
     CustomPlanMetadata,
     Msg,
@@ -2306,6 +2306,8 @@ def fly(
     flyers: list[Flyable],
     *,
     md: Optional[CustomPlanMetadata] = None,
+    collect_flush_period: Optional[float] = None,
+    stream_name: Optional[str] = None,
 ) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
@@ -2316,6 +2318,10 @@ def fly(
         objects that support the flyer interface
     md : dict, optional
         metadata
+    collect_flush_period : float, optional
+        If set, will use `collect_while_completing` with the given flush period
+    stream_name : str, optional
+        If set, will declare a stream with the given name for all flyers
 
     Yields
     ------
@@ -2328,12 +2334,28 @@ def fly(
     :func:`bluesky.preprocessors.fly_during_decorator`
     """
     uid = yield from bps.open_run(md)
-    for flyer in flyers:
-        yield from bps.kickoff(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.complete(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.collect(flyer)
+
+    # Extract list of collectable detectors from flyers
+    dets = [flyer for flyer in flyers if isinstance(flyer, Collectable)]
+
+    # If provided, attempt to declare single stream for all flyers
+    # note that if set, all flyers must produce the same number of events.
+    if stream_name is not None:
+        yield from bps.declare_stream(*dets, name=stream_name)
+
+    # Kickoff all flyers
+    yield from bps.kickoff_all(*flyers, wait=True)
+
+    # If flush period given, collect while completing.
+    if collect_flush_period is not None:
+        yield from bps.collect_while_completing(
+            flyers, dets, flush_period=collect_flush_period, stream_name=stream_name
+        )
+    else:
+        # Otherwise, wait for all flyers to complete before collecting.
+        yield from bps.complete_all(*flyers, wait=True)
+        yield from bps.collect(*dets, name=stream_name)
+
     yield from bps.close_run()
     return uid
 
