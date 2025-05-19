@@ -168,10 +168,12 @@ class _RunWriter(CallbackBase):
         df_client.append_partition(table, 0)
 
     def start(self, doc: RunStart):
+        doc = copy.copy(doc)
         self.root_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": truncate_json_overflow(dict(doc))},
             specs=[Spec("BlueskyRun", version="3.0")],
+            access_tags=doc.pop("tiled_access_tags", None),
         )
         self._streams_node = self.root_node.create_container(key="streams")
 
