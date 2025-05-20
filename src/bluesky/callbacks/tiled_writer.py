@@ -107,6 +107,7 @@ class _RunWriter(CallbackBase):
         )
         self.data_keys_int: dict[str, dict[str, Any]] = {}
         self.data_keys_ext: dict[str, dict[str, Any]] = {}
+        self.access_tags = None
 
     def _convert_resource_to_stream_resource(self, doc: Union[Resource, StreamResource]) -> StreamResource:
         """Make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
@@ -162,20 +163,23 @@ class _RunWriter(CallbackBase):
                 elif pyarrow.types.is_list(field.type) and pyarrow.types.is_null(field.type.value_type):
                     schema = schema.set(i, field.with_type(pyarrow.list_(pyarrow.string())))
             # Initialize the table and keep a reference to the client
-            df_client = desc_node.create_appendable_table(schema=schema, key="internal", metadata=metadata)
+            df_client = desc_node.create_appendable_table(
+                schema=schema, key="internal", metadata=metadata, access_tags=self.access_tags
+            )
             self._internal_tables[desc_name] = df_client
 
         df_client.append_partition(table, 0)
 
     def start(self, doc: RunStart):
         doc = copy.copy(doc)
+        self.access_tags = doc.pop("tiled_access_tags", None)
         self.root_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": truncate_json_overflow(dict(doc))},
             specs=[Spec("BlueskyRun", version="3.0")],
-            access_tags=doc.pop("tiled_access_tags", None),
+            access_tags=self.access_tags,
         )
-        self._streams_node = self.root_node.create_container(key="streams")
+        self._streams_node = self.root_node.create_container(key="streams", access_tags=self.access_tags)
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -234,6 +238,7 @@ class _RunWriter(CallbackBase):
                 key=desc_name,
                 metadata=truncate_json_overflow(metadata),
                 specs=[Spec("BlueskyEventStream", version="3.0")],
+                access_tags=self.access_tags,
             )
         else:
             # Rare Case: This new descriptor likely updates stream configs mid-experiment
@@ -397,6 +402,7 @@ class _RunWriter(CallbackBase):
                     data_sources=[consolidator.get_data_source()],
                     metadata={},
                     specs=[],
+                    access_tags=self.access_tags,
                 )
 
             self._consolidators[sres_uid] = self._consolidators[full_data_key] = consolidator
