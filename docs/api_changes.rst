@@ -2,6 +2,23 @@
  Release History
 =================
 
+v1.14.1 (2025-05-21)
+====================
+
+Added
+-----
+
+- The `mv` and `mvr` plans accept a new argument, `timeout`.
+
+Changed
+-------
+
+- The `bluesky.callbacks.tiled_writer.TiledWriter` looks for an
+  optional key `tiled_access_tags` in the 'start' document and,
+  if found, uses it to set `access_tags` on the nodes created
+  in Tiled to store the metadata and data from the BlueskyRun.
+  In additional, some minor refinements were made to the writer.
+
 v1.14.0 (2025-05-06)
 ====================
 
