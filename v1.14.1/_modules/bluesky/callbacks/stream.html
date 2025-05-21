@@ -1,0 +1,845 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bluesky.callbacks.stream &#8212; bluesky 1.14.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=a5781ae5"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/callbacks/stream';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.1';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.14.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky.callbacks.stream</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for bluesky.callbacks.stream</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ttime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChainMap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DocumentNames</span><span class="p">,</span> <span class="n">schema_validators</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..run_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dispatcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_uid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallbackBase</span>
+
+
+<div class="viewcode-block" id="LiveDispatcher">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LiveDispatcher</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A secondary event stream of processed data</span>
+
+<span class="sd">    The LiveDispatcher base implementation does not change any of the data</span>
+<span class="sd">    emitted, this task is left to sub-classes, but instead handles</span>
+<span class="sd">    reimplementing a secondary event stream that fits the same schema demanded</span>
+<span class="sd">    by the RunEngine itself. In order to reduce the work done by these</span>
+<span class="sd">    processed data pipelines, the LiveDispatcher handles the nitty-gritty</span>
+<span class="sd">    details of formatting the event documents. This includes creating new uids,</span>
+<span class="sd">    numbering events and creating descriptors.</span>
+
+<span class="sd">    The LiveDispatcher can be subscribed to using the same syntax as the</span>
+<span class="sd">    RunEngine, effectively creating a small chain of callbacks</span>
+
+<span class="sd">    .. code::</span>
+
+<span class="sd">        # Create our dispatcher</span>
+<span class="sd">        ld = LiveDispatcher()</span>
+<span class="sd">        # Subscribe it to receive events from the RunEgine</span>
+<span class="sd">        RE.subscribe(ld)</span>
+<span class="sd">        # Subscribe any callbacks we desire to second stream</span>
+<span class="sd">        ld.subscribe(LivePlot(&#39;det&#39;, x=&#39;motor&#39;))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Public dispatcher for callbacks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span> <span class="o">=</span> <span class="n">Dispatcher</span><span class="p">()</span>
+        <span class="c1"># Local caches for internal use</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Maintain our own sequence count for this stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># Store raw descriptors for use later  # noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Generated start doc uid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># Dictionary of sent descriptors  # noqa: C408</span>
+
+<div class="viewcode-block" id="LiveDispatcher.start">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.start">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">_md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Receive a raw start document, re-emit it for the modified stream&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span> <span class="o">=</span> <span class="n">new_uid</span><span class="p">()</span>
+        <span class="n">_md</span> <span class="o">=</span> <span class="n">_md</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="c1"># Create a new start document with a new uid, start time, and the uid</span>
+        <span class="c1"># of the original start document. Preserve the rest of the metadata</span>
+        <span class="c1"># that we retrieved from the start document</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span><span class="p">,</span> <span class="s2">&quot;original_run_uid&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">],</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">()},</span> <span class="n">_md</span><span class="p">,</span> <span class="n">doc</span>
+        <span class="p">)</span>
+        <span class="c1"># Dispatch the start document for anyone subscribed to our Dispatcher</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">md</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.descriptor">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.descriptor">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">descriptor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store a descriptor&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span><span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">doc</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">descriptor</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.event">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.event">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Receive an event document from the raw stream.</span>
+
+<span class="sd">        This should be reimplemented by a subclass.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        doc : event</span>
+
+<span class="sd">        kwargs:</span>
+<span class="sd">            All keyword arguments are passed to :meth:`.process_event`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_event</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">event</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.process_event">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.process_event">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">id_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process a modified event document then emit it for the modified stream</span>
+
+<span class="sd">        This will pass an Event document to the dispatcher. If we have received</span>
+<span class="sd">        a new event descriptor from the original stream, or we have received a</span>
+<span class="sd">        new set of `id_args` or `descriptor_id` , a new descriptor document is</span>
+<span class="sd">        first issued and passed through to the dispatcher.  When issuing a new</span>
+<span class="sd">        event, the new descriptor is given a new source field.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        doc : event</span>
+
+<span class="sd">        stream_name : str, optional</span>
+<span class="sd">            String identifier for a particular stream</span>
+
+<span class="sd">        id_args : tuple, optional</span>
+<span class="sd">            Additional tuple of hashable objects to identify the stream</span>
+
+<span class="sd">        config: dict, optional</span>
+<span class="sd">            Additional configuration information to be included in the event</span>
+<span class="sd">            descriptor</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Any callback subscribed to the `Dispatcher` will receive these event</span>
+<span class="sd">        streams.  If nothing is subscribed, these documents will not go</span>
+<span class="sd">        anywhere.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">id_args</span> <span class="o">=</span> <span class="n">id_args</span> <span class="ow">or</span> <span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">],)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="c1"># Determine the descriptor id</span>
+        <span class="n">desc_id</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="nb">tuple</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">id_args</span><span class="p">))</span>
+        <span class="c1"># If we haven&#39;t described this configuration</span>
+        <span class="c1"># Send a new document to our subscribers</span>
+        <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span> <span class="ow">or</span> <span class="n">desc_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]:</span>
+            <span class="c1"># Create a new description document for the output of the stream</span>
+            <span class="n">data_keys</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+            <span class="c1"># Parse the event document creating a new description. If the key</span>
+            <span class="c1"># existed in the original source description, just assume that it</span>
+            <span class="c1"># is the same type, units and shape. Otherwise do some</span>
+            <span class="c1"># investigation</span>
+            <span class="n">raw_desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">],</span> <span class="p">{})</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># Described priorly</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">raw_desc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]:</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="n">raw_desc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+                <span class="c1"># String key</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="c1"># Iterable</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">val</span><span class="p">)}</span>
+                <span class="c1"># Number</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">key_desc</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+                <span class="c1"># Modify the source</span>
+                <span class="n">key_desc</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Stream&quot;</span>
+                <span class="c1"># Store in our new descriptor</span>
+                <span class="n">data_keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">key_desc</span>
+            <span class="c1"># Create our complete description document</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="n">new_uid</span><span class="p">(),</span>
+                    <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                    <span class="s2">&quot;run_start&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span><span class="p">,</span>
+                    <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="n">data_keys</span><span class="p">,</span>
+                    <span class="s2">&quot;configuration&quot;</span><span class="p">:</span> <span class="n">config</span><span class="p">,</span>
+                    <span class="s2">&quot;object_keys&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">data_keys</span><span class="o">.</span><span class="n">keys</span><span class="p">())},</span>
+                <span class="p">},</span>
+                <span class="n">raw_desc</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Store information about our descriptors</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">][</span><span class="n">desc_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">desc</span>
+            <span class="c1"># Emit the document to all subscribers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">descriptor</span><span class="p">,</span> <span class="n">desc</span><span class="p">)</span>
+
+        <span class="c1"># Clean the Event document produced by graph network. The data is left</span>
+        <span class="c1"># untouched, but the relevant uids, timestamps, seq_num are modified so</span>
+        <span class="c1"># that this event is not confused with the raw data stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">desc_uid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream_name</span><span class="p">][</span><span class="n">desc_id</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">evt</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="n">new_uid</span><span class="p">(),</span>
+                <span class="s2">&quot;descriptor&quot;</span><span class="p">:</span> <span class="n">desc_uid</span><span class="p">,</span>
+                <span class="s2">&quot;timestamps&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">current_time</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>  <span class="c1"># noqa: C402</span>
+                <span class="s2">&quot;seq_num&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span><span class="p">,</span>
+                <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">current_time</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">doc</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Emit the event document</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">evt</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.stop">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">_md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Receive a raw stop document, re-emit it for the modified stream&quot;&quot;&quot;</span>
+        <span class="c1"># Create a new stop document with a new_uid, pointing to the correct</span>
+        <span class="c1"># start document uid, and tally the number of events we have emitted.</span>
+        <span class="c1"># The rest of the stop information is passed on to the next callback</span>
+        <span class="n">_md</span> <span class="o">=</span> <span class="n">_md</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="n">num_events</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">stream</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">stream</span><span class="p">]))</span> <span class="k">for</span> <span class="n">stream</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># noqa: C402</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span>
+            <span class="nb">dict</span><span class="p">(</span><span class="n">run_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">ttime</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">uid</span><span class="o">=</span><span class="n">new_uid</span><span class="p">(),</span> <span class="n">num_events</span><span class="o">=</span><span class="n">num_events</span><span class="p">),</span>  <span class="c1"># noqa: C408</span>
+            <span class="n">doc</span><span class="p">,</span>  <span class="c1"># noqa: C408</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">md</span><span class="p">))</span>
+        <span class="c1"># Clear the local caches for the run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_descriptors</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_start_uid</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.emit">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.emit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the document schema and send to the dispatcher&quot;&quot;&quot;</span>
+        <span class="n">schema_validators</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.subscribe">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.subscribe">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convenience function for dispatcher subscription&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LiveDispatcher.unsubscribe">
+<a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.stream.LiveDispatcher.unsubscribe">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convenience function for dispatcher un-subscription&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">unsubscribe</span><span class="p">(</span><span class="n">token</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

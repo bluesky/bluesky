@@ -1,0 +1,31 @@
+﻿bluesky.suspenders.SuspendWhenOutsideBand
+=========================================
+
+.. currentmodule:: bluesky.suspenders
+
+.. autoclass:: SuspendWhenOutsideBand
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SuspendWhenOutsideBand.__init__
+      ~SuspendWhenOutsideBand.get_futures
+      ~SuspendWhenOutsideBand.install
+      ~SuspendWhenOutsideBand.remove
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SuspendWhenOutsideBand.tripped
+   
+   

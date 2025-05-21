@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.move\_per\_step
+===================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: move_per_step

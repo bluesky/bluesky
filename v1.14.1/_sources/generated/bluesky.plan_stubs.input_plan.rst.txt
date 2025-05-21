@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.input\_plan
+===============================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: input_plan

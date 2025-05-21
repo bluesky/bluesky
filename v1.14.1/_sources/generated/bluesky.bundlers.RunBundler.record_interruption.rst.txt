@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.record\_interruption
+================================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.record_interruption
