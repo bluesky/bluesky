@@ -33,6 +33,7 @@ from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, conso
 from ..utils import truncate_json_overflow
 from .core import MIMETYPE_LOOKUP, CallbackBase
 
+# Try to aggregare the table rows in batches of this size before writing to Tiled
 TABLE_UPDATE_BATCH_SIZE = 10000
 
 
@@ -155,6 +156,7 @@ class _RunWriter(CallbackBase):
             metadata = {
                 k: v for k, v in (self.data_keys_ext | self.data_keys_int).items() if k in table.column_names
             }
+            metadata = truncate_json_overflow(metadata)
             # Replace any nulls in the schema with string type
             schema = copy.copy(table.schema)
             for i, field in enumerate(table.schema):
@@ -202,17 +204,18 @@ class _RunWriter(CallbackBase):
                 try:
                     consolidator.validate(fix_errors=True)
                 except Exception as e:
-                    warn(f"Validation of StreamResource {sres_uid} failed with error: {e}", stacklevel=2)
+                    msg = f"{type(e).__name__}: " + str(e).replace("\n", " ").replace("\r", "").strip()
+                    warn(f"Validation of StreamResource {sres_uid} failed with error: {msg}", stacklevel=2)
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Write the stop document to the metadata
-        self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)})
+        self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)}, drop_revision=True)
 
     def descriptor(self, doc: EventDescriptor):
         if self.root_node is None:
             raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
 
-        # Rename some fields to match the current schema (in-place)
+        # Rename some fields (in-place) to match the current schema
         # Loop over all dictionaries that specify data_keys (both event data_keys or configuration data_keys)
         conf_data_keys = (obj["data_keys"].values() for obj in doc["configuration"].values())
         for data_keys_spec in itertools.chain(doc["data_keys"].values(), *conf_data_keys):
@@ -249,7 +252,8 @@ class _RunWriter(CallbackBase):
             if conf_meta := doc.get("configuration"):
                 updates[-1].update({"configuration": conf_meta})
             # Update the metadata with the new configuration
-            desc_node.update_metadata(metadata={"_config_updates": truncate_json_overflow(updates)})
+            metadata = {"_config_updates": truncate_json_overflow(updates)}
+            desc_node.update_metadata(metadata=metadata, drop_revision=True)
 
         self._desc_nodes[doc["uid"]] = self._desc_nodes[desc_name] = desc_node  # Keep a reference to the node
 
