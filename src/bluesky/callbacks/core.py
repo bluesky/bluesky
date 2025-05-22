@@ -40,6 +40,7 @@ MIMETYPE_LOOKUP = defaultdict(
         "TPX_HDF5": "application/x-hdf5",
         "EIGER2_STREAM": "application/x-hdf5",
         "NPY_SEQ": "multipart/related;type=application/x-npy",
+        "ZEBRA_HDF51_FLY_STREAM_V1": "application/x-hdf5",
     },
 )
 

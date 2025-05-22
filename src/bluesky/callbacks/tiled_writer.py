@@ -282,6 +282,17 @@ class _RunWriter(CallbackBase):
         if self.root_node is None:
             raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
 
+        # Rename deta_keys that use reserved words, "time" and "seq_num"
+        for name in ["time", "seq_num"]:
+            if name in doc["data_keys"].keys():
+                if f"_{name}" in doc["data_keys"].keys():
+                    raise ValueError(f"Cannot rename {name} to _{name} because it already exists")
+                doc["data_keys"][f"_{name}"] = doc["data_keys"].pop(name)
+                for obj_data_keys_list in doc["object_keys"].values():
+                    if name in obj_data_keys_list:
+                        obj_data_keys_list.remove(name)
+                        obj_data_keys_list.append(f"_{name}")
+
         # Rename some fields (in-place) to match the current schema
         # Loop over all dictionaries that specify data_keys (both event data_keys or configuration data_keys)
         conf_data_keys = (obj["data_keys"].values() for obj in doc["configuration"].values())
@@ -325,6 +336,12 @@ class _RunWriter(CallbackBase):
         self._desc_nodes[doc["uid"]] = self._desc_nodes[desc_name] = desc_node  # Keep a reference to the node
 
     def event(self, doc: Event):
+        # Rename deta_keys that use reserved words, "time" and "seq_num"
+        for name in ["time", "seq_num"]:
+            if name in doc["data"].keys():
+                doc["data"][f"_{name}"] = doc["data"].pop(name)
+                doc["timestamps"][f"_{name}"] = doc["timestamps"].pop(name)
+
         desc_uid = doc["descriptor"]
         desc_name = self._desc_nodes[desc_uid].item["id"]  # Name of the descriptor (stream)
 
