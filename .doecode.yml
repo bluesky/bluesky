@@ -1,0 +1,81 @@
+---
+code_id: 18101
+site_ownership_code: "BNL"
+open_source: true
+repository_link: "https://github.com/bluesky/bluesky.git"
+project_type: "OS"
+software_type: "S"
+official_use_only: {}
+developers:
+- email: "scampbell@bnl.gov"
+  orcid: "0000-0001-7079-0878"
+  first_name: "Stuart"
+  last_name: "Campbell"
+  middle_name: ""
+  affiliations:
+  - "Brookhaven National Lab. (BNL), Upton, NY (United States). National Synchrotron\
+    \ Light Source II (NSLS-II)"
+- email: "dallan@bnl.gov"
+  orcid: "0000-0002-5947-6017"
+  first_name: "Daniel"
+  last_name: "Allan"
+  middle_name: ""
+  affiliations:
+  - "Brookhaven National Lab. (BNL), Upton, NY (United States). National Synchrotron\
+    \ Light Source II (NSLS-II)"
+- email: "tcaswell@bnl.gov"
+  orcid: "0000-0003-4692-608X"
+  first_name: "Thomas"
+  last_name: "Caswell"
+  middle_name: ""
+  affiliations:
+  - "Brookhaven National Lab. (BNL), Upton, NY (United States). National Synchrotron\
+    \ Light Source II (NSLS-II)"
+- email: "mrakitin@bnl.gov"
+  orcid: "0000-0003-3685-852X"
+  first_name: "Max"
+  last_name: "Rakitin"
+  middle_name: ""
+  affiliations:
+  - "Brookhaven National Laboratory (BNL), Upton, NY (United States). National Synchrotron\
+    \ Light Source II (NSLS-II)"
+contributors: []
+sponsoring_organizations: []
+contributing_organizations:
+- organization_name: "Brookhaven National Laboratory"
+  contributor_type: "HostingInstitution"
+  DOE: true
+research_organizations:
+- organization_name: "Brookhaven National Laboratory (BNL), Upton, NY (United States)"
+  DOE: true
+related_identifiers: []
+award_dois: []
+software_title: "Bluesky Run Engine"
+acronym: "bluesky"
+description: "Bluesky is a library for experiment control and collection of scientific\
+  \ data and metadata. It emphasizes the following virtues:\n\n    Live, Streaming\
+  \ Data: Available for inline visualization and processing.\n\n    Rich Metadata:\
+  \ Captured and organized to facilitate reproducibility and searchability.\n\n  \
+  \  Experiment Generality: Seamlessly reuse a procedure on completely different hardware.\n\
+  \n    Interruption Recovery: Experiments are “rewindable,” recovering cleanly from\
+  \ interruptions.\n\n    Automated Suspend/Resume: Experiments can be run unattended,\
+  \ automatically suspending and resuming if needed.\n\n    Pluggable I/O: Export\
+  \ data (live) into any desired format or database.\n\n    Customizability: Integrate\
+  \ custom experimental procedures and commands, and get the I/O and interruption\
+  \ features for free.\n\n    Integration with Scientific Python: Interface naturally\
+  \ with numpy and Python scientific stack."
+programming_languages:
+- "Python"
+documentation_url: "https://blueskyproject.io/bluesky"
+country_of_origin: "United States"
+project_keywords: []
+licenses:
+- "BSD 3-clause \"New\" or \"Revised\" License"
+date_record_added: "2018-09-06"
+date_record_updated: "2025-04-17"
+is_file_certified: false
+last_editor: "scampbell@bnl.gov"
+is_limited: false
+links:
+- rel: "citation"
+  href: "https://www.osti.gov/doecode/biblio/18101"
