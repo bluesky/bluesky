@@ -364,7 +364,7 @@ def collect_plan(*objs, name="primary"):
     yield from bps.close_run()
 
 
-@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets", "external_assets_legacy"])
 def test_with_correct_sample_runs(client, external_assets_folder, fname):
     tw = TiledWriter(client)
     for item in render_templated_documents(fname + ".json", external_assets_folder):
@@ -484,7 +484,7 @@ def test_streams_with_no_events(client, external_assets_folder):
 
 
 @pytest.mark.parametrize("include_data_sources", [True, False])
-@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets", "external_assets_legacy"])
 def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
     client = client.new_variation(include_data_sources=include_data_sources)
     assert client._include_data_sources == include_data_sources
@@ -498,3 +498,35 @@ def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
     # Count the number of GET requests
     num_gets = sum(1 for req in history.requests if req.method == "GET")
     assert num_gets == 0
+
+
+def test_bad_document_order(client, external_assets_folder):
+    """Test that the TiledWriter can handle documents in a different order than expected
+
+    Emit datum documents in the end, before the Stop document, but after corresponding Event documents.
+    """
+    tw = TiledWriter(client)
+
+    document_cache = []
+    for item in render_templated_documents("external_assets_legacy.json", external_assets_folder):
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        if name == "datum":
+            document_cache.append({"name": name, "doc": doc})
+            continue
+
+        if name == "stop":
+            for cached_item in document_cache:
+                tw(**cached_item)
+
+        tw(**item)
+
+    run = client[uid]
+
+    for stream in run["streams"].values():
+        assert stream.read() is not None
+        assert "time" in stream.keys()
+        assert "seq_num" in stream.keys()
+        assert len(stream.keys()) > 2  # There's at least one data key in addition to time and seq_num
