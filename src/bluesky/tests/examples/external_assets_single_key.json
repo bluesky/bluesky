@@ -60,10 +60,7 @@
                 ]
             },
             "data_key": "det-key2",
-            "root": "{{ root_path }}",
-            "resource_path": "/dataset.h5",
             "uri": "file://localhost/{{ root_path }}/dataset.h5",
-            "spec": "AD_HDF5_SWMR_STREAM",
             "mimetype": "application/x-hdf5",
             "uid": "det-key2-uid",
             "run_start": "{{ uuid }}-9724b2201fe7"
@@ -97,10 +94,7 @@
                 ]
             },
             "data_key": "det-key2",
-            "root": "{{ root_path }}",
-            "resource_path": "/dataset_part2.h5",
             "uri": "file://localhost/{{ root_path }}/dataset_part2.h5",
-            "spec": "AD_HDF5_SWMR_STREAM",
             "mimetype": "application/x-hdf5",
             "uid": "det-key2-uid-part2",
             "run_start": "{{ uuid }}-9724b2201fe7"
