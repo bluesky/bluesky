@@ -82,10 +82,7 @@
                 ]
             },
             "data_key": "det-key1",
-            "root": "{{ root_path }}",
-            "resource_path": "/dataset.h5",
             "uri": "file://localhost/{{ root_path }}/dataset.h5",
-            "spec": "AD_HDF5_SWMR_STREAM",
             "mimetype": "application/x-hdf5",
             "uid": "det-key1-uid",
             "run_start": "{{ uuid }}-9724b2201fe7"
@@ -119,10 +116,7 @@
                 ]
             },
             "data_key": "det-key2",
-            "root": "{{ root_path }}",
-            "resource_path": "/dataset.h5",
             "uri": "file://localhost/{{ root_path }}/dataset.h5",
-            "spec": "AD_HDF5_SWMR_STREAM",
             "mimetype": "application/x-hdf5",
             "uid": "det-key2-uid",
             "run_start": "{{ uuid }}-9724b2201fe7"
@@ -157,9 +151,7 @@
                 "join_method": "stack"
             },
             "data_key": "det-key3",
-            "root": "{{ root_path }}/tiff_files",
             "uri": "file://localhost/{{ root_path }}/tiff_files/",
-            "spec": "AD_TIFF",
             "mimetype": "multipart/related;type=image/tiff",
             "uid": "det-key3-uid",
             "run_start": "{{ uuid }}-9724b2201fe7"

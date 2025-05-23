@@ -94,15 +94,15 @@ class TiledWriter:
             the appropriate credentials and connection parameters to access the Tiled server.
     """
 
-    def __init__(self, client: BaseClient, update=True):
+    def __init__(self, client: BaseClient, normalize=True):
         self.client = client.include_data_sources()
         self._run_router = RunRouter([self._factory])
-        self.update = update
+        self.normalize = normalize
 
     def _factory(self, name, doc):
         run_writer = _RunWriter(self.client)
 
-        if self.update:
+        if self.normalize:
             run_normalizer = _RunNormalizer()
             run_normalizer.subscribe(run_writer)
             return [run_normalizer], []
