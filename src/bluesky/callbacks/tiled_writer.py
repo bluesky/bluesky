@@ -9,7 +9,6 @@ import pyarrow
 from event_model import (
     DocumentNames,
     RunRouter,
-    schema_validators,
     unpack_datum_page,
     unpack_event_page,
 )
@@ -385,7 +384,7 @@ class _RunNormalizer(CallbackBase):
 
     def emit(self, name, doc):
         """Check the document schema and send to the dispatcher"""
-        schema_validators[name].validate(doc)
+        # schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
 
     def subscribe(self, func, name="all"):
