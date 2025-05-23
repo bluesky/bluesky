@@ -14,6 +14,7 @@ __all__ = [
     "LiveFitPlot",
     "LiveRaster",
     "LiveMesh",
+    "TiledWriter",
 ]
 
 from .core import (
@@ -27,3 +28,4 @@ from .core import (
 )
 from .fitting import LiveFit
 from .mpl_plotting import LiveFitPlot, LiveGrid, LiveMesh, LivePlot, LiveRaster, LiveScatter
+from .tiled_writer import TiledWriter

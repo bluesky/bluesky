@@ -1,6 +1,6 @@
 import copy
 import itertools
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from pathlib import Path
 from typing import Any, Optional, Union, cast
 from warnings import warn
@@ -42,6 +42,7 @@ from .core import MIMETYPE_LOOKUP, CallbackBase
 
 # Try to aggregare the table rows in batches of this size before writing to Tiled
 TABLE_UPDATE_BATCH_SIZE = 10000
+RESERVED_DATA_KEYS = ["time", "seq_num"]  # Reserved words that should not be used as data_keys identifiers
 
 
 def concatenate_stream_datums(*docs: StreamDatum):
@@ -68,6 +69,17 @@ def concatenate_stream_datums(*docs: StreamDatum):
     )
 
 
+ExternalDataReference = namedtuple(
+    "ExternalDataReference",
+    [
+        "datum_id",  # The UID of the Datum document that references this external data
+        "data_key",  # The data_key of the external data
+        "desc_uid",  # The UID of the EventDescriptor document that this datum belongs to
+        "seq_num",  # The sequence number of the Event document
+    ],
+)
+
+
 class TiledWriter:
     """Callback for write metadata and data from Bluesky documents into Tiled.
 
@@ -91,9 +103,9 @@ class TiledWriter:
         run_writer = _RunWriter(self.client)
 
         if self.update:
-            run_updater = _RunUpdater()
-            run_updater.subscribe(run_writer)
-            return [run_updater], []
+            run_normalizer = _RunNormalizer()
+            run_normalizer.subscribe(run_writer)
+            return [run_normalizer], []
         else:
             return [run_writer], []
 
@@ -111,7 +123,7 @@ class TiledWriter:
         self._run_router(name, doc)
 
 
-class _RunUpdater(CallbackBase):
+class _RunNormalizer(CallbackBase):
     """Callback for updating Bluesky documents to their latest schema.
 
     This callback can be used to subscribe additional consumers that require the updated documents.
@@ -126,11 +138,12 @@ class _RunUpdater(CallbackBase):
             lambda: {"carry": 0, "index": 0}
         )
         self._datum_cache: dict[str, Datum] = {}
+        self._ext_ref_cache: list[ExternalDataReference] = []  # Cache for references to external data from Events
         self._desc_name_by_uid: dict[str, str] = {}
         self._sres_cache: dict[str, StreamResource] = {}
         self._emitted: set[str] = set()  # UIDs of the StreamResource documents that have been emitted
-        self.data_keys_int: dict[str, dict[str, Any]] = {}
-        self.data_keys_ext: dict[str, dict[str, Any]] = {}
+        self._int_keys: set[str] = set()  # Names of internal data_keys
+        self._ext_keys: set[str] = set()
 
     def _convert_resource_to_stream_resource(self, doc: Union[Resource, StreamResource]) -> StreamResource:
         """Make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
@@ -166,19 +179,108 @@ class _RunUpdater(CallbackBase):
 
         return stream_resource_doc
 
+    def _convert_datum_to_stream_datum(
+        self, datum_doc: Datum, data_key: str, desc_uid: str, seq_num: int
+    ) -> StreamDatum:
+        """Convert the Datum document to the StreamDatum format
+
+        This conversion requires (and is triggered when) the Event document is received. The function also returns
+        a corresponding StreamResource document, if it hasn't been emitted yet.
+
+        Parameters
+        ----------
+        datum_doc : Datum
+            The Datum document to convert.
+        data_key : str
+            The data_key of the external data in the Event document; this parameter must be included in the new
+            StreamResource document.
+        desc_uid : str
+            The UID of the EventDescriptor document that this datum belongs to.
+        seq_num : int
+            The sequence number of the Event document that this datum belongs to; 1-base index.
+
+        Returns
+        -------
+        sres_doc : StreamResource, optional
+            The corresponding StreamResource document, if it hasn't been emitted yet, otehrwise -- None.
+        sdat_doc : StreamDatum
+            The StreamDatum document corresponding to the Datum document.
+        """
+
+        # Some Datums contain datum_kwargs and the 'frame' field, which indicates the last index of the
+        # frame. This should take precedence over the 'seq_num' field in the Event document. Keep the
+        # last frame index in memory, since next Datums may refer to more than one frame (it is
+        # assumed that Events always refer to a single frame).
+        # There are cases when the frame_index is reset during the scan (e.g. if Datums for the same
+        # data_key belong to different Resources), so the 'carry' field is used to keep track of the
+        # previous frame index.
+        datum_kwargs = datum_doc.get("datum_kwargs", {})
+        frame = datum_kwargs.pop("frame", None)
+        if frame is not None:
+            desc_name = self._desc_name_by_uid[desc_uid]  # Name of the descriptor (stream)
+            _next_index = self._next_frame_index[(desc_name, data_key)]
+            index_start = sum(_next_index.values())
+            _next_index["index"] = frame + 1
+            index_stop = sum(_next_index.values())
+            if index_stop < index_start:
+                # The datum is likely referencing a next Resource, but the indexing must continue
+                _next_index["carry"] = index_start
+                index_stop = sum(_next_index.values())
+        else:
+            index_start, index_stop = seq_num - 1, seq_num
+        indices = StreamRange(start=index_start, stop=index_stop)
+        seq_nums = StreamRange(start=index_start + 1, stop=index_stop + 1)
+
+        # produce the Resource document, if needed (add data_key to match the StreamResource schema)
+        # Emit a copy of the StreamResource document with a new uid; this allows to account for cases
+        # where one Resource is used by several data streams with different data_keys and datum_kwargs.
+        sres_doc = None
+        sres_uid = datum_doc["resource"]
+        new_sres_uid = sres_uid + "-" + data_key
+        if (sres_uid in self._sres_cache) and (new_sres_uid not in self._emitted):
+            sres_doc = copy.deepcopy(self._sres_cache[sres_uid])
+            sres_doc["data_key"] = data_key
+            sres_doc["parameters"].update(datum_kwargs)
+            sres_doc["uid"] = new_sres_uid
+
+        # Produce the StreamDatum document
+        sdat_doc = StreamDatum(
+            uid=datum_doc["datum_id"],
+            stream_resource=new_sres_uid,
+            descriptor=desc_uid,
+            indices=indices,
+            seq_nums=seq_nums,
+        )
+
+        return sres_doc, sdat_doc
+
     def start(self, doc: RunStart):
         doc = copy.copy(doc)
         self.emit(DocumentNames.start, doc)
 
     def stop(self, doc: RunStop):
         doc = copy.copy(doc)
+
+        # If there are any cached references to external data, emit StreamResources and StreamDatums now
+        for datum_id, data_key, desc_uid, seq_num in self._ext_ref_cache:
+            if datum_doc := self._datum_cache.pop(datum_id, None):
+                sres_doc, sdat_doc = self._convert_datum_to_stream_datum(datum_doc, data_key, desc_uid, seq_num)
+                if (sres_doc is not None) and (sres_doc["uid"] not in self._emitted):
+                    self.emit(DocumentNames.stream_resource, sres_doc)
+                    self._emitted.add(sres_doc["uid"])
+                self.emit(DocumentNames.stream_datum, sdat_doc)
+            else:
+                raise RuntimeError(
+                    f"Cannot emit StreamDatum for {data_key} because the corresponding Datum document is missing."
+                )
+
         self.emit(DocumentNames.stop, doc)
 
     def descriptor(self, doc: EventDescriptor):
         doc = copy.deepcopy(doc)
 
         # Rename data_keys that use reserved words, "time" and "seq_num"
-        for name in ["time", "seq_num"]:
+        for name in RESERVED_DATA_KEYS:
             if name in doc["data_keys"].keys():
                 if f"_{name}" in doc["data_keys"].keys():
                     raise ValueError(f"Cannot rename {name} to _{name} because it already exists")
@@ -200,12 +302,12 @@ class _RunUpdater(CallbackBase):
             for key in data_keys_list:
                 doc["data_keys"][key]["object_name"] = obj_name
 
-        # Keep specifications for external and internal data_keys for faster access
+        # Keep names of external and internal data_keys
         data_keys = doc.get("data_keys", {})
-        self.data_keys_int.update({k: v for k, v in data_keys.items() if "external" not in v.keys()})
-        self.data_keys_ext.update({k: v for k, v in data_keys.items() if "external" in v.keys()})
-        for item in self.data_keys_ext.values():
-            item["external"] = item.pop("external", "")  # Make sure the value set to external key is not None
+        self._int_keys.update({k for k, v in data_keys.items() if "external" not in v.keys()})
+        self._ext_keys.update({k for k, v in data_keys.items() if "external" in v.keys()})
+        for key in self._ext_keys:
+            data_keys[key]["external"] = data_keys[key].pop("external", "")  # Make sure the value is not None
 
         # Keep a reference to the descriptor name (stream) by its uid
         self._desc_name_by_uid[doc["uid"]] = doc["name"]
@@ -218,87 +320,41 @@ class _RunUpdater(CallbackBase):
 
         # Part 0. ----- Preprocessing -----
         # Rename data_keys that use reserved words, "time" and "seq_num"
-        for name in ["time", "seq_num"]:
+        for name in RESERVED_DATA_KEYS:
             if name in doc["data"].keys():
                 doc["data"][f"_{name}"] = doc["data"].pop(name)
                 doc["timestamps"][f"_{name}"] = doc["timestamps"].pop(name)
             if name in doc["filled"].keys():
                 doc["filled"][f"_{name}"] = doc["filled"].pop(name)
 
-        filled = doc.pop("filled", {})
-        all_data = doc.pop("data", {})
-        desc_uid = doc["descriptor"]
-
         # Part 1. ----- Internal Data -----
         # Emit a new Event with _internal_ data: select only keys without 'external' flag or those that are filled
-        event_doc = copy.copy(doc)
-        int_keys = [k for k in self.data_keys_int.keys() if filled.get(k, True)] + [
-            k for k in self.data_keys_ext.keys() if filled.get(k, False)
+        filled = doc.pop("filled", {})
+        event_keys = [k for k in self._int_keys if filled.get(k, True)] + [
+            k for k in self._ext_keys if filled.get(k, False)
         ]
-        event_doc["data"] = {k: v for k, v in doc["data"].items() if k in int_keys}
-        event_doc["timestamps"] = {k: v for k, v in doc["timestamps"].items() if k in int_keys}
+        event_doc = copy.copy(doc)  # Keep another copy with the external data_keys intact
+        event_doc["data"] = {k: v for k, v in doc["data"].items() if k in event_keys}
+        event_doc["timestamps"] = {k: v for k, v in doc["timestamps"].items() if k in event_keys}
         self.emit(DocumentNames.event, event_doc)
 
         # Part 2. ----- External Data -----
-        # Process _external_ data: Loop over all referenced Datums
-        for data_key in self.data_keys_ext.keys():
-            if filled.get(data_key, False):
-                continue
-
-            if datum_id := all_data.get(data_key):
-                if datum_id in self._datum_cache.keys():
-                    # Convert the Datum document to the StreamDatum format
-                    datum_doc = self._datum_cache.pop(datum_id)
-                    uid = datum_doc["datum_id"]
-                    sres_uid = datum_doc["resource"]
-
-                    # Some Datums contain datum_kwargs and the 'frame' field, which indicates the last index of the
-                    # frame. This should take precedence over the 'seq_num' field in the Event document. Keep the
-                    # last frame index in memory, since next Datums may refer to more than one frame (it is
-                    # assumed that Events always refer to a single frame).
-                    # There are cases when the frame_index is reset during the scan (e.g. if Datums for the same
-                    # data_key belong to different Resources), so the 'carry' field is used to keep track of the
-                    # previous frame index.
-                    datum_kwargs = datum_doc.get("datum_kwargs", {})
-                    frame = datum_kwargs.pop("frame", None)
-                    if frame is not None:
-                        desc_name = self._desc_name_by_uid[desc_uid]  # Name of the descriptor (stream)
-                        _next_index = self._next_frame_index[(desc_name, data_key)]
-                        index_start = sum(_next_index.values())
-                        _next_index["index"] = frame + 1
-                        index_stop = sum(_next_index.values())
-                        if index_stop < index_start:
-                            # The datum is likely referencing a next Resource, but the indexing must continue
-                            _next_index["carry"] = index_start
-                            index_stop = sum(_next_index.values())
-                    else:
-                        index_start, index_stop = doc["seq_num"] - 1, doc["seq_num"]
-                    indices = StreamRange(start=index_start, stop=index_stop)
-                    seq_nums = StreamRange(start=index_start + 1, stop=index_stop + 1)
-
-                    # Update the Resource document (add data_key to match the StreamResource schema)
-                    # Emit a copy of the StreamResource document with a new uid; this allows to account for cases
-                    # where one Resource is used by several data streams with different data_keys and datum_kwargs.
-                    new_sres_uid = sres_uid + "-" + data_key
-                    if (sres_uid in self._sres_cache) and (new_sres_uid not in self._emitted):
-                        sres_doc = copy.deepcopy(self._sres_cache[sres_uid])
-                        sres_doc["data_key"] = data_key
-                        sres_doc["parameters"].update(datum_kwargs)
-                        sres_doc["uid"] = new_sres_uid
-                        self.emit(DocumentNames.stream_resource, sres_doc)
-                        self._emitted.add(new_sres_uid)
-
-                    # Produce and Emit the StreamDatum document
-                    sdat_doc = StreamDatum(
-                        uid=uid,
-                        stream_resource=new_sres_uid,
-                        descriptor=desc_uid,
-                        indices=indices,
-                        seq_nums=seq_nums,
-                    )
-                    self.emit(DocumentNames.stream_datum, sdat_doc)
-                else:
-                    raise RuntimeError(f"Datum {datum_id} is referenced before received.")
+        # Process _external_ data: Loop over all referenced Datums and all external data keys that are not filled
+        for data_key, datum_id in doc["data"].items():
+            if data_key not in set(self._ext_keys).difference(event_keys):
+                continue  # Skip internal data_keys
+            if datum_doc := self._datum_cache.pop(datum_id, None):
+                sres_doc, sdat_doc = self._convert_datum_to_stream_datum(
+                    datum_doc, data_key, desc_uid=doc["descriptor"], seq_num=doc["seq_num"]
+                )
+                if (sres_doc is not None) and (sres_doc["uid"] not in self._emitted):
+                    self.emit(DocumentNames.stream_resource, sres_doc)
+                    self._emitted.add(sres_doc["uid"])  # Mark the StreamResource as emitted
+                self.emit(DocumentNames.stream_datum, sdat_doc)
+            else:
+                # This Event references a Datum that has not been received yet; cache and process it later
+                missing = ExternalDataReference(datum_id, data_key, doc["descriptor"], doc["seq_num"])
+                self._ext_ref_cache.append(missing)
 
     def resource(self, doc: Resource):
         # Convert the Resource document to StreamResource format
@@ -428,9 +484,9 @@ class _RunWriter(CallbackBase):
                 self._write_internal_data(data_cache, desc_node=self._desc_nodes[desc_name])
                 data_cache.clear()
 
-        # Write the cached external data
+        # Write the cached StreamDatums data
         for stream_datum_doc in self._external_data_cache.values():
-            self.stream_datum(stream_datum_doc)
+            self._write_external_data(stream_datum_doc)
 
         # Validate structure for some StreamResource nodes
         for sres_uid, sres_node in self._sres_nodes.items():

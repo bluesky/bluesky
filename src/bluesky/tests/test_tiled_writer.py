@@ -487,8 +487,9 @@ def test_streams_with_no_events(client, external_assets_folder):
 @pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
 def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
     client = client.new_variation(include_data_sources=include_data_sources)
-    tw = TiledWriter(client)
     assert client._include_data_sources == include_data_sources
+    tw = TiledWriter(client)
+    assert bool(tw.client._include_data_sources)
 
     with record_history() as history:
         for item in render_templated_documents(fname + ".json", external_assets_folder):
@@ -496,4 +497,4 @@ def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
 
     # Count the number of GET requests
     num_gets = sum(1 for req in history.requests if req.method == "GET")
-    assert num_gets == 0 if include_data_sources else num_gets == 1
+    assert num_gets == 0
