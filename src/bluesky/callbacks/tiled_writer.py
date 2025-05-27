@@ -9,6 +9,7 @@ import pyarrow
 from event_model import (
     DocumentNames,
     RunRouter,
+    schema_validators,
     unpack_datum_page,
     unpack_event_page,
 )
@@ -175,6 +176,12 @@ class _RunNormalizer(CallbackBase):
             stream_resource_doc["parameters"]["dataset"] = stream_resource_doc["parameters"].pop(
                 "path", stream_resource_doc["parameters"].pop("dataset", "")
             )
+
+        # Ensure that only the necessary fields are present in the StreamResource document
+        stream_resource_doc["data_key"] = stream_resource_doc.get("data_key", "")
+        required_keys = {"data_key", "mimetype", "parameters", "uid", "uri"}
+        for key in set(stream_resource_doc.keys()).difference(required_keys):
+            stream_resource_doc.pop(key)
 
         return stream_resource_doc
 
@@ -384,7 +391,7 @@ class _RunNormalizer(CallbackBase):
 
     def emit(self, name, doc):
         """Check the document schema and send to the dispatcher"""
-        # schema_validators[name].validate(doc)
+        schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
 
     def subscribe(self, func, name="all"):
