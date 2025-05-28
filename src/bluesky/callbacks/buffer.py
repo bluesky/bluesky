@@ -44,9 +44,7 @@ class BufferingWrapper:
         self._thread = threading.Thread(target=self._process_queue, daemon=True)
         self._thread.start()
 
-        atexit.register(self.shutdown)
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
+        self._register_handlers()
 
     def __call__(self, name, doc):
         with self._shutdown_lock:
@@ -73,6 +71,8 @@ class BufferingWrapper:
             self._stop_event.set()
             self._queue.put(None)
 
+            self._unregister_handlers()
+
         if wait:
             self._thread.join()
         print(f"{self._wrapped_callback.__class__.__name__} shut down gracefully.")
@@ -81,3 +81,26 @@ class BufferingWrapper:
         print(f"Signal {signum} received. Shutting down {self._wrapped_callback.__class__.__name__}...")
         self.shutdown()
         raise SystemExit(0)
+
+    def _register_handlers(self):
+        if threading.current_thread() is threading.main_thread():
+            try:
+                atexit.register(self.shutdown)
+                signal.signal(signal.SIGINT, self._signal_handler)
+                signal.signal(signal.SIGTERM, self._signal_handler)
+            except Exception as e:
+                print(f"Failed to register signal handlers: {e}")
+
+    def _unregister_handlers(self):
+        try:
+            atexit.unregister(self.shutdown)
+        except Exception:
+            pass
+
+        try:
+            if signal.getsignal(signal.SIGINT) == self._signal_handler:
+                signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if signal.getsignal(signal.SIGTERM) == self._signal_handler:
+                signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        except Exception:
+            pass
