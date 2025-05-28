@@ -16,6 +16,11 @@ class BufferingWrapper:
     The wrapped callback should be thread-safe and not subscribed to the RE directly.
     If it maintains shared mutable state, it must protect it using internal locking.
 
+    This is mainly a development feature to allow subscribing (potentially many)
+    experimental callbacks to a `RunEngine` without the risk of blocking the experiment.
+    The use in production is currently not encouraged (at least not without a proper
+    testing and risk assessment).
+
     Parameters
     ----------
         target : callable

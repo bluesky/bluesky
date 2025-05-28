@@ -34,8 +34,8 @@ def slow_cb():
 def wait_for_condition(condition, timeout=3, interval=0.01):
     """Wait for a condition to become True within a timeout period.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
         condition : callable
             A function that returns True when the condition is met.
         timeout : float
@@ -43,8 +43,8 @@ def wait_for_condition(condition, timeout=3, interval=0.01):
         interval : float, optional
             Time to wait between checks of the condition (default is 0.01 seconds).
 
-    Usage:
-    ------
+    Usage
+    -----
         with wait_for_condition(1, lambda: x > y):
             pass
     """
