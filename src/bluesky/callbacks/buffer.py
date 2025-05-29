@@ -1,5 +1,8 @@
+import logging
 import threading
 from queue import Empty, Queue
+
+logger = logging.getLogger(__name__)
 
 
 class BufferingWrapper:
@@ -60,6 +63,8 @@ class BufferingWrapper:
             except Empty:
                 if self._stop_event.is_set():
                     break
+            except Exception as e:
+                logger.exception(f"Exception in {self._wrapped_callback.__class__.__name__}: {e}")
 
     def shutdown(self, wait=True):
         with self._shutdown_lock:
@@ -75,10 +80,10 @@ class BufferingWrapper:
             self._thread.join()
         print(f"{self._wrapped_callback.__class__.__name__} shut down gracefully.")
 
-    # def _signal_handler(self, signum, frame):
-    #     print(f"Signal {signum} received. Shutting down {self._wrapped_callback.__class__.__name__}...")
-    #     self.shutdown()
-    #     raise SystemExit(0)
+    def _signal_handler(self, signum, frame):
+        print(f"Signal {signum} received. Shutting down {self._wrapped_callback.__class__.__name__}...")
+        self.shutdown()
+        raise SystemExit(0)
 
     # def _register_handlers(self):
     #     if threading.current_thread() is threading.main_thread():
