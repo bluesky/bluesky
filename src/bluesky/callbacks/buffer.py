@@ -1,5 +1,4 @@
 import atexit
-import signal
 import threading
 from queue import Empty, Queue
 
@@ -86,8 +85,8 @@ class BufferingWrapper:
         if threading.current_thread() is threading.main_thread():
             try:
                 atexit.register(self.shutdown)
-                signal.signal(signal.SIGINT, self._signal_handler)
-                signal.signal(signal.SIGTERM, self._signal_handler)
+                # signal.signal(signal.SIGINT, self._signal_handler)
+                # signal.signal(signal.SIGTERM, self._signal_handler)
             except Exception as e:
                 print(f"Failed to register signal handlers: {e}")
 
@@ -97,10 +96,10 @@ class BufferingWrapper:
         except Exception:
             pass
 
-        try:
-            if signal.getsignal(signal.SIGINT) == self._signal_handler:
-                signal.signal(signal.SIGINT, signal.SIG_DFL)
-            if signal.getsignal(signal.SIGTERM) == self._signal_handler:
-                signal.signal(signal.SIGTERM, signal.SIG_DFL)
-        except Exception:
-            pass
+        # try:
+        #     if signal.getsignal(signal.SIGINT) == self._signal_handler:
+        #         signal.signal(signal.SIGINT, signal.SIG_DFL)
+        #     if signal.getsignal(signal.SIGTERM) == self._signal_handler:
+        #         signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        # except Exception:
+        #     pass
