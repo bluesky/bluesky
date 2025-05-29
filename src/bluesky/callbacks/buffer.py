@@ -52,6 +52,8 @@ class BufferingWrapper:
     def __call__(self, name, doc):
         if self._stop_event.is_set():
             raise RuntimeError("Cannot accept new data after shutdown.")
+            # TODO: This can be refactored using the upstream functionality (in Python >= 3.13)
+            # https://docs.python.org/3/library/queue.html#queue.Queue.shutdown
         try:
             self._queue.put((name, doc))
         except Exception as e:
