@@ -200,5 +200,5 @@ def test_callback_logging_exceptions(monkeypatch):
 
     assert logger.exception.call_count == 0
     buff_cb("test", {"data": 123})
-    time.sleep(0.3)  # Allow the thread to start
-    assert logger.exception.call_count == 1
+    with wait_for_condition(lambda: logger.exception.call_count == 1):
+        assert True

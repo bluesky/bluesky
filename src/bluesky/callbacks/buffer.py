@@ -28,6 +28,8 @@ class BufferingWrapper:
         target : callable
             The instance of a callback that will be called with the documents.
             It should accept two parameters: `name` and `doc`.
+        queue_size : int, optional
+            The maximum size of the internal queue. Default is 1,000,000.
 
     Usage
     -----
@@ -78,4 +80,5 @@ class BufferingWrapper:
 
         if wait:
             self._thread.join()
-        print(f"{self._wrapped_callback.__class__.__name__} shut down gracefully.")
+
+        logger.info(f"{self._wrapped_callback.__class__.__name__} shut down gracefully.")
