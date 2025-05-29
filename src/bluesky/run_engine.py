@@ -2902,7 +2902,7 @@ def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Option
         if iscoroutine(coro):
             coro.close()
         raise RuntimeError("Bluesky event loop not running")
-    fut: asyncio.Future = asyncio.run_coroutine_threadsafe(
+    fut = asyncio.run_coroutine_threadsafe(
         coro,
         loop=_bluesky_event_loop,
     )

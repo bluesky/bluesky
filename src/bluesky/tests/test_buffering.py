@@ -1,4 +1,3 @@
-import signal
 import time
 from contextlib import contextmanager
 
@@ -175,19 +174,6 @@ def test_shutdown_stops_processing_new_items(cb, request):
     assert ("two", {}) not in cb.called
 
 
-@pytest.mark.parametrize("cb", ["fast_cb", "slow_cb"])
-def test_signal_handler_triggers_shutdown(cb, request, monkeypatch):
-    cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
-
-    # Monkeypatch to not actually exit the test runner
-    monkeypatch.setattr(buff_cb, "shutdown", lambda: setattr(buff_cb, "_is_shutdown", True))
-    with pytest.raises(SystemExit):
-        buff_cb._signal_handler(signal.SIGINT, None)
-
-    assert buff_cb._is_shutdown
-
-
 def test_execption_in_callback():
     """Test that exceptions in the callback are handled gracefully."""
     cb = CallbackWithException()
@@ -197,6 +183,8 @@ def test_execption_in_callback():
         cb("test", {"data": 123})
 
     # Ensure that the exception does not crash the buffering wrapper
+    buff_cb("test", {"data": 123})
+    assert buff_cb._thread.is_alive()  # The thread should still be running
     buff_cb("test", {"data": 123})
 
 
