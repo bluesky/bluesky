@@ -41,7 +41,7 @@ class BufferingWrapper:
 
     def __init__(self, target: Callable, queue_size: int = 1_000_000):
         self._wrapped_callback = target
-        self._queue = Queue(maxsize=queue_size)
+        self._queue: Queue = Queue(maxsize=queue_size)
         self._stop_event = threading.Event()
         self._shutdown_lock = threading.Lock()
 
