@@ -4,7 +4,7 @@ import enum
 import os
 import re
 import warnings
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union, cast
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
@@ -106,9 +106,9 @@ class ConsolidatorBase:
 
         # Find datum shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
-        self.datum_shape: tuple[Optional[int], ...] = tuple(data_desc["shape"])
-        if None in self.datum_shape:
+        if None in data_desc["shape"]:
             raise NotImplementedError(f"Consolidator for {self.mimetype} does not support variable-sized data")
+        self.datum_shape: tuple[int, ...] = cast(tuple[int, ...], tuple(data_desc["shape"]))
         self.datum_shape = () if self.datum_shape == (1,) and self.join_method == "stack" else self.datum_shape
         # Check that the datum shape is consistent between the StreamResource and the Descriptor
         if multiplier := self._sres_parameters.get("multiplier"):
@@ -128,8 +128,8 @@ class ConsolidatorBase:
         #    and make a best effort to convert it to a numpy spec like '<u8'.
         # 5. If unable to do any of the above, pass through whatever string is in 'dtype'.
         self.data_type: Optional[Union[BuiltinDtype, StructDtype]]
-        dtype_numpy = np.dtype(
-            list(map(tuple, data_desc.get("dtype_descr", [])))  # fileds of structural dtype
+        dtype_numpy = np.dtype(  # type: ignore
+            list(map(tuple, data_desc.get("dtype_descr", [])))  # type: ignore # fileds of structural dtype
             or data_desc.get("dtype_numpy")  # standard location
             or data_desc.get(
                 "dtype_str",  # legacy location

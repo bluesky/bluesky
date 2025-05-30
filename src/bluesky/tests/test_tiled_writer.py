@@ -3,7 +3,7 @@ import os
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import h5py
 import jinja2
@@ -113,7 +113,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         file_path = os.path.join(self.root, "dataset.h5")
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
-        data_shape = tuple(data_desc["shape"])
+        data_shape = cast(tuple[int, ...], tuple(data_desc["shape"]))
         hdf5_dataset = f"/{data_key}/VALUE"
 
         stream_resource = None
@@ -163,7 +163,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
             data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
-            data_shape = tuple(data_desc["shape"])
+            data_shape = cast(tuple[int, ...], tuple(data_desc["shape"]))
             stream_resource = None
             if self.counter == 0:
                 # Backward compatibility test, ignore typing errors

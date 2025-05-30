@@ -2,7 +2,6 @@ import copy
 import itertools
 import logging
 from collections import defaultdict, deque, namedtuple
-from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Callable, Optional, Union, cast
 from warnings import warn
@@ -18,6 +17,7 @@ from event_model import (
 from event_model.documents import (
     Datum,
     DatumPage,
+    DocumentType,
     Event,
     EventDescriptor,
     EventPage,
@@ -27,6 +27,7 @@ from event_model.documents import (
     StreamDatum,
     StreamResource,
 )
+from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamRange
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
@@ -141,7 +142,7 @@ class TiledWriter:
         self._run_router(name, doc)
 
 
-class _ConditionalBackup(CallbackBase):
+class _ConditionalBackup:
     """Callback that tries to call the primary callback and, if it fails, flushes the buffer to backup callbacks.
 
     Once an error has been encountererd in the primary callback, all subsequent documents would be sent to the
@@ -153,10 +154,10 @@ class _ConditionalBackup(CallbackBase):
     def __init__(self, primary_callback: Callable, backup_callbacks: list[Callable], maxlen: int = 1_000_000):
         self.primary_callback = primary_callback
         self.backup_callbacks = backup_callbacks
-        self._buffer: deque[tuple[str, Mapping[str, Any]]] = deque(maxlen=maxlen)
+        self._buffer: deque[tuple[str, DocumentType]] = deque(maxlen=maxlen)
         self._push_to_backup = False
 
-    def __call__(self, name: str, doc: Mapping[str, Any]):
+    def __call__(self, name: str, doc: DocumentType):
         self._buffer.append((name, doc))
 
         try:
@@ -240,13 +241,13 @@ class _RunNormalizer(CallbackBase):
         stream_resource_doc["data_key"] = stream_resource_doc.get("data_key", "")
         required_keys = {"data_key", "mimetype", "parameters", "uid", "uri"}
         for key in set(stream_resource_doc.keys()).difference(required_keys):
-            stream_resource_doc.pop(key)
+            stream_resource_doc.pop(key)  # type: ignore
 
         return stream_resource_doc
 
     def _convert_datum_to_stream_datum(
         self, datum_doc: Datum, data_key: str, desc_uid: str, seq_num: int
-    ) -> StreamDatum:
+    ) -> tuple[Optional[StreamResource], StreamDatum]:
         """Convert the Datum document to the StreamDatum format
 
         This conversion requires (and is triggered when) the Event document is received. The function also returns
@@ -365,7 +366,7 @@ class _RunNormalizer(CallbackBase):
         # Loop over all dictionaries that specify data_keys (both event data_keys or configuration data_keys)
         conf_data_keys = (obj["data_keys"].values() for obj in doc["configuration"].values())
         for data_keys_spec in itertools.chain(doc["data_keys"].values(), *conf_data_keys):
-            if dtype_str := data_keys_spec.pop("dtype_str", None):
+            if dtype_str := data_keys_spec.pop("dtype_str", None):  # type: ignore  # Backward compatibility
                 data_keys_spec["dtype_numpy"] = data_keys_spec.get("dtype_numpy") or dtype_str
 
         # Ensure that all event data_keys have object_name assigned (for consistency)
@@ -435,8 +436,7 @@ class _RunNormalizer(CallbackBase):
             doc = patch(doc)
 
         # Convert the Resource document to StreamResource format
-        doc = self._convert_resource_to_stream_resource(doc)
-        self._sres_cache[doc["uid"]] = doc
+        self._sres_cache[doc["uid"]] = self._convert_resource_to_stream_resource(doc)
 
     def stream_resource(self, doc: StreamResource):
         doc = copy.copy(doc)
@@ -502,7 +502,7 @@ class _RunWriter(CallbackBase):
         self._consolidators: dict[str, ConsolidatorBase] = {}
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}  # sres_uid : (concatenated) StreamDatum
-        self.data_keys: dict[str, dict[str, Any]] = {}
+        self.data_keys: dict[str, DataKey] = {}
         self.access_tags = None
 
     def _write_internal_data(self, data_cache: list[dict[str, Any]], desc_node: Composite):
@@ -550,7 +550,7 @@ class _RunWriter(CallbackBase):
 
     def start(self, doc: RunStart):
         doc = copy.copy(doc)
-        self.access_tags = doc.pop("tiled_access_tags", None)
+        self.access_tags = doc.pop("tiled_access_tags", None)  # type: ignore
         self.root_node = self.client.create_container(
             key=doc["uid"],
             metadata={"start": truncate_json_overflow(dict(doc))},
