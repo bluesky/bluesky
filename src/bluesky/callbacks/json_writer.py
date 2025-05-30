@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 
 class JSONWriter:
@@ -14,7 +15,7 @@ class JSONWriter:
     def __init__(
         self,
         dirname: str,
-        filename: str = None,
+        filename: Optional[str] = None,
     ):
         self.dirname = Path(dirname)
         self.filename = filename
@@ -44,7 +45,7 @@ class JSONLinesWriter:
     If the file already exists, new documents will be appended to it.
     """
 
-    def __init__(self, dirname: str, filename: str = None):
+    def __init__(self, dirname: str, filename: Optional[str] = None):
         self.dirname = Path(dirname)
         self.filename = filename
 

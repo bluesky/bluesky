@@ -2,6 +2,7 @@ import copy
 import itertools
 import logging
 from collections import defaultdict, deque, namedtuple
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Callable, Optional, Union, cast
 from warnings import warn
@@ -152,10 +153,10 @@ class _ConditionalBackup(CallbackBase):
     def __init__(self, primary_callback: Callable, backup_callbacks: list[Callable], maxlen: int = 1_000_000):
         self.primary_callback = primary_callback
         self.backup_callbacks = backup_callbacks
-        self._buffer = deque(maxlen=maxlen)
+        self._buffer: deque[tuple[str, Mapping[str, Any]]] = deque(maxlen=maxlen)
         self._push_to_backup = False
 
-    def __call__(self, name, doc):
+    def __call__(self, name: str, doc: Mapping[str, Any]):
         self._buffer.append((name, doc))
 
         try:
@@ -187,8 +188,8 @@ class _RunNormalizer(CallbackBase):
     Returns a shallow copy of the document to avoid modifying the original document.
     """
 
-    def __init__(self, patches: dict[str, Callable] = None):
-        self._token_refs = {}
+    def __init__(self, patches: Optional[dict[str, Callable]] = None):
+        self._token_refs: dict[str, Callable] = {}
         self.dispatcher = Dispatcher()
         self.patches = patches or {}
 
