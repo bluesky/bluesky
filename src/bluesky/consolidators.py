@@ -106,7 +106,9 @@ class ConsolidatorBase:
 
         # Find datum shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
         data_desc = descriptor["data_keys"][self.data_key]
-        self.datum_shape: tuple[int, ...] = tuple(data_desc["shape"])
+        self.datum_shape: tuple[Optional[int], ...] = tuple(data_desc["shape"])
+        if None in self.datum_shape:
+            raise NotImplementedError(f"Consolidator for {self.mimetype} does not support variable-sized data")
         self.datum_shape = () if self.datum_shape == (1,) and self.join_method == "stack" else self.datum_shape
         # Check that the datum shape is consistent between the StreamResource and the Descriptor
         if multiplier := self._sres_parameters.get("multiplier"):
@@ -363,7 +365,7 @@ class CSVConsolidator(ConsolidatorBase):
         self.assets.append(Asset(data_uri=self.uri, is_directory=False, parameter="data_uris"))
 
     def adapter_parameters(self) -> dict:
-        return {**self._sres_parameters()}
+        return {**self._sres_parameters}
 
 
 class HDF5Consolidator(ConsolidatorBase):
