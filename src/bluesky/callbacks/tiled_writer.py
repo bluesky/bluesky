@@ -1,8 +1,9 @@
 import copy
 import itertools
-from collections import defaultdict, namedtuple
+import logging
+from collections import defaultdict, deque, namedtuple
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, Callable, Optional, Union, cast
 from warnings import warn
 
 import pyarrow
@@ -39,10 +40,13 @@ from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, conso
 from ..run_engine import Dispatcher
 from ..utils import truncate_json_overflow
 from .core import MIMETYPE_LOOKUP, CallbackBase
+from .json_writer import JSONLinesWriter
 
 # Try to aggregare the table rows in batches of this size before writing to Tiled
 TABLE_UPDATE_BATCH_SIZE = 10000
 RESERVED_DATA_KEYS = ["time", "seq_num"]  # Reserved words that should not be used as data_keys identifiers
+
+logger = logging.getLogger(__name__)
 
 
 def concatenate_stream_datums(*docs: StreamDatum):
@@ -94,20 +98,33 @@ class TiledWriter:
             the appropriate credentials and connection parameters to access the Tiled server.
     """
 
-    def __init__(self, client: BaseClient, normalize=True):
+    def __init__(
+        self,
+        client: BaseClient,
+        normalize: bool = True,
+        patches: Optional[dict[str, Callable]] = None,
+        backup_directory: Optional[str] = None,
+    ):
         self.client = client.include_data_sources()
-        self._run_router = RunRouter([self._factory])
         self.normalize = normalize
+        self.patches = patches or {}
+        self.backup_directory = backup_directory
+        self._run_router = RunRouter([self._factory])
 
     def _factory(self, name, doc):
-        run_writer = _RunWriter(self.client)
+        """Factory method to create a callback for writing a single run into Tiled."""
+        cb = run_writer = _RunWriter(self.client)
 
         if self.normalize:
-            run_normalizer = _RunNormalizer()
-            run_normalizer.subscribe(run_writer)
-            return [run_normalizer], []
-        else:
-            return [run_writer], []
+            # If normalize is True, create a RunNormalizer callback to update documents to the latest schema
+            cb = _RunNormalizer(patches=self.patches)
+            cb.subscribe(run_writer)
+
+        if self.backup_directory:
+            # If backup_directory is specified, create a conditional backup callback writing documents to JSONLines
+            cb = _ConditionalBackup(cb, [JSONLinesWriter(self.backup_directory)])
+
+        return [cb], []
 
     @classmethod
     def from_uri(cls, uri, **kwargs):
@@ -123,6 +140,46 @@ class TiledWriter:
         self._run_router(name, doc)
 
 
+class _ConditionalBackup(CallbackBase):
+    """Callback that tries to call the primary callback and, if it fails, flushes the buffer to backup callbacks.
+
+    Once an error has been encountererd in the primary callback, all subsequent documents would be sent to the
+    backup callbacks as well.
+
+    This callback is intended to be used with a `RunRouter` and process documents from a single Bluesky run.
+    """
+
+    def __init__(self, primary_callback: Callable, backup_callbacks: list[Callable], maxlen: int = 1_000_000):
+        self.primary_callback = primary_callback
+        self.backup_callbacks = backup_callbacks
+        self._buffer = deque(maxlen=maxlen)
+        self._push_to_backup = False
+
+    def __call__(self, name, doc):
+        self._buffer.append((name, doc))
+
+        try:
+            self.primary_callback(name, doc)
+        except Exception as e:
+            logger.warning(
+                f"Primary callback {type(self.primary_callback).__name__} failed: {e}. "
+                "Flushing buffer to backup callbacks.",
+                stacklevel=2,
+            )
+            self._push_to_backup = True
+
+        if self._push_to_backup:
+            for name, doc in self._buffer:
+                for bcb in self.backup_callbacks:
+                    try:
+                        bcb(name, doc)
+                    except Exception as e:
+                        logger.warning(
+                            f"Backup callback {bcb.__class__.__name__} failed with error: {e}", stacklevel=2
+                        )
+            self._buffer.clear()
+
+
 class _RunNormalizer(CallbackBase):
     """Callback for updating Bluesky documents to their latest schema.
 
@@ -130,9 +187,10 @@ class _RunNormalizer(CallbackBase):
     Returns a shallow copy of the document to avoid modifying the original document.
     """
 
-    def __init__(self):
+    def __init__(self, patches: dict[str, Callable] = None):
         self._token_refs = {}
         self.dispatcher = Dispatcher()
+        self.patches = patches or {}
 
         self._next_frame_index: dict[tuple[str, str], dict[str, int]] = defaultdict(
             lambda: {"carry": 0, "index": 0}
@@ -262,10 +320,14 @@ class _RunNormalizer(CallbackBase):
 
     def start(self, doc: RunStart):
         doc = copy.copy(doc)
+        if patch := self.patches.get("start"):
+            doc = patch(doc)
         self.emit(DocumentNames.start, doc)
 
     def stop(self, doc: RunStop):
         doc = copy.copy(doc)
+        if patch := self.patches.get("stop"):
+            doc = patch(doc)
 
         # If there are any cached references to external data, emit StreamResources and StreamDatums now
         for datum_id, data_key, desc_uid, seq_num in self._ext_ref_cache:
@@ -284,6 +346,8 @@ class _RunNormalizer(CallbackBase):
 
     def descriptor(self, doc: EventDescriptor):
         doc = copy.deepcopy(doc)
+        if patch := self.patches.get("descriptor"):
+            doc = patch(doc)
 
         # Rename data_keys that use reserved words, "time" and "seq_num"
         for name in RESERVED_DATA_KEYS:
@@ -323,6 +387,8 @@ class _RunNormalizer(CallbackBase):
 
     def event(self, doc: Event):
         doc = copy.deepcopy(doc)
+        if patch := self.patches.get("event"):
+            doc = patch(doc)
 
         # Part 0. ----- Preprocessing -----
         # Rename data_keys that use reserved words, "time" and "seq_num"
@@ -363,23 +429,35 @@ class _RunNormalizer(CallbackBase):
                 self._ext_ref_cache.append(missing)
 
     def resource(self, doc: Resource):
-        # Convert the Resource document to StreamResource format
         doc = copy.copy(doc)
+        if patch := self.patches.get("resource"):
+            doc = patch(doc)
+
+        # Convert the Resource document to StreamResource format
         doc = self._convert_resource_to_stream_resource(doc)
         self._sres_cache[doc["uid"]] = doc
 
     def stream_resource(self, doc: StreamResource):
-        # Convert the StreamResource document to the latest schema
         doc = copy.copy(doc)
+        if patch := self.patches.get("stream_resource"):
+            doc = patch(doc)
+
+        # Convert the StreamResource document to the latest schema
         doc = self._convert_resource_to_stream_resource(doc)
         self.emit(DocumentNames.stream_resource, doc)
 
     def stream_datum(self, doc: StreamDatum):
         doc = copy.copy(doc)
+        if patch := self.patches.get("stream_datum"):
+            doc = patch(doc)
         self.emit(DocumentNames.stream_datum, doc)
 
     def datum(self, doc: Datum):
-        self._datum_cache[doc["datum_id"]] = copy.copy(doc)
+        doc = copy.copy(doc)
+        if patch := self.patches.get("datum"):
+            doc = patch(doc)
+
+        self._datum_cache[doc["datum_id"]] = doc
 
     def datum_page(self, doc: DatumPage):
         for _doc in unpack_datum_page(doc):

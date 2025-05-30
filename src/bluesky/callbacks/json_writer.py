@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 
@@ -20,7 +21,7 @@ class JSONWriter:
 
     def __call__(self, name, doc):
         if name == "start":
-            self.filename = self.filename or f"{doc['uid']}.json"
+            self.filename = self.filename or f"{doc['uid'].split('-')[0]}.json"
             with open(self.dirname / self.filename, "w") as file:
                 file.write("[\n")
                 json.dump({"name": name, "doc": doc}, file)
@@ -40,8 +41,7 @@ class JSONWriter:
 class JSONLinesWriter:
     """Writer of Bluesky docuemnts into a JSON Lines file
 
-    The file is written immediately, and the JSON array is closed
-    when the "stop" document is received.
+    If the file already exists, new documents will be appended to it.
     """
 
     def __init__(self, dirname: str, filename: str = None):
@@ -49,18 +49,15 @@ class JSONLinesWriter:
         self.filename = filename
 
     def __call__(self, name, doc):
-        if name == "start":
-            self.filename = self.filename or f"{doc['uid']}.jsonl"
-            mode = "a" if (self.dirname / self.filename).exists() else "w"
-            with open(self.dirname / self.filename, mode) as file:
-                json.dump({"name": name, "doc": doc}, file)
-                file.write("\n")
+        if not self.filename:
+            if name == "start":
+                # If the first document is a start document, use the uid to create a filename
+                self.filename = f"{doc['uid'].split('-')[0]}.jsonl"
+            else:
+                # If the first document is not a start document, use the current date
+                self.filename = f"{datetime.today().strftime('%Y-%m-%d')}.jsonl"
+        mode = "a" if (self.dirname / self.filename).exists() else "w"
 
-        elif name == "stop":
-            with open(self.dirname / self.filename, "a") as file:
-                json.dump({"name": name, "doc": doc}, file)
-
-        else:
-            with open(self.dirname / self.filename, "a") as file:
-                json.dump({"name": name, "doc": doc}, file)
-                file.write("\n")
+        with open(self.dirname / self.filename, mode) as file:
+            json.dump({"name": name, "doc": doc}, file)
+            file.write("\n")

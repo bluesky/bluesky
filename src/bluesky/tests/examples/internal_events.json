@@ -225,7 +225,7 @@
             },
             "run_start": "{{ uuid }}-dc0518f354ee",
             "time": 1745338532.004459,
-            "uid": "{{ uuid }}-ab0498e83e2b",
+            "uid": "{{ uuid }}-ab0498e83e2b-2",
             "hints": {
                 "det": {
                     "fields": [
@@ -251,7 +251,7 @@
             },
             "seq_num": 3,
             "filled": {},
-            "descriptor": "{{ uuid }}-ab0498e83e2b"
+            "descriptor": "{{ uuid }}-ab0498e83e2b-2"
         }
     },
     {

@@ -530,3 +530,38 @@ def test_bad_document_order(client, external_assets_folder):
         assert "time" in stream.keys()
         assert "seq_num" in stream.keys()
         assert len(stream.keys()) > 2  # There's at least one data key in addition to time and seq_num
+
+
+def test_json_backup(client, tmpdir, monkeypatch):
+    def patched_event(name, doc):
+        raise RuntimeError("This is a test error to check the backup functionality")
+
+    monkeypatch.setattr("bluesky.callbacks.tiled_writer._RunWriter.event", patched_event)
+
+    tw = TiledWriter(client, backup_directory=str(tmpdir))
+
+    for item in render_templated_documents("internal_events.json", ""):
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+        print(name)
+
+        tw(**item)
+
+    run = client[uid]
+
+    assert "primary" in run["streams"]  # The Descriptor was processed and the primary stream was created
+    assert run["streams"]["primary"].read() is not None  # The stream can be read
+    assert len(run["streams"]["primary"].read()) == 0  # No events were processed due to the error
+    assert "stop" in run.metadata  # The TiledWriter did not crash
+
+    # Check that the backup file was created
+    filepath = tmpdir / f"{uid[:8]}.jsonl"
+    assert filepath.exists()
+    with open(filepath) as f:
+        lines = [json.loads(line) for line in f if line.strip()]
+    assert len(lines) == 7
+    assert lines[0]["name"] == "start"
+    assert lines[1]["name"] == "descriptor"
+    assert lines[2]["name"].startswith("event")
+    assert lines[6]["name"] == "stop"
