@@ -2,6 +2,7 @@ import atexit
 import logging
 import threading
 from queue import Empty, Queue
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class BufferingWrapper:
         RE.subscribe(buff_tw)
     """
 
-    def __init__(self, target, queue_size=1_000_000):
+    def __init__(self, target: Callable, queue_size: int = 1_000_000):
         self._wrapped_callback = target
         self._queue = Queue(maxsize=queue_size)
         self._stop_event = threading.Event()
@@ -72,7 +73,7 @@ class BufferingWrapper:
             except Exception as e:
                 logger.exception(f"Exception in {self._wrapped_callback.__class__.__name__}: {e}")
 
-    def shutdown(self, wait=True):
+    def shutdown(self, wait: bool = True):
         if self._stop_event.is_set():
             return
         self._stop_event.set()
