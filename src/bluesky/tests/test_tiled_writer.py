@@ -500,68 +500,68 @@
 #     assert num_gets == 0
 
 
-# # def test_bad_document_order(client, external_assets_folder):
-# #     """Test that the TiledWriter can handle documents in a different order than expected
+# def test_bad_document_order(client, external_assets_folder):
+#     """Test that the TiledWriter can handle documents in a different order than expected
 
-# #     Emit datum documents in the end, before the Stop document, but after corresponding Event documents.
-# #     """
-# #     tw = TiledWriter(client)
+#     Emit datum documents in the end, before the Stop document, but after corresponding Event documents.
+#     """
+#     tw = TiledWriter(client)
 
-# #     document_cache = []
-# #     for item in render_templated_documents("external_assets_legacy.json", external_assets_folder):
-# #         name, doc = item["name"], item["doc"]
-# #         if name == "start":
-# #             uid = doc["uid"]
+#     document_cache = []
+#     for item in render_templated_documents("external_assets_legacy.json", external_assets_folder):
+#         name, doc = item["name"], item["doc"]
+#         if name == "start":
+#             uid = doc["uid"]
 
-# #         if name == "datum":
-# #             document_cache.append({"name": name, "doc": doc})
-# #             continue
+#         if name == "datum":
+#             document_cache.append({"name": name, "doc": doc})
+#             continue
 
-# #         if name == "stop":
-# #             for cached_item in document_cache:
-# #                 tw(**cached_item)
+#         if name == "stop":
+#             for cached_item in document_cache:
+#                 tw(**cached_item)
 
-# #         tw(**item)
+#         tw(**item)
 
-# #     run = client[uid]
+#     run = client[uid]
 
-# #     for stream in run["streams"].values():
-# #         assert stream.read() is not None
-# #         assert "time" in stream.keys()
-# #         assert "seq_num" in stream.keys()
-# #         assert len(stream.keys()) > 2  # There's at least one data key in addition to time and seq_num
+#     for stream in run["streams"].values():
+#         assert stream.read() is not None
+#         assert "time" in stream.keys()
+#         assert "seq_num" in stream.keys()
+#         assert len(stream.keys()) > 2  # There's at least one data key in addition to time and seq_num
 
 
-# # def test_json_backup(client, tmpdir, monkeypatch):
-# #     def patched_event(name, doc):
-# #         raise RuntimeError("This is a test error to check the backup functionality")
+# def test_json_backup(client, tmpdir, monkeypatch):
+#     def patched_event(name, doc):
+#         raise RuntimeError("This is a test error to check the backup functionality")
 
-# #     monkeypatch.setattr("bluesky.callbacks.tiled_writer._RunWriter.event", patched_event)
+#     monkeypatch.setattr("bluesky.callbacks.tiled_writer._RunWriter.event", patched_event)
 
-# #     tw = TiledWriter(client, backup_directory=str(tmpdir))
+#     tw = TiledWriter(client, backup_directory=str(tmpdir))
 
-# #     for item in render_templated_documents("internal_events.json", ""):
-# #         name, doc = item["name"], item["doc"]
-# #         if name == "start":
-# #             uid = doc["uid"]
-# #         print(name)
+#     for item in render_templated_documents("internal_events.json", ""):
+#         name, doc = item["name"], item["doc"]
+#         if name == "start":
+#             uid = doc["uid"]
+#         print(name)
 
-# #         tw(**item)
+#         tw(**item)
 
-# #     run = client[uid]
+#     run = client[uid]
 
-# #     assert "primary" in run["streams"]  # The Descriptor was processed and the primary stream was created
-# #     assert run["streams"]["primary"].read() is not None  # The stream can be read
-# #     assert len(run["streams"]["primary"].read()) == 0  # No events were processed due to the error
-# #     assert "stop" in run.metadata  # The TiledWriter did not crash
+#     assert "primary" in run["streams"]  # The Descriptor was processed and the primary stream was created
+#     assert run["streams"]["primary"].read() is not None  # The stream can be read
+#     assert len(run["streams"]["primary"].read()) == 0  # No events were processed due to the error
+#     assert "stop" in run.metadata  # The TiledWriter did not crash
 
-# #     # Check that the backup file was created
-# #     filepath = tmpdir / f"{uid[:8]}.jsonl"
-# #     assert filepath.exists()
-# #     with open(filepath) as f:
-# #         lines = [json.loads(line) for line in f if line.strip()]
-# #     assert len(lines) == 7
-# #     assert lines[0]["name"] == "start"
-# #     assert lines[1]["name"] == "descriptor"
-# #     assert lines[2]["name"].startswith("event")
-# #     assert lines[6]["name"] == "stop"
+#     # Check that the backup file was created
+#     filepath = tmpdir / f"{uid[:8]}.jsonl"
+#     assert filepath.exists()
+#     with open(filepath) as f:
+#         lines = [json.loads(line) for line in f if line.strip()]
+#     assert len(lines) == 7
+#     assert lines[0]["name"] == "start"
+#     assert lines[1]["name"] == "descriptor"
+#     assert lines[2]["name"].startswith("event")
+#     assert lines[6]["name"] == "stop"
