@@ -54,6 +54,7 @@ The former is responsible for converting legacy document schemas to their latest
 The simplified flowchart of the `_RunNormalizer` logic is shown below. It illustrates how the input documents (top) are processed and emitted as output documents (bottom) after specific transformations or caching operations.
 
 .. mermaid::
+
     flowchart TD
         %% Input documents
         subgraph Input [ ]
@@ -118,3 +119,36 @@ The simplified flowchart of the `_RunNormalizer` logic is shown below. It illust
 The second component, `_RunWriter`, is the callback that directly communicates with the Tiled server. It uses the `RunRouter` to manage the routing of documents from multiple runs into separate instances of the internal `_RunWriter` callback, ensuring that each Bluesky run is handled separately.
 
 Furthermore, TiledWriter implements a backup mechanism that allows to save the documents to a local file system in case the Tiled server is not available or any other error occurs during the writing process. This ensures that no data is lost and can be retried later.
+
+
+Usage
+========
+
+A minimal simulated example of using TiledWriter in a Bluesky plan is shown below:
+
+.. code-block:: python
+
+    from bluesky import RunEngine
+    import bluesky.plans as bp
+    from tiled.server import SimpleTiledServer
+    from tiled.client import from_uri
+    from ophyd.sim import det
+    from ophyd.sim import hw
+
+    # Initialize the Tiled server and client
+    tiled_server = SimpleTiledServer()
+    tiled_client = from_uri(tiled_server.uri)
+
+    # Initialize the RunEngine and subscribe TiledWriter
+    RE = RunEngine()
+    tw = TiledWriter(tiled_client)
+    RE.subscribe(tw)
+
+    # Run an experiment collecting internal data
+    uid, = RE(bp.count([det], 3))
+    data = tiled_client[uid]['streams/primary/det'].read()
+
+    # Run an experiment collecting external data
+    save_path = str(tiled_server.directory / "data")
+    uid, = RE(bp.count([hw(save_path=save_path).img], 2))
+    data = tiled_client[uid]['streams/primary/img'].read()
