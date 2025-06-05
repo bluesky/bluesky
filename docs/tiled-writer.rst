@@ -2,7 +2,7 @@
 Integration with Tiled
 **********************
 
-[Tiled](https://blueskyproject.io/tiled/) is a data management system that allows for the storage and retrieval of structured data. In the context of Bluesky, it provides a way to store the data and metadata for runs in a structured format that can be easily accessed and queried.
+`Tiled <https://blueskyproject.io/tiled/>`_ is a data management system that allows for the storage and retrieval of structured data. In the context of Bluesky, it provides a way to store the data and metadata for runs in a structured format that can be easily accessed and queried.
 
 
 Representation of Bluesky Runs in Tiled
