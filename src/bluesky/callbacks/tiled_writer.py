@@ -90,76 +90,6 @@ ExternalEventDataReference = namedtuple(
 )
 
 
-class TiledWriter:
-    """Callback for write metadata and data from Bluesky documents into Tiled.
-
-    This callback relies on the `RunRouter` to route documents from one or more runs into
-    independent instances of the `_RunWriter` callback. The `RunRouter` is responsible for
-    creating a new instance of the `_RunWriter` for each run.
-
-    Parameters
-    ----------
-        client : `tiled.client.BaseClient`
-            The Tiled client to use for writing data. This client must be initialized with
-            the appropriate credentials and connection parameters to access the Tiled server.
-    """
-
-    def __init__(
-        self,
-        client: BaseClient,
-        normalize: bool = True,
-        patches: Optional[dict[str, Callable]] = None,
-        backup_directory: Optional[str] = None,
-    ):
-        self.client = client.include_data_sources()
-        self.normalize = normalize
-        self.patches = patches or {}
-        self.backup_directory = backup_directory
-        self._run_router = RunRouter([self._factory])
-
-    def _factory(self, name, doc):
-        """Factory method to create a callback for writing a single run into Tiled."""
-        cb = run_writer = _RunWriter(self.client)
-
-        if self.normalize:
-            # If normalize is True, create a RunNormalizer callback to update documents to the latest schema
-            cb = _RunNormalizer(patches=self.patches)
-            cb.subscribe(run_writer)
-
-        if self.backup_directory:
-            # If backup_directory is specified, create a conditional backup callback writing documents to JSONLines
-            cb = _ConditionalBackup(cb, [JSONLinesWriter(self.backup_directory)])
-
-        return [cb], []
-
-    @classmethod
-    def from_uri(
-        cls,
-        uri,
-        normalize: bool = True,
-        patches: Optional[dict[str, Callable]] = None,
-        backup_directory: Optional[str] = None,
-        **kwargs,
-    ):
-        client = from_uri(uri, **kwargs)
-        return cls(client, normalize=normalize, patches=patches, backup_directory=backup_directory)
-
-    @classmethod
-    def from_profile(
-        cls,
-        profile,
-        normalize: bool = True,
-        patches: Optional[dict[str, Callable]] = None,
-        backup_directory: Optional[str] = None,
-        **kwargs,
-    ):
-        client = from_profile(profile, **kwargs)
-        return cls(client, normalize=normalize, patches=patches, backup_directory=backup_directory)
-
-    def __call__(self, name, doc):
-        self._run_router(name, doc)
-
-
 class _ConditionalBackup:
     """Callback that tries to call the primary callback and, if it fails, flushes the buffer to backup callbacks.
 
@@ -204,7 +134,14 @@ class _RunNormalizer(CallbackBase):
     """Callback for updating Bluesky documents to their latest schema.
 
     This callback can be used to subscribe additional consumers that require the updated documents.
-    Returns a shallow copy of the document to avoid modifying the original document.
+    Returns a shallow copy of the document to avoid modifying the original one.
+
+    Parameters
+    ----------
+        patches : dict[str, Callable], optional
+            A dictionary of patch functions to apply to the documents before modifying them.
+            The keys are document names (e.g., "start", "stop", "descriptor", etc.), and the values
+            are functions that take a document as input and return a modified document.
     """
 
     def __init__(self, patches: Optional[dict[str, Callable]] = None):
@@ -506,8 +443,17 @@ class _RunNormalizer(CallbackBase):
 class _RunWriter(CallbackBase):
     """Write documents from a single Bluesky Run into Tiled.
 
-    Datum, Resource, and StreamResource documents are cached until Event or StreamDatum documents are received,
-    after which corresponding nodes are created in Tiled.
+    This callback is intended to be used with a `RunRouter` and process documents from a single Bluesky run.
+    It creates a new Tiled Container for the run and writes the internal data provided in Event documents
+    as well as registers external files provided in StreamResource and StreamDatum documents.
+
+    The callback is intended to be used with the most recent version of EventModel; to support legacy
+    schemas, use the `_RunNormalizer` callback first to update the documents before writing them to Tiled.
+
+    Parameters
+    ----------
+        client : BaseClient
+            The Tiled client to use for writing the data.
     """
 
     def __init__(self, client: BaseClient):
@@ -716,3 +662,87 @@ class _RunWriter(CallbackBase):
                 self._write_external_data(doc)
         else:
             self._external_data_cache[sres_uid] = doc
+
+
+class TiledWriter:
+    """Callback for write metadata and data from Bluesky documents into Tiled.
+
+    This callback relies on the `RunRouter` to route documents from one or more runs into
+    independent instances of the `_RunWriter` callback. The `RunRouter` is responsible for
+    creating a new instance of the `_RunWriter` for each run.
+
+    Parameters
+    ----------
+        client : `tiled.client.BaseClient`
+            The Tiled client to use for writing data. This client must be initialized with
+            the appropriate credentials and connection parameters to access the Tiled server.
+        normalizer : Optional[CallbackBase]
+            A callback for normalizing Bluesky documents to the latest schema. If not provided,
+            the default `_RunNormalizer` will be used.
+            To disable normalization and pass the incoming document directly to _RunWriter,
+            set this parameter to `None`.
+        patches : Optional[dict[str, Callable]]
+            A dictionary of patch functions to apply to specific document types before normalizing
+            and writing them. The keys should be the document names (e.g., "start", "stop",
+            "descriptor", etc.), and the values should be functions that take a document and return
+            a modified document of the same type.
+        backup_directory : Optional[str]
+            If specified, this directory will be used to back up runs that fail to be written
+            to Tiled. All documents for the entire Bluesky Run will be written in JSONLines format,
+            allowing for recovery in case of errors during the writing process.
+    """
+
+    def __init__(
+        self,
+        client: BaseClient,
+        normalizer: Optional[CallbackBase] = _RunNormalizer,
+        patches: Optional[dict[str, Callable]] = None,
+        backup_directory: Optional[str] = None,
+    ):
+        self.client = client.include_data_sources()
+        self.patches = patches or {}
+        self.backup_directory = backup_directory
+        self._normalizer = normalizer
+        self._run_router = RunRouter([self._factory])
+
+    def _factory(self, name, doc):
+        """Factory method to create a callback for writing a single run into Tiled."""
+        cb = run_writer = _RunWriter(self.client)
+
+        if self._normalizer:
+            # If normalize is True, create a RunNormalizer callback to update documents to the latest schema
+            cb = self._normalizer(patches=self.patches)
+            cb.subscribe(run_writer)
+
+        if self.backup_directory:
+            # If backup_directory is specified, create a conditional backup callback writing documents to JSONLines
+            cb = _ConditionalBackup(cb, [JSONLinesWriter(self.backup_directory)])
+
+        return [cb], []
+
+    @classmethod
+    def from_uri(
+        cls,
+        uri,
+        normalizer: Optional[CallbackBase] = _RunNormalizer,
+        patches: Optional[dict[str, Callable]] = None,
+        backup_directory: Optional[str] = None,
+        **kwargs,
+    ):
+        client = from_uri(uri, **kwargs)
+        return cls(client, normalizer=normalizer, patches=patches, backup_directory=backup_directory)
+
+    @classmethod
+    def from_profile(
+        cls,
+        profile,
+        normalizer: Optional[CallbackBase] = _RunNormalizer,
+        patches: Optional[dict[str, Callable]] = None,
+        backup_directory: Optional[str] = None,
+        **kwargs,
+    ):
+        client = from_profile(profile, **kwargs)
+        return cls(client, normalizer=normalizer, patches=patches, backup_directory=backup_directory)
+
+    def __call__(self, name, doc):
+        self._run_router(name, doc)
