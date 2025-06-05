@@ -1,7 +1,7 @@
 import atexit
 import logging
 import threading
-from queue import Empty, Queue
+from queue import Empty, Full, Queue
 from typing import Callable
 
 logger = logging.getLogger(__name__)
@@ -57,8 +57,18 @@ class BufferingWrapper:
             # https://docs.python.org/3/library/queue.html#queue.Queue.shutdown
         try:
             self._queue.put((name, doc))
+        except Full as e:
+            logger.exception(
+                f"The buffer is full. The {self._wrapped_callback.__class__.__name__} can not keep up with the incoming data. "  # noqa
+                f"Consider increasing the queue size or optimizing the callback processing: {e}"
+            )
+            raise RuntimeError(
+                f"The buffer is full. The {self._wrapped_callback.__class__.__name__} can not keep up with the incoming data. "  # noqa
+                "Consider increasing the queue size or optimizing the callback processing."
+            ) from e
         except Exception as e:
             logger.exception(f"Failed to put document {name} in queue: {e}")
+            raise RuntimeError(f"Failed to put document {name} in queue: {e}") from e
 
     def _process_queue(self):
         while True:
