@@ -46,7 +46,10 @@ from .json_writer import JSONLinesWriter
 
 # Try to aggregare the table rows in batches of this size before writing to Tiled
 TABLE_UPDATE_BATCH_SIZE = 10000
-RESERVED_DATA_KEYS = ["time", "seq_num"]  # Reserved words that should not be used as data_keys identifiers
+
+# Disallow using reserved words as data_keys identifiers
+# Related: https://github.com/bluesky/event-model/pull/223
+RESERVED_DATA_KEYS = ["time", "seq_num"]
 
 logger = logging.getLogger(__name__)
 
