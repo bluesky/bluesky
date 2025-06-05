@@ -129,7 +129,7 @@ class ConsolidatorBase:
         # 5. If unable to do any of the above, pass through whatever string is in 'dtype'.
         self.data_type: Optional[Union[BuiltinDtype, StructDtype]]
         dtype_numpy = np.dtype(  # type: ignore
-            list(map(tuple, data_desc.get("dtype_descr", [])))  # type: ignore # fileds of structural dtype
+            list(map(tuple, data_desc.get("dtype_descr", [])))  # type: ignore # fields of structural dtype
             or data_desc.get("dtype_numpy")  # standard location
             or data_desc.get(
                 "dtype_str",  # legacy location
