@@ -51,6 +51,9 @@ TABLE_UPDATE_BATCH_SIZE = 10000
 # Related: https://github.com/bluesky/event-model/pull/223
 RESERVED_DATA_KEYS = ["time", "seq_num"]
 
+# A lookup table for converting broad JSON types to numpy dtypes
+JSON_TO_NUMPY_DTYPE = {"number": "<f8", "array": "<f8", "boolean": "|b1", "string": "<U0", "integer": "<i8"}
+
 logger = logging.getLogger(__name__)
 
 
@@ -321,8 +324,21 @@ class _RunNormalizer(CallbackBase):
         # Loop over all dictionaries that specify data_keys (both event data_keys or configuration data_keys)
         conf_data_keys = (obj["data_keys"].values() for obj in doc["configuration"].values())
         for data_keys_spec in itertools.chain(doc["data_keys"].values(), *conf_data_keys):
-            if dtype_str := data_keys_spec.pop("dtype_str", None):  # type: ignore  # Backward compatibility
-                data_keys_spec["dtype_numpy"] = data_keys_spec.get("dtype_numpy") or dtype_str
+            # Determine numpy data type. From highest precedent to lowest:
+            # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
+            # 2. Try 'dtype_numpy', optional in the document schema.
+            # 3. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
+            # 4. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
+            #    and make a best effort to convert it to a numpy spec like '<u8'.
+            # 5. If unable to do any of the above, do not set 'dtype_numpy' at all.
+            dtype_descr = data_keys_spec.pop("dtype_descr", [])  # type: ignore
+            dtype_str = data_keys_spec.pop("dtype_str", None)  # type: ignore
+            if dtype_numpy := (
+                list(map(list, dtype_descr))
+                or data_keys_spec.get("dtype_numpy", dtype_str)
+                or JSON_TO_NUMPY_DTYPE.get(data_keys_spec["dtype"])
+            ):
+                data_keys_spec["dtype_numpy"] = dtype_numpy
 
         # Ensure that all event data_keys have object_name assigned (for consistency)
         for obj_name, data_keys_list in doc["object_keys"].items():
@@ -695,7 +711,7 @@ class TiledWriter:
     def __init__(
         self,
         client: BaseClient,
-        normalizer: Optional[CallbackBase] = _RunNormalizer,
+        normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         backup_directory: Optional[str] = None,
     ):
@@ -724,7 +740,7 @@ class TiledWriter:
     def from_uri(
         cls,
         uri,
-        normalizer: Optional[CallbackBase] = _RunNormalizer,
+        normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         backup_directory: Optional[str] = None,
         **kwargs,
@@ -736,7 +752,7 @@ class TiledWriter:
     def from_profile(
         cls,
         profile,
-        normalizer: Optional[CallbackBase] = _RunNormalizer,
+        normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         backup_directory: Optional[str] = None,
         **kwargs,

@@ -11,9 +11,6 @@ from event_model.documents import EventDescriptor, StreamDatum, StreamResource
 from tiled.mimetypes import DEFAULT_ADAPTERS_BY_MIMETYPE
 from tiled.structures.array import ArrayStructure, BuiltinDtype, StructDtype
 
-DTYPE_LOOKUP = {"number": "<f8", "array": "<f8", "boolean": "bool", "string": "str", "integer": "int"}
-
-
 # TODO: Move Consolidator classes into external repo (probably area-detector-handlers) and use the existing
 # handler discovery mechanism.
 # GitHub Issue: https://github.com/bluesky/bluesky/issues/1740
@@ -104,12 +101,13 @@ class ConsolidatorBase:
         self.assets: list[Asset] = []
         self._sres_parameters = stream_resource["parameters"]
 
-        # Find datum shape and machine dtype; dtype_numpy, dtype_str take precedence if specified
+        # Find datum shape and machine dtype
         data_desc = descriptor["data_keys"][self.data_key]
         if None in data_desc["shape"]:
             raise NotImplementedError(f"Consolidator for {self.mimetype} does not support variable-sized data")
         self.datum_shape: tuple[int, ...] = cast(tuple[int, ...], tuple(data_desc["shape"]))
         self.datum_shape = () if self.datum_shape == (1,) and self.join_method == "stack" else self.datum_shape
+
         # Check that the datum shape is consistent between the StreamResource and the Descriptor
         if multiplier := self._sres_parameters.get("multiplier"):
             self.datum_shape = self.datum_shape or (multiplier,)  # If datum_shape is not set
@@ -120,23 +118,9 @@ class ConsolidatorBase:
                     self.datum_shape = (multiplier,) + self.datum_shape
                     # TODO: Check consistency with chunk_shape
 
-        # Determine data type. From highest precedent to lowest:
-        # 1. Try 'dtype_descr', optional, if present -- this is a structural dtype
-        # 2. Try 'dtype_numpy', optional in the document schema.
-        # 3. Try 'dtype_str', an old convention predataing 'dtype_numpy', not in the schema.
-        # 4. Get 'dtype', required by the schema, which is a fuzzy JSON spec like 'number'
-        #    and make a best effort to convert it to a numpy spec like '<u8'.
-        # 5. If unable to do any of the above, pass through whatever string is in 'dtype'.
-        self.data_type: Optional[Union[BuiltinDtype, StructDtype]]
-        dtype_numpy = np.dtype(  # type: ignore
-            list(map(tuple, data_desc.get("dtype_descr", [])))  # type: ignore # fileds of structural dtype
-            or data_desc.get("dtype_numpy")  # standard location
-            or data_desc.get(
-                "dtype_str",  # legacy location
-                # try to guess numpy dtype from JSON type
-                DTYPE_LOOKUP.get(data_desc["dtype"], data_desc["dtype"]),
-            )
-        )
+        # Determine the machine data type
+        self.data_type: Union[BuiltinDtype, StructDtype]
+        dtype_numpy = np.dtype(data_desc.get("dtype_numpy"))  # Falls back to np.dtype("float64") if not set
         if dtype_numpy.kind == "V":
             self.data_type = StructDtype.from_numpy_dtype(dtype_numpy)
         else:
