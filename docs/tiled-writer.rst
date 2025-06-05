@@ -16,7 +16,7 @@ On the other hand, the external data are written by detectors directly on disk a
 
 The time dimension (or the sequence of measurements) is typically shared between the internal and external data, which in Tiled is enforced by writing all data from the same Bluesky stream into a specialized `Composite` container (node in the Tiled catalog). The metadata on each stream node contains the specifications for the related data keys and the relevavt configuration parameters supplied in the `EventDescriptor` document.
 
-Finally, nodes for multiple streams are groupped together and placed into a container for the entire run; its metadata contains the `Start` and `Stop` documents. While the strcuture of the `streams` container is fixed, the parent Run allows for optional user-controlled namespaces within `views` and `aux` containers. The Run container created by TiledWriter is designated with the `BlueskyRun_v3.0` spec to enable its back-compatibility with legacy code via bluesky-tiled-plugins.
+Finally, nodes for multiple streams are groupped together and placed into a container for the entire run; its metadata contains the `Start` and `Stop` documents. While the strcuture of the `streams` container is fixed, the parent Run allows for optional user-controlled namespaces within `views` and `aux` containers. The Run container created by TiledWriter is designated with the `BlueskyRun` version `3.0` spec to enable its back-compatibility with legacy code via bluesky-tiled-plugins.
 
 An example of the Tiled catalog structure for a Bluesky run might look like this:
 
