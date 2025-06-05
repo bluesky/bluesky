@@ -21,22 +21,23 @@ Finally, nodes for multiple streams are groupped together and placed into a cont
 An example of the Tiled catalog structure for a Bluesky run might look like this:
 
 .. code-block:: text
-BlueskyRun_v3 <Container>
- │
- ├─ streams <Container>
- │      ├─ baseline <Composite>
- │      │       ├─ internal <Table>   -- written by Tiled
- │      │       ├─ image_1 <Array>    -- external data from files
- │      │       │      ...
- │      │       └─ image_n <Array>
- │      ├─ primary <Composite>
- │      │       ├─ internal <Table>   -- written by Tiled
- │      │       ├─ image_1 <Array>    -- external data from files
- │      │       │      ...
- │      │       └─ image_n <Array>
- │      └─ third_stream <Composite>
- ├─ views <Container>    -- optional
- └─ aux <Container>      -- optional
+
+    BlueskyRun_v3 <Container>
+    │
+    ├─ streams <Container>
+    │      ├─ baseline <Composite>
+    │      │       ├─ internal <Table>   -- written by Tiled
+    │      │       ├─ image_1 <Array>    -- external data from files
+    │      │       │      ...
+    │      │       └─ image_n <Array>
+    │      ├─ primary <Composite>
+    │      │       ├─ internal <Table>   -- written by Tiled
+    │      │       ├─ image_1 <Array>    -- external data from files
+    │      │       │      ...
+    │      │       └─ image_n <Array>
+    │      └─ third_stream <Composite>
+    ├─ views <Container>    -- optional
+    └─ aux <Container>      -- optional
 
 
 .. note::
