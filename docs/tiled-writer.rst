@@ -137,7 +137,8 @@ A minimal simulated example of using TiledWriter in a Bluesky plan is shown belo
     from ophyd.sim import hw
 
     # Initialize the Tiled server and client
-    tiled_server = SimpleTiledServer()
+    save_path = "/path/to/save/detector_data"
+    tiled_server = SimpleTiledServer(readable_storage=[save_path])
     tiled_client = from_uri(tiled_server.uri)
 
     # Initialize the RunEngine and subscribe TiledWriter
@@ -150,6 +151,5 @@ A minimal simulated example of using TiledWriter in a Bluesky plan is shown belo
     data = tiled_client[uid]['streams/primary/det'].read()
 
     # Run an experiment collecting external data
-    save_path = str(tiled_server.directory / "data")
     uid, = RE(bp.count([hw(save_path=save_path).img], 2))
     data = tiled_client[uid]['streams/primary/img'].read()
