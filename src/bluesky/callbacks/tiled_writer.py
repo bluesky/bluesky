@@ -44,8 +44,8 @@ from ..utils import truncate_json_overflow
 from .core import MIMETYPE_LOOKUP, CallbackBase
 from .json_writer import JSONLinesWriter
 
-# Try to aggregare the table rows in batches of this size before writing to Tiled
-TABLE_UPDATE_BATCH_SIZE = 10000
+# Aggregare the Event table rows and StreamDatums in batches before writing to Tiled
+BATCH_SIZE = 10000
 
 # Disallow using reserved words as data_keys identifiers
 # Related: https://github.com/bluesky/event-model/pull/223
@@ -472,7 +472,7 @@ class _RunWriter(CallbackBase):
             The Tiled client to use for writing the data.
     """
 
-    def __init__(self, client: BaseClient):
+    def __init__(self, client: BaseClient, batch_size: int = BATCH_SIZE):
         self.client = client
         self.root_node: Union[None, Container] = None
         self._desc_nodes: dict[str, Composite] = {}  # references to the descriptor nodes by their uid's and names
@@ -482,6 +482,7 @@ class _RunWriter(CallbackBase):
         self._consolidators: dict[str, ConsolidatorBase] = {}
         self._internal_data_cache: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._external_data_cache: dict[str, StreamDatum] = {}  # sres_uid : (concatenated) StreamDatum
+        self._batch_size = batch_size
         self.data_keys: dict[str, DataKey] = {}
         self.access_tags = None
 
@@ -604,7 +605,7 @@ class _RunWriter(CallbackBase):
         row.update({f"ts_{k}": v for k, v in doc["timestamps"].items()})
         data_cache.append(row)
 
-        if len(data_cache) >= TABLE_UPDATE_BATCH_SIZE:
+        if len(data_cache) >= self._batch_size:
             self._write_internal_data(data_cache, desc_node=self._desc_nodes[desc_uid])
             data_cache.clear()
 
@@ -663,17 +664,22 @@ class _RunWriter(CallbackBase):
         return sres_node, consolidator
 
     def stream_datum(self, doc: StreamDatum):
+        if self._batch_size <= 1:
+            # If batch size is 1, write the StreamDatum immediately
+            self._write_external_data(doc)
+            return
+
         # Try to concatenate and cache the StreamDatum document to process it later
         sres_uid = doc["stream_resource"]
         if cached_stream_datum_doc := self._external_data_cache.pop(sres_uid, None):
             try:
                 _doc = concatenate_stream_datums(cached_stream_datum_doc, doc)
-                if _doc["indices"]["stop"] - _doc["indices"]["start"] > TABLE_UPDATE_BATCH_SIZE:
+                if _doc["indices"]["stop"] - _doc["indices"]["start"] >= self._batch_size:
                     self._write_external_data(_doc)
                 else:
                     self._external_data_cache[sres_uid] = _doc
             except ValueError:
-                # If concatenation fails, write the cached document and the new one separately
+                # If concatenation fails, write the cached document and then the new one immediately
                 self._write_external_data(cached_stream_datum_doc)
                 self._write_external_data(doc)
         else:
@@ -706,6 +712,12 @@ class TiledWriter:
             If specified, this directory will be used to back up runs that fail to be written
             to Tiled. All documents for the entire Bluesky Run will be written in JSONLines format,
             allowing for recovery in case of errors during the writing process.
+        batch_size : int
+            The number of Events or StreamDatums collect before writing them to Tiled.
+            This is useful for reducing the number of write operations and improving performance when
+            writing large amounts of data (e.g. database migration). For streaming applications,
+            it is recommended to set this parameter to <= 1, so that each Event or StreamDatum is written
+            to Tiled immediately after they are received.
     """
 
     def __init__(
@@ -714,16 +726,18 @@ class TiledWriter:
         normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         backup_directory: Optional[str] = None,
+        batch_size: int = BATCH_SIZE,
     ):
         self.client = client.include_data_sources()
         self.patches = patches or {}
         self.backup_directory = backup_directory
         self._normalizer = normalizer
         self._run_router = RunRouter([self._factory])
+        self._batch_size = batch_size
 
     def _factory(self, name, doc):
         """Factory method to create a callback for writing a single run into Tiled."""
-        cb = run_writer = _RunWriter(self.client)
+        cb = run_writer = _RunWriter(self.client, batch_size=self._batch_size)
 
         if self._normalizer:
             # If normalize is True, create a RunNormalizer callback to update documents to the latest schema
@@ -743,10 +757,11 @@ class TiledWriter:
         normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         backup_directory: Optional[str] = None,
+        batch_size: int = BATCH_SIZE,
         **kwargs,
     ):
         client = from_uri(uri, **kwargs)
-        return cls(client, normalizer=normalizer, patches=patches, backup_directory=backup_directory)
+        return cls(client, normalizer, patches, backup_directory, batch_size)
 
     @classmethod
     def from_profile(
@@ -755,10 +770,11 @@ class TiledWriter:
         normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         backup_directory: Optional[str] = None,
+        batch_size: int = BATCH_SIZE,
         **kwargs,
     ):
         client = from_profile(profile, **kwargs)
-        return cls(client, normalizer=normalizer, patches=patches, backup_directory=backup_directory)
+        return cls(client, normalizer, patches, backup_directory, batch_size)
 
     def __call__(self, name, doc):
         self._run_router(name, doc)

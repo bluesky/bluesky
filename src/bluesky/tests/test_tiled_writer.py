@@ -365,8 +365,12 @@ def collect_plan(*objs, name="primary"):
 
 
 @pytest.mark.parametrize("fname", ["internal_events", "external_assets", "external_assets_legacy"])
-def test_with_correct_sample_runs(client, external_assets_folder, fname):
-    tw = TiledWriter(client)
+@pytest.mark.parametrize("batch_size", [0, 1, 1000, None])
+def test_with_correct_sample_runs(client, batch_size, external_assets_folder, fname):
+    if batch_size is None:
+        tw = TiledWriter(client)
+    else:
+        tw = TiledWriter(client, batch_size=batch_size)
     for item in render_templated_documents(fname + ".json", external_assets_folder):
         if item["name"] == "start":
             uid = item["doc"]["uid"]
