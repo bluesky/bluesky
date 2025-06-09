@@ -41,7 +41,7 @@ from tiled.utils import safe_json_dump
 from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
 from ..run_engine import Dispatcher
 from ..utils import truncate_json_overflow
-from .core import MIMETYPE_LOOKUP, CallbackBase
+from .core import CallbackBase
 from .json_writer import JSONLinesWriter
 
 # Aggregare the Event table rows and StreamDatums in batches before writing to Tiled
@@ -53,6 +53,34 @@ RESERVED_DATA_KEYS = ["time", "seq_num"]
 
 # A lookup table for converting broad JSON types to numpy dtypes
 JSON_TO_NUMPY_DTYPE = {"number": "<f8", "array": "<f8", "boolean": "|b1", "string": "<U0", "integer": "<i8"}
+
+# A lookup table for converting Bluesky spec names to MIME types
+MIMETYPE_LOOKUP = defaultdict(
+    lambda: "application/octet-stream",
+    {
+        "hdf5": "application/x-hdf5",
+        "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
+        "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
+        "PIL100k_HDF5": "application/x-hdf5",
+        "XSP3": "application/x-hdf5",
+        "XPS3": "application/x-hdf5",
+        "XSP3_BULK": "application/x-hdf5",
+        "XSP3_STEP": "application/x-hdf5",
+        "AD_TIFF": "multipart/related;type=image/tiff",
+        "AD_HDF5_GERM": "application/x-hdf5",
+        "PIZZABOX_ENC_FILE_TXT_PD": "text/csv",
+        "PANDA": "application/x-hdf5",
+        "ROI_HDF5_FLY": "application/x-hdf5",
+        "ROI_HDF51_FLY": "application/x-hdf5",
+        "SIS_HDF51_FLY_STREAM_V1": "application/x-hdf5",
+        "MERLIN_FLY_STREAM_V2": "application/x-hdf5",
+        "MERLIN_HDF5_BULK": "application/x-hdf5",
+        "TPX_HDF5": "application/x-hdf5",
+        "EIGER2_STREAM": "application/x-hdf5",
+        "NPY_SEQ": "multipart/related;type=application/x-npy",
+        "ZEBRA_HDF51_FLY_STREAM_V1": "application/x-hdf5",
+    },
+)
 
 logger = logging.getLogger(__name__)
 
@@ -145,12 +173,21 @@ class _RunNormalizer(CallbackBase):
             A dictionary of patch functions to apply to the documents before modifying them.
             The keys are document names (e.g., "start", "stop", "descriptor", etc.), and the values
             are functions that take a document as input and return a modified document.
+        spec_to_mimetype : dict[str, str], optional
+            A dictionary mapping spec names to MIME types. This is used to convert `Resource` documents
+            to the latest `StreamResource` schema.
+            The supplied dictionary updates the default `MIMETYPE_LOOKUP` dictionary.
     """
 
-    def __init__(self, patches: Optional[dict[str, Callable]] = None):
+    def __init__(
+        self,
+        patches: Optional[dict[str, Callable]] = None,
+        spec_to_mimetype: Optional[dict[str, str]] = None,
+    ):
         self._token_refs: dict[str, Callable] = {}
         self.dispatcher = Dispatcher()
         self.patches = patches or {}
+        self.spec_to_mimetype = MIMETYPE_LOOKUP | (spec_to_mimetype or {})
 
         self._next_frame_index: dict[tuple[str, str], dict[str, int]] = defaultdict(
             lambda: {"carry": 0, "index": 0}
@@ -182,7 +219,7 @@ class _RunNormalizer(CallbackBase):
 
             # Convert the Resource (or old StreamResource) document to a StreamResource document
             resource_dict = cast(dict, doc)
-            stream_resource_doc["mimetype"] = MIMETYPE_LOOKUP[resource_dict.pop("spec")]
+            stream_resource_doc["mimetype"] = self.spec_to_mimetype[resource_dict.pop("spec")]
             stream_resource_doc["parameters"] = resource_dict.pop("resource_kwargs", {})
             file_path = Path(resource_dict.pop("root").strip("/")).joinpath(
                 resource_dict.pop("resource_path").strip("/")
@@ -700,7 +737,8 @@ class TiledWriter:
             the appropriate credentials and connection parameters to access the Tiled server.
         normalizer : Optional[CallbackBase]
             A callback for normalizing Bluesky documents to the latest schema. If not provided,
-            the default `_RunNormalizer` will be used.
+            the default `_RunNormalizer` will be used. The supplied normalizer should accept
+            `patches` and `spec_to_mimetype` (or `**kwargs`) for initialization.
             To disable normalization and pass the incoming document directly to _RunWriter,
             set this parameter to `None`.
         patches : Optional[dict[str, Callable]]
@@ -708,6 +746,11 @@ class TiledWriter:
             and writing them. The keys should be the document names (e.g., "start", "stop",
             "descriptor", etc.), and the values should be functions that take a document and return
             a modified document of the same type.
+            This argument is ignored if `normalizer` is set to `None`.
+        spec_to_mimetype : Optional[dict[str, str]]
+            A dictionary mapping spec names to MIME types. This is used to convert `Resource` documents
+            to the latest `StreamResource` schema. If not provided, the default mapping will be used.
+            This argument is ignored if `normalizer` is set to `None`.
         backup_directory : Optional[str]
             If specified, this directory will be used to back up runs that fail to be written
             to Tiled. All documents for the entire Bluesky Run will be written in JSONLines format,
@@ -723,13 +766,16 @@ class TiledWriter:
     def __init__(
         self,
         client: BaseClient,
+        *,
         normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
+        spec_to_mimetype: Optional[dict[str, str]] = None,
         backup_directory: Optional[str] = None,
         batch_size: int = BATCH_SIZE,
     ):
         self.client = client.include_data_sources()
         self.patches = patches or {}
+        self.spec_to_mimetype = spec_to_mimetype or {}
         self.backup_directory = backup_directory
         self._normalizer = normalizer
         self._run_router = RunRouter([self._factory])
@@ -741,7 +787,7 @@ class TiledWriter:
 
         if self._normalizer:
             # If normalize is True, create a RunNormalizer callback to update documents to the latest schema
-            cb = self._normalizer(patches=self.patches)
+            cb = self._normalizer(patches=self.patches, spec_to_mimetype=self.spec_to_mimetype)
             cb.subscribe(run_writer)
 
         if self.backup_directory:
@@ -754,27 +800,45 @@ class TiledWriter:
     def from_uri(
         cls,
         uri,
+        *,
         normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
+        spec_to_mimetype: Optional[dict[str, str]] = None,
         backup_directory: Optional[str] = None,
         batch_size: int = BATCH_SIZE,
         **kwargs,
     ):
         client = from_uri(uri, **kwargs)
-        return cls(client, normalizer, patches, backup_directory, batch_size)
+        return cls(
+            client,
+            normalizer=normalizer,
+            patches=patches,
+            spec_to_mimetype=spec_to_mimetype,
+            backup_directory=backup_directory,
+            batch_size=batch_size,
+        )
 
     @classmethod
     def from_profile(
         cls,
         profile,
+        *,
         normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
+        spec_to_mimetype: Optional[dict[str, str]] = None,
         backup_directory: Optional[str] = None,
         batch_size: int = BATCH_SIZE,
         **kwargs,
     ):
         client = from_profile(profile, **kwargs)
-        return cls(client, normalizer, patches, backup_directory, batch_size)
+        return cls(
+            client,
+            normalizer=normalizer,
+            patches=patches,
+            spec_to_mimetype=spec_to_mimetype,
+            backup_directory=backup_directory,
+            batch_size=batch_size,
+        )
 
     def __call__(self, name, doc):
         self._run_router(name, doc)
