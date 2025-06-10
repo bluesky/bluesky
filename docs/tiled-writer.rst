@@ -48,11 +48,11 @@ An example of the Tiled catalog structure for a Bluesky run might look like this
 Callback Architecture
 =====================
 
-Structurally, TiledWriter consists of two main parts: `_RunNormalizer` and `_RunWriter`.
+Structurally, TiledWriter consists of two main parts: `RunNormalizer` and `_RunWriter`.
 
-The former is responsible for converting legacy document schemas to their latest version; this ensures that existing Bluesky code that relies on older versions of the Bluesky Event Model can still function correctly with TiledWriter. For example, while TiledWriter natively works with the modern `StreamResource` and `StreamDatum` documents commonly used in asynchronous plans, the `Resource` and `Datum` documents are automatically converted to their modern counterparts prior to being written to the Tiled catalog. The schema normalization is mostly done by renaming and restructuring certain document fields, but `_RunNormalizer` also allows the user to invoke use-case-specific patches for each type of documents and achieve high flexibility.
+The former is responsible for converting legacy document schemas to their latest version; this ensures that existing Bluesky code that relies on older versions of the Bluesky Event Model can still function correctly with TiledWriter. For example, while TiledWriter natively works with the modern `StreamResource` and `StreamDatum` documents commonly used in asynchronous plans, the `Resource` and `Datum` documents are automatically converted to their modern counterparts prior to being written to the Tiled catalog. The schema normalization is mostly done by renaming and restructuring certain document fields, but `RunNormalizer` also allows the user to invoke use-case-specific patches for each type of documents and achieve high flexibility.
 
-The simplified flowchart of the `_RunNormalizer` logic is shown below. It illustrates how the input documents (top) are processed and emitted as output documents (bottom) after specific transformations or caching operations.
+The simplified flowchart of the `RunNormalizer` logic is shown below. It illustrates how the input documents (top) are processed and emitted as output documents (bottom) after specific transformations or caching operations.
 
 .. mermaid::
 
