@@ -161,7 +161,7 @@ class _ConditionalBackup:
             self._buffer.clear()
 
 
-class _RunNormalizer(CallbackBase):
+class RunNormalizer(CallbackBase):
     """Callback for updating Bluesky documents to their latest schema.
 
     This callback can be used to subscribe additional consumers that require the updated documents.
@@ -501,7 +501,7 @@ class _RunWriter(CallbackBase):
     as well as registers external files provided in StreamResource and StreamDatum documents.
 
     The callback is intended to be used with the most recent version of EventModel; to support legacy
-    schemas, use the `_RunNormalizer` callback first to update the documents before writing them to Tiled.
+    schemas, use the `RunNormalizer` callback first to update the documents before writing them to Tiled.
 
     Parameters
     ----------
@@ -737,7 +737,7 @@ class TiledWriter:
             the appropriate credentials and connection parameters to access the Tiled server.
         normalizer : Optional[CallbackBase]
             A callback for normalizing Bluesky documents to the latest schema. If not provided,
-            the default `_RunNormalizer` will be used. The supplied normalizer should accept
+            the default `RunNormalizer` will be used. The supplied normalizer should accept
             `patches` and `spec_to_mimetype` (or `**kwargs`) for initialization.
             To disable normalization and pass the incoming document directly to _RunWriter,
             set this parameter to `None`.
@@ -767,7 +767,7 @@ class TiledWriter:
         self,
         client: BaseClient,
         *,
-        normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
+        normalizer: Optional[type[CallbackBase]] = RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         spec_to_mimetype: Optional[dict[str, str]] = None,
         backup_directory: Optional[str] = None,
@@ -801,7 +801,7 @@ class TiledWriter:
         cls,
         uri,
         *,
-        normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
+        normalizer: Optional[type[CallbackBase]] = RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         spec_to_mimetype: Optional[dict[str, str]] = None,
         backup_directory: Optional[str] = None,
@@ -823,7 +823,7 @@ class TiledWriter:
         cls,
         profile,
         *,
-        normalizer: Optional[type[CallbackBase]] = _RunNormalizer,
+        normalizer: Optional[type[CallbackBase]] = RunNormalizer,
         patches: Optional[dict[str, Callable]] = None,
         spec_to_mimetype: Optional[dict[str, str]] = None,
         backup_directory: Optional[str] = None,
