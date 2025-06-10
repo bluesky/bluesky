@@ -6,7 +6,7 @@ import logging
 import os
 import time as ttime
 import warnings
-from collections import OrderedDict, defaultdict, deque, namedtuple
+from collections import OrderedDict, deque, namedtuple
 from datetime import datetime
 from enum import Enum
 from functools import partial as _partial
@@ -16,32 +16,6 @@ from itertools import count
 from event_model import DocumentRouter
 
 from ..utils import ensure_uid
-
-MIMETYPE_LOOKUP = defaultdict(
-    lambda: "application/octet-stream",
-    {
-        "hdf5": "application/x-hdf5",
-        "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
-        "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
-        "PIL100k_HDF5": "application/x-hdf5",
-        "XSP3": "application/x-hdf5",
-        "XPS3": "application/x-hdf5",
-        "XSP3_BULK": "application/x-hdf5",
-        "XSP3_STEP": "application/x-hdf5",
-        "AD_TIFF": "multipart/related;type=image/tiff",
-        "AD_HDF5_GERM": "application/x-hdf5",
-        "PIZZABOX_ENC_FILE_TXT_PD": "text/csv",
-        "PANDA": "application/x-hdf5",
-        "ROI_HDF5_FLY": "application/x-hdf5",
-        "ROI_HDF51_FLY": "application/x-hdf5",
-        "SIS_HDF51_FLY_STREAM_V1": "application/x-hdf5",
-        "MERLIN_FLY_STREAM_V2": "application/x-hdf5",
-        "MERLIN_HDF5_BULK": "application/x-hdf5",
-        "TPX_HDF5": "application/x-hdf5",
-        "EIGER2_STREAM": "application/x-hdf5",
-        "NPY_SEQ": "multipart/related;type=application/x-npy",
-    },
-)
 
 logger = logging.getLogger(__name__)
 

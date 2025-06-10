@@ -40,6 +40,7 @@ extensions = [
     "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.intersphinx",
     "numpydoc",
+    "sphinxcontrib.mermaid",
 ]
 
 # Configuration options for plot_directive. See:

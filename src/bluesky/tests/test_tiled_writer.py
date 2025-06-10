@@ -3,7 +3,7 @@ import os
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import h5py
 import jinja2
@@ -113,7 +113,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         file_path = os.path.join(self.root, "dataset.h5")
         uid = f"{data_key}-uid"
         data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
-        data_shape = tuple(data_desc["shape"])
+        data_shape = cast(tuple[int, ...], tuple(data_desc["shape"]))
         hdf5_dataset = f"/{data_key}/VALUE"
 
         stream_resource = None
@@ -163,7 +163,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
         for data_key in [f"{self.name}-sd3"]:
             uid = f"{data_key}-uid"
             data_desc = self.describe()[data_key]  # Descriptor dictionary for the current data key
-            data_shape = tuple(data_desc["shape"])
+            data_shape = cast(tuple[int, ...], tuple(data_desc["shape"]))
             stream_resource = None
             if self.counter == 0:
                 # Backward compatibility test, ignore typing errors
@@ -364,9 +364,13 @@ def collect_plan(*objs, name="primary"):
     yield from bps.close_run()
 
 
-@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
-def test_with_correct_sample_runs(client, external_assets_folder, fname):
-    tw = TiledWriter(client)
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets", "external_assets_legacy"])
+@pytest.mark.parametrize("batch_size", [0, 1, 1000, None])
+def test_with_correct_sample_runs(client, batch_size, external_assets_folder, fname):
+    if batch_size is None:
+        tw = TiledWriter(client)
+    else:
+        tw = TiledWriter(client, batch_size=batch_size)
     for item in render_templated_documents(fname + ".json", external_assets_folder):
         if item["name"] == "start":
             uid = item["doc"]["uid"]
@@ -484,11 +488,12 @@ def test_streams_with_no_events(client, external_assets_folder):
 
 
 @pytest.mark.parametrize("include_data_sources", [True, False])
-@pytest.mark.parametrize("fname", ["internal_events", "external_assets"])
+@pytest.mark.parametrize("fname", ["internal_events", "external_assets", "external_assets_legacy"])
 def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
     client = client.new_variation(include_data_sources=include_data_sources)
-    tw = TiledWriter(client)
     assert client._include_data_sources == include_data_sources
+    tw = TiledWriter(client)
+    assert bool(tw.client._include_data_sources)
 
     with record_history() as history:
         for item in render_templated_documents(fname + ".json", external_assets_folder):
@@ -496,4 +501,71 @@ def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
 
     # Count the number of GET requests
     num_gets = sum(1 for req in history.requests if req.method == "GET")
-    assert num_gets == 0 if include_data_sources else num_gets == 1
+    assert num_gets == 0
+
+
+def test_bad_document_order(client, external_assets_folder):
+    """Test that the TiledWriter can handle documents in a different order than expected
+
+    Emit datum documents in the end, before the Stop document, but after corresponding Event documents.
+    """
+    tw = TiledWriter(client)
+
+    document_cache = []
+    for item in render_templated_documents("external_assets_legacy.json", external_assets_folder):
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+
+        if name == "datum":
+            document_cache.append({"name": name, "doc": doc})
+            continue
+
+        if name == "stop":
+            for cached_item in document_cache:
+                tw(**cached_item)
+
+        tw(**item)
+
+    run = client[uid]
+
+    for stream in run["streams"].values():
+        assert stream.read() is not None
+        assert "time" in stream.keys()
+        assert "seq_num" in stream.keys()
+        assert len(stream.keys()) > 2  # There's at least one data key in addition to time and seq_num
+
+
+def test_json_backup(client, tmpdir, monkeypatch):
+    def patched_event(name, doc):
+        raise RuntimeError("This is a test error to check the backup functionality")
+
+    monkeypatch.setattr("bluesky.callbacks.tiled_writer._RunWriter.event", patched_event)
+
+    tw = TiledWriter(client, backup_directory=str(tmpdir))
+
+    for item in render_templated_documents("internal_events.json", ""):
+        name, doc = item["name"], item["doc"]
+        if name == "start":
+            uid = doc["uid"]
+        print(name)
+
+        tw(**item)
+
+    run = client[uid]
+
+    assert "primary" in run["streams"]  # The Descriptor was processed and the primary stream was created
+    assert run["streams"]["primary"].read() is not None  # The stream can be read
+    assert len(run["streams"]["primary"].read()) == 0  # No events were processed due to the error
+    assert "stop" in run.metadata  # The TiledWriter did not crash
+
+    # Check that the backup file was created
+    filepath = tmpdir / f"{uid[:8]}.jsonl"
+    assert filepath.exists()
+    with open(filepath) as f:
+        lines = [json.loads(line) for line in f if line.strip()]
+    assert len(lines) == 7
+    assert lines[0]["name"] == "start"
+    assert lines[1]["name"] == "descriptor"
+    assert lines[2]["name"].startswith("event")
+    assert lines[6]["name"] == "stop"

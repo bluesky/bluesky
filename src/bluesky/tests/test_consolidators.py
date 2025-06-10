@@ -430,6 +430,7 @@ def test_tiff_and_jpeg_chunks(
     assert len(cons.assets) == 5 * frames_per_datum / expected_chunks[0][0] if join_method == "concat" else 5
 
 
+# Tuples of (filename, original_template, expected_template, formatted)
 template_testdata = [
     ("", "img_{:06d}", "img_{:06d}", "img_000042"),
     ("img", "{:s}_{:06d}", "img_{:06d}", "img_000042"),
@@ -441,6 +442,7 @@ template_testdata = [
     ("img", "%s_% 06d", "img_{: 06d}", "img_ 00042"),
     ("img", "%s_%-+6d", "img_{:<+6d}", "img_+42   "),
     ("img", "%s_%- 6d", "img_{:< 6d}", "img_ 42   "),
+    ("img", "%s_%6.6d", "img_{:06d}", "img_000042"),
 ]
 
 
