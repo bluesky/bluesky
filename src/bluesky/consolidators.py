@@ -306,9 +306,11 @@ class ConsolidatorBase:
 
         if self.shape != structure.shape:
             if not fix_errors:
-                raise ValueError(f"Shape mismatch: {self.shape} != {structure.shape}")
+                raise ValueError(f"Shape mismatch in {self.data_key}: {self.shape} != {structure.shape}")
             else:
-                warnings.warn(f"Fixing shape mismatch: {self.shape} -> {structure.shape}", stacklevel=2)
+                warnings.warn(
+                    f"Fixing shape mismatch in {self.data_key}: {self.shape} -> {structure.shape}", stacklevel=2
+                )
                 if self.join_method == "stack":
                     self._num_rows = structure.shape[0]
                     self.datum_shape = structure.shape[1:]
@@ -320,23 +322,26 @@ class ConsolidatorBase:
 
         if self.chunks != structure.chunks:
             if not fix_errors:
-                raise ValueError(f"Chunk shape mismatch: {self.chunks} != {structure.chunks}")
+                raise ValueError(f"Chunk shape mismatch in {self.data_key}: {self.chunks} != {structure.chunks}")
             else:
                 _chunk_shape = tuple(c[0] for c in structure.chunks)
-                warnings.warn(f"Fixing chunk shape mismatch: {self.chunk_shape} -> {_chunk_shape}", stacklevel=2)
+                warnings.warn(
+                    f"Fixing chunk shape mismatch in {self.data_key}: {self.chunk_shape} -> {_chunk_shape}",
+                    stacklevel=2,
+                )
                 self.chunk_shape = _chunk_shape
 
         if self.data_type != structure.data_type:
             if not fix_errors:
-                raise ValueError(f"dtype mismatch: {self.data_type} != {structure.data_type}")
+                raise ValueError(f"dtype mismatch in {self.data_key}: {self.data_type} != {structure.data_type}")
             else:
                 warnings.warn(
-                    f"Fixing dtype mismatch: {self.data_type.to_numpy_dtype()} -> {structure.data_type.to_numpy_dtype()}",  # noqa
+                    f"Fixing dtype mismatch in {self.data_key}: {self.data_type.to_numpy_dtype()} -> {structure.data_type.to_numpy_dtype()}",  # noqa
                     stacklevel=2,
                 )
                 self.data_type = structure.data_type
 
-        assert self.get_adapter() is not None, "Adapter can not not initialized"
+        assert self.get_adapter() is not None, f"Adapter for {self.data_key} can not not initialized."
 
 
 class CSVConsolidator(ConsolidatorBase):
