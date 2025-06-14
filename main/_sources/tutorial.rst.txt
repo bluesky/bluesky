@@ -53,7 +53,7 @@ Before You Begin
 
   .. code-block:: bash
 
-     conda install -c nsls2forge bluesky ophyd databroker matplotlib pyqt=5 ipython
+     conda install -c conda-forge bluesky ophyd databroker matplotlib pyqt=5 ipython
 
 * Start IPython:
 
