@@ -38,6 +38,7 @@ from .protocols import (
     Status,
     Stoppable,
     T,
+    SyncOrAsync,
     Triggerable,
     check_supports,
 )
@@ -269,7 +270,7 @@ class RunEngine:
         completely up to the user.
         Expected return: normalized metadata
 
-    scan_id_source : callable, optional
+    scan_id_source : callable
         a function that will be used to calculate scan_id. Default is to
         increment scan_id by 1 each time. However you could pass in a
         customized function to get a scan_id from any source.
@@ -418,7 +419,7 @@ class RunEngine:
         context_managers: typing.Optional[list] = None,
         md_validator: typing.Optional[typing.Callable] = None,
         md_normalizer: typing.Optional[typing.Callable] = None,
-        scan_id_source: typing.Optional[typing.Callable] = default_scan_id_source,
+        scan_id_source: typing.Callable[[dict], SyncOrAsync[int]] = default_scan_id_source,
         during_task: typing.Optional[DuringTask] = None,
         call_returns_result: bool = False,
     ):
@@ -1857,7 +1858,7 @@ class RunEngine:
             raise IllegalMessageSequence("A 'close_run' message was not received before the 'open_run' message")
 
         # Run scan_id calculation method
-        self.md["scan_id"] = self.scan_id_source(self.md)
+        self.md["scan_id"] = await maybe_await(self.scan_id_source(self.md))
 
         # For metadata below, info about plan passed to self.__call__ for.
         plan_type = type(self._plan).__name__
