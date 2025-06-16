@@ -2129,16 +2129,20 @@ def test_configure_multiple_descritpors(RE):
 
     assert stop["num_events"]["primary"] == 2
 
+
 def test_sync_scan_id_source(RE):
     def sync_scan_source(md: dict) -> int:
         return 314159
+
     RE.scan_id_source = sync_scan_source
     RE([Msg("open_run")])
-    assert RE.md['scan_id'] == 314159
+    assert RE.md["scan_id"] == 314159
+
 
 def test_async_scan_id_source(RE):
     async def async_scan_source(md: dict) -> int:
         return 42
+
     RE.scan_id_source = async_scan_source
     RE([Msg("open_run")])
-    assert RE.md['scan_id'] == 42
+    assert RE.md["scan_id"] == 42

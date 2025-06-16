@@ -37,8 +37,8 @@ from .protocols import (
     Stageable,
     Status,
     Stoppable,
-    T,
     SyncOrAsync,
+    T,
     Triggerable,
     check_supports,
 )
