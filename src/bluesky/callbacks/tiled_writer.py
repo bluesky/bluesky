@@ -336,8 +336,8 @@ class RunNormalizer(CallbackBase):
                 self.emit(DocumentNames.stream_datum, sdat_doc)
             else:
                 raise RuntimeError(
-                    f"Cannot emit StreamDatum for {data_key} because the corresponding Datum document is missing."
-                )
+                    f"Missing Datum document {datum_id} for {data_key} referenced in Event #{seq_num}."
+                )  # noqa
 
         self.emit(DocumentNames.stop, doc)
 
