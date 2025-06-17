@@ -631,6 +631,96 @@ have clear names.
 
         g(f)(...)
 
+Saving and restoring positions
+------------------------------
+
+Another powerful feature of preprocessors is that they can influence the state of devices
+in ways new to the original plan.
+
+For instance, say we are controlling some movable devices in a plan, and we wish
+to restore their original positions at the end of the plan.
+The :func:`reset_positions_wrapper` / :func:`reset_positions_decorator` preprocessors
+works just like that:
+
+.. code-block:: python
+
+    @reset_positions_decorator
+    def my_plan(detectors, motor, md=None):
+        print(yield from rd(motor))  # print: '0'
+
+        _plan = repeat(scan(detectors, motor, -1, 1, num=10, md=md), num=5)
+        yield from _plan
+
+        print(yield from rd(motor))  # print: '1'
+
+    motor.move(0).wait()
+    RE(my_plan([det], motor))
+    print(motor.readback.get())  # print: '0'
+
+Internally, the `reset_positions` preprocessors use two helper functions,
+:func:`save_positions_wrapper` and :func:`restore_positions_plan`. These two do
+exactly what their names say, :py:`save_positions_wrapper` saves the original
+position of all devices moved during the plan it wraps, returning an object with
+these positions; :py:`restore_positions_plan` then takes that object and restores
+the device's positions to that original value.
+
+This means that, if needed, you can save / restore movable positions whenever is
+more convenient. For example, say we have another plan, :py:`configure_scan_plan`, that
+we want to call inside this plan:
+
+.. code-block:: python
+
+    @reset_positions_decorator
+    def my_plan(detectors, motor, md=None):
+        print(yield from rd(motor))  # print: '0'
+
+        yield from configure_scan_plan()
+
+        _plan = repeat(scan(detectors, motor, -1, 1, num=10, md=md), num=5)
+        yield from _plan
+
+        print(yield from rd(motor))  # print: '1'
+
+    motor.move(0).wait()
+    RE(my_plan([det], motor))
+    print(motor.readback.get())  # print: '0'
+
+In this case, :py:`reset_positions_decorator` will ensure every movable device inside that
+subplan gets restored to their initial position at the end of :py:`my_plan`. However, if we
+were to require only the changes inside :py:`configure_scan_plan` to be restored after the
+scans are done, how would we do so? :py:`reset_positions_decorator` can no longer help us, so
+we turn to :py:`save_positions_wrapper` and :py:`restore_positions_plan`:
+
+.. code-block:: python
+
+    def my_plan(detectors, motor, md=None):
+        print(yield from rd(motor))  # print: '0'
+
+        # Save all initial positions in subplan
+        _, saved_positions = yield from save_positions_wrapper(configure_scan_plan())
+
+        _plan = repeat(scan(detectors, motor, -1, 1, num=10, md=md), num=5)
+        yield from _plan
+
+        # Restore initial positions of subplan
+        yield from restore_positions_plan(saved_positions)
+
+        print(yield from rd(motor))  # print: '1'
+
+    motor.move(0).wait()
+    RE(my_plan([det], motor))
+    print(motor.readback.get())  # print: '1'
+
+For more informations on the arguments and return values of these helpers, check their
+documentation:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+    save_positions_wrapper
+    restore_positions_plan
+
 Built-in Preprocessors
 ----------------------
 .. currentmodule:: bluesky.preprocessors
