@@ -426,7 +426,15 @@ class RunBundler:
 
         where kwargs are passed through to ``obj.subscribe()``
         """
-        obj = check_supports(msg.obj, Subscribable)
+        obj = msg.obj
+        subscribable = False
+        try:
+            check_supports(obj, Subscribable)
+            subscribable = True
+        except AssertionError:
+            assert callable(getattr(obj, "subscribe", None)), (
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
         if msg.args:
             raise ValueError("The 'monitor' Msg does not accept positional arguments.")
         kwargs = dict(msg.kwargs)
@@ -463,7 +471,10 @@ class RunBundler:
 
         self._monitor_params[obj] = emit_event, kwargs
         # TODO: deprecate **kwargs when Ophyd.v2 is available
-        obj.subscribe(emit_event, **kwargs)
+        if subscribable:
+            obj.subscribe_reading(emit_event, **kwargs)
+        else:
+            obj.subscribe(emit_event, **kwargs)
 
     def record_interruption(self, content):
         """
@@ -504,7 +515,14 @@ class RunBundler:
 
             Msg('unmonitor', obj)
         """
-        obj = check_supports(msg.obj, Subscribable)
+        try:
+            obj = check_supports(msg.obj, Subscribable)
+        except AssertionError:
+            # sync ophyd doesn't implement full Subscribable protocol but has clear_sub
+            obj = msg.obj
+            assert callable(getattr(obj, "clear_sub", None)), (
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
         if obj not in self._monitor_params:
             raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not being monitored.")
         cb, kwargs = self._monitor_params[obj]
