@@ -2,6 +2,14 @@
  Release History
 =================
 
+v1.14.3 (yyyy-mm-dd)
+====================
+
+Changed
+-------
+
+- RunEngine now supports both sync and async functions as a `scan_id_source`
+
 v1.14.1 (2025-05-21)
 ====================
 
