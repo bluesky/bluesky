@@ -748,7 +748,7 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 @plan
 def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
     """
-    Prepare a device.
+    Prepare a device ready for trigger or kickoff.
 
     Parameters
     ----------
