@@ -270,10 +270,10 @@ class RunEngine:
         completely up to the user.
         Expected return: normalized metadata
 
-    scan_id_source : callable
-        a function that will be used to calculate scan_id. Default is to
-        increment scan_id by 1 each time. However you could pass in a
-        customized function to get a scan_id from any source.
+    scan_id_source : callable, optional
+        a (possibly async) function that will be used to calculate scan_id.
+        Default is to increment scan_id by 1 each time. However you could pass
+        in a customized function to get a scan_id from any source.
         Expected signature: f(md)
         Expected return: updated scan_id value
 
