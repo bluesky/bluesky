@@ -484,6 +484,7 @@ Plans for interacting with hardware:
     unstage
     configure
     stop
+    prepare
 
 Plans for asynchronous acquisition:
 
@@ -496,6 +497,7 @@ Plans for asynchronous acquisition:
     kickoff
     complete
     collect
+    collect_while_completing
 
 Plans that control the RunEngine:
 
