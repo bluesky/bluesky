@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.14.3.dev6+gfe6562c0 documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.14.3.dev8+gc9bfd794 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=253c5ff4"></script>
+    <script src="../../_static/documentation_options.js?v=40f44835"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
@@ -53,7 +53,7 @@ window.addEventListener("load", () => mermaid.run());
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.3.dev6+gfe6562c0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.3.dev8+gc9bfd794';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -61,7 +61,7 @@ window.addEventListener("load", () => mermaid.run());
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.3.dev6+gfe6562c0" />
+  <meta name="docsearch:version" content="1.14.3.dev8+gc9bfd794" />
   </head>
   
   
@@ -1348,10 +1348,12 @@ window.addEventListener("load", () => mermaid.run());
 
 
 
+<div class="viewcode-block" id="prepare">
+<a class="viewcode-back" href="../../generated/bluesky.plan_stubs.prepare.html#bluesky.plan_stubs.prepare">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Preparable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Prepare a device.</span>
+<span class="sd">    Prepare a device ready for trigger or kickoff.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1379,7 +1381,8 @@ window.addEventListener("load", () => mermaid.run());
     <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;prepare&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">wait</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">_wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">ret</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
 
 
 <div class="viewcode-block" id="kickoff">
@@ -1612,6 +1615,8 @@ window.addEventListener("load", () => mermaid.run());
 
 
 
+<div class="viewcode-block" id="collect_while_completing">
+<a class="viewcode-back" href="../../generated/bluesky.plan_stubs.collect_while_completing.html#bluesky.plan_stubs.collect_while_completing">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">collect_while_completing</span><span class="p">(</span><span class="n">flyers</span><span class="p">,</span> <span class="n">dets</span><span class="p">,</span> <span class="n">flush_period</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1646,7 +1651,8 @@ window.addEventListener("load", () => mermaid.run());
     <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
         <span class="n">done</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">flush_period</span><span class="p">,</span> <span class="n">error_on_timeout</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">yield from</span> <span class="n">collect</span><span class="p">(</span><span class="o">*</span><span class="n">dets</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">collect</span><span class="p">(</span><span class="o">*</span><span class="n">dets</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="configure">
