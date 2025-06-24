@@ -120,6 +120,7 @@ def test_monitor(RE, ophyd):
     }
 
 
+@pytest.mark.skip("ophyd-async must be updated to implement Subscribable protocol")
 @requires_ophyd_async
 def test_monitor_async(RE):
     docs = []
