@@ -22,8 +22,8 @@ except ImportError as ie:
 # define a skip condition based on if ophyd is available or not
 requires_ophyd = pytest.mark.skipif(ophyd is None, reason=ophyd_reason)
 
-try:  # type: ignore
-    import ophyd_async
+try:
+    import ophyd_async  # type: ignore
 except ImportError as ie:
     # pytestmark = pytest.mark.skip
     ophyd_async = None
