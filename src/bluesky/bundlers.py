@@ -451,7 +451,7 @@ class RunBundler:
         if isinstance(obj, Subscribable):
             self._monitor_params[obj] = emit_event, kwargs
             obj.subscribe_reading(emit_event)
-        elif callable(getattr(obj, "subscribe", None)) is not None:
+        elif callable(getattr(obj, "subscribe", None)):
 
             def emit_event_readable(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
                 if readings is None:
