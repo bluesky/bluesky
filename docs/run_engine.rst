@@ -163,7 +163,7 @@ reporting that the addition failed due to a ``TypeError``
         finally:
             yield Msg('print', 'thanks for adding')
 
-Compare the behavior of between ``adding_plan`` and ``addingplan`` in cases
+Compare the behavior of between ``adding_plan`` and ``safe_adding_plan`` in cases
 where they succeed
 
 .. code:: python
