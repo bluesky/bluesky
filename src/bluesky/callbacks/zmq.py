@@ -16,8 +16,39 @@ import asyncio
 import copy
 import pickle
 import warnings
+from typing import Union
 
 from ..run_engine import Dispatcher, DocumentNames
+
+
+def _normalize_address(inp: Union[str, tuple, int]):
+    if isinstance(inp, str):
+        if "://" in inp:
+            protocol, _, rest_str = inp.partition("://")
+        else:
+            protocol = "tcp"
+            rest_str = inp
+    elif isinstance(inp, tuple):
+        if inp[0] in ["tcp", "ipc"]:
+            protocol, *rest = inp
+        else:
+            protocol = "tcp"
+            rest = list(inp)
+        if protocol == "tcp":
+            if len(rest) == 2:
+                rest_str = ":".join(str(r) for r in rest)
+            else:
+                (rest_str,) = rest
+        else:
+            (rest_str,) = rest
+    elif isinstance(inp, int):
+        protocol = "tcp"
+        rest_str = f"localhost:{inp}"
+
+    else:
+        raise TypeError(f"Input expected to be str or tuple, not {type(inp)}")
+
+    return f"{protocol}://{rest_str}"
 
 
 class Bluesky0MQDecodeError(Exception):
@@ -73,20 +104,20 @@ class Publisher:
             raise ValueError(f"prefix {prefix!r} may not contain b' '")
         if zmq is None:
             import zmq
-        if isinstance(address, str):
-            address = address.split(":", maxsplit=1)
-        self.address = (address[0], int(address[1]))
+
+        self.address = _normalize_address(address)
         self.RE = RE
-        url = "tcp://%s:%d" % self.address
+
         self._prefix = bytes(prefix)
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
-        self._socket.connect(url)
+        self._socket.connect(self.address)
         if RE:
             self._subscription_token = RE.subscribe(self)
         self._serializer = serializer
 
     def __call__(self, name, doc):
+        print(f"{name = }\n{doc}\n")
         doc = copy.deepcopy(doc)
         message = b" ".join([self._prefix, name.encode(), self._serializer(doc)])
         self._socket.send(message)
@@ -102,23 +133,40 @@ class Proxy:
     """
     Start a 0MQ proxy on the local host.
 
+    The addresses can be specified flexibly.  It is best to use
+    a domain_socket (available on unix):
+
+     - ``'icp:///tmp/domain_socket'``
+     - ``('ipc', '/tmp/domain_socket')``
+
+    tcp sockets are also supported:
+
+     - ``'tcp://localhost:6557'``
+     - ``6657``  (implicitly binds to ``'tcp://localhost:6657'``
+     - ``('tcp', 'localhost', 6657)``
+     - ``('localhost', 6657)``
+
     Parameters
     ----------
-    in_port : int, optional
-        Port that RunEngines should broadcast to. If None, a random port is
-        used.
-    out_port : int, optional
-        Port that subscribers should subscribe to. If None, a random port is
-        used.
+    in_address : str or tuple or int, optional
+        Address that RunEngines should broadcast to.
+
+        If None, a random tcp port on all interfaces is used.
+
+    out_address : str or tuple or int, optional
+        Address that subscribers should subscribe to.
+
+        If None, a random tcp port on all interfaces is used.
+
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
 
     Attributes
     ----------
-    in_port : int
+    in_port : int or str
         Port that RunEngines should broadcast to.
-    out_port : int
+    out_port : int or str
         Port that subscribers should subscribe to.
     closed : boolean
         True if the Proxy has already been started and subsequently
@@ -146,7 +194,7 @@ class Proxy:
     >>> proxy.start()  # runs until interrupted
     """
 
-    def __init__(self, in_port=None, out_port=None, *, zmq=None):
+    def __init__(self, in_address=None, out_address=None, *, zmq=None):
         if zmq is None:
             import zmq
         self.zmq = zmq
@@ -155,19 +203,22 @@ class Proxy:
             context = zmq.Context(1)
             # Socket facing clients
             frontend = context.socket(zmq.SUB)
-            if in_port is None:
+            if in_address is None:
                 in_port = frontend.bind_to_random_port("tcp://*")
             else:
-                frontend.bind("tcp://*:%d" % in_port)
+                in_address = _normalize_address(in_address)
+                in_port = frontend.bind(in_address)
 
             frontend.setsockopt_string(zmq.SUBSCRIBE, "")
 
             # Socket facing services
             backend = context.socket(zmq.PUB)
-            if out_port is None:
+            if out_address is None:
                 out_port = backend.bind_to_random_port("tcp://*")
             else:
-                backend.bind("tcp://*:%d" % out_port)
+                out_address = _normalize_address(out_address)
+                out_port = backend.bind(out_address)
+
         except BaseException:
             # Clean up whichever components we have defined so far.
             try:
@@ -257,10 +308,8 @@ class RemoteDispatcher(Dispatcher):
             import zmq
         if zmq_asyncio is None:
             import zmq.asyncio as zmq_asyncio
-        if isinstance(address, str):
-            address = address.split(":", maxsplit=1)
         self._deserializer = deserializer
-        self.address = (address[0], int(address[1]))
+        self.address = _normalize_address(address)
 
         if loop is None:
             loop = asyncio.new_event_loop()
@@ -274,8 +323,7 @@ class RemoteDispatcher(Dispatcher):
             self._context = zmq_asyncio.Context()
             self._socket = self._context.socket(zmq.SUB)
 
-            url = "tcp://%s:%d" % self.address
-            self._socket.connect(url)
+            self._socket.connect(self.address)
             self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
         self.__factory = __finish_setup
@@ -332,6 +380,7 @@ class RemoteDispatcher(Dispatcher):
                             f"\n\n{e}"
                         )
                         continue
+                print(f"{name = }\n{doc}")
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
