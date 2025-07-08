@@ -467,17 +467,6 @@ class Subscribable(HasName, Protocol[T]):
         ...
 
     @abstractmethod
-    def subscribe_value(self, function: Callable[[T], None]) -> None:
-        """Subscribe to updates in value of a device.
-
-        When the device has a new value ready, it should call ``function`` with
-        that value.
-
-        Needed for :doc:`monitored <async>`.
-        """
-        ...
-
-    @abstractmethod
     def clear_sub(self, function: Callback[T]) -> None:
         """Remove a subscription."""
         ...
