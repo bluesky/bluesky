@@ -22,20 +22,18 @@ from inspect import Parameter, Signature
 from typing import (
     Any,
     Callable,
-    List,
-    Literal,
-    Mapping,
     Optional,
+    TypedDict,
     TypeVar,
     Union,
 )
 from weakref import WeakKeyDictionary, ref
 
-from event_model.documents import DocumentType
 import msgpack
 import msgpack_numpy
 import numpy as np
 from cycler import Cycler, cycler
+from event_model.documents import DocumentType, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
@@ -98,16 +96,22 @@ CustomPlanMetadata = dict[str, Any]
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 
 # Single function to be used as an event listener
-Subscriber = Callable[[str, DocumentType], Any]
+Subscriber = Callable[[str, P], Any]
 
-# List of event listeners
-SubscriberList = List[Subscriber]
+OneOrMany = Union[P, list[P]]
+
 
 # Mapping from event type to listener or list of listeners
-SubscriberMap = Mapping[Literal["all", "start", "descriptor", "event", "stop"], Union[Subscriber, SubscriberList]]
+class SubscriberMap(TypedDict, total=False):
+    all: OneOrMany[Subscriber[DocumentType]]
+    start: OneOrMany[Subscriber[RunStart]]
+    stop: OneOrMany[Subscriber[RunStop]]
+    event: OneOrMany[Subscriber[Event]]
+    descriptor: OneOrMany[Subscriber[EventDescriptor]]
+
 
 # Single listener, list of listeners or mapping of listeners by event type
-Subscribers = Union[Subscriber, SubscriberList, SubscriberMap]
+Subscribers = Union[Subscriber[DocumentType], list[Subscriber[DocumentType]], SubscriberMap]
 
 
 class RunEngineControlException(Exception):

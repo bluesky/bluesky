@@ -13,7 +13,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from inspect import Parameter, Signature, iscoroutine
+from inspect import iscoroutine
 from itertools import count
 from warnings import warn
 
@@ -865,7 +865,11 @@ class RunEngine:
         return rs
 
     def __call__(
-        self, plan: MsgGenerator, subs: typing.Optional[Subscribers] = None, /, **metadata_kw: typing.Any
+        self,
+        plan: typing.Union[MsgGenerator, typing.Iterable[Msg]],
+        subs: typing.Optional[Subscribers] = None,
+        /,
+        **metadata_kw: typing.Any,
     ):
         """Execute a plan.
 
