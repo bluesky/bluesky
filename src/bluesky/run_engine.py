@@ -53,12 +53,14 @@ from .utils import (
     IllegalMessageSequence,
     InvalidCommand,
     Msg,
+    MsgGenerator,
     NoReplayAllowed,
     PlanHalt,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
     SigintHandler,
+    Subscribers,
     ensure_generator,
     normalize_subs_input,
     single_gen,
@@ -194,17 +196,6 @@ class LoggingPropertyMachine(PropertyMachine):
             return super().__get__(instance, owner)
         with instance._state_lock:
             return super().__get__(instance, owner)
-
-
-# See RunEngine.__call__.
-_call_sig = Signature(
-    [
-        Parameter("self", Parameter.POSITIONAL_ONLY),
-        Parameter("plan", Parameter.POSITIONAL_ONLY),
-        Parameter("subs", Parameter.POSITIONAL_ONLY, default=None),
-        Parameter("metadata_kw", Parameter.VAR_KEYWORD),
-    ]
-)
 
 
 def default_scan_id_source(md):
@@ -873,7 +864,9 @@ class RunEngine:
         )
         return rs
 
-    def __call__(self, *args, **metadata_kw):
+    def __call__(
+        self, plan: MsgGenerator, subs: typing.Optional[Subscribers] = None, /, **metadata_kw: typing.Any
+    ):
         """Execute a plan.
 
         Any keyword arguments will be interpreted as metadata and recorded with
@@ -906,12 +899,6 @@ class RunEngine:
         """
         if self.state == "panicked":
             raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
-        # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
-        # all keyword arguments for user metadata.
-        arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
-        plan = arguments["plan"]
-        subs = arguments.get("subs", None)
-        metadata_kw = arguments.get("metadata_kw", {})
         if "raise_if_interrupted" in metadata_kw:
             warn(  # noqa: B028
                 "The 'raise_if_interrupted' flag has been removed. The "
@@ -993,8 +980,6 @@ class RunEngine:
             return run_engine_result
         else:
             return tuple(self._run_start_uids)
-
-    __call__.__signature__ = _call_sig  # type: ignore
 
     def resume(self):
         """Resume a paused plan from the last checkpoint.

@@ -22,12 +22,16 @@ from inspect import Parameter, Signature
 from typing import (
     Any,
     Callable,
+    List,
+    Literal,
+    Mapping,
     Optional,
     TypeVar,
     Union,
 )
 from weakref import WeakKeyDictionary, ref
 
+from event_model.documents import DocumentType
 import msgpack
 import msgpack_numpy
 import numpy as np
@@ -92,6 +96,18 @@ CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
+
+# Single function to be used as an event listener
+Subscriber = Callable[[str, DocumentType], Any]
+
+# List of event listeners
+SubscriberList = List[Subscriber]
+
+# Mapping from event type to listener or list of listeners
+SubscriberMap = Mapping[Literal["all", "start", "descriptor", "event", "stop"], Union[Subscriber, SubscriberList]]
+
+# Single listener, list of listeners or mapping of listeners by event type
+Subscribers = Union[Subscriber, SubscriberList, SubscriberMap]
 
 
 class RunEngineControlException(Exception):
