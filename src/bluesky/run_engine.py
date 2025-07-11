@@ -869,7 +869,7 @@ class RunEngine:
         subs: typing.Optional[Subscribers] = None,
         /,
         **metadata_kw: typing.Any,
-    ) -> RunEngineResult | tuple[str, ...]:
+    ) -> typing.Union[RunEngineResult, tuple[str, ...]]:
         """Execute a plan.
 
         Any keyword arguments will be interpreted as metadata and recorded with
