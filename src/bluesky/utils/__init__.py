@@ -23,6 +23,7 @@ from typing import (
     Any,
     Callable,
     Optional,
+    Sequence,
     TypedDict,
     TypeVar,
     Union,
@@ -98,7 +99,7 @@ ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 # Single function to be used as an event listener
 Subscriber = Callable[[str, P], Any]
 
-OneOrMany = Union[P, list[P]]
+OneOrMany = Union[P, Sequence[P]]
 
 
 # Mapping from event type to listener or list of listeners
@@ -110,8 +111,8 @@ class SubscriberMap(TypedDict, total=False):
     descriptor: OneOrMany[Subscriber[EventDescriptor]]
 
 
-# Single listener, list of listeners or mapping of listeners by event type
-Subscribers = Union[Subscriber[DocumentType], list[Subscriber[DocumentType]], SubscriberMap]
+# Single listener, multiple listeners or mapping of listeners by event type
+Subscribers = Union[OneOrMany[Subscriber[DocumentType]], SubscriberMap]
 
 
 class RunEngineControlException(Exception):
