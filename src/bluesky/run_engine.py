@@ -53,7 +53,6 @@ from .utils import (
     IllegalMessageSequence,
     InvalidCommand,
     Msg,
-    MsgGenerator,
     NoReplayAllowed,
     PlanHalt,
     RequestAbort,
@@ -866,11 +865,11 @@ class RunEngine:
 
     def __call__(
         self,
-        plan: typing.Union[MsgGenerator, typing.Iterable[Msg]],
+        plan: typing.Iterable[Msg],
         subs: typing.Optional[Subscribers] = None,
         /,
         **metadata_kw: typing.Any,
-    ):
+    ) -> RunEngineResult | tuple[str, ...]:
         """Execute a plan.
 
         Any keyword arguments will be interpreted as metadata and recorded with
