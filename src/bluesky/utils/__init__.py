@@ -15,7 +15,7 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
@@ -23,6 +23,7 @@ from typing import (
     Any,
     Callable,
     Optional,
+    TypedDict,
     TypeVar,
     Union,
 )
@@ -32,6 +33,7 @@ import msgpack
 import msgpack_numpy
 import numpy as np
 from cycler import Cycler, cycler
+from event_model.documents import DocumentType, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
@@ -92,6 +94,24 @@ CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
+
+# Single function to be used as an event listener
+Subscriber = Callable[[str, P], Any]
+
+OneOrMany = Union[P, Sequence[P]]
+
+
+# Mapping from event type to listener or list of listeners
+class SubscriberMap(TypedDict, total=False):
+    all: OneOrMany[Subscriber[DocumentType]]
+    start: OneOrMany[Subscriber[RunStart]]
+    stop: OneOrMany[Subscriber[RunStop]]
+    event: OneOrMany[Subscriber[Event]]
+    descriptor: OneOrMany[Subscriber[EventDescriptor]]
+
+
+# Single listener, multiple listeners or mapping of listeners by event type
+Subscribers = Union[OneOrMany[Subscriber[DocumentType]], SubscriberMap]
 
 
 class RunEngineControlException(Exception):
