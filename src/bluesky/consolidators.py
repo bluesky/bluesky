@@ -455,7 +455,7 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
         integer index, e.g. "{:05d}.ext".
         """
         assert os.path.splitext(self.template)[1] in self.permitted_extensions
-        return self.uri + self.template.format(indx)
+        return self.uri.rstrip("/") + "/" + self.template.format(indx).lstrip("/")
 
     def consume_stream_datum(self, doc: StreamDatum):
         """Determine the number and names of files from indices of datums and the number of files per datum.
