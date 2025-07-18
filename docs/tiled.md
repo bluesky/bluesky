@@ -74,7 +74,7 @@ API calls to Tiled. These include:
 
 - uploading metadata from Run Start, Event Descriptor, and Run Stop documents
 - uploading tabular data from the Event documents
-- registering externally-written array (e.g. image) data references in
+- registering externally-written array (e.g. image) data referenced in
   Resource and Datum or StreamResource and StreamDatum documents
  
 ## Access the Data
