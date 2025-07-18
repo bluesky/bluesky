@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.14.3.dev15+gef1fed54 documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.14.3.dev22+gd1314258 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=ccf92c1e"></script>
+    <script src="../../_static/documentation_options.js?v=7212194d"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
@@ -53,7 +53,7 @@ window.addEventListener("load", () => mermaid.run());
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.3.dev15+gef1fed54';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.3.dev22+gd1314258';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -61,7 +61,7 @@ window.addEventListener("load", () => mermaid.run());
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.3.dev15+gef1fed54" />
+  <meta name="docsearch:version" content="1.14.3.dev22+gd1314258" />
   </head>
   
   
@@ -553,7 +553,7 @@ window.addEventListener("load", () => mermaid.run());
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Signature</span><span class="p">,</span> <span class="n">iscoroutine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">iscoroutine</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
 
@@ -599,6 +599,7 @@ window.addEventListener("load", () => mermaid.run());
     <span class="n">RequestStop</span><span class="p">,</span>
     <span class="n">RunEngineInterrupted</span><span class="p">,</span>
     <span class="n">SigintHandler</span><span class="p">,</span>
+    <span class="n">Subscribers</span><span class="p">,</span>
     <span class="n">ensure_generator</span><span class="p">,</span>
     <span class="n">normalize_subs_input</span><span class="p">,</span>
     <span class="n">single_gen</span><span class="p">,</span>
@@ -737,17 +738,6 @@ window.addEventListener("load", () => mermaid.run());
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">instance</span><span class="o">.</span><span class="n">_state_lock</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="p">)</span>
-
-
-<span class="c1"># See RunEngine.__call__.</span>
-<span class="n">_call_sig</span> <span class="o">=</span> <span class="n">Signature</span><span class="p">(</span>
-    <span class="p">[</span>
-        <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">,</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">),</span>
-        <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;plan&quot;</span><span class="p">,</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">),</span>
-        <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;subs&quot;</span><span class="p">,</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span>
-        <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;metadata_kw&quot;</span><span class="p">,</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">),</span>
-    <span class="p">]</span>
-<span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">default_scan_id_source</span><span class="p">(</span><span class="n">md</span><span class="p">):</span>
@@ -1441,7 +1431,13 @@ window.addEventListener("load", () => mermaid.run());
 
 <div class="viewcode-block" id="RunEngine.__call__">
 <a class="viewcode-back" href="../../generated/bluesky.run_engine.RunEngine.__call__.html#bluesky.run_engine.RunEngine.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">metadata_kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Msg</span><span class="p">],</span>
+        <span class="n">subs</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">Subscribers</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">/</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">metadata_kw</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">RunEngineResult</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute a plan.</span>
 
 <span class="sd">        Any keyword arguments will be interpreted as metadata and recorded with</span>
@@ -1474,12 +1470,6 @@ window.addEventListener("load", () => mermaid.run());
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s2">&quot;panicked&quot;</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;The RunEngine is panicked and cannot be recovered. You must restart bluesky.&quot;</span><span class="p">)</span>
-        <span class="c1"># This scheme lets us make &#39;plan&#39; and &#39;subs&#39; POSITIONAL ONLY, reserving</span>
-        <span class="c1"># all keyword arguments for user metadata.</span>
-        <span class="n">arguments</span> <span class="o">=</span> <span class="n">_call_sig</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">metadata_kw</span><span class="p">)</span><span class="o">.</span><span class="n">arguments</span>
-        <span class="n">plan</span> <span class="o">=</span> <span class="n">arguments</span><span class="p">[</span><span class="s2">&quot;plan&quot;</span><span class="p">]</span>
-        <span class="n">subs</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="n">metadata_kw</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata_kw&quot;</span><span class="p">,</span> <span class="p">{})</span>
         <span class="k">if</span> <span class="s2">&quot;raise_if_interrupted&quot;</span> <span class="ow">in</span> <span class="n">metadata_kw</span><span class="p">:</span>
             <span class="n">warn</span><span class="p">(</span>  <span class="c1"># noqa: B028</span>
                 <span class="s2">&quot;The &#39;raise_if_interrupted&#39; flag has been removed. The &quot;</span>
@@ -1562,8 +1552,6 @@ window.addEventListener("load", () => mermaid.run());
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uids</span><span class="p">)</span></div>
 
-
-    <span class="fm">__call__</span><span class="o">.</span><span class="n">__signature__</span> <span class="o">=</span> <span class="n">_call_sig</span>  <span class="c1"># type: ignore</span>
 
 <div class="viewcode-block" id="RunEngine.resume">
 <a class="viewcode-back" href="../../generated/bluesky.run_engine.RunEngine.resume.html#bluesky.run_engine.RunEngine.resume">[docs]</a>
