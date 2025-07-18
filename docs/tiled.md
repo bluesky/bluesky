@@ -115,8 +115,12 @@ db = Broker(client)
 
 ## Run a Production Tiled Server
 
-In production, PostgreSQL is recommended for database storage, for both the
-"catalog" database and the "storage" of tabular data.
+In production, PostgreSQL is recommended for database storage. To use Tiled
+with Bluesky, two databases are needed: one for the metadata "catalog" and one
+for "storage" of tabular data extracted from Bluesky Event documents.
+
+A PostgreSQL instance (server) can hold multiple separate "databases", so
+running a single instance is sufficient for our requirements.
 
 ### Run a PostgreSQL database
 
