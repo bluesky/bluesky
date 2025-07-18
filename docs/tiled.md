@@ -17,7 +17,7 @@ pip install "tiled[server]"
 
 We will start Tiled with:
 - a "catalog" database of metadata and pointers (filepaths, etc.) to large data
-- an [OLAP][]
+- an [OLAP][] database of tabular data
 
 ```sh
 tiled serve catalog --init catalog.db -w duckdb://./storage.db
@@ -41,9 +41,9 @@ in the same Python environment as the server, or a different one.)
 pip install "tiled[client]"
 ```
 
-It is also recommended (but not strictly necessary) to install a small
-libraries with conveniences that provides a nicer user experience for
-Tiled with Bluesky:
+It is also recommended (though not strictly necessary) to install a small
+library with conveniences that provides a nicer user experience for Tiled with
+Bluesky:
 
 ```sh
 pip install bluesky-tiled-plugins
