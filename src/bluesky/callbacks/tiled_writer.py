@@ -38,7 +38,7 @@ from tiled.client.utils import handle_error
 from tiled.structures.core import Spec
 from tiled.utils import safe_json_dump
 
-from ..consolidators import ConsolidatorBase, DataSource, StructureFamily, consolidator_factory
+from ..consolidators import ConsolidatorBase, DataSource, Patch, StructureFamily, consolidator_factory
 from ..run_engine import Dispatcher
 from ..utils import truncate_json_overflow
 from .core import CallbackBase
@@ -553,16 +553,16 @@ class _RunWriter(CallbackBase):
 
         sres_uid, desc_uid = doc["stream_resource"], doc["descriptor"]
         sres_node, consolidator = self.get_sres_node(sres_uid, desc_uid)
-        consolidator.consume_stream_datum(doc)
-        self._update_data_source_for_node(sres_node, consolidator.get_data_source())
+        patch = consolidator.consume_stream_datum(doc)
+        self._update_data_source_for_node(sres_node, consolidator.get_data_source(), patch)
 
-    def _update_data_source_for_node(self, node: BaseClient, data_source: DataSource):
+    def _update_data_source_for_node(self, node: BaseClient, data_source: DataSource, patch: Patch):
         """Update StreamResource node in Tiled"""
         data_source.id = node.data_sources()[0].id  # ID of the existing DataSource record
         handle_error(
             node.context.http_client.put(
                 node.uri.replace("/metadata/", "/data_source/", 1),
-                content=safe_json_dump({"data_source": data_source}),
+                content=safe_json_dump({"data_source": data_source, "patch": patch}),
             )
         ).json()
 

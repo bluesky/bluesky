@@ -4,7 +4,7 @@ import enum
 import os
 import re
 import warnings
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Literal, Optional, Tuple, Union, cast
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
@@ -50,6 +50,12 @@ class DataSource:
     assets: list[Asset] = dataclasses.field(default_factory=list)
     management: Management = Management.writable
 
+
+@dataclasses.dataclass
+class Patch:
+    shape: Tuple[int]
+    offset: Tuple[int]
+    extend: bool
 
 class ConsolidatorBase:
     """Consolidator of StreamDatums
@@ -257,6 +263,11 @@ class ConsolidatorBase:
         new_seqnums = range(doc["seq_nums"]["start"], doc["seq_nums"]["stop"])
         new_indices = range(doc["indices"]["start"], doc["indices"]["stop"])
         self._seqnums_to_indices_map.update(dict(zip(new_seqnums, new_indices)))
+        return Patch(
+            offset=tuple([doc["indices"]["start"], *[0 for _ in self.shape[1:]]]),
+            shape=tuple([new_indices, *self.shape[1:]]),
+            extend=True
+        )
 
     def get_data_source(self) -> DataSource:
         """Return a DataSource object reflecting the current state of the streamed dataset.
