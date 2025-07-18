@@ -559,7 +559,8 @@ class RunBundler:
 
         # we do not have the descriptor cached, make it
         if descriptor_doc is None or d_objs is None:
-            for obj in objs_read:
+            # use the dequeue not the set to preserve order
+            for obj in self._objs_read:
                 await self._ensure_cached(obj, collect=isinstance(obj, Collectable))
                 objs_dks[obj] = self._describe_cache[obj]
 

@@ -22,7 +22,7 @@ from bluesky.plan_stubs import (
     wait,
     wait_for,
 )
-from bluesky.plans import count, grid_scan
+from bluesky.plans import count, grid_scan, scan
 from bluesky.preprocessors import (
     SupplementalData,
     baseline_wrapper,
@@ -2146,3 +2146,28 @@ def test_async_scan_id_source(RE):
     RE.scan_id_source = async_scan_source
     RE([Msg("open_run")])
     assert RE.md["scan_id"] == 42
+
+
+@requires_ophyd
+def test_descriptor_order(RE):
+    from itertools import permutations
+
+    from ophyd import Component, Device, Signal
+
+    class Issue1930(Device):
+        alpha = Component(Signal, value=1, kind="hinted")
+        bravo = Component(Signal, value=2, kind="hinted")
+        charlie = Component(Signal, value=3, kind="hinted")
+
+    i1930 = Issue1930(name="i1930")
+
+    for dets in permutations([i1930.alpha, i1930.bravo, i1930.charlie]):
+        key_order = [d.name for d in dets]
+
+        def check(key_order, name, doc):
+            if name == "event":
+                assert list(doc["data"]) == key_order
+            elif name == "descriptor":
+                assert list(doc["data_keys"]) == key_order
+
+        RE(scan(dets, i1930.charlie, -1, 1, 2), lambda name, doc, key_order=key_order: check(key_order, name, doc))
