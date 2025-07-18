@@ -117,9 +117,13 @@ db = Broker(client)
 
 In production, PostgreSQL is recommended for database storage. To use Tiled
 with Bluesky, two databases are needed: one for the metadata "catalog" and one
-for "storage" of tabular data extracted from Bluesky Event documents.
+for "storage" of tabular data extracted from Bluesky Event documents. (It
+is technically possible to use one database for both, but it may not remain so,
+if the recommended technology stack evolves. Additionally, the two databases
+may require different backup, archival, or retention policies. Thus, creating
+separate databases is strongly recommended.)
 
-A PostgreSQL instance (server) can hold multiple separate "databases", so
+A PostgreSQL instance (server) can hold multiple separate databases, so
 running a single instance is sufficient for our requirements.
 
 ### Run a PostgreSQL database
