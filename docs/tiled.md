@@ -23,6 +23,10 @@ We will start Tiled with:
 tiled serve catalog --init catalog.db -w duckdb://./storage.db
 ```
 
+If you will be using detectors that produce external files (e.g. TIFF or HDF5),
+add `-r /path/to/detector/data -r /another/path/to/detector/data ...`.
+This grants Tiled permission to serve data from those locations.
+
 This will print a URL with a random secret key, which will be use below. (For
 testing purposes, it can be convenient to set this key manually to something
 easy to type like `--api-key secret`.)
