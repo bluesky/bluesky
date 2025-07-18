@@ -81,6 +81,32 @@ API calls to Tiled. These include:
 
 ```python
 r = client.values().last()
+r["streams"]
+r["streams/primary"].read()
+```
+
+## Backward-compatibility with "Databroker"
+
+**The [Databroker][] project is superseded by Tiled. We recommend that new users
+ignore it; there is no need for them to install it.**
+
+For backward-compatibility with existing user code, Databroker will continue to
+be maintained, but it has been reimplemented as a compatibility layer, a
+wrapper around Tiled.
+
+```sh
+pip install --pre "databroker[client]"
+```
+
+```python
+from databroker import Broker
+from tiled.client import from_uri
+
+# Connect to Tiled.
+client = from_uri("http://localhost:8000")  # will automatically use TILED_API_KEY
+
+# Construct the backward-compatibility layer.
+db = Broker(client)
 ```
 
 [OLAP]: https://en.wikipedia.org/wiki/Online_analytical_processing
