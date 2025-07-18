@@ -7,8 +7,7 @@ attention on the science.
 ## Start a Basic Tiled Server
 
 In this example, we will use embedded databases and simple security
-designed for a single user. (Read on for production-scale databases
-and multi-user configuration.)
+designed for a single user. (Read on for production-scale databases.)
 
 Install tiled, with the dependencies needed to run a server.
 
@@ -108,6 +107,56 @@ client = from_uri("http://localhost:8000")  # will automatically use TILED_API_K
 # Construct the backward-compatibility layer.
 db = Broker(client)
 ```
+
+## Run a Production Tiled Server
+
+In production, PostgreSQL is recommended for database storage, for both the
+"catalog" database and the "storage" of tabular data.
+
+### Run a PostgreSQL database
+
+You can manage PostgreSQL however you like, or use a cloud-provided one.
+This is just an example.
+
+```sh
+# Start PostgreSQL container using podman or docker.
+podman run -p 5432:5432 -d --rm --name postgres -e POSTGRES_PASSWORD=secret docker.io/library/postgres
+
+# Connect to PostgreSQL.
+psql postgresql://postgres:secret@localhost:5432
+
+# Create databases for the 'catalog' and the 'storage' of tabular data.
+CREATE DATABASE catalog
+CREATE DATABASE storage
+```
+
+### Run Tiled with with PostgreSQL databases
+
+This is an example configuration for the Tiled server.
+
+```yaml
+# tiled_config.yml
+trees:
+  - tree: catalog
+    path: /
+    args:
+      uri: postgresql://postgres:${POSTGRES_PASSWORD}@localhost:5432/catalog
+      writable_storage:
+        - postgresql://postgres:${POSTGRES_PASSWORD}@localhost:5432/storage
+      readable_storage:
+        - /path/to/where/detector/writes
+```
+
+The Tiled server can be started using this configuration like so:
+
+```sh
+export POSTGRES_PASSWORD=...
+
+tiled serve config tiled_config.yml
+```
+
+See the Tiled documentation for more information on running
+horizontally-scaled deployments of Tiled.
 
 [OLAP]: https://en.wikipedia.org/wiki/Online_analytical_processing
 [Tiled]: https://blueskyproject.io/tiled
