@@ -24,12 +24,13 @@ tiled serve catalog --init catalog.db -w duckdb://./storage.db
 ```
 
 This will print a URL with a random secret key, which will be use below. (For
-testing purposes, it can be convenient to set key manually to something easy to
-type like `--api-key secret`.)
+testing purposes, it can be convenient to set this key manually to something
+easy to type like `--api-key secret`.)
 
 If you are going to connect to this from other hosts, set `--host 0.0.0.0`. By
 default, for security reasons, the server only accepts connections from
-`localhost`.
+`localhost`. If you do accept external connections, always use a random key
+(not "`secret`").
 
 ## Write From Bluesky to Tiled
 
