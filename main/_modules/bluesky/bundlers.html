@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.bundlers &#8212; bluesky 1.14.3.dev13+g103accac documentation</title>
+    <title>bluesky.bundlers &#8212; bluesky 1.14.3.dev15+gef1fed54 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=0d5b62cf"></script>
+    <script src="../../_static/documentation_options.js?v=ccf92c1e"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
@@ -53,7 +53,7 @@ window.addEventListener("load", () => mermaid.run());
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.3.dev13+g103accac';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.3.dev15+gef1fed54';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -61,7 +61,7 @@ window.addEventListener("load", () => mermaid.run());
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.3.dev13+g103accac" />
+  <meta name="docsearch:version" content="1.14.3.dev15+gef1fed54" />
   </head>
   
   
@@ -1130,7 +1130,8 @@ window.addEventListener("load", () => mermaid.run());
 
         <span class="c1"># we do not have the descriptor cached, make it</span>
         <span class="k">if</span> <span class="n">descriptor_doc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">d_objs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs_read</span><span class="p">:</span>
+            <span class="c1"># use the dequeue not the set to preserve order</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">))</span>
                 <span class="n">objs_dks</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
 
