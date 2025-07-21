@@ -490,7 +490,7 @@ class MultipartRelatedConsolidator(ConsolidatorBase):
             self.assets.append(new_asset)
             self.data_uris.append(new_datum_uri)
 
-        super().consume_stream_datum(doc)
+        return super().consume_stream_datum(doc)
 
 
 class TIFFConsolidator(MultipartRelatedConsolidator):
