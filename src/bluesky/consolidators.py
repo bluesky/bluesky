@@ -265,8 +265,8 @@ class ConsolidatorBase:
         self._seqnums_to_indices_map.update(dict(zip(new_seqnums, new_indices)))
         return Patch(
             offset=tuple([doc["indices"]["start"], *[0 for _ in self.shape[1:]]]),
-            shape=tuple([new_indices, *self.shape[1:]]),
-            extend=True
+            shape=tuple([doc["indices"]["stop"] - doc["indices"]["start"], *self.shape[1:]]),
+            extend=True,
         )
 
     def get_data_source(self) -> DataSource:
