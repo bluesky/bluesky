@@ -199,7 +199,7 @@ class LoggingPropertyMachine(PropertyMachine):
 
 
 # type alias
-# TODO(kiveln): check with core devs where to put this
+# TODO(kivel): check with core devs where to put this
 RunEngineMetadata = MutableMapping[str, typing.Any]
 
 
