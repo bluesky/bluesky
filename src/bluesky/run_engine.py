@@ -9,6 +9,7 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
+from collections.abc import MutableMapping
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
@@ -197,7 +198,12 @@ class LoggingPropertyMachine(PropertyMachine):
             return super().__get__(instance, owner)
 
 
-def default_scan_id_source(md):
+# type alias
+# TODO(kiveln): check with core devs where to put this
+RunEngineMetadata = MutableMapping[str, typing.Any]
+
+
+def default_scan_id_source(md: RunEngineMetadata) -> SyncOrAsync[int]:
     return md.get("scan_id", 0) + 1
 
 
@@ -215,13 +221,11 @@ class RunEngine:
 
     Parameters
     ----------
-    md : dict-like, optional
+    md : MutableMapping[str, Any], optional
         The default is a standard Python dictionary, but fancier
         objects can be used to store long-term history and persist
-        it between sessions. The standard configuration
-        instantiates a Run Engine with historydict.HistoryDict, a
-        simple interface to a sqlite file. Any object supporting
-        `__getitem__`, `__setitem__`, and `clear` will work.
+        it between sessions. Any object adhering to the MutableMapping
+        Protocol will work.
 
     loop : asyncio event loop
         e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
@@ -245,7 +249,7 @@ class RunEngine:
     md_validator : callable, optional
         a function that raises and prevents starting a run if it deems
         the metadata to be invalid or incomplete
-        Expected signature: f(md)
+        Expected signature: f(md: MutableMapping[str, Any])
         Function should raise if md is invalid. What that means is
         completely up to the user. The function's return value is
         ignored.
@@ -255,7 +259,7 @@ class RunEngine:
         a run if it deems the metadata to be invalid or incomplete.
         If it succeeds, it returns the normalized/transformed version of
         the original metadata.
-        Expected signature: f(md)
+        Expected signature: f(md: MutableMapping[str, Any]) -> MutableMapping[str, Any]
         Function should raise if md is invalid. What that means is
         completely up to the user.
         Expected return: normalized metadata
@@ -402,14 +406,14 @@ class RunEngine:
 
     def __init__(
         self,
-        md: typing.Optional[dict] = None,
+        md: typing.Optional[RunEngineMetadata] = None,
         *,
         loop: typing.Optional[asyncio.AbstractEventLoop] = None,
         preprocessors: typing.Optional[list] = None,
         context_managers: typing.Optional[list] = None,
         md_validator: typing.Optional[typing.Callable] = None,
         md_normalizer: typing.Optional[typing.Callable] = None,
-        scan_id_source: typing.Callable[[dict], SyncOrAsync[int]] = default_scan_id_source,
+        scan_id_source: typing.Callable[[RunEngineMetadata], SyncOrAsync[int]] = default_scan_id_source,
         during_task: typing.Optional[DuringTask] = None,
         call_returns_result: bool = False,
     ):
@@ -2828,7 +2832,7 @@ def _set_span_msg_attributes(span, msg):
     span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
 
 
-def _default_md_validator(md):
+def _default_md_validator(md: RunEngineMetadata) -> None:
     if "sample" in md and not (hasattr(md["sample"], "keys") or isinstance(md["sample"], str)):
         raise ValueError(
             "You specified 'sample' metadata. We give this field special "
@@ -2841,7 +2845,7 @@ def _default_md_validator(md):
         )
 
 
-def _default_md_normalizer(md):
+def _default_md_normalizer(md: RunEngineMetadata) -> RunEngineMetadata:
     return md
 
 
