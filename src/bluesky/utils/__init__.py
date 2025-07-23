@@ -96,7 +96,7 @@ CustomPlanMetadata = dict[str, Any]
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 
 # Single function to be used as an event listener
-Subscriber = Callable[[str, P], Any]
+Subscriber = Union[Callable[[str, P], Any], Callable[[str, dict], Any]]
 
 OneOrMany = Union[P, Sequence[P]]
 
