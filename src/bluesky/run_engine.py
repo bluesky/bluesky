@@ -198,8 +198,6 @@ class LoggingPropertyMachine(PropertyMachine):
             return super().__get__(instance, owner)
 
 
-# type alias
-# TODO(kivel): check with core devs where to put this
 RunEngineMetadata = MutableMapping[str, typing.Any]
 
 
