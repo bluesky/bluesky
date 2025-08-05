@@ -1909,8 +1909,8 @@ class RunEngine:
         reason = msg.kwargs.get("reason", self._reason)
         try:
             _span: Span = self._run_tracing_spans.pop()
-            _span.set_attribute("exit_status", exit_status)
-            _span.set_attribute("reason", reason)
+            _span.set_attribute("exit_status", exit_status if exit_status is not None else "None")
+            _span.set_attribute("reason", reason if reason is not None else "None")
             _span.end()
         except IndexError:
             logger.warning("No open traces left to close!")
