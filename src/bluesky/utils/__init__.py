@@ -1870,6 +1870,56 @@ class DefaultDuringTask(DuringTask):
                 # We are not using matplotlib + Qt. Just wait on the Event.
                 blocking_event.wait()
 
+class ProcessQtEventsDuringTask(DuringTask):
+    """This class runs the Qt main loop while waiting for the plan to finish.
+
+    Differently from "DefaultDuringTask", this class directly invokes the
+    QApplication "processEvents" method, which effectively acts as a
+    "kicker" for the Qt event loop. This happens "in-process", and assumes that
+    the Qt loop is in the main thread, while the Bluesky event loop is in the
+    background thread.
+
+    The Qt application is assumed to be created by said separate logic;
+    this class will **not** generate a new QApplication instance.
+
+    Parameters
+    ----------
+    refresh_rate : float, optional
+        Refresh rate in seconds. Default is 0.03 seconds (30 Hz approx.).
+
+    Notes
+    -----
+    This implementation of DuringTask **does not** give control to the user to
+    suspend the plan execution by using SIGINT. It assumes that there's a separate
+    logic implemented by the Qt application to handle the interruption via the
+    Bluesky public API.
+    """
+
+    def __init__(self, refresh_rate: float = 0.03) -> None:
+
+        self.refresh_rate = refresh_rate
+        if "matplotlib" in sys.modules:
+            import matplotlib
+
+            backend = matplotlib.get_backend().lower()
+            if "qt" in backend:
+                from matplotlib.backends.qt_compat import QtWidgets
+
+                self.app = QtWidgets.QApplication.instance()
+
+    def block(self, blocking_event):
+        if self.app is None:
+            # We are not using matplotlib + Qt, or there is no active
+            # QApplication instance. Just wait on the Event.
+            blocking_event.wait()
+        else:
+            while True:
+                done = blocking_event(wait=self.refresh_rate)
+                self.app.processEvents()
+                if done:
+                    break
+
+
 
 def _rearrange_into_parallel_dicts(readings):
     data = {}
