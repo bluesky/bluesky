@@ -683,3 +683,33 @@ class SuspendWhenChanged(SuspenderBase):
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
         return ": ".join(s for s in (just, self._tripped_message) if s)
+
+
+class IgnoreSuspendersContext:
+    """Using as a context manager, temporarily remove specific suspenders from the RunEngine.
+    This operates at the RE process level.
+    Similar functionality can be achieved at the plan/msg level using the
+    bluesky.preprocessors.ignore_suspenders_wrapper and bluesky.preprocessors.ignore_suspenders_decorator.
+
+    >>> with IgnoreSuspenders(suspender1, suspender2):
+    >>>     RE(plan)
+
+    Parameters
+    ----------
+    *suspenders : SuspenderBase
+    """
+
+    def __init__(self, *suspenders):
+        self._suspenders = suspenders
+        self._run_engines = []
+
+    def __enter__(self):
+        for suspender in self._suspenders:
+            self._run_engines.append(suspender.RE)
+            suspender.RE.remove_suspender(suspender)
+        return self._suspenders
+
+    def __exit__(self, *exc):
+        for RE, suspender in zip(self._run_engines, self._suspenders):
+            RE.install_suspender(suspender)
+        self._run_engines.clear()
