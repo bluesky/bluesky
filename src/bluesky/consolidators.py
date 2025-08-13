@@ -4,7 +4,7 @@ import enum
 import os
 import re
 import warnings
-from typing import Any, Literal, Optional, Tuple, Union, cast
+from typing import Any, Literal, Optional, Union, cast
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
@@ -53,9 +53,10 @@ class DataSource:
 
 @dataclasses.dataclass
 class Patch:
-    shape: Tuple[int]
-    offset: Tuple[int]
+    shape: tuple[int]
+    offset: tuple[int]
     extend: bool
+
 
 class ConsolidatorBase:
     """Consolidator of StreamDatums
@@ -259,13 +260,14 @@ class ConsolidatorBase:
           - Update the list of assets, including their uris, if necessary
           - Update shape and chunks
         """
+        old_shape = self.shape  # Adding new rows updates self.shape
         self._num_rows += doc["indices"]["stop"] - doc["indices"]["start"]
         new_seqnums = range(doc["seq_nums"]["start"], doc["seq_nums"]["stop"])
         new_indices = range(doc["indices"]["start"], doc["indices"]["stop"])
         self._seqnums_to_indices_map.update(dict(zip(new_seqnums, new_indices)))
         return Patch(
-            offset=tuple([doc["indices"]["start"], *[0 for _ in self.shape[1:]]]),
-            shape=tuple([doc["indices"]["stop"] - doc["indices"]["start"], *self.shape[1:]]),
+            offset=(old_shape[0], *[0 for _ in self.shape[1:]]),
+            shape=(self.shape[0] - old_shape[0], *self.shape[1:]),
             extend=True,
         )
 
