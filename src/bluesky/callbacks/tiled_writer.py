@@ -387,7 +387,8 @@ class RunNormalizer(CallbackBase):
         self._int_keys.update({k for k, v in data_keys.items() if "external" not in v.keys()})
         self._ext_keys.update({k for k, v in data_keys.items() if "external" in v.keys()})
         for key in self._ext_keys:
-            data_keys[key]["external"] = data_keys[key].pop("external", "")  # Make sure the value is not None
+            if key in data_keys:
+                data_keys[key]["external"] = data_keys[key].pop("external", "")  # Make sure the value is not None
 
         # Keep a reference to the descriptor name (stream) by its uid
         self._desc_name_by_uid[doc["uid"]] = doc["name"]
