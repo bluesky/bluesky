@@ -1,0 +1,952 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>bluesky.run_engine.RunEngine &#8212; bluesky 1.14.3 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=36f81496"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/bluesky.run_engine.RunEngine';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.3';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bluesky.run_engine.RunEngine.__call__" href="bluesky.run_engine.RunEngine.__call__.html" />
+    <link rel="prev" title="RunEngine API Documentation" href="../run_engine_api.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.14.3" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../multi_run_plans.html">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1 current active"><a class="reference internal" href="../run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../otel-tracing.html">Tracing with Opentelemetry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tiled-writer.html">Integration with Tiled</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix.html">Appendix</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../userindex.html" class="nav-link">User Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../run_engine_api.html" class="nav-link">RunEngine API Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky.run_engine.RunEngine</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="bluesky-run-engine-runengine">
+<h1>bluesky.run_engine.RunEngine<a class="headerlink" href="#bluesky-run-engine-runengine" title="Link to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="bluesky.run_engine.RunEngine">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.run_engine.</span></span><span class="sig-name descname"><span class="pre">RunEngine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">md:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">*,</span> <span class="pre">loop:</span> <span class="pre">~asyncio.events.AbstractEventLoop</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">preprocessors:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">context_managers:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_validator:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_normalizer:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">scan_id_source:</span> <span class="pre">~typing.Callable[[dict],</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">~collections.abc.Awaitable[int]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">default_scan_id_source&gt;,</span> <span class="pre">during_task:</span> <span class="pre">~bluesky.utils.DuringTask</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">call_returns_result:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/run_engine.html#RunEngine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.run_engine.RunEngine" title="Link to this definition">#</a></dt>
+<dd><p>The Run Engine execute messages and emits Documents.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>md</strong><span class="classifier">dict-like, optional</span></dt><dd><p>The default is a standard Python dictionary, but fancier
+objects can be used to store long-term history and persist
+it between sessions. The standard configuration
+instantiates a Run Engine with historydict.HistoryDict, a
+simple interface to a sqlite file. Any object supporting
+<cite>__getitem__</cite>, <cite>__setitem__</cite>, and <cite>clear</cite> will work.</p>
+</dd>
+<dt><strong>loop</strong><span class="classifier">asyncio event loop</span></dt><dd><p>e.g., <code class="docutils literal notranslate"><span class="pre">asyncio.get_event_loop()</span></code> or <code class="docutils literal notranslate"><span class="pre">asyncio.new_event_loop()</span></code></p>
+</dd>
+<dt><strong>preprocessors</strong><span class="classifier">list, optional</span></dt><dd><p>Generator functions that take in a plan (generator instance) and
+modify its messages on the way out. Suitable examples include
+the functions in the module <code class="docutils literal notranslate"><span class="pre">bluesky.plans</span></code> with names ending in
+‘wrapper’.  Functions are composed in order: the preprocessors
+<code class="docutils literal notranslate"><span class="pre">[f,</span> <span class="pre">g]</span></code> are applied like <code class="docutils literal notranslate"><span class="pre">f(g(plan))</span></code>.</p>
+</dd>
+<dt><strong>context_managers</strong><span class="classifier">list, optional</span></dt><dd><p>Context managers that will be entered when we run a plan. The context
+managers will be composed in order, much like the preprocessors. If
+this argument is omitted, we will use a user-oriented handler for
+SIGINT. The elements of this list will be passed this <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>
+instance as their only argument. You may pass an empty list if you
+would like a <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> with no signal handling and no context
+managers.</p>
+</dd>
+<dt><strong>md_validator</strong><span class="classifier">callable, optional</span></dt><dd><p>a function that raises and prevents starting a run if it deems
+the metadata to be invalid or incomplete
+Expected signature: f(md)
+Function should raise if md is invalid. What that means is
+completely up to the user. The function’s return value is
+ignored.</p>
+</dd>
+<dt><strong>md_normalizer</strong><span class="classifier">callable, optional</span></dt><dd><p>a function that, similar to md_validator, raises and prevents starting
+a run if it deems the metadata to be invalid or incomplete.
+If it succeeds, it returns the normalized/transformed version of
+the original metadata.
+Expected signature: f(md)
+Function should raise if md is invalid. What that means is
+completely up to the user.
+Expected return: normalized metadata</p>
+</dd>
+<dt><strong>scan_id_source</strong><span class="classifier">callable, optional</span></dt><dd><p>a (possibly async) function that will be used to calculate scan_id.
+Default is to increment scan_id by 1 each time. However you could pass
+in a customized function to get a scan_id from any source.
+Expected signature: f(md)
+Expected return: updated scan_id value</p>
+</dd>
+<dt><strong>during_task</strong><span class="classifier">reference to an object of class DuringTask, optional</span></dt><dd><p>Class methods: <code class="docutils literal notranslate"><span class="pre">block()</span></code> to be run to block
+the main thread during <cite>RE.__call__</cite></p>
+<p>The required signatures for the class methods</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">block</span><span class="p">(</span><span class="n">ev</span><span class="p">:</span> <span class="n">Threading</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="s2">&quot;Returns when ev is set&quot;</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>The default value handles the cases of:</dt><dd><ul class="simple">
+<li><p>Matplotlib is not imported (just wait on the event)</p></li>
+<li><p>Matplotlib is imported, but not using a Qt, notebook or ipympl
+backend (just wait on the event)</p></li>
+<li><p>Matplotlib is imported and using a Qt backend (run the Qt app
+on the main thread until the run finishes)</p></li>
+<li><p>Matplotlib is imported and using a nbagg or ipympl backend (
+wait on the event and poll to push updates to the browser)</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt><strong>call_returns_result</strong><span class="classifier">bool, default False</span></dt><dd><p>A flag that controls the return value of __call__
+If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> will return a :class:<code class="docutils literal notranslate"><span class="pre">RunEngineResult</span></code>
+object that contains information about the plan that was run.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> will return a tuple of uids.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code> to preserve the old <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> behavior,
+but the default is expected to change to <code class="docutils literal notranslate"><span class="pre">True</span></code> in the future.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>md</strong></dt><dd><p>Direct access to the dict-like persistent storage described above</p>
+</dd>
+<dt><strong>record_interruptions</strong></dt><dd><p>False by default. Set to True to generate an extra event stream
+that records any interruptions (pauses, suspensions).</p>
+</dd>
+<dt><strong>state</strong></dt><dd><p>{‘idle’, ‘running’, ‘paused’}</p>
+</dd>
+<dt><strong>suspenders</strong></dt><dd><p>Read-only collection of <cite>bluesky.suspenders.SuspenderBase</cite> objects
+which can suspend and resume execution; see related methods.</p>
+</dd>
+<dt><strong>preprocessors</strong><span class="classifier">list</span></dt><dd><p>Generator functions that take in a plan (generator instance) and
+modify its messages on the way out. Suitable examples include
+the functions in the module <code class="docutils literal notranslate"><span class="pre">bluesky.plans</span></code> with names ending in
+‘wrapper’.  Functions are composed in order: the preprocessors
+<code class="docutils literal notranslate"><span class="pre">[f,</span> <span class="pre">g]</span></code> are applied like <code class="docutils literal notranslate"><span class="pre">f(g(plan))</span></code>.</p>
+</dd>
+<dt><strong>msg_hook</strong></dt><dd><p>Callable that receives all messages before they are processed
+(useful for logging or other development purposes); expected
+signature is <code class="docutils literal notranslate"><span class="pre">f(msg)</span></code> where <code class="docutils literal notranslate"><span class="pre">msg</span></code> is a <code class="docutils literal notranslate"><span class="pre">bluesky.Msg</span></code>, a
+kind of namedtuple; default is None.</p>
+</dd>
+<dt><strong>state_hook</strong></dt><dd><p>Callable with signature <code class="docutils literal notranslate"><span class="pre">f(new_state,</span> <span class="pre">old_state)</span></code> that will be
+called whenever the RunEngine’s state attribute is updated; default
+is None</p>
+</dd>
+<dt><strong>waiting_hook</strong></dt><dd><p>Callable with signature <code class="docutils literal notranslate"><span class="pre">f(status_object)</span></code> that will be called
+whenever the RunEngine is waiting for long-running commands
+(trigger, set, kickoff, complete) to complete. This hook is useful to
+incorporate a progress bar.</p>
+</dd>
+<dt><strong>ignore_callback_exceptions</strong></dt><dd><p>Boolean, False by default.</p>
+</dd>
+<dt><strong>call_returns_result</strong></dt><dd><p>Boolean, False by default. If False, RunEngine will return uuid list
+after running a plan. If True, RunEngine will return a RunEngineResult
+object that contains the plan result, error status, and uuid list.</p>
+</dd>
+<dt><strong>loop</strong><span class="classifier">asyncio event loop</span></dt><dd><p>e.g., <code class="docutils literal notranslate"><span class="pre">asyncio.get_event_loop()</span></code> or <code class="docutils literal notranslate"><span class="pre">asyncio.new_event_loop()</span></code></p>
+</dd>
+<dt><strong>max_depth</strong></dt><dd><p>Maximum stack depth; set this to prevent users from calling the
+RunEngine inside a function (which can result in unexpected
+behavior and breaks introspection tools). Default is None.
+For built-in Python interpreter, set to 2. For IPython, set to 11
+(tested on IPython 5.1.0; other versions may vary).</p>
+</dd>
+<dt><strong>pause_msg</strong><span class="classifier">str</span></dt><dd><p>The message printed when a run is interrupted. This message
+includes instructions of changing the state of the RunEngine.
+It is set to <code class="docutils literal notranslate"><span class="pre">bluesky.run_engine.PAUSE_MSG</span></code> by default and
+can be modified based on needs.</p>
+</dd>
+<dt><strong>commands:</strong></dt><dd><p>The list of commands available to Msg.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="bluesky.run_engine.RunEngine.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">md:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">*,</span> <span class="pre">loop:</span> <span class="pre">~asyncio.events.AbstractEventLoop</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">preprocessors:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">context_managers:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_validator:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_normalizer:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">scan_id_source:</span> <span class="pre">~typing.Callable[[dict],</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">~collections.abc.Awaitable[int]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">default_scan_id_source&gt;,</span> <span class="pre">during_task:</span> <span class="pre">~bluesky.utils.DuringTask</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">call_returns_result:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/run_engine.html#RunEngine.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.run_engine.RunEngine.__init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bluesky.run_engine.RunEngine.__init__" title="bluesky.run_engine.RunEngine.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([md, loop, preprocessors, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.abort.html#bluesky.run_engine.RunEngine.abort" title="bluesky.run_engine.RunEngine.abort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">abort</span></code></a>([reason])</p></td>
+<td><p>Stop a running or paused plan and mark it as aborted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.clear_suspenders.html#bluesky.run_engine.RunEngine.clear_suspenders" title="bluesky.run_engine.RunEngine.clear_suspenders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear_suspenders</span></code></a>()</p></td>
+<td><p>Uninstall all suspenders.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">emit</span></code>(name, doc)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">emit_sync</span></code>(name, doc)</p></td>
+<td><p>Process blocking callbacks and schedule non-blocking callbacks.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.halt.html#bluesky.run_engine.RunEngine.halt" title="bluesky.run_engine.RunEngine.halt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">halt</span></code></a>()</p></td>
+<td><p>Stop the running plan and do not allow the plan a chance to clean up.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.install_suspender.html#bluesky.run_engine.RunEngine.install_suspender" title="bluesky.run_engine.RunEngine.install_suspender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">install_suspender</span></code></a>(suspender)</p></td>
+<td><p>Install a 'suspender', which can suspend and resume execution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.print_command_registry.html#bluesky.run_engine.RunEngine.print_command_registry" title="bluesky.run_engine.RunEngine.print_command_registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_command_registry</span></code></a>([verbose])</p></td>
+<td><p>This conveniently prints the command registry of available commands.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.register_command.html#bluesky.run_engine.RunEngine.register_command" title="bluesky.run_engine.RunEngine.register_command"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_command</span></code></a>(name, func)</p></td>
+<td><p>Register a new Message command.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.remove_suspender.html#bluesky.run_engine.RunEngine.remove_suspender" title="bluesky.run_engine.RunEngine.remove_suspender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_suspender</span></code></a>(suspender)</p></td>
+<td><p>Uninstall a suspender.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.request_pause.html#bluesky.run_engine.RunEngine.request_pause" title="bluesky.run_engine.RunEngine.request_pause"><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_pause</span></code></a>([defer])</p></td>
+<td><p>Command the Run Engine to pause.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.request_suspend.html#bluesky.run_engine.RunEngine.request_suspend" title="bluesky.run_engine.RunEngine.request_suspend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_suspend</span></code></a>(fut, *[, pre_plan, ...])</p></td>
+<td><p>Request that the run suspend itself until the future is finished.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset</span></code>()</p></td>
+<td><p>Clean up caches and unsubscribe subscriptions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.resume.html#bluesky.run_engine.RunEngine.resume" title="bluesky.run_engine.RunEngine.resume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resume</span></code></a>()</p></td>
+<td><p>Resume a paused plan from the last checkpoint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.stop.html#bluesky.run_engine.RunEngine.stop" title="bluesky.run_engine.RunEngine.stop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop</span></code></a>()</p></td>
+<td><p>Stop a running or paused plan, but mark it as successful (not aborted).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.subscribe.html#bluesky.run_engine.RunEngine.subscribe" title="bluesky.run_engine.RunEngine.subscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subscribe</span></code></a>(func[, name])</p></td>
+<td><p>Register a callback function to consume documents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.unregister_command.html#bluesky.run_engine.RunEngine.unregister_command" title="bluesky.run_engine.RunEngine.unregister_command"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unregister_command</span></code></a>(name)</p></td>
+<td><p>Unregister a Message command.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.unsubscribe.html#bluesky.run_engine.RunEngine.unsubscribe" title="bluesky.run_engine.RunEngine.unsubscribe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unsubscribe</span></code></a>(token)</p></td>
+<td><p>Unregister a callback function its integer ID.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_returns_result</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="bluesky.run_engine.RunEngine.commands.html#bluesky.run_engine.RunEngine.commands" title="bluesky.run_engine.RunEngine.commands"><code class="xref py py-obj docutils literal notranslate"><span class="pre">commands</span></code></a></p></td>
+<td><p>The list of commands available to Msg.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">deferred_pause_requested</span></code></p></td>
+<td><p>The property returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if deferred pause was requested, but not processed.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ignore_callback_exceptions</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">loop</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">resumable</span></code></p></td>
+<td><p>i.e., can the plan in progress by rewound</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">rewindable</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">state</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">suspenders</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">verbose</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../run_engine_api.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">RunEngine API Documentation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="bluesky.run_engine.RunEngine.__call__.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">bluesky.run_engine.RunEngine.__call__</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.run_engine.RunEngine"><code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.run_engine.RunEngine.__init__"><code class="docutils literal notranslate"><span class="pre">RunEngine.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.3/docs/generated/bluesky.run_engine.RunEngine.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated/bluesky.run_engine.RunEngine.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

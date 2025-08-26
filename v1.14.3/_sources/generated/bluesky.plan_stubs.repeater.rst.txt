@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.repeater
+============================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: repeater

@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.subs\_decorator
+=====================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: subs_decorator

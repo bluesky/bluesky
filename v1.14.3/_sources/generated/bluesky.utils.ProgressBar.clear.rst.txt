@@ -1,0 +1,6 @@
+﻿bluesky.utils.ProgressBar.clear
+===============================
+
+.. currentmodule:: bluesky.utils
+
+.. automethod:: ProgressBar.clear

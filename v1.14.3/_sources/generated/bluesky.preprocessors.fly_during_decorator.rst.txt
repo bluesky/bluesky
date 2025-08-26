@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.fly\_during\_decorator
+============================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: fly_during_decorator
