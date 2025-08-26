@@ -1,0 +1,1316 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bluesky.protocols &#8212; bluesky 1.14.4 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=fd71845b"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/protocols';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.4';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.14.4" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky.protocols</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for bluesky.protocols</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Iterator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">Generic</span><span class="p">,</span>
+    <span class="n">Literal</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Protocol</span><span class="p">,</span>
+    <span class="n">TypeVar</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">,</span>
+    <span class="n">runtime_checkable</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Datum</span><span class="p">,</span> <span class="n">StreamDatum</span><span class="p">,</span> <span class="n">StreamResource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents.event</span><span class="w"> </span><span class="kn">import</span> <span class="n">PartialEvent</span>
+
+<span class="c1"># Including Dtype here because ophyd imports Dtype directly from protocols, not event-model.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents.event_descriptor</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataKey</span><span class="p">,</span> <span class="n">Dtype</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents.event_page</span><span class="w"> </span><span class="kn">import</span> <span class="n">PartialEventPage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents.resource</span><span class="w"> </span><span class="kn">import</span> <span class="n">PartialResource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParamSpec</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Unpack</span>
+
+<span class="c1"># Squashes warning</span>
+<span class="n">Dtype</span> <span class="o">=</span> <span class="n">Dtype</span>  <span class="c1"># type: ignore</span>
+
+
+<span class="c1"># TODO: these are not placed in Events by RE yet</span>
+<div class="viewcode-block" id="ReadingOptional">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.ReadingOptional">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReadingOptional</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary containing the optional per-reading metadata of a piece of scan data&quot;&quot;&quot;</span>
+
+    <span class="c1">#: * -ve: alarm unknown, e.g. device disconnected</span>
+    <span class="c1">#: * 0: ok, no alarm</span>
+    <span class="c1">#: * +ve: there is an alarm</span>
+    <span class="c1">#:</span>
+    <span class="c1">#: The exact numbers are transport specific</span>
+    <span class="n">alarm_severity</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="c1">#: A descriptive message if there is an alarm</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+<span class="n">P</span> <span class="o">=</span> <span class="n">ParamSpec</span><span class="p">(</span><span class="s2">&quot;P&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Reading">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Reading">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Reading</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">ReadingOptional</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary containing the value and timestamp of a piece of scan data&quot;&quot;&quot;</span>
+
+    <span class="c1">#: The current value, as a JSON encodable type or numpy array</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">T</span>
+    <span class="c1">#: Timestamp in seconds since the UNIX epoch</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span></div>
+
+
+
+<span class="n">Asset</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">],</span> <span class="n">PartialResource</span><span class="p">],</span>
+    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;datum&quot;</span><span class="p">],</span> <span class="n">Datum</span><span class="p">],</span>
+<span class="p">]</span>
+
+
+<span class="n">StreamAsset</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">],</span> <span class="n">StreamResource</span><span class="p">],</span>
+    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_datum&quot;</span><span class="p">],</span> <span class="n">StreamDatum</span><span class="p">],</span>
+<span class="p">]</span>
+
+
+<span class="n">SyncOrAsync</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span>
+<span class="n">SyncOrAsyncIterator</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Iterator</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span>
+
+
+<div class="viewcode-block" id="Status">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Status">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Status</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Status.add_callback">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Status.add_callback">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;Status&quot;</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a callback function to be called upon completion.</span>
+
+<span class="sd">        The function must take the status as an argument.</span>
+
+<span class="sd">        If the Status object is done when the function is added, it should be</span>
+<span class="sd">        called immediately.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Status.exception">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Status.exception">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">]:</span> <span class="o">...</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">done</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If done return True, otherwise return False.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">success</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If done return whether the operation was successful.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="HasName">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.HasName">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HasName</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Used to populate object_keys in the Event DataKey</span>
+
+<span class="sd">        https://blueskyproject.io/event-model/event-descriptors.html#object-keys&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="HasParent">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.HasParent">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HasParent</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;``None``, or a reference to a parent device.</span>
+
+<span class="sd">        Used by the RE to stop duplicate stages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="WritesExternalAssets">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesExternalAssets">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WritesExternalAssets</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="WritesExternalAssets.collect_asset_docs">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesExternalAssets.collect_asset_docs">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">collect_asset_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">Asset</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the resource and datum documents describing data in external</span>
+<span class="sd">            source.</span>
+
+<span class="sd">        Example yielded values:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            (&#39;resource&#39;, {</span>
+<span class="sd">                &#39;path_semantics&#39;: &#39;posix&#39;,</span>
+<span class="sd">                &#39;resource_kwargs&#39;: {&#39;frame_per_point&#39;: 1},</span>
+<span class="sd">                &#39;resource_path&#39;: &#39;det.h5&#39;,</span>
+<span class="sd">                &#39;root&#39;: &#39;/tmp/tmpcvxbqctr/&#39;,</span>
+<span class="sd">                &#39;spec&#39;: &#39;AD_HDF5&#39;,</span>
+<span class="sd">                &#39;uid&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span>
+<span class="sd">            })</span>
+<span class="sd">            # or</span>
+<span class="sd">            (&#39;datum&#39;, {</span>
+<span class="sd">                &#39;datum_id&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788/0&#39;,</span>
+<span class="sd">                &#39;datum_kwargs&#39;: {&#39;point_number&#39;: 0},</span>
+<span class="sd">                &#39;resource&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;}</span>
+<span class="sd">            })</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="WritesStreamAssets">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WritesStreamAssets</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="WritesStreamAssets.collect_asset_docs">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets.collect_asset_docs">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">collect_asset_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">StreamAsset</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the resource and datum documents describing data in external</span>
+<span class="sd">            source up to a given index if provided.</span>
+
+<span class="sd">            An index will be provided when using stream resources and datums. The asset</span>
+<span class="sd">            docs will be collected from multiple streams and synchronised on the</span>
+<span class="sd">            highest common stream index.</span>
+
+<span class="sd">        Example yielded values:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            (&#39;resource&#39;, {</span>
+<span class="sd">                &#39;path_semantics&#39;: &#39;posix&#39;,</span>
+<span class="sd">                &#39;resource_kwargs&#39;: {&#39;frame_per_point&#39;: 1},</span>
+<span class="sd">                &#39;resource_path&#39;: &#39;det.h5&#39;,</span>
+<span class="sd">                &#39;root&#39;: &#39;/tmp/tmpcvxbqctr/&#39;,</span>
+<span class="sd">                &#39;spec&#39;: &#39;AD_HDF5&#39;,</span>
+<span class="sd">                &#39;uid&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span>
+<span class="sd">            })</span>
+<span class="sd">            # or</span>
+<span class="sd">            (&#39;datum&#39;, {</span>
+<span class="sd">                &#39;datum_id&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788/0&#39;,</span>
+<span class="sd">                &#39;datum_kwargs&#39;: {&#39;point_number&#39;: 0},</span>
+<span class="sd">                &#39;resource&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;}</span>
+<span class="sd">            })</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="WritesStreamAssets.get_index">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets.get_index">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrive the current index of writer.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Configurable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Configurable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Configurable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<div class="viewcode-block" id="Configurable.read_configuration">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Configurable.read_configuration">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Same API as ``read`` but for slow-changing fields related to configuration.</span>
+<span class="sd">        e.g., exposure time. These will typically be read only once per run.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Configurable.describe_configuration">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Configurable.describe_configuration">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Same API as ``describe``, but corresponding to the keys in</span>
+<span class="sd">        ``read_configuration``.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Triggerable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Triggerable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Triggerable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Triggerable.trigger">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Triggerable.trigger">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a ``Status`` that is marked done when the device is done triggering.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Preparable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Preparable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Preparable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Preparable.prepare">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Preparable.prepare">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare a device for scanning.</span>
+
+<span class="sd">        This method provides similar functionality to ``Stageable.stage`` and</span>
+<span class="sd">        ``Movable.set``, with key differences:</span>
+
+<span class="sd">        ``Stageable.stage``</span>
+<span class="sd">        ^^^^^^^^^^^^^^^^^^^</span>
+<span class="sd">        Staging a device translates to, &quot;I&#39;m going to use this in a scan, but I&#39;m</span>
+<span class="sd">        not sure how&quot;. Preparing it translates to, &quot;I&#39;m about to do a step or a fly</span>
+<span class="sd">        scan with these parameters&quot;. Staging should be universal across many different</span>
+<span class="sd">        types of scans, however prepare is specific to an input value passed in.</span>
+
+<span class="sd">        ``Movable.set``</span>
+<span class="sd">        ^^^^^^^^^^^^^^^</span>
+<span class="sd">        For some devices, preparation for a scan could involve multiple soft or</span>
+<span class="sd">        hardware signals being configured and/or set. ``prepare`` therefore allows</span>
+<span class="sd">        these to be bundled together, along with other logic.</span>
+
+<span class="sd">        For example, a Flyable device should have the following methods called on it to</span>
+<span class="sd">        perform a fly-scan:</span>
+
+<span class="sd">            prepare(flyscan_params)</span>
+<span class="sd">            kickoff()</span>
+<span class="sd">            complete()</span>
+
+<span class="sd">        If the device is a detector, ``collect_asset_docs`` can be called repeatedly</span>
+<span class="sd">        while ``complete`` is not done to publish frames. Alternatively, to step-scan a</span>
+<span class="sd">        detector,</span>
+
+<span class="sd">            prepare(frame_params) to setup N software triggered frames</span>
+<span class="sd">            trigger() to take N frames</span>
+<span class="sd">            collect_asset_docs() to publish N frames</span>
+
+<span class="sd">        Returns a Status that is marked done when the device is ready for a scan.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Readable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Readable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Readable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<div class="viewcode-block" id="Readable.read">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Readable.read">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an OrderedDict mapping string field name(s) to dictionaries</span>
+<span class="sd">        of values and timestamps and optional per-point metadata.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+
+<span class="sd">        Example return value:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            OrderedDict((&#39;channel1&#39;,</span>
+<span class="sd">                         {&#39;value&#39;: 5, &#39;timestamp&#39;: 1472493713.271991}),</span>
+<span class="sd">                         (&#39;channel2&#39;,</span>
+<span class="sd">                         {&#39;value&#39;: 16, &#39;timestamp&#39;: 1472493713.539238}))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Readable.describe">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Readable.describe">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an OrderedDict with exactly the same keys as the ``read``</span>
+<span class="sd">        method, here mapped to per-scan metadata about each field.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+
+<span class="sd">        Example return value:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            OrderedDict((&#39;channel1&#39;,</span>
+<span class="sd">                         {&#39;source&#39;: &#39;XF23-ID:SOME_PV_NAME&#39;,</span>
+<span class="sd">                          &#39;dtype&#39;: &#39;number&#39;,</span>
+<span class="sd">                          &#39;shape&#39;: []}),</span>
+<span class="sd">                        (&#39;channel2&#39;,</span>
+<span class="sd">                         {&#39;source&#39;: &#39;XF23-ID:SOME_PV_NAME&#39;,</span>
+<span class="sd">                          &#39;dtype&#39;: &#39;number&#39;,</span>
+<span class="sd">                          &#39;shape&#39;: []}))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Collectable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Collectable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Collectable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Collectable.describe_collect">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Collectable.describe_collect">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This is like ``describe()`` on readable devices, but with an extra layer of nesting.</span>
+
+<span class="sd">        Since a flyer can potentially return more than one event stream, this is either</span>
+<span class="sd">            * a dict of stream names (strings) mapped to a ``describe()``-type output for each.</span>
+<span class="sd">            * a ``describe()``-type output of the descriptor name passed in with the ``name``</span>
+<span class="sd">                argument of the message.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="EventCollectable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventCollectable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventCollectable</span><span class="p">(</span><span class="n">Collectable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="EventCollectable.collect">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventCollectable.collect">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield dictionaries that are partial Event documents.</span>
+
+<span class="sd">        They should contain the keys &#39;time&#39;, &#39;data&#39;, and &#39;timestamps&#39;.</span>
+<span class="sd">        A &#39;uid&#39; is added by the RunEngine.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="EventPageCollectable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventPageCollectable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventPageCollectable</span><span class="p">(</span><span class="n">Collectable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="EventPageCollectable.collect_pages">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventPageCollectable.collect_pages">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">collect_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">PartialEventPage</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield dictionaries that are partial EventPage documents.</span>
+
+<span class="sd">        They should contain the keys &#39;time&#39;, &#39;data&#39;, and &#39;timestamps&#39;.</span>
+<span class="sd">        A &#39;uid&#39; is added by the RunEngine.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">contravariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Movable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Movable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Movable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
+<div class="viewcode-block" id="Movable.set">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Movable.set">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Unpack</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T_co</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a ``Status`` that is marked done when the device is done moving.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Location">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Location">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Location</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary containing the location of a Device&quot;&quot;&quot;</span>
+
+    <span class="c1">#: Where the Device was requested to move to</span>
+    <span class="n">setpoint</span><span class="p">:</span> <span class="n">T</span>
+    <span class="c1">#: Where the Device actually is at the moment</span>
+    <span class="n">readback</span><span class="p">:</span> <span class="n">T</span></div>
+
+
+
+<div class="viewcode-block" id="Locatable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Locatable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Locatable</span><span class="p">(</span><span class="n">Movable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Locatable.locate">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Locatable.locate">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Location</span><span class="p">[</span><span class="n">T</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the current location of a Device.</span>
+
+<span class="sd">        While a ``Readable`` reports many values, a ``Movable`` will have the</span>
+<span class="sd">        concept of location. This is where the Device currently is, and where it</span>
+<span class="sd">        was last requested to move to. This protocol formalizes how to get the</span>
+<span class="sd">        location from a ``Movable``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Flyable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Flyable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Flyable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Flyable.kickoff">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Flyable.kickoff">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kickoff</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Begin acculumating data.</span>
+
+<span class="sd">        Return a ``Status`` and mark it done when acqusition has begun.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Flyable.complete">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Flyable.complete">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a ``Status`` and mark it done when acquisition has completed.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Stageable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stageable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Stageable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="c1"># TODO: we were going to extend these to be able to return plans, what</span>
+    <span class="c1"># signature should they have?</span>
+<div class="viewcode-block" id="Stageable.stage">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stageable.stage">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;An optional hook for &quot;setting up&quot; the device for acquisition.</span>
+
+<span class="sd">        It should return a ``Status`` that is marked done when the device is</span>
+<span class="sd">        done staging.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Stageable.unstage">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stageable.unstage">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unstage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A hook for &quot;cleaning up&quot; the device after acquisition.</span>
+
+<span class="sd">        It should return a ``Status`` that is marked done when the device is finished</span>
+<span class="sd">        unstaging.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Pausable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Pausable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pausable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Pausable.pause">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Pausable.pause">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform device-specific work when the RunEngine pauses.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Pausable.resume">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Pausable.resume">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform device-specific work when the RunEngine resumes after a pause.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Stoppable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stoppable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Stoppable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="Stoppable.stop">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stoppable.stop">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Safely stop a device that may or may not be in motion.</span>
+
+<span class="sd">        The argument ``success`` is a boolean.</span>
+<span class="sd">        When ``success`` is true, bluesky is stopping the device as planned</span>
+<span class="sd">        and the device should stop &quot;normally&quot;.</span>
+<span class="sd">        When ``success`` is false, something has gone wrong and the device</span>
+<span class="sd">        may wish to take defensive action to make itself safe.</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<span class="n">Callback</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]],</span> <span class="kc">None</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Subscribable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Subscribable</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<div class="viewcode-block" id="Subscribable.subscribe">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable.subscribe">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Subscribe to updates in value of a device.</span>
+
+<span class="sd">        When the device has a new value ready, it should call ``function``</span>
+<span class="sd">        with something that looks like the output of ``read()``.</span>
+
+<span class="sd">        Needed for :doc:`monitored &lt;async&gt;`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Subscribable.clear_sub">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable.clear_sub">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a subscription.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Checkable">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Checkable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Checkable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
+<div class="viewcode-block" id="Checkable.check_value">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Checkable.check_value">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">T_co</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test for a valid setpoint without actually moving.</span>
+
+<span class="sd">        This should accept the same arguments as ``set``. It should raise an</span>
+<span class="sd">        Exception if the argument represent an illegal setting --- e.g. a</span>
+<span class="sd">        position that would move a motor outside its limits or a temperature</span>
+<span class="sd">        controller outside of its settable range.</span>
+
+<span class="sd">        This method is used by simulators that check limits. If not implemented</span>
+<span class="sd">        those simulators should assume all values are valid, but may warn.</span>
+
+<span class="sd">        This method may be used during a scan, so should not write to any Signals</span>
+
+<span class="sd">        This can be a standard function or an ``async`` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Hints">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Hints">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Hints</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary of optional hints for visualization&quot;&quot;&quot;</span>
+
+    <span class="c1">#: A list of the interesting fields to plot</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="c1">#: Partition fields (and their stream name) into dimensions for plotting</span>
+    <span class="c1">#:</span>
+    <span class="c1">#: ``&#39;dimensions&#39;: [(fields, stream_name), (fields, stream_name), ...]``</span>
+    <span class="n">dimensions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span>
+    <span class="c1">#: Include this if scan data is sampled on a regular rectangular grid</span>
+    <span class="n">gridding</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;rectilinear&quot;</span><span class="p">,</span> <span class="s2">&quot;rectilinear_nonsequential&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="HasHints">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.HasHints">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HasHints</span><span class="p">(</span><span class="n">HasName</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hints</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Hints</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A dictionary of suggestions for best-effort visualization and processing.</span>
+
+<span class="sd">        This does not affect what data is read or saved; it is only</span>
+<span class="sd">        a suggestion to enable automated tools to provide helpful information</span>
+<span class="sd">        with minimal guidance from the user. See :ref:`hints`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NamedMovable</span><span class="p">(</span><span class="n">Movable</span><span class="p">[</span><span class="n">T_co</span><span class="p">],</span> <span class="n">HasHints</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A movable object that has a name and hints.&quot;&quot;&quot;</span>
+
+    <span class="o">...</span>
+
+
+<div class="viewcode-block" id="check_supports">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.check_supports">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">protocol</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check that an object supports a protocol</span>
+
+<span class="sd">    This exists so that multiple protocol checks can be run in a mypy</span>
+<span class="sd">    compatible way, e.g.::</span>
+
+<span class="sd">        triggerable = check_supports(obj, Triggerable)</span>
+<span class="sd">        triggerable.trigger()</span>
+<span class="sd">        readable = check_supports(obj, Readable)</span>
+<span class="sd">        readable.read()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">protocol</span><span class="p">),</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> does not implement all </span><span class="si">%s</span><span class="s2"> methods&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">protocol</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>  <span class="c1"># noqa: UP031</span>
+    <span class="k">return</span> <span class="n">obj</span></div>
+
+
+
+<span class="c1"># Descriptor with previous name on imports for backwards compatibility.</span>
+<span class="n">Descriptor</span> <span class="o">=</span> <span class="n">DataKey</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

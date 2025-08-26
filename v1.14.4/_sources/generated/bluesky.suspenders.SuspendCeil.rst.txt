@@ -1,0 +1,31 @@
+﻿bluesky.suspenders.SuspendCeil
+==============================
+
+.. currentmodule:: bluesky.suspenders
+
+.. autoclass:: SuspendCeil
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SuspendCeil.__init__
+      ~SuspendCeil.get_futures
+      ~SuspendCeil.install
+      ~SuspendCeil.remove
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SuspendCeil.tripped
+   
+   

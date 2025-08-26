@@ -1,0 +1,1393 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Multi-Run Plans &#8212; bluesky 1.14.4 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=fd71845b"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'multi_run_plans';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.4';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Debugging and Logging" href="debugging.html" />
+    <link rel="prev" title="Asynchronous Acquisition" href="async.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.14.4" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documents.html">Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Recording Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callbacks.html">Live Visualization and Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="state-machine.html">Interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">Simulation and Error Checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="progress-bar.html">Progress Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event_descriptors.html">Event Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Acquisition</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Multi-Run Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging and Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run_engine_api.html">RunEngine API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utility classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="magics.html">IPython ‘Magics’ [Experimental]</a></li>
+<li class="toctree-l1"><a class="reference internal" href="otel-tracing.html">Tracing with Opentelemetry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="from-pyepics-to-bluesky.html">Translating Direct PyEpics Code to Bluesky Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison-with-spec.html">Comparison with SPEC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-interfaces.html">Hardware Interface Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tiled-writer.html">Integration with Tiled</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="userindex.html" class="nav-link">User Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Multi-Run Plans</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="multi-run-plans">
+<h1>Multi-Run Plans<a class="headerlink" href="#multi-run-plans" title="Link to this heading">#</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
+<p>This section is a brief tutorial on multi-run plans (introduced in Bluesky v1.6.0).
+A traditional single-run plan contains a set of instructions for performing only one run,
+which is assigned a scan ID and a UID. When a multi-run plan is executed by the Run Engine, multiple
+runs can be performed as part of a single plan. Data from each run can be independently
+displayed and saved to the database via Databroker. Prior versions of Bluesky supported
+only sequential execution of multiple runs within a plan: building larger plans by creating
+a sequence of smaller plans and preassembled plans shipped with Bluesky is a standard
+practice. In Bluesky v1.6.0 a number of features were introduced to allow plans
+with nested runs. Two runs are considered nested if one ‘outer’ run is interrupted, another
+‘inner’ run is executed, and then the first run is resumed and completed. The number of levels
+of nesting is not limited by Bluesky. Interruptions can be initiated by the plan itself
+(simply by opening another run before closing currently executed run) or externally (e.g.
+by triggering a suspender and causing execution of pre- or post-plan). This tutorial includes
+a brief explanation of the new Bluesky features for supporting multi-run plans and several
+examples that demonstrate the implementation of plans that contain sequential, nested and recursive
+runs.</p>
+</section>
+<section id="definition-of-a-run">
+<h2>Definition of a ‘Run’<a class="headerlink" href="#definition-of-a-run" title="Link to this heading">#</a></h2>
+<p>From the point of view of Bluesky, a run is a sequence of instructions (messages) for controlling
+the instrumental equipment that starts with <cite>open_run</cite> and ends with <cite>close_run</cite> message.
+We may also apply the term ‘run’ to a block of code which generates such a sequence of messages.
+Data from each run is bundled together via an assigned distinct Scan ID and UID. The set of documents
+is also generated for each run, including mandatory ‘start’ and ‘stop’ documents. The documents
+can be processed by callbacks (such as BestEffortCallback) and saved to the database via Databroker.</p>
+<p>In the plan, the run may be defined by explicitely enclosing the code in <cite>bps.open_run()</cite> and
+<cite>bps.close_run()</cite> stubs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using &#39;bps.open_run()&#39; and &#39;bps.close_run()&#39; stubs to define a run</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_plan</span><span class="p">():</span>
+    <span class="o">...</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># &#39;md&#39; - metadata to be added to the &#39;start&#39; document</span>
+    <span class="o">...</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scan</span> <span class="o">&gt;</span>
+    <span class="o">...</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">sample_plan</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>or using <cite>&#64;bpp.run_decorator</cite>, which inserts <cite>open_run</cite> and <cite>close_run</cite> control messages
+before and after the sequence generated by the enclosed code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using &#39;bpp.run_decorator&#39; to define a run</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bpp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># &#39;md&#39; - metadata to be added to the &#39;start&#39; document</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_plan</span><span class="p">():</span>
+    <span class="o">...</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scan</span> <span class="o">&gt;</span>
+    <span class="o">...</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">sample_plan</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>The rules for basic Bluesky plans require that the currently running scan is closed before
+the next scan is opened, therefore the following code works:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># This code works, since the first run is closed before the second one is opened</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_plan</span><span class="p">():</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scan</span> <span class="o">&gt;</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>  <span class="c1"># Closing the first run (scan)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># Opening the second run (scan)</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scan</span> <span class="o">&gt;</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">sample_plan</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>but the following code fails:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># This code fails, since the second run is opened before the first run is closed</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_plan</span><span class="p">():</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># Opening the first run</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scan</span> <span class="o">&gt;</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># Opening the second run before the first one is closed</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scan</span> <span class="o">&gt;</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">sample_plan</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Note, that the preassembled plans, such as <cite>bluesky.plans.count</cite> or <cite>bluesky.plans.list_scan</cite>,
+are complete single-run plans, enclosed in <cite>open_run</cite> and <cite>close_run</cite> messages, therefore
+the following code fails as well:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># This code fails while attempting to start a preassembled plan from an open run</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_plan</span><span class="p">():</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># Starting the first run</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scan</span> <span class="o">&gt;</span>
+    <span class="k">yield from</span> <span class="n">bpp</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="o">&lt;</span><span class="n">some</span> <span class="n">arguments</span><span class="o">&gt;</span><span class="p">)</span>  <span class="c1"># Attempting to run a preassembled plan from an open run</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">sample_plan</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>An example of the situation when a preassembled plan is called from another open run is
+when a preassembled plan is included in a suspender pre- or post-plan. When the suspender is
+triggered, the current run is interrupted (not closed) and the pre- or post-plan attempts to open
+another run (the mechanism is the same as in the case of nested runs, see below). As a result,
+Run Engine fails for the same reason as in the two previous code examples. The new multi-run plan
+Bluesky features allow to implement nested plans, as well as include full-featured scans
+in pre- and post-plans.</p>
+</section>
+<section id="bluesky-features-for-support-of-multi-run-plans">
+<h2>Bluesky Features for Support of Multi-run Plans<a class="headerlink" href="#bluesky-features-for-support-of-multi-run-plans" title="Link to this heading">#</a></h2>
+<p>In order to handle simultaneously open runs within a plan, Run Engine is looking at the run key attribute
+of each control message to decide which scan is currently being executed. The default value for the run key
+is <cite>None</cite>, but it could be manually set in the plan for any block of code which define the run. A run key
+value may be of any type, but it is <strong>strongly</strong> recommended that manually assigned run keys are
+human-readable informative strings.</p>
+<p>The new ‘inner’ run can be opened from within the ‘outer’ run only if the run keys of the ‘inner’ and
+‘outer’ scans are different. Otherwise the plan execution fails.</p>
+<p>The run key is used by Run Engine</p>
+<ul class="simple">
+<li><p>to maintain the state of each run independently from other open runs;</p></li>
+<li><p>to include run metadata, such as scan ID and UID, into the emitted documents. (Metadata is then used
+to route the documents to the appropriate callbacks. If documents are saved using Databroker, the metadata
+allows to associate documents with runs and retrieve run data from the database.)</p></li>
+</ul>
+<p>Run key is assigned to a block of code using <cite>bpp.set_run_key_wrapper</cite> or <cite>&#64;bpp.set_run_key_decorator</cite>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bpp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+
+<span class="c1"># Using decorator</span>
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">set_run_key_decorator</span><span class="p">(</span><span class="s2">&quot;run_key_example_1&quot;</span><span class="p">)</span>
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_plan</span><span class="p">():</span>
+    <span class="o">...</span>
+    <span class="o">&lt;</span> <span class="n">code</span> <span class="n">that</span> <span class="n">controls</span> <span class="n">execution</span> <span class="n">of</span> <span class="n">the</span> <span class="n">run</span> <span class="o">&gt;</span>
+    <span class="o">...</span>
+
+<span class="n">RE</span><span class="p">(</span><span class="n">sample_plan</span><span class="p">())</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">hw</span>
+<span class="n">det</span><span class="p">,</span> <span class="n">motor</span> <span class="o">=</span> <span class="n">hw</span><span class="p">()</span><span class="o">.</span><span class="n">det</span><span class="p">,</span> <span class="n">hw</span><span class="p">()</span><span class="o">.</span><span class="n">motor</span>
+
+<span class="c1"># Using wrapper</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">s_wrapped</span> <span class="o">=</span> <span class="n">bpp</span><span class="o">.</span><span class="n">set_run_key_wrapper</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s2">&quot;run_key_example_2&quot;</span><span class="p">)</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">s_wrapped</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The implementation of <cite>&#64;bpp.set_run_key_decorator</cite> and <cite>bpp.set_run_key_wrapper</cite> is
+replacing the default value <cite>None</cite> of the attribute <cite>run</cite> in each message generated within
+the enclosed block with the user-defined run key.</p>
+<p>The <cite>&#64;bpp.set_run_key_decorator</cite> and <cite>bpp.set_run_key_wrapper</cite> are primarily intended
+to be applied to a function that contains a run implementation, but may be also used
+with any block of plan code. For example, one may write a plan that simultaneously
+opens multiple runs and executes them in parallel by generating groups of messages
+with run ids of the open scans. This is currently not recommended and should be attempted
+only at the developer’s own risk.</p>
+</section>
+<section id="plans-with-sequential-runs">
+<h2>Plans with Sequential Runs<a class="headerlink" href="#plans-with-sequential-runs" title="Link to this heading">#</a></h2>
+<p>Sequential calling of multiple runs is supported by older versions of Bluesky. There is no need
+to use multi-run plan features if runs are not overlapping (the next run is opened only after
+the previous run is closed), but run keys still can be assigned to all or some runs if needed.</p>
+<p>In the following example, two preassembled plans are called in sequence. Run Engine is subscribed to
+a single instance of BestEffortCallback, which is set up to display data specific for each run
+when the run opened.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: consecutive execution of single-run plans</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">databroker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Broker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">hw</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.callbacks.best_effort</span><span class="w"> </span><span class="kn">import</span> <span class="n">BestEffortCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">rel_scan</span><span class="p">,</span> <span class="n">scan</span>
+
+<span class="n">hw</span> <span class="o">=</span> <span class="n">hw</span><span class="p">()</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">Broker</span><span class="o">.</span><span class="n">named</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">)</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">)</span>
+
+<span class="n">bec</span> <span class="o">=</span> <span class="n">BestEffortCallback</span><span class="p">()</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">bec</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">plan_sequential_runs</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="c1"># Single-run plans may be called consecutively. No special handling is required</span>
+    <span class="c1">#   as long as the previous scan is closed before the next one is opened</span>
+    <span class="k">yield from</span> <span class="n">scan</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">],</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">npts</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">rel_scan</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det2</span><span class="p">],</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">npts</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="n">RE</span><span class="p">(</span><span class="n">plan_sequential_runs</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+
+<span class="go">Transient Scan ID: 1     Time: 2025-08-26 17:22:51</span>
+<span class="go">Persistent Unique Scan ID: &#39;7fd3555c-1703-4cbb-a107-d77a8ac50adc&#39;</span>
+<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|         1 | 17:22:51.9 |     -1.000 |      0.677 |</span>
+<span class="go">|         2 | 17:22:52.0 |     -0.778 |      1.491 |</span>
+<span class="go">|         3 | 17:22:52.0 |     -0.556 |      2.697 |</span>
+<span class="go">|         4 | 17:22:52.1 |     -0.333 |      4.004 |</span>
+<span class="go">|         5 | 17:22:52.1 |     -0.111 |      4.878 |</span>
+<span class="go">|         6 | 17:22:52.2 |      0.111 |      4.878 |</span>
+<span class="go">|         7 | 17:22:52.2 |      0.333 |      4.004 |</span>
+<span class="go">|         8 | 17:22:52.3 |      0.556 |      2.697 |</span>
+<span class="go">|         9 | 17:22:52.3 |      0.778 |      1.491 |</span>
+<span class="go">|        10 | 17:22:52.4 |      1.000 |      0.677 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">generator scan [&#39;7fd3555c&#39;] (scan num: 1)</span>
+
+
+
+
+
+<span class="go">Transient Scan ID: 2     Time: 2025-08-26 17:22:52</span>
+<span class="go">Persistent Unique Scan ID: &#39;fcc28687-5b10-442c-8fa1-cd6822b9eeab&#39;</span>
+<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">+-----------+------------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |       det2 |</span>
+<span class="go">+-----------+------------+------------+------------+------------+</span>
+<span class="go">|         1 | 17:22:52.6 |      0.000 |      5.000 |      1.765 |</span>
+<span class="go">|         2 | 17:22:52.8 |      0.222 |      4.530 |      1.765 |</span>
+<span class="go">|         3 | 17:22:52.9 |      0.444 |      3.368 |      1.765 |</span>
+<span class="go">|         4 | 17:22:53.1 |      0.667 |      2.056 |      1.765 |</span>
+<span class="go">|         5 | 17:22:53.3 |      0.889 |      1.030 |      1.765 |</span>
+<span class="go">|         6 | 17:22:53.4 |      1.111 |      0.423 |      1.765 |</span>
+<span class="go">|         7 | 17:22:53.6 |      1.333 |      0.143 |      1.765 |</span>
+<span class="go">|         8 | 17:22:53.8 |      1.556 |      0.040 |      1.765 |</span>
+<span class="go">|         9 | 17:22:53.9 |      1.778 |      0.009 |      1.765 |</span>
+<span class="go">|        10 | 17:22:54.1 |      2.000 |      0.002 |      1.765 |</span>
+<span class="go">+-----------+------------+------------+------------+------------+</span>
+<span class="go">generator rel_scan [&#39;fcc28687&#39;] (scan num: 2)</span>
+
+
+
+<span class="gh">Out[1]: </span>
+<span class="go">(&#39;7fd3555c-1703-4cbb-a107-d77a8ac50adc&#39;,</span>
+<span class="go"> &#39;fcc28687-5b10-442c-8fa1-cd6822b9eeab&#39;)</span>
+</pre></div>
+</div>
+</section>
+<section id="plans-with-nested-runs">
+<h2>Plans with Nested Runs<a class="headerlink" href="#plans-with-nested-runs" title="Link to this heading">#</a></h2>
+<p>The following example illustrates the use of <cite>&#64;bpp.set_run_key_decorator</cite> to implement two nested runs:
+the ‘outer’ run interrupts measurements, calls the ‘inner’ run and then completes the measurements.
+The ‘outer’ and ‘inner’ runs are assigned different run ids (‘run_1’ and ‘run_2’). Note that
+the <cite>&#64;bpp.set_run_key_decorator</cite> for the ‘outer’ run does not overwrite the run id of the ‘inner’ scan,
+despite the fact that it is generated inside the enclosed code, since the decorator is designed to replace
+the run id attribute of the message only if it has the default value of <cite>None</cite>, i.e. the run id of
+a message can be replaced by the decorator only the first time it is processed by the decorator.</p>
+<p>If multiple runs are to be opened simultaneously, each run needs to be subscribed to its own instance
+of callback. Standard RunEngine subscription mechanism does not provide this capability. Instead,
+subscription should be performed via <cite>RunRouter</cite>. The code in the following example demonstrates how
+to use <cite>BestEffortCallback</cite> to monitor data from multiple nested runs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: nested runs</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">databroker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Broker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunRouter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">hw</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bpp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.callbacks.best_effort</span><span class="w"> </span><span class="kn">import</span> <span class="n">BestEffortCallback</span>
+
+<span class="n">hw</span> <span class="o">=</span> <span class="n">hw</span><span class="p">()</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">Broker</span><span class="o">.</span><span class="n">named</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">)</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">factory</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="c1"># Documents from each run is routed to an independent</span>
+    <span class="c1">#   instance of BestEffortCallback</span>
+    <span class="n">bec</span> <span class="o">=</span> <span class="n">BestEffortCallback</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">bec</span><span class="p">],</span> <span class="p">[]</span>
+
+
+<span class="n">rr</span> <span class="o">=</span> <span class="n">RunRouter</span><span class="p">([</span><span class="n">factory</span><span class="p">])</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">rr</span><span class="p">)</span>
+
+
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">set_run_key_decorator</span><span class="p">(</span><span class="s2">&quot;run_2&quot;</span><span class="p">)</span>
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sim_plan_inner</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det2</span><span class="p">])</span>
+
+
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">set_run_key_decorator</span><span class="p">(</span><span class="s2">&quot;run_1&quot;</span><span class="p">)</span>
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sim_plan_outer</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)):</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det</span><span class="p">])</span>
+
+    <span class="k">yield from</span> <span class="n">sim_plan_inner</span><span class="p">(</span><span class="n">npts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">npts</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The output of the plan contains data from two runs with each run assigned its own ID and UID. The tables
+for the runs are printed by two separate instances of <cite>BestEffortCallback</cite>. The data from two tables
+is printed in the order of acquisition: the table for the ‘inner’ run is printed in the gap of
+the table for the ‘outer’ run.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [2]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_outer</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+
+<span class="go">Transient Scan ID: 1     Time: 2025-08-26 17:22:54</span>
+<span class="go">Persistent Unique Scan ID: &#39;e19fe3cf-87cd-484a-b2c4-d28d82409be2&#39;</span>
+<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |      motor |        det |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+
+
+<span class="go">Transient Scan ID: 2     Time: 2025-08-26 17:22:55</span>
+<span class="go">Persistent Unique Scan ID: &#39;7ec9de17-fe43-4523-978d-d75845fafd3b&#39;</span>
+<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">+-----------+------------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |       det2 |     motor2 |     motor1 |</span>
+<span class="go">+-----------+------------+------------+------------+------------+</span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go">+-----------+------------+------------+------------+------------+</span>
+<span class="go">generator sim_plan_outer [&#39;7ec9de17&#39;] (scan num: 2)</span>
+
+
+
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">generator sim_plan_outer [&#39;e19fe3cf&#39;] (scan num: 1)</span>
+
+
+
+<span class="gh">Out[2]: </span>
+<span class="go">(&#39;e19fe3cf-87cd-484a-b2c4-d28d82409be2&#39;,</span>
+<span class="go"> &#39;7ec9de17-fe43-4523-978d-d75845fafd3b&#39;)</span>
+</pre></div>
+</div>
+<p>The wrapper <cite>bpp.set_run_key_wrapper</cite> can be used instead of the decorator. For example
+the run <cite>sim_plan_inner</cite> from the previous example can be rewritten as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sim_plan_inner</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+            <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det2</span><span class="p">])</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">bpp</span><span class="o">.</span><span class="n">run_wrapper</span><span class="p">(</span><span class="n">f</span><span class="p">(),</span> <span class="n">md</span><span class="o">=</span><span class="p">{})</span>
+    <span class="k">return</span> <span class="n">bpp</span><span class="o">.</span><span class="n">set_run_key_wrapper</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s2">&quot;run_2&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Subscription to callbacks via RunRouter provides flexibility to subscribe each run
+to its own set of callbacks. In the following example <cite>run_key</cite> is added to the start
+document metadata and used to distinguish between two runs in the function factory that
+performs callback subscriptions.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: subscribing runs to individual sets of callbacks</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">databroker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Broker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunRouter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">hw</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bpp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LivePlot</span><span class="p">,</span> <span class="n">LiveTable</span>
+
+<span class="n">hw</span> <span class="o">=</span> <span class="n">hw</span><span class="p">()</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">Broker</span><span class="o">.</span><span class="n">named</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">)</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">factory</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="c1"># Runs may be subscribed to different sets of callbacks. Metadata from start</span>
+    <span class="c1">#   document may be used to identify, which run is currently being started.</span>
+    <span class="c1">#   In this example, the run key is explicitely added to the start document</span>
+    <span class="c1">#   and used to identify runs, but other data can be similarly used.</span>
+    <span class="n">cb_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_key&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;run_1&quot;</span><span class="p">:</span>
+        <span class="n">cb_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LiveTable</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">]))</span>
+        <span class="n">cb_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LivePlot</span><span class="p">(</span><span class="s2">&quot;det1&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s2">&quot;motor1&quot;</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_key&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;run_2&quot;</span><span class="p">:</span>
+        <span class="n">cb_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LiveTable</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det2</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">cb_list</span><span class="p">,</span> <span class="p">[]</span>
+
+
+<span class="n">rr</span> <span class="o">=</span> <span class="n">RunRouter</span><span class="p">([</span><span class="n">factory</span><span class="p">])</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">rr</span><span class="p">)</span>
+
+
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">set_run_key_decorator</span><span class="p">(</span><span class="s2">&quot;run_2&quot;</span><span class="p">)</span>
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;run_key&quot;</span><span class="p">:</span> <span class="s2">&quot;run_2&quot;</span><span class="p">})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sim_plan_inner</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">motor2</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det2</span><span class="p">])</span>
+
+
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">set_run_key_decorator</span><span class="p">(</span><span class="s2">&quot;run_1&quot;</span><span class="p">)</span>
+<span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;run_key&quot;</span><span class="p">:</span> <span class="s2">&quot;run_1&quot;</span><span class="p">})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sim_plan_outer</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)):</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">])</span>
+
+    <span class="k">yield from</span> <span class="n">sim_plan_inner</span><span class="p">(</span><span class="n">npts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">npts</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_outer</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+
+<span class="go">+-----------+------------+------------+-----------------+------------+</span>
+<span class="go">|   seq_num |       time |     motor1 | motor1_setpoint |       det1 |</span>
+<span class="go">+-----------+------------+------------+-----------------+------------+</span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+
+
+<span class="go">+-----------+------------+------------+-----------------+------------+-----------------+------------+</span>
+<span class="go">|   seq_num |       time |     motor1 | motor1_setpoint |     motor2 | motor2_setpoint |       det2 |</span>
+<span class="go">+-----------+------------+------------+-----------------+------------+-----------------+------------+</span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go">+-----------+------------+------------+-----------------+------------+-----------------+------------+</span>
+<span class="go">generator sim_plan_outer [&#39;653bf065&#39;] (scan num: 2)</span>
+
+
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go">+-----------+------------+------------+-----------------+------------+</span>
+<span class="go">generator sim_plan_outer [&#39;50aa855d&#39;] (scan num: 1)</span>
+
+
+<span class="gh">Out[3]: </span>
+<span class="go">(&#39;50aa855d-cf5f-4fc7-b12a-ef3fdad67a99&#39;,</span>
+<span class="go"> &#39;653bf065-f467-4ab3-bda3-49727de7ceae&#39;)</span>
+</pre></div>
+</div>
+<p>In some cases it may be necessary to implement a run that could be interrupted
+and a new instance of the same run started. For example, the suspender pre- or post-plan
+may contain a run, which takes substantial time to execute. Such run may be interrupted
+if the suspender is repeatedly triggered. This will cause another instance of the pre-
+or post-plan to be started while the first one is still in the open state. This process
+is similar to recursive calling of the run (run which includes instructions to call
+itself). Recursive calls are possible if unique run key is assigned to a run each
+time it is started.</p>
+<p>The following example illustrates dynamic generation of run keys. The plan may have no practical purpose
+besides demonstration of the principle. The plan is calling itself recursively multiple times until
+the global counter <cite>n_calls</cite> reaches the maximum value of <cite>n_calls_max</cite>. The unique run key is generated
+before at each call.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: recursive runs</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">databroker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Broker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunRouter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">hw</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.preprocessors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bpp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.callbacks.best_effort</span><span class="w"> </span><span class="kn">import</span> <span class="n">BestEffortCallback</span>
+
+<span class="n">hw</span> <span class="o">=</span> <span class="n">hw</span><span class="p">()</span>
+
+<span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">({})</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">Broker</span><span class="o">.</span><span class="n">named</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">)</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">factory</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="c1"># Each run is subscribed to independent instance of BEC</span>
+    <span class="n">bec</span> <span class="o">=</span> <span class="n">BestEffortCallback</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">bec</span><span class="p">],</span> <span class="p">[]</span>
+
+
+<span class="n">rr</span> <span class="o">=</span> <span class="n">RunRouter</span><span class="p">([</span><span class="n">factory</span><span class="p">])</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">rr</span><span class="p">)</span>
+
+<span class="c1"># Call counter and the maximum number calls</span>
+<span class="n">n_calls</span><span class="p">,</span> <span class="n">n_calls_max</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sim_plan_recursive</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">n_calls</span><span class="p">,</span> <span class="n">n_calls_max</span>
+
+    <span class="n">n_calls</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># Increment counter</span>
+    <span class="k">if</span> <span class="n">n_calls</span> <span class="o">&lt;=</span> <span class="n">n_calls_max</span><span class="p">:</span>
+        <span class="c1"># Generate unique key for each run. The key generation algorithm</span>
+        <span class="c1">#   must only guarantee that execution of the runs that are assigned</span>
+        <span class="c1">#   the same key will never overlap in time.</span>
+        <span class="n">run_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;run_key_</span><span class="si">{</span><span class="n">n_calls</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="nd">@bpp</span><span class="o">.</span><span class="n">set_run_key_decorator</span><span class="p">(</span><span class="n">run_key</span><span class="p">)</span>
+        <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+            <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)):</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">])</span>
+
+            <span class="c1"># Different parameter values may be passed to the recursively called plans</span>
+            <span class="k">yield from</span> <span class="n">sim_plan_recursive</span><span class="p">(</span><span class="n">npts</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">npts</span><span class="p">):</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">])</span>
+
+        <span class="k">yield from</span> <span class="n">plan</span><span class="p">(</span><span class="n">npts</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_recursive</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+
+
+<span class="go">Transient Scan ID: 1     Time: 2025-08-26 17:23:01</span>
+<span class="go">Persistent Unique Scan ID: &#39;c6e1827a-4390-4352-abd6-0bfb6ef37578&#39;</span>
+<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+
+
+<span class="go">Transient Scan ID: 2     Time: 2025-08-26 17:23:02</span>
+<span class="go">Persistent Unique Scan ID: &#39;b59456b4-258e-4613-9412-999678496232&#39;</span>
+<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|         1 | 17:23:02.2 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 17:23:02.4 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 17:23:02.5 |      0.400 |      3.631 |</span>
+
+
+<span class="go">Transient Scan ID: 3     Time: 2025-08-26 17:23:02</span>
+<span class="go">Persistent Unique Scan ID: &#39;b5387939-74ea-4e07-a12d-dfc65b543e14&#39;</span>
+<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">|         1 | 17:23:02.7 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 17:23:02.9 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 17:23:03.1 |      0.400 |      3.631 |</span>
+<span class="go">|         4 | 17:23:03.3 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 17:23:03.5 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 17:23:03.7 |      1.000 |      0.677 |</span>
+<span class="go">|         7 | 17:23:03.8 |      1.200 |      0.281 |</span>
+<span class="go">|         8 | 17:23:04.0 |      1.400 |      0.099 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">generator sim_plan_recursive [&#39;b5387939&#39;] (scan num: 3)</span>
+
+
+
+<span class="go">|         4 | 17:23:04.5 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 17:23:04.7 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 17:23:04.9 |      1.000 |      0.677 |</span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">generator sim_plan_recursive [&#39;b59456b4&#39;] (scan num: 2)</span>
+
+
+
+<span class="go"> failed to format row </span>
+<span class="go"> failed to format row </span>
+<span class="go">+-----------+------------+------------+------------+</span>
+<span class="go">generator sim_plan_recursive [&#39;c6e1827a&#39;] (scan num: 1)</span>
+
+
+
+<span class="gh">Out[4]: </span>
+<span class="go">(&#39;c6e1827a-4390-4352-abd6-0bfb6ef37578&#39;,</span>
+<span class="go"> &#39;b59456b4-258e-4613-9412-999678496232&#39;,</span>
+<span class="go"> &#39;b5387939-74ea-4e07-a12d-dfc65b543e14&#39;)</span>
+</pre></div>
+</div>
+<p>The identical result can be achieved by using <cite>bpp.set_run_key_wrapper()</cite>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Call counter and the maximum number calls</span>
+<span class="n">n_calls</span><span class="p">,</span> <span class="n">n_calls_max</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sim_plan_recursive</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">n_calls</span><span class="p">,</span> <span class="n">n_calls_max</span>
+
+    <span class="n">n_calls</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># Increment counter</span>
+    <span class="k">if</span> <span class="n">n_calls</span> <span class="o">&lt;=</span> <span class="n">n_calls_max</span><span class="p">:</span>
+        <span class="c1"># Generate unique key for each run. The key generation algorithm</span>
+        <span class="c1">#   must only guarantee that execution of the runs that are assigned</span>
+        <span class="c1">#   the same key will never overlap in time.</span>
+        <span class="n">run_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;run_key_</span><span class="si">{</span><span class="n">n_calls</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="o">=</span><span class="p">{})</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span><span class="o">/</span><span class="mi">2</span><span class="p">)):</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">])</span>
+
+            <span class="c1"># Different parameter values may be passed to the recursively called plans</span>
+            <span class="k">yield from</span> <span class="n">sim_plan_recursive</span><span class="p">(</span><span class="n">npts</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">npts</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">npts</span><span class="p">):</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mov</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span>
+                <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">hw</span><span class="o">.</span><span class="n">motor1</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">det1</span><span class="p">])</span>
+
+        <span class="k">yield from</span> <span class="n">bpp</span><span class="o">.</span><span class="n">set_run_key_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">(</span><span class="n">npts</span><span class="p">),</span> <span class="n">run_key</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="async.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Asynchronous Acquisition</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="debugging.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Debugging and Logging</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#definition-of-a-run">Definition of a ‘Run’</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky-features-for-support-of-multi-run-plans">Bluesky Features for Support of Multi-run Plans</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plans-with-sequential-runs">Plans with Sequential Runs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plans-with-nested-runs">Plans with Nested Runs</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.4/docs/multi_run_plans.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/multi_run_plans.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
