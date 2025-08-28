@@ -776,6 +776,16 @@ API to control the behavior.
 
 Stop, Abort, Halt
 -----------------
+Stop, Abort, and Halt **stop** a plan in different ways; whether the plan is running or paused,
+whether cleanup is performed, and how the `exit_status` is set.
+The table below summarizes the differences between these methods:
+
+| Method    | Action                            | Cleanup       | Exit Status |
+| --------- | --------------------------------- | ------------- | ----------- |
+| **Abort** | Stop a running or paused plan     | Runs cleanup  | `abort`     |
+| **Stop**  | Stop a running or paused plan     | Runs cleanup  | `success`   |
+| **Halt**  | Stop the running plan immediately | Skips cleanup | `abort`     |
+
 
 Suspending
 ----------
