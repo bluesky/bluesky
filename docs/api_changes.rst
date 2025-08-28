@@ -2,13 +2,32 @@
  Release History
 =================
 
-v1.14.3 (yyyy-mm-dd)
+v1.14.4 (2025-08-26)
+====================
+
+Changed
+-------
+
+- Update ``TiledWriter`` to match API changes in Tiled
+  (demotion of "composite" from structure family to spec)
+
+v1.14.3 (2025-08-26)
 ====================
 
 Changed
 -------
 
 - RunEngine now supports both sync and async functions as a `scan_id_source`
+
+Fixed
+-----
+
+- Fix a Regression Related External Data Present in Multiple Streams
+
+v1.14.2 (2025-06-10)
+====================
+
+TO DO
 
 v1.14.1 (2025-05-21)
 ====================
