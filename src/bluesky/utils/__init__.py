@@ -33,7 +33,7 @@ import msgpack
 import msgpack_numpy
 import numpy as np
 from cycler import Cycler, cycler
-from event_model.documents import DocumentType, Event, EventDescriptor, RunStart, RunStop
+from event_model.documents import Document, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
@@ -103,7 +103,7 @@ OneOrMany = Union[P, Sequence[P]]
 
 # Mapping from event type to listener or list of listeners
 class SubscriberMap(TypedDict, total=False):
-    all: OneOrMany[Subscriber[DocumentType]]
+    all: OneOrMany[Subscriber[Document]]
     start: OneOrMany[Subscriber[RunStart]]
     stop: OneOrMany[Subscriber[RunStop]]
     event: OneOrMany[Subscriber[Event]]
@@ -111,7 +111,7 @@ class SubscriberMap(TypedDict, total=False):
 
 
 # Single listener, multiple listeners or mapping of listeners by event type
-Subscribers = Union[OneOrMany[Subscriber[DocumentType]], SubscriberMap]
+Subscribers = Union[OneOrMany[Subscriber[Document]], SubscriberMap]
 
 
 class RunEngineControlException(Exception):
