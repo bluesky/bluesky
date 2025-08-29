@@ -31,7 +31,6 @@ from event_model.documents.event_descriptor import DataKey
 from event_model.documents.stream_datum import StreamRange
 from tiled.client import from_profile, from_uri
 from tiled.client.base import BaseClient
-from tiled.client.composite import Composite
 from tiled.client.container import Container
 from tiled.client.dataframe import DataFrameClient
 from tiled.client.utils import handle_error
@@ -387,7 +386,8 @@ class RunNormalizer(CallbackBase):
         self._int_keys.update({k for k, v in data_keys.items() if "external" not in v.keys()})
         self._ext_keys.update({k for k, v in data_keys.items() if "external" in v.keys()})
         for key in self._ext_keys:
-            data_keys[key]["external"] = data_keys[key].pop("external", "")  # Make sure the value is not None
+            if key in data_keys:
+                data_keys[key]["external"] = data_keys[key].pop("external", "")  # Make sure the value is not None
 
         # Keep a reference to the descriptor name (stream) by its uid
         self._desc_name_by_uid[doc["uid"]] = doc["name"]
@@ -512,7 +512,7 @@ class _RunWriter(CallbackBase):
     def __init__(self, client: BaseClient, batch_size: int = BATCH_SIZE):
         self.client = client
         self.root_node: Union[None, Container] = None
-        self._desc_nodes: dict[str, Composite] = {}  # references to the descriptor nodes by their uid's and names
+        self._desc_nodes: dict[str, Container] = {}  # references to the descriptor nodes by their uid's and names
         self._sres_nodes: dict[str, BaseClient] = {}
         self._internal_tables: dict[str, DataFrameClient] = {}  # references to the internal tables by desc_names
         self._stream_resource_cache: dict[str, StreamResource] = {}
@@ -523,7 +523,7 @@ class _RunWriter(CallbackBase):
         self.data_keys: dict[str, DataKey] = {}
         self.access_tags = None
 
-    def _write_internal_data(self, data_cache: list[dict[str, Any]], desc_node: Composite):
+    def _write_internal_data(self, data_cache: list[dict[str, Any]], desc_node: Container):
         """Write the internal data table to Tiled and clear the cache."""
 
         desc_name = desc_node.item["id"]  # Name of the descriptor (stream)
@@ -609,13 +609,13 @@ class _RunWriter(CallbackBase):
         desc_name = doc["name"]  # Name of the descriptor/stream
         self.data_keys.update(doc.get("data_keys", {}))
 
-        # Create a new Composite node for the stream if it does not exist
+        # Create a new Container with "composite" spec for the stream if it does not exist
         if desc_name not in self._desc_nodes.keys():
             metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
-            desc_node = self._streams_node.create_composite(
+            desc_node = self._streams_node.create_container(
                 key=desc_name,
                 metadata=truncate_json_overflow(metadata),
-                specs=[Spec("BlueskyEventStream", version="3.0")],
+                specs=[Spec("BlueskyEventStream", version="3.0"), Spec("composite")],
                 access_tags=self.access_tags,
             )
         else:
