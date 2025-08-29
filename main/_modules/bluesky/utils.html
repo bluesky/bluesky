@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.utils &#8212; bluesky 1.14.5.dev2+gea8c981fd documentation</title>
+    <title>bluesky.utils &#8212; bluesky 1.14.5.dev8+gc359140e0 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=6445f3c4"></script>
+    <script src="../../_static/documentation_options.js?v=57f617e8"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
@@ -53,7 +53,7 @@ window.addEventListener("load", () => mermaid.run());
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.5.dev2+gea8c981fd';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.5.dev8+gc359140e0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -61,7 +61,7 @@ window.addEventListener("load", () => mermaid.run());
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.5.dev2+gea8c981fd" />
+  <meta name="docsearch:version" content="1.14.5.dev8+gc359140e0" />
   </head>
   
   
@@ -573,7 +573,7 @@ window.addEventListener("load", () => mermaid.run());
 <span class="kn">import</span><span class="w"> </span><span class="nn">msgpack_numpy</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cycler</span><span class="p">,</span> <span class="n">cycler</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">DocumentType</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">EventDescriptor</span><span class="p">,</span> <span class="n">RunStart</span><span class="p">,</span> <span class="n">RunStop</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">EventDescriptor</span><span class="p">,</span> <span class="n">RunStart</span><span class="p">,</span> <span class="n">RunStop</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_screen_shape_wrapper</span><span class="p">,</span> <span class="n">_term_move_up</span><span class="p">,</span> <span class="n">_unicode</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeIs</span>
@@ -646,7 +646,7 @@ window.addEventListener("load", () => mermaid.run());
 
 <span class="c1"># Mapping from event type to listener or list of listeners</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SubscriberMap</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="nb">all</span><span class="p">:</span> <span class="n">OneOrMany</span><span class="p">[</span><span class="n">Subscriber</span><span class="p">[</span><span class="n">DocumentType</span><span class="p">]]</span>
+    <span class="nb">all</span><span class="p">:</span> <span class="n">OneOrMany</span><span class="p">[</span><span class="n">Subscriber</span><span class="p">[</span><span class="n">Document</span><span class="p">]]</span>
     <span class="n">start</span><span class="p">:</span> <span class="n">OneOrMany</span><span class="p">[</span><span class="n">Subscriber</span><span class="p">[</span><span class="n">RunStart</span><span class="p">]]</span>
     <span class="n">stop</span><span class="p">:</span> <span class="n">OneOrMany</span><span class="p">[</span><span class="n">Subscriber</span><span class="p">[</span><span class="n">RunStop</span><span class="p">]]</span>
     <span class="n">event</span><span class="p">:</span> <span class="n">OneOrMany</span><span class="p">[</span><span class="n">Subscriber</span><span class="p">[</span><span class="n">Event</span><span class="p">]]</span>
@@ -654,7 +654,7 @@ window.addEventListener("load", () => mermaid.run());
 
 
 <span class="c1"># Single listener, multiple listeners or mapping of listeners by event type</span>
-<span class="n">Subscribers</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">OneOrMany</span><span class="p">[</span><span class="n">Subscriber</span><span class="p">[</span><span class="n">DocumentType</span><span class="p">]],</span> <span class="n">SubscriberMap</span><span class="p">]</span>
+<span class="n">Subscribers</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">OneOrMany</span><span class="p">[</span><span class="n">Subscriber</span><span class="p">[</span><span class="n">Document</span><span class="p">]],</span> <span class="n">SubscriberMap</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="RunEngineControlException">
