@@ -97,6 +97,10 @@ class Status(Protocol):
         ...
 
 
+#: Type variable for status objects with extended API
+S = TypeVar("S", bound=Status)
+
+
 @runtime_checkable
 class HasName(Protocol):
     @property
