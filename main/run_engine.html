@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>The RunEngine run loop &#8212; bluesky 1.14.5.dev8+gc359140e0 documentation</title>
+    <title>The RunEngine run loop &#8212; bluesky 1.14.5.dev10+g7c59ad71b documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=57f617e8"></script>
+    <script src="_static/documentation_options.js?v=767ebe0f"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.5.dev8+gc359140e0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.5.dev10+g7c59ad71b';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -56,7 +56,7 @@
     <link rel="prev" title="Message Protocol" href="msg.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.5.dev8+gc359140e0" />
+  <meta name="docsearch:version" content="1.14.5.dev10+g7c59ad71b" />
   </head>
   
   
@@ -1289,6 +1289,16 @@ API to control the behavior.</p>
 </section>
 <section id="stop-abort-halt">
 <h2>Stop, Abort, Halt<a class="headerlink" href="#stop-abort-halt" title="Link to this heading">#</a></h2>
+<p>Stop, Abort, and Halt <strong>stop</strong> a plan in different ways; whether the plan is running or paused,
+whether cleanup is performed, and how the <cite>exit_status</cite> is set.
+The table below summarizes the differences between these methods:</p>
+<div class="line-block">
+<div class="line">Method    | Action                            | Cleanup       | Exit Status |</div>
+<div class="line">——— | ——————————— | ————- | ———– |</div>
+<div class="line"><strong>Abort</strong> | Stop a running or paused plan     | Runs cleanup  | <cite>abort</cite>     |</div>
+<div class="line"><strong>Stop</strong>  | Stop a running or paused plan     | Runs cleanup  | <cite>success</cite>   |</div>
+<div class="line"><strong>Halt</strong>  | Stop the running plan immediately | Skips cleanup | <cite>abort</cite>     |</div>
+</div>
 </section>
 <section id="suspending">
 <h2>Suspending<a class="headerlink" href="#suspending" title="Link to this heading">#</a></h2>
@@ -1369,7 +1379,7 @@ API to control the behavior.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.5.dev8+gc359140e0/docs/run_engine.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.5.dev10+g7c59ad71b/docs/run_engine.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
