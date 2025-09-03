@@ -67,9 +67,6 @@ StreamAsset = Union[
 SyncOrAsync = Union[T, Awaitable[T]]
 SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
 
-#: Type variable for status objects with extended API
-StatusType = TypeVar("StatusType", bound="Status")
-
 
 @runtime_checkable
 class Status(Protocol):
@@ -98,6 +95,10 @@ class Status(Protocol):
     def success(self) -> bool:
         """If done return whether the operation was successful."""
         ...
+
+
+#: Type variable for status objects with extended API
+StatusType = TypeVar("StatusType", bound=Status, covariant=True)
 
 
 @runtime_checkable
