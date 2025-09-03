@@ -33,6 +33,7 @@ from .protocols import (
     Reading,
     Stageable,
     Status,
+    StatusType,
     Stoppable,
     Triggerable,
     check_supports,
@@ -260,7 +261,7 @@ def abs_set(
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
-) -> MsgGenerator[Status]:
+) -> MsgGenerator[StatusType]:
     """
     Set a value. Optionally, wait for it to complete before continuing.
 
@@ -308,7 +309,7 @@ def rel_set(
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
-) -> MsgGenerator[Status]:
+) -> MsgGenerator[StatusType]:
     """
     Set a value relative to current value. Optionally, wait before continuing.
 
@@ -353,7 +354,7 @@ def mv(
     group: Optional[Hashable] = None,
     timeout: Optional[float] = None,
     **kwargs,
-) -> MsgGenerator[tuple[Status, ...]]:
+) -> MsgGenerator[tuple[StatusType, ...]]:
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -402,7 +403,7 @@ mov = mv  # synonym
 @plan
 def mvr(
     *args: Union[Movable, Any], group: Optional[Hashable] = None, timeout: Optional[float] = None, **kwargs
-) -> MsgGenerator[tuple[Status, ...]]:
+) -> MsgGenerator[tuple[StatusType, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
@@ -574,7 +575,7 @@ def trigger(
     *,
     group: Optional[Hashable] = None,
     wait: bool = False,
-) -> MsgGenerator[Status]:
+) -> MsgGenerator[StatusType]:
     """
     Trigger and acquisition. Optionally, wait for it to complete.
 
@@ -786,7 +787,7 @@ def kickoff(
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
-) -> MsgGenerator[Status]:
+) -> MsgGenerator[StatusType]:
     """
     Kickoff one fly-scanning device.
 
@@ -854,7 +855,7 @@ def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kw
     """
     objs = [check_supports(arg, Flyable) for arg in args]
     group = group or str(uuid.uuid4())
-    statuses: list[Status] = []
+    statuses: list[StatusType] = []
 
     for obj in objs:
         ret = yield Msg("kickoff", obj, group=group, **kwargs)
@@ -872,7 +873,7 @@ def complete(
     group: Optional[Hashable] = None,
     wait: bool = False,
     **kwargs,
-) -> MsgGenerator[Status]:
+) -> MsgGenerator[StatusType]:
     """
     Tell a flyable, 'stop collecting, whenever you are ready'.
 
@@ -953,7 +954,7 @@ def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **
     """
     objs = [check_supports(arg, Flyable) for arg in args]
     group = group or str(uuid.uuid4())
-    statuses: list[Status] = []
+    statuses: list[StatusType] = []
 
     for obj in objs:
         ret = yield Msg("complete", obj, group=group, **kwargs)
@@ -1074,7 +1075,7 @@ def stage(
     *,
     group: Optional[Hashable] = None,
     wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, list[Any]]]:
+) -> MsgGenerator[Union[StatusType, list[Any]]]:
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
 
@@ -1159,7 +1160,7 @@ def unstage(
     *,
     group: Optional[Hashable] = None,
     wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, list[Any]]]:
+) -> MsgGenerator[Union[StatusType, list[Any]]]:
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
 
