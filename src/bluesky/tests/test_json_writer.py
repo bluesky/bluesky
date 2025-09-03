@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 import pytest
 
@@ -41,3 +42,23 @@ def test_custom_filename(tmpdir, writer_class, extension):
     doc = {"uid": "value"}
     writer("start", doc)
     assert os.path.exists(os.path.join(tmpdir, f"custom.{extension}"))
+
+
+def test_writing_out_of_order(tmpdir):
+    # JSONL writer should create a file with the current date if Start document is not received first
+    writer = JSONLinesWriter(tmpdir)
+
+    start_doc = {"uid": "abc", "value": 1}
+    event_doc = {"seq_num": 1, "data": {"x": 1}}
+    stop_doc = {"exit_status": "success"}
+
+    writer("event", event_doc)
+    writer("event", event_doc)
+    writer("stop", stop_doc)
+    writer("event", event_doc)
+    writer("start", start_doc)
+
+    filename = os.path.join(tmpdir, f"{datetime.today().strftime('%Y-%m-%d')}.jsonl")
+    data = read_jsonl_file(filename)
+
+    assert len(data) == 5
