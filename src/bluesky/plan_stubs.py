@@ -826,7 +826,9 @@ def kickoff(
 
 
 @plan
-def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kwargs):
+def kickoff_all(
+    *args, group: Optional[Hashable] = None, wait: bool = True, **kwargs
+) -> MsgGenerator[tuple[StatusType, ...]]:
     """
     Kickoff one or more fly-scanning devices.
 
@@ -919,7 +921,9 @@ def complete(
 
 
 @plan
-def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
+def complete_all(
+    *args, group: Optional[Hashable] = None, wait: bool = False, **kwargs
+) -> MsgGenerator[tuple[StatusType, ...]]:
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
