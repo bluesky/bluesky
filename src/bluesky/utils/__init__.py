@@ -1196,6 +1196,8 @@ def sanitize_np(val):
         if np.isscalar(val):
             return val.item()
         return val.tolist()
+    if type(val) in (list, tuple):
+        return type(val)(sanitize_np(v) for v in val)
     return val
 
 
