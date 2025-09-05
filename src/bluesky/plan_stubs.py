@@ -827,7 +827,7 @@ def kickoff(
 
 @plan
 def kickoff_all(
-    *args: Sequence[Flyable[StatusType]], group: Optional[Hashable] = None, wait: bool = True, **kwargs
+    *args: Flyable[StatusType], group: Optional[Hashable] = None, wait: bool = True, **kwargs
 ) -> MsgGenerator[tuple[StatusType, ...]]:
     """
     Kickoff one or more fly-scanning devices.
