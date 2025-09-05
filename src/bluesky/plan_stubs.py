@@ -922,7 +922,7 @@ def complete(
 
 @plan
 def complete_all(
-    *args, group: Optional[Hashable] = None, wait: bool = False, **kwargs
+    *args: Flyable[StatusType], group: Optional[Hashable] = None, wait: bool = False, **kwargs
 ) -> MsgGenerator[tuple[StatusType, ...]]:
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
