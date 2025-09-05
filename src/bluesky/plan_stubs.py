@@ -571,7 +571,7 @@ def stop(obj: Stoppable) -> MsgGenerator:
 
 @plan
 def trigger(
-    obj: Triggerable,
+    obj: Triggerable[StatusType],
     *,
     group: Optional[Hashable] = None,
     wait: bool = False,
@@ -782,7 +782,7 @@ def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool
 
 @plan
 def kickoff(
-    obj: Flyable,
+    obj: Flyable[StatusType],
     *,
     group: Optional[Hashable] = None,
     wait: bool = False,
@@ -827,7 +827,7 @@ def kickoff(
 
 @plan
 def kickoff_all(
-    *args, group: Optional[Hashable] = None, wait: bool = True, **kwargs
+    *args: Sequence[Flyable[StatusType]], group: Optional[Hashable] = None, wait: bool = True, **kwargs
 ) -> MsgGenerator[tuple[StatusType, ...]]:
     """
     Kickoff one or more fly-scanning devices.
@@ -870,7 +870,7 @@ def kickoff_all(
 
 @plan
 def complete(
-    obj: Flyable,
+    obj: Flyable[StatusType],
     *,
     group: Optional[Hashable] = None,
     wait: bool = False,
@@ -1075,7 +1075,7 @@ def configure(
 
 @plan
 def stage(
-    obj: Stageable,
+    obj: Stageable[StatusType],
     *,
     group: Optional[Hashable] = None,
     wait: Optional[bool] = None,
@@ -1160,7 +1160,7 @@ def stage_all(
 
 @plan
 def unstage(
-    obj: Stageable,
+    obj: Stageable[StatusType],
     *,
     group: Optional[Hashable] = None,
     wait: Optional[bool] = None,
