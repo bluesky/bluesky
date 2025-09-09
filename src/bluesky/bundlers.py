@@ -336,6 +336,40 @@ class RunBundler:
             if self._bundle_name not in self._descriptors:
                 raise IllegalMessageSequence("In strict mode you must pre-declare streams.")
 
+    async def _bundle_single_read(self, msg, obj, reading):
+        # if the object is not in the _describe_cache, cache it
+        # Note: there is a race condition between the code here
+        # and in monitor() and collect(), so if you do them concurrently
+        # on the same device you make obj.describe() calls multiple times.
+        # As this is harmless and not an expected use case, we don't guard
+        # against it. Reading multiple devices concurrently works fine.
+        await self._ensure_cached(obj)
+
+        # check that current read collides with nothing else in
+        # current event
+        cur_keys = set(self._describe_cache[obj].keys())
+        for read_obj in self._objs_read:
+            # that is, field names
+            known_keys = self._describe_cache[read_obj].keys()
+            if set(known_keys) & cur_keys:
+                raise ValueError(
+                    f"Data keys (field names) from {obj!r} "
+                    f"collide with those from {read_obj!r}. "
+                    f"The colliding keys are {set(known_keys) & cur_keys}"
+                )
+
+        # add this object to the cache of things we have read
+        self._objs_read.append(obj)
+
+        # Stash the results, which will be emitted the next time _save is
+        # called --- or never emitted if _drop is called instead.
+        self._read_cache.append(reading)
+        # Ask the object for any resource or datum documents is has cached
+        # and cache them as well. Likewise, these will be emitted if and
+        # when _save is called.
+        asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
+        self._asset_docs_cache.extend(asset_docs_collected)
+
     async def read(self, msg, reading):
         """
         Add a reading to the open event bundle.
@@ -343,42 +377,25 @@ class RunBundler:
         Expected message object is::
 
             Msg('read', obj)
+
+        where ``obj`` is a ``Readable`` object.
         """
         if self.bundling:
-            obj = msg.obj
-            # if the object is not in the _describe_cache, cache it
-            # Note: there is a race condition between the code here
-            # and in monitor() and collect(), so if you do them concurrently
-            # on the same device you make obj.describe() calls multiple times.
-            # As this is harmless and not an expected use case, we don't guard
-            # against it. Reading multiple devices concurrently works fine.
-            await self._ensure_cached(obj)
+            await self._bundle_single_read(msg, msg.obj, reading)
 
-            # check that current read collides with nothing else in
-            # current event
-            cur_keys = set(self._describe_cache[obj].keys())
-            for read_obj in self._objs_read:
-                # that is, field names
-                known_keys = self._describe_cache[read_obj].keys()
-                if set(known_keys) & cur_keys:
-                    raise ValueError(
-                        f"Data keys (field names) from {obj!r} "
-                        f"collide with those from {read_obj!r}. "
-                        f"The colliding keys are {set(known_keys) & cur_keys}"
-                    )
+        return reading
 
-            # add this object to the cache of things we have read
-            self._objs_read.append(obj)
+    async def read_all(self, msg, reading):
+        """Add a reading to the open event bundle.
 
-            # Stash the results, which will be emitted the next time _save is
-            # called --- or never emitted if _drop is called instead.
-            self._read_cache.append(reading)
-            # Ask the object for any resource or datum documents is has cached
-            # and cache them as well. Likewise, these will be emitted if and
-            # when _save is called.
-            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
-            self._asset_docs_cache.extend(asset_docs_collected)
+        Expected message object is::
 
+            Msg('read_all', obj)
+
+        where ``obj`` is a ``Sequence`` of ``Readable`` objects.
+        """
+        if self.bundling:
+            await asyncio.gather(*[self._bundle_single_read(msg, obj, reading[obj.name]) for obj in msg.obj])
         return reading
 
     async def _cache_describe(self, obj):
@@ -442,9 +459,9 @@ class RunBundler:
         def emit_event(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
-                assert not args and not kwargs, (
-                    "If subscribe callback called with readings, args and kwargs are not supported."
-                )
+                assert (
+                    not args and not kwargs
+                ), "If subscribe callback called with readings, args and kwargs are not supported."
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
@@ -757,9 +774,9 @@ class RunBundler:
         def is_data_key(obj: Any) -> bool:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
-        assert all(not is_data_key(value) for value in describe_collect.values()), (
-            "Single nested data keys should be pre-declared"
-        )
+        assert all(
+            not is_data_key(value) for value in describe_collect.values()
+        ), "Single nested data keys should be pre-declared"
 
         # Make sure you can't use identical data keys in multiple streams
         # Data structure is assumed to be dict[stream_name, dictionary of key -> data_key]
@@ -1065,9 +1082,9 @@ class RunBundler:
         # If a stream name was provided in the message, check the stream has been declared
         # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
-            assert message_stream_name in declared_stream_names, (
-                "If a message stream name is provided declare stream needs to be called first."
-            )
+            assert (
+                message_stream_name in declared_stream_names
+            ), "If a message stream name is provided declare stream needs to be called first."
             stream_name = message_stream_name
         elif declared_stream_names:
             assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations

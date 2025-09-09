@@ -9,6 +9,7 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
+from collections.abc import Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
@@ -534,6 +535,7 @@ class RunEngine:
             "save": self._save,
             "drop": self._drop,
             "read": self._read,
+            "read_all": self._read_all,
             "locate": self._locate,
             "monitor": self._monitor,
             "unmonitor": self._unmonitor,
@@ -542,6 +544,7 @@ class RunEngine:
             "stop": self._stop,
             "set": self._set,
             "trigger": self._trigger,
+            "trigger_all": self._trigger_all,
             "sleep": self._sleep,
             "wait": self._wait,
             "checkpoint": self._checkpoint,
@@ -1651,7 +1654,11 @@ class RunEngine:
                     )
 
                     # update the running set of all objects we have seen
-                    self._objs_seen.add(msg.obj)
+                    if isinstance(msg.obj, Sequence):
+                        for obj in msg.obj:
+                            self._objs_seen.add(obj)
+                    else:
+                        self._objs_seen.add(msg.obj)
 
                     # if this message can be cached for rewinding, cache it
                     if (
@@ -1967,13 +1974,15 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
-    async def _read(self, msg):
+    async def _read(self, msg: Msg):
         """
         Add a reading to the open event bundle.
 
         Expected message object is:
 
             Msg('read', obj)
+
+        where ``obj`` is a ``Device``.
         """
         obj = check_supports(msg.obj, Readable)
         # actually _read_ the object
@@ -1991,6 +2000,50 @@ class RunEngine:
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
         ) is not key_absence_sentinel:
             await current_run.read(msg, ret)
+
+        return ret
+
+    async def _read_all(self, msg: Msg):
+        """
+        Add a reading to the open event bundle. Where the reading is
+        the read of multiple devices. Here obj is an iterable containing Reabable's.
+
+        Expected message object is:
+
+            Msg('read_all', obj)
+
+        where ``obj`` is a sequence of ``Device``.
+        """
+        read_methods = {obj.name: check_supports(obj, Readable).read for obj in msg.obj}
+
+        coro_read_methods, non_coro_read_methods = {}, {}
+
+        for name, read_method in read_methods.items():
+            if inspect.iscoroutinefunction(read_method):
+                coro_read_methods[name] = read_method
+            else:
+                non_coro_read_methods[name] = read_method
+
+        ret = dict(
+            zip(
+                coro_read_methods,
+                await asyncio.gather(*[read_method() for read_method in coro_read_methods.values()]),
+            )
+        )
+        ret.update({name: read_method() for name, read_method in non_coro_read_methods.items()})
+        none_ret = {name for name, value in ret.items() if value is None}
+
+        if none_ret:
+            raise RuntimeError(
+                f"The read of objects {none_ret} returned None. "
+                "This is a bug in your object implementation, "
+                "`read` must return a dictionary."
+            )
+        run_key = msg.run
+        if (
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
+        ) is not key_absence_sentinel:
+            await current_run.read_all(msg, ret)
 
         return ret
 
@@ -2240,15 +2293,8 @@ class RunEngine:
 
         return ret
 
-    async def _trigger(self, msg):
-        """
-        Trigger a device and cache the returned status object.
-
-        Expected message object is:
-
-            Msg('trigger', obj)
-        """
-        obj = check_supports(msg.obj, Triggerable)
+    async def _add_single_trigger_to_group(self, msg, obj):
+        obj = check_supports(obj, Triggerable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         warn_if_msg_args_or_kwargs(msg, obj.trigger, msg.args, kwargs)
@@ -2257,6 +2303,27 @@ class RunEngine:
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="trigger")
 
         return ret
+
+    async def _trigger(self, msg):
+        """
+        Trigger a device and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('trigger', obj)
+        """
+        await self._add_single_trigger_to_group(msg, msg.obj)
+
+    async def _trigger_all(self, msg):
+        """
+        Trigger a sequence of devices and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('trigger', obj)
+        """
+        ret = await asyncio.gather(*[self._add_single_trigger_to_group(msg, obj) for obj in msg.obj])
+        return dict(zip([obj.name for obj in msg.obj], ret))
 
     def _call_waiting_hook(self, *args, **kwargs):
         if self.waiting_hook is not None:
