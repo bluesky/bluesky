@@ -57,21 +57,97 @@ def test_flyers(hw):
 def test_baseline(hw):
     # one baseline detector
     D = SupplementalData(baseline=[hw.det2])
-    original = list(count([hw.det]))
-    processed = list(D(count([hw.det])))
-    # should add 2X (trigger, wait, create, read, save)
-    assert len(processed) == 11 + len(original)
+    original = [msg.command for msg in count([hw.det])]
+    processed = [msg.command for msg in D(count([hw.det]))]
+    assert (
+        processed
+        == original[:2]
+        + [
+            "declare_stream",
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[2:4]
+        + [
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[4:]
+    )
 
-    # two baseline detectors
+    # two baseline detectors, they are added to the same trigger_all and read_all
     D.baseline.append(hw.det3)
-    processed = list(D(count([hw.det])))
-    # should add 2X (trigger, triger, wait, create, read, read, save)
-    assert len(processed) == 15 + len(original)
+    processed = [msg.command for msg in D(count([hw.det]))]
+    assert (
+        processed
+        == original[:2]
+        + [
+            "declare_stream",
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[2:4]
+        + [
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[4:]
+    )
 
+    # 44 == 22 + 22
     # two baseline detectors applied to a plan with two consecutive runs
-    original = list(list(count([hw.det])) + list(count([hw.det])))
-    processed = list(D(pchain(count([hw.det]), count([hw.det]))))
-    assert len(processed) == 30 + len(original)
+    original = [msg.command for msg in list(count([hw.det])) + list(count([hw.det]))]
+    processed = [msg.command for msg in D(pchain(count([hw.det]), count([hw.det])))]
+    assert (
+        processed
+        == original[:2]
+        + [
+            "declare_stream",
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[2:4]
+        + [
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[4:13]
+        + [
+            "declare_stream",
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[13:15]
+        + [
+            "trigger_all",
+            "wait",
+            "create",
+            "read_all",
+            "save",
+        ]
+        + original[15:]
+    )
 
 
 def test_mixture(hw):
@@ -95,10 +171,10 @@ def test_order(hw):
         "open_run",
         # baseline
         "declare_stream",
-        "trigger",
+        "trigger_all",
         "wait",
         "create",
-        "read",
+        "read_all",
         "save",
         # monitors
         "monitor",
@@ -114,10 +190,10 @@ def test_order(hw):
         # montiors
         "unmonitor",
         # baseline
-        "trigger",
+        "trigger_all",
         "wait",
         "create",
-        "read",
+        "read_all",
         "save",
         "close_run",
     ]

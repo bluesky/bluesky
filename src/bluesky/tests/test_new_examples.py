@@ -723,10 +723,10 @@ def test_trigger_and_read(hw):
     det = hw.det
     msgs = list(trigger_and_read([det]))
     expected = [
-        Msg("trigger", det),
+        Msg("trigger_all", (det,)),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="primary"),
-        Msg("read", det),
+        Msg("read_all", (det,)),
         Msg("save"),
     ]
     for msg in msgs:
@@ -736,10 +736,10 @@ def test_trigger_and_read(hw):
 
     msgs = list(trigger_and_read([det], "custom"))
     expected = [
-        Msg("trigger", det),
+        Msg("trigger_all", (det,)),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="custom"),
-        Msg("read", det),
+        Msg("read_all", (det,)),
         Msg("save"),
     ]
     for msg in msgs:
@@ -756,22 +756,22 @@ def test_count_delay_argument(hw):
 
     # num=6 with 5 delays between should product 6 readings
     msgs = count([hw.det], num=6, delay=(2**i for i in range(5)))
-    read_count = len([msg for msg in msgs if msg.command == "read"])
+    read_count = len([msg for msg in msgs if msg.command == "read_all"])
     assert read_count == 6
 
     # num=5 with 5 delays should produce 5 readings
     msgs = count([hw.det], num=5, delay=(2**i for i in range(5)))
-    read_count = len([msg for msg in msgs if msg.command == "read"])
+    read_count = len([msg for msg in msgs if msg.command == "read_all"])
     assert read_count == 5
 
     # num=4 with 5 delays should produce 4 readings
     msgs = count([hw.det], num=4, delay=(2**i for i in range(5)))
-    read_count = len([msg for msg in msgs if msg.command == "read"])
+    read_count = len([msg for msg in msgs if msg.command == "read_all"])
     assert read_count == 4
 
     # num=None with 5 delays should produce 6 readings
     msgs = count([hw.det], num=None, delay=(2**i for i in range(5)))
-    read_count = len([msg for msg in msgs if msg.command == "read"])
+    read_count = len([msg for msg in msgs if msg.command == "read_all"])
     assert read_count == 6
 
 

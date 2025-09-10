@@ -7,7 +7,7 @@ import bluesky.plan_stubs as bps
 
 from . import requires_ophyd, requires_ophyd_async
 
-SIM_SLEEP_TIME = 0.1
+SIM_SLEEP_TIME = 0.05
 
 
 @pytest.fixture()
