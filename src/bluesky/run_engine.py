@@ -9,7 +9,6 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
-from collections.abc import Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
@@ -62,6 +61,7 @@ from .utils import (
     RunEngineInterrupted,
     SigintHandler,
     Subscribers,
+    _ObjTuple,
     ensure_generator,
     normalize_subs_input,
     single_gen,
@@ -1654,7 +1654,7 @@ class RunEngine:
                     )
 
                     # update the running set of all objects we have seen
-                    if isinstance(msg.obj, Sequence):
+                    if isinstance(msg.obj, _ObjTuple):
                         for obj in msg.obj:
                             self._objs_seen.add(obj)
                     else:
@@ -2010,7 +2010,7 @@ class RunEngine:
 
             Msg('read_all', obj)
 
-        where ``obj`` is a sequence of ``Device``.
+        where ``obj`` is an ``_ObjTuple`` of ``Device``.
         """
         read_methods = {obj.name: check_supports(obj, Readable).read for obj in msg.obj}
 
@@ -2317,6 +2317,8 @@ class RunEngine:
         Expected message object is:
 
             Msg('trigger', obj)
+
+        where ``obj`` is an ``_ObjTuple`` of ``Device``.
         """
         ret = await asyncio.gather(*[self._add_single_trigger_to_group(msg, obj) for obj in msg.obj])
         return dict(zip([obj.name for obj in msg.obj], ret))

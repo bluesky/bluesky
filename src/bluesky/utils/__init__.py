@@ -62,6 +62,11 @@ except ImportError:
     from toolz import groupby
 
 
+class _ObjTuple(tuple):
+    """Used so that we can check internally if sequences of objects are passed into a message, vs a single device
+    which is also a sequence."""
+
+
 class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     """Namedtuple sub-class to encapsulate a message from the plan to the RE.
 
