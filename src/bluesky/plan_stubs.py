@@ -12,6 +12,8 @@ from cycler import cycler
 
 from bluesky.suspenders import SuspenderBase
 
+from .utils import _ObjTuple
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
@@ -188,7 +190,7 @@ def read_all(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
         Reading object representing information recorded
     """
     objs = separate_devices(objs)
-    return (yield Msg("read_all", tuple(objs)))
+    return (yield Msg("read_all", _ObjTuple(objs)))
 
 
 @typing.overload
@@ -657,7 +659,7 @@ def trigger_all(
         this will always be complete by the time it is returned.
 
     """
-    ret = yield Msg("trigger_all", tuple(objs), group=group)
+    ret = yield Msg("trigger_all", _ObjTuple(objs), group=group)
     if wait:
         yield Msg("wait", None, group=group)
     return ret
