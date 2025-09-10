@@ -1134,18 +1134,20 @@ def relative_set_wrapper(plan, devices=None):
             return msg
 
     def insert_reads(msg):
-        eligible = (devices is None) or (msg.obj in devices)
-        seen = msg.obj in initial_positions
-        if (msg.command == "set") and eligible and not seen:
-            return (
-                pchain(
-                    __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
-                    single_gen(msg),
-                ),
-                None,
-            )
-        else:
-            return None, None
+        objs = msg.obj if isinstance(msg.obj, tuple) else (msg.obj,)
+        for obj in objs:
+            eligible = (devices is None) or (obj in devices)
+            seen = obj in initial_positions
+            if (msg.command == "set") and eligible and not seen:
+                return (
+                    pchain(
+                        __read_and_stash_a_motor(obj, initial_positions, coupled_parents),
+                        single_gen(msg),
+                    ),
+                    None,
+                )
+            else:
+                return None, None
 
     plan = plan_mutator(plan, insert_reads)
     plan = msg_mutator(plan, rewrite_pos)
