@@ -990,9 +990,10 @@ def tune_centroid(
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)  # type: ignore      # Movable
             ret = yield from bps.trigger_and_read(list(detectors) + [motor])  # type: ignore
-            cur_I = ret[signal]["value"]
+
+            cur_I = ret[signal][signal]["value"]
             sum_I += cur_I
-            position = ret[motor_name]["value"]
+            position = ret[motor_name][motor_name]["value"]
             sum_xI += position * cur_I
 
             next_pos += step
