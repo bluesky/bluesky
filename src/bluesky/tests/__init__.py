@@ -9,6 +9,9 @@ ophyd: Optional[ModuleType]
 ophyd = None
 reason = ""
 
+ophyd_async: Optional[ModuleType]
+ophyd_async = None
+
 try:
     import ophyd  # type: ignore
 except ImportError as ie:

@@ -1,9 +1,12 @@
 import asyncio
 import time
+from collections.abc import Coroutine
+from typing import Any
 
 import pytest
 
 import bluesky.plan_stubs as bps
+from bluesky.protocols import Reading
 
 from . import requires_ophyd, requires_ophyd_async
 
@@ -27,17 +30,17 @@ def sync_and_async_devices():
         signal1 = ophyd.Component(SlowSyncSignal, value=1)
         signal2 = ophyd.Component(SlowSyncSignal, value="some_value")
 
-        def trigger(self, *args, **kwargs):
+        def trigger(self) -> ophyd.DeviceStatus:
             time.sleep(SIM_SLEEP_TIME)
             self.trigger_time = time.time()
-            return super().trigger(*args, **kwargs)
+            return super().trigger()
 
     class SlowAsyncSoftSignalBackend(ophyd_async.core.SoftSignalBackend):
-        async def get_reading(self, *args, **kwargs):
+        async def get_reading(self) -> Coroutine[Any, Any, Reading]:  # type: ignore
             await asyncio.sleep(SIM_SLEEP_TIME)
-            reading = await super().get_reading(*args, **kwargs)
+            reading = await super().get_reading()
             reading["timestamp"] = time.time()
-            return reading
+            return reading  # type: ignore
 
     class AsyncReadableDevice(ophyd_async.core.StandardReadable):
         trigger_time: float | None = None
