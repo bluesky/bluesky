@@ -525,7 +525,7 @@ class RunEngine:
         self._task = None  # asyncio.Task associated with call to self._run
         self._task_fut = None  # future proxy to the task above
         self._pardon_failures = None  # will hold an asyncio.Event
-        self._plan = None  # the plan instance from __call__
+        self._plan: typing.Iterable[Msg] | None = None  # the plan instance from __call__
         self._require_stream_declaration = False
         self._command_registry = {
             "declare_stream": self._declare_stream,
@@ -1994,9 +1994,7 @@ class RunEngine:
                 "`read` must return a dictionary."
             )
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is not key_absence_sentinel:
+        if (current_run := self._run_bundlers.get(run_key)) is not None:  # Key abscence sentinel
             await current_run.read(msg, ret)
 
         return ret
@@ -2038,9 +2036,7 @@ class RunEngine:
                 "`read` must return a dictionary."
             )
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is not key_absence_sentinel:
+        if (current_run := self._run_bundlers.get(run_key)) is not None:  # Key abscence sentinel
             await current_run.read_all(msg, ret)
 
         return ret

@@ -1820,7 +1820,7 @@ can use it to make an on-the-fly decision about whether to continue or stop.
             while True:
                 yield from bps.mv(motor, i)
                 readings = yield from bps.trigger_and_read([det])
-                if readings['det']['value'] < threshold:
+                if readings['det']['det']['value'] < threshold:
                     break
                 i += 1
         return (yield from inner())
@@ -1839,7 +1839,7 @@ can use it to make an on-the-fly decision about whether to continue or stop.
             while True:
                 yield from bps.mv(motor, i)
                 readings = yield from bps.trigger_and_read([det])
-                if readings['det']['value'] < threshold:
+                if readings['det']['det']['value'] < threshold:
                     break
                 i += 1
         # Decorators do not work in IPython sphinx directive!
