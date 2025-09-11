@@ -137,7 +137,7 @@ def test_trigger_all(RE, sync_and_async_devices):
 
     def plan():
         yield from bps.open_run()
-        yield from bps.trigger_all(sync_and_async_devices)
+        yield from bps.trigger_all(sync_and_async_devices, wait=True)
         yield from bps.close_run()
 
     assert (

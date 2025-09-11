@@ -64,18 +64,18 @@ def test_baseline(hw):
         == original[:2]
         + [
             "declare_stream",
-            "trigger_all",
+            "trigger",
             "wait",
             "create",
-            "read_all",
+            "read",
             "save",
         ]
         + original[2:4]
         + [
-            "trigger_all",
+            "trigger",
             "wait",
             "create",
-            "read_all",
+            "read",
             "save",
         ]
         + original[4:]
@@ -95,7 +95,7 @@ def test_baseline(hw):
             "read_all",
             "save",
         ]
-        + original[2:4]
+        + original[2:9]
         + [
             "trigger_all",
             "wait",
@@ -103,7 +103,7 @@ def test_baseline(hw):
             "read_all",
             "save",
         ]
-        + original[4:]
+        + original[9:]
     )
 
     # 44 == 22 + 22
@@ -121,7 +121,7 @@ def test_baseline(hw):
             "read_all",
             "save",
         ]
-        + original[2:4]
+        + original[2:9]
         + [
             "trigger_all",
             "wait",
@@ -129,7 +129,7 @@ def test_baseline(hw):
             "read_all",
             "save",
         ]
-        + original[4:13]
+        + original[9:13]
         + [
             "declare_stream",
             "trigger_all",
@@ -138,7 +138,7 @@ def test_baseline(hw):
             "read_all",
             "save",
         ]
-        + original[13:15]
+        + original[13:20]
         + [
             "trigger_all",
             "wait",
@@ -146,7 +146,7 @@ def test_baseline(hw):
             "read_all",
             "save",
         ]
-        + original[15:]
+        + original[20:]
     )
 
 
@@ -171,10 +171,10 @@ def test_order(hw):
         "open_run",
         # baseline
         "declare_stream",
-        "trigger_all",
+        "trigger",
         "wait",
         "create",
-        "read_all",
+        "read",
         "save",
         # monitors
         "monitor",
@@ -190,10 +190,10 @@ def test_order(hw):
         # montiors
         "unmonitor",
         # baseline
-        "trigger_all",
+        "trigger",
         "wait",
         "create",
-        "read_all",
+        "read",
         "save",
         "close_run",
     ]
