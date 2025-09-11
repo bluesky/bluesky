@@ -1,4 +1,5 @@
 import os
+import sys
 from types import ModuleType
 from typing import Optional
 
@@ -19,16 +20,20 @@ except ImportError as ie:
     ophyd = None
     reason = str(ie)
 
+# define a skip condition based on if ophyd is available or not
+requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
+
 try:
-    import ophyd_async  # type: ignore
+    if sys.version_info < (3, 11):
+        ophyd_async = None
+    else:
+        import ophyd_async  # type: ignore
 except ImportError as ie:
     # pytestmark = pytest.mark.skip
     ophyd_async = None
     reason = str(ie)
 
-
-# define a skip condition based on if ophyd is available or not
-requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
+# define a skip condition based on if ophyd-async is available or not
 requires_ophyd_async = pytest.mark.skipif(ophyd_async is None, reason=reason)
 
 uses_os_kill_sigint = pytest.mark.skipif(
