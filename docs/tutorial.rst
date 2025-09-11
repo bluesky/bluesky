@@ -1257,7 +1257,7 @@ Implementation
 
 `Ophyd <https://nsls-ii.github.io/ophyd>`_, a Python library that was
 developed in tandem with bluesky, implements this interface for devices that
-speak `EPICS <http://www.aps.anl.gov/epics/>`_. But bluesky is not tied to
+speak `EPICS <https://www.aps.anl.gov/epics/>`_. But bluesky is not tied to
 ophyd or EPICS specifically: any Python object may be used, so long as it
 provides the specified methods and attributes that bluesky expects.
 For example, an experimental implementation of the bluesky interface for LabView has been written.
