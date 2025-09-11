@@ -1513,7 +1513,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
 
     def inner_trigger_and_read():
         triggerable_devices = [obj for obj in devices if isinstance(obj, Triggerable)]
-        if triggerable_devices:
+        if len(triggerable_devices) == 1:
+            yield from trigger(triggerable_devices[0], group=_short_uid("trigger"), wait=True)
+        elif triggerable_devices:
             yield from trigger_all(triggerable_devices, group=_short_uid("trigger"), wait=True)
         yield from create(name)
 
@@ -1524,9 +1526,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
             yield from drop()
             raise exp
 
-        ret = yield from contingency_wrapper(
-            read_all(devices), except_plan=exception_path, else_plan=standard_path
-        )
+        plan = read(devices[0]) if len(devices) == 1 else read_all(devices)
+
+        ret = yield from contingency_wrapper(plan, except_plan=exception_path, else_plan=standard_path)
         return ret
 
     from .preprocessors import rewindable_wrapper
