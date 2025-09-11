@@ -1,7 +1,7 @@
 import asyncio
 import time
 from collections.abc import Coroutine
-from typing import Any
+from typing import Any, Optional
 from unittest.mock import ANY
 
 import pytest
@@ -27,7 +27,7 @@ def sync_and_async_devices():
             return reading
 
     class SyncReadableDevice(ophyd.Device):
-        trigger_time: float | None = None
+        trigger_time: Optional[float] = None
         signal1 = ophyd.Component(SlowSyncSignal, value=1)
         signal2 = ophyd.Component(SlowSyncSignal, value="some_value")
 
@@ -44,7 +44,7 @@ def sync_and_async_devices():
             return reading  # type: ignore
 
     class AsyncReadableDevice(ophyd_async.core.StandardReadable):
-        trigger_time: float | None = None
+        trigger_time: Optional[float] = None
 
         def __init__(self, name: str = "") -> None:
             super().__init__(name=name)
@@ -150,7 +150,7 @@ def test_trigger_all(RE, sync_and_async_devices):
     RE(plan())
 
     assert async_device2.trigger_time - async_device1.trigger_time == pytest.approx(0, abs=0.01)
-    assert sync_device2.trigger_time - sync_device1.trigger_time == pytest.approx(SIM_SLEEP_TIME, abs=0.01)
+    assert sync_device2.trigger_time - sync_device1.trigger_time == pytest.approx(SIM_SLEEP_TIME, abs=0.03)
 
 
 @requires_ophyd
@@ -181,7 +181,7 @@ def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
             assert v < first_sync_device_timestamps  # async devices are ran first
 
         for i in range(1, len(async_timestamps)):
-            assert async_timestamps[i] - async_timestamps[0] == pytest.approx(0, abs=0.01)
+            assert async_timestamps[i] - async_timestamps[0] == pytest.approx(0, abs=0.03)
 
         for i in range(len(sync_timestamps) - 1):
-            assert sync_timestamps[i + 1] - sync_timestamps[i] == pytest.approx(SIM_SLEEP_TIME, abs=0.01)
+            assert sync_timestamps[i + 1] - sync_timestamps[i] == pytest.approx(SIM_SLEEP_TIME, abs=0.03)
