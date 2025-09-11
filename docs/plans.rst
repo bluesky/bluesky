@@ -680,7 +680,7 @@ messages into the plan or removing messages).
 
 It's easiest to learn this by example, studying the implementations of the built-in
 processors (catalogued above) in the
-`the source of the plans module <https://github.com/NSLS-II/bluesky/blob/main/bluesky/plans.py>`_.
+`the source of the plans module <https://github.com/NSLS-II/bluesky/blob/main/src/bluesky/plans.py>`_.
 
 .. _per_step_hook:
 
