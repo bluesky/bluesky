@@ -46,15 +46,15 @@ the *a priori* information, however that has several draw backs:
    units, and shape of the value and any configuration information about the
    hardware it is being read from.
 
-A third class of information that can be called "metadata" is
-configuration information of pieces of hardware.  These are things
-like the velocity of a motor or the integration time of a detector.
-These readings are embedded in the `Descriptor
-<https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_
-and are extracted from the hardware via the `read_configuration
-<https://blueskyproject.io/bluesky/main/hardware.html#ReadableDevice.read_configuration>`_
-method of the hardware.  We expect that these values will not change over
-the course of the experiment so only read them once.
+A third class of information that can be called "metadata" is configuration
+information of pieces of hardware.  These are things like the velocity of a
+motor or the integration time of a detector.  These readings are embedded in
+the `Descriptor
+<https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_ and
+are extracted from the hardware via the `read_configuration
+<https://blueskyproject.io/bluesky/main/hardware.html#bluesky.protocols.Configurable.read_configuration>`_
+method of the hardware.  We expect that these values will not change over the
+course of the experiment so only read them once.
 
 Information that does not fall into one of these categories, because
 you expect it to change during the experiment,
