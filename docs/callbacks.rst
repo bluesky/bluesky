@@ -884,7 +884,7 @@ data from the 'start' document into a readable log entry. You can also write
 customize templates and pass them to ``logbook_cb_factory``.
 
 You may specify a custom template. Here is a very simple example; see the
-`source code <https://github.com/NSLS-II/bluesky/blob/master/bluesky/callbacks/olog.py>`_
+`source code <https://github.com/NSLS-II/bluesky/blob/main/bluesky/callbacks/olog.py>`_
 for a more complex example (the default template).
 
 .. code-block:: python
