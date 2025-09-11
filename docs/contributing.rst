@@ -94,5 +94,5 @@ To release Bluesky:
    * tag: :code:`v<VERSION>`
    * title: :code:`bluesky v<VERSION>`
    * description: copy content from api_changes
-* Bluesky will be released to PyPI via our `github action <https://github.com/bluesky/bluesky/blob/main/.github/workflows/python-publish.yml>`_.
+* Bluesky will be released to PyPI via our github actions
 * The conda-forge bot will make a PR to update the `bluesky-feedstock <https://github.com/conda-forge/bluesky-feedstock>`_.
