@@ -2,6 +2,7 @@ import asyncio
 import time
 from collections.abc import Coroutine
 from typing import Any
+from unittest.mock import ANY
 
 import pytest
 
@@ -10,7 +11,7 @@ from bluesky.protocols import Reading
 
 from . import requires_ophyd, requires_ophyd_async
 
-SIM_SLEEP_TIME = 0.05
+SIM_SLEEP_TIME = 0.1
 
 
 @pytest.fixture()
@@ -68,6 +69,92 @@ def sync_and_async_devices():
 
 @requires_ophyd
 @requires_ophyd_async
+def test_read_all(RE, sync_and_async_devices):
+    output = {"start": [], "descriptor": [], "event": [], "stop": []}
+
+    def plan():
+        yield from bps.open_run()
+        yield from bps.create(name="primary")
+        ret = yield from bps.read_all(sync_and_async_devices)
+        assert ret == {
+            "async_device1": {
+                "async_device1-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
+                "async_device1-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
+            },
+            "async_device2": {
+                "async_device2-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
+                "async_device2-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
+            },
+            "sync_device1": {
+                "sync_device1_signal1": {"timestamp": ANY, "value": 1},
+                "sync_device1_signal2": {"timestamp": ANY, "value": "some_value"},
+            },
+            "sync_device2": {
+                "sync_device2_signal1": {"timestamp": ANY, "value": 1},
+                "sync_device2_signal2": {"timestamp": ANY, "value": "some_value"},
+            },
+        }
+        yield from bps.save()
+        yield from bps.close_run()
+
+    RE(plan(), lambda name, doc: output[name].append(doc))
+
+    assert output["event"] == [
+        {
+            "data": {
+                "async_device1-signal1": 1,
+                "async_device1-signal2": "some_value",
+                "async_device2-signal1": 1,
+                "async_device2-signal2": "some_value",
+                "sync_device1_signal1": 1,
+                "sync_device1_signal2": "some_value",
+                "sync_device2_signal1": 1,
+                "sync_device2_signal2": "some_value",
+            },
+            "descriptor": ANY,
+            "filled": {},
+            "seq_num": 1,
+            "time": ANY,
+            "timestamps": {
+                "async_device1-signal1": ANY,
+                "async_device1-signal2": ANY,
+                "async_device2-signal1": ANY,
+                "async_device2-signal2": ANY,
+                "sync_device1_signal1": ANY,
+                "sync_device1_signal2": ANY,
+                "sync_device2_signal1": ANY,
+                "sync_device2_signal2": ANY,
+            },
+            "uid": ANY,
+        }
+    ]
+
+
+@requires_ophyd
+@requires_ophyd_async
+def test_trigger_all(RE, sync_and_async_devices):
+    sync_device1, sync_device2, async_device1, async_device2 = sync_and_async_devices
+
+    def plan():
+        yield from bps.open_run()
+        yield from bps.trigger_all(sync_and_async_devices)
+        yield from bps.close_run()
+
+    assert (
+        async_device1.trigger_time,
+        async_device2.trigger_time,
+        sync_device1.trigger_time,
+        sync_device2.trigger_time,
+    ) == (None, None, None, None)
+
+    RE(plan())
+
+    assert async_device2.trigger_time - async_device1.trigger_time == pytest.approx(0, abs=0.01)
+    assert sync_device2.trigger_time - sync_device1.trigger_time == pytest.approx(SIM_SLEEP_TIME, abs=0.01)
+
+
+@requires_ophyd
+@requires_ophyd_async
 def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
     sync_device1, sync_device2, async_device1, async_device2 = sync_and_async_devices
 
@@ -83,7 +170,7 @@ def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
 
     assert len(output["event"]) == 2
     for event in output["event"]:
-        timestamps = {k: v % 60 for k, v in event["timestamps"].items()}
+        timestamps = event["timestamps"]
         assert len(timestamps) == 8
 
         async_timestamps = [v for k, v in timestamps.items() if k.startswith("async_device")]
@@ -98,13 +185,3 @@ def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
 
         for i in range(len(sync_timestamps) - 1):
             assert sync_timestamps[i + 1] - sync_timestamps[i] == pytest.approx(SIM_SLEEP_TIME, abs=0.01)
-
-    assert None not in (
-        async_device1.trigger_time,
-        async_device2.trigger_time,
-        sync_device1.trigger_time,
-        sync_device2.trigger_time,
-    )
-
-    assert async_device2.trigger_time - async_device1.trigger_time == pytest.approx(0, abs=0.01)
-    assert sync_device2.trigger_time - sync_device1.trigger_time == pytest.approx(SIM_SLEEP_TIME, abs=0.01)
