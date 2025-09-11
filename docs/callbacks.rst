@@ -1192,7 +1192,7 @@ as the console.
         d.start()
 
 
-As `described above <kickers>`_, if you want to use any live-updating plots,
+As :ref:`described above <kickers>`, if you want to use any live-updating plots,
 you will need to install a "kicker". It needs to be installed on the same
 event loop used by the RemoteDispatcher, like so, and it must be done before
 calling ``d.start()``.
