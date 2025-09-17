@@ -1974,6 +1974,17 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
+    async def _read_single_device(self, msg, obj):
+        ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
+
+        if ret is None:
+            raise RuntimeError(
+                f"The read of {obj.name} returned None. "
+                "This is a bug in your object implementation, "
+                "`read` must return a dictionary."
+            )
+        return ret
+
     async def _read(self, msg: Msg):
         """
         Add a reading to the open event bundle.
@@ -1987,14 +1998,7 @@ class RunEngine:
         obj = check_supports(msg.obj, Readable)
         # actually _read_ the object
         warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
-        ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
-
-        if ret is None:
-            raise RuntimeError(
-                f"The read of {obj.name} returned None. "
-                "This is a bug in your object implementation, "
-                "`read` must return a dictionary."
-            )
+        ret = await self._read_single_device(msg, obj)
         run_key = msg.run
         if (current_run := self._run_bundlers.get(run_key)) is not None:  # Key abscence sentinel
             await current_run.read(msg, ret)
@@ -2012,31 +2016,33 @@ class RunEngine:
 
         where ``obj`` is an ``_ObjTuple`` of ``Device``.
         """
-        read_methods = {obj.name: check_supports(obj, Readable).read for obj in msg.obj}
+        readables = {obj.name: check_supports(obj, Readable) for obj in msg.obj}
 
-        coro_read_methods, non_coro_read_methods = {}, {}
+        coro_readables, non_coro_readables = {}, {}
 
-        for name, read_method in read_methods.items():
-            if inspect.iscoroutinefunction(read_method):
-                coro_read_methods[name] = read_method
+        for name, device in readables.items():
+            if inspect.iscoroutinefunction(device.read):
+                coro_readables[name] = device
             else:
-                non_coro_read_methods[name] = read_method
+                non_coro_readables[name] = device
 
         ret = dict(
             zip(
-                coro_read_methods,
-                await asyncio.gather(*[read_method() for read_method in coro_read_methods.values()]),
+                coro_readables,
+                await asyncio.gather(*[self._read_single_device(msg, obj) for obj in coro_readables.values()]),
             )
         )
-        ret.update({name: read_method() for name, read_method in non_coro_read_methods.items()})
-        none_ret = {name for name, value in ret.items() if value is None}
-
-        if none_ret:
-            raise RuntimeError(
-                f"The read of objects {none_ret} returned None. "
-                "This is a bug in your object implementation, "
-                "`read` must return a dictionary."
+        ret.update(
+            dict(
+                zip(
+                    non_coro_readables,
+                    await asyncio.gather(
+                        *[self._read_single_device(msg, obj) for obj in non_coro_readables.values()]
+                    ),
+                )
             )
+        )
+
         run_key = msg.run
         if (current_run := self._run_bundlers.get(run_key)) is not None:  # Key abscence sentinel
             await current_run.read_all(msg, ret)
