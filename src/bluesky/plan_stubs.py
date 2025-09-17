@@ -1526,9 +1526,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
             yield from drop()
             raise exp
 
-        plan = read(devices[0]) if len(devices) == 1 else read_all(devices)
-
-        ret = yield from contingency_wrapper(plan, except_plan=exception_path, else_plan=standard_path)
+        ret = yield from contingency_wrapper(
+            read_all(devices), except_plan=exception_path, else_plan=standard_path
+        )
         return ret
 
     from .preprocessors import rewindable_wrapper

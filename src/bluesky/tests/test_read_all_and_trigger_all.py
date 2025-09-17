@@ -77,22 +77,14 @@ def test_read_all(RE, sync_and_async_devices):
         yield from bps.create(name="primary")
         ret = yield from bps.read_all(sync_and_async_devices)
         assert ret == {
-            "async_device1": {
-                "async_device1-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
-                "async_device1-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
-            },
-            "async_device2": {
-                "async_device2-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
-                "async_device2-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
-            },
-            "sync_device1": {
-                "sync_device1_signal1": {"timestamp": ANY, "value": 1},
-                "sync_device1_signal2": {"timestamp": ANY, "value": "some_value"},
-            },
-            "sync_device2": {
-                "sync_device2_signal1": {"timestamp": ANY, "value": 1},
-                "sync_device2_signal2": {"timestamp": ANY, "value": "some_value"},
-            },
+            "async_device1-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
+            "async_device1-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
+            "async_device2-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
+            "async_device2-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
+            "sync_device1_signal1": {"timestamp": ANY, "value": 1},
+            "sync_device1_signal2": {"timestamp": ANY, "value": "some_value"},
+            "sync_device2_signal1": {"timestamp": ANY, "value": 1},
+            "sync_device2_signal2": {"timestamp": ANY, "value": "some_value"},
         }
         yield from bps.save()
         yield from bps.close_run()
@@ -185,3 +177,28 @@ def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
 
         for i in range(len(sync_timestamps) - 1):
             assert sync_timestamps[i + 1] - sync_timestamps[i] == pytest.approx(SIM_SLEEP_TIME, abs=0.03)
+
+
+@requires_ophyd
+@requires_ophyd_async
+def test_read_all_flattened_structure(RE, sync_and_async_devices):
+    sync_device1, sync_device2, async_device1, async_device2 = sync_and_async_devices
+
+    output = {"start": [], "descriptor": [], "event": [], "stop": []}
+
+    def plan():
+        yield from bps.open_run()
+        yield from bps.create(name="primary")
+        ret = yield from bps.read_all([sync_device1, async_device1, sync_device2.signal1, async_device2.signal2])
+        assert list(ret) == [
+            "async_device1-signal1",
+            "async_device1-signal2",
+            "async_device2-signal2",
+            "sync_device1_signal1",
+            "sync_device1_signal2",
+            "sync_device2_signal1",
+        ]
+        yield from bps.save()
+        yield from bps.close_run()
+
+    RE(plan(), lambda name, doc: output[name].append(doc))

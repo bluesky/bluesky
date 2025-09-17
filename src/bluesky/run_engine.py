@@ -2016,38 +2016,28 @@ class RunEngine:
 
         where ``obj`` is an ``_ObjTuple`` of ``Device``.
         """
-        readables = {obj.name: check_supports(obj, Readable) for obj in msg.obj}
+        coro_objs, non_coro_objs = [], []
 
-        coro_readables, non_coro_readables = {}, {}
-
-        for name, device in readables.items():
-            if inspect.iscoroutinefunction(device.read):
-                coro_readables[name] = device
+        for obj in msg.obj:
+            check_supports(obj, Readable)
+            if inspect.iscoroutinefunction(obj.read):
+                coro_objs.append(obj)
             else:
-                non_coro_readables[name] = device
+                non_coro_objs.append(obj)
 
-        ret = dict(
-            zip(
-                coro_readables,
-                await asyncio.gather(*[self._read_single_device(msg, obj) for obj in coro_readables.values()]),
-            )
-        )
-        ret.update(
-            dict(
-                zip(
-                    non_coro_readables,
-                    await asyncio.gather(
-                        *[self._read_single_device(msg, obj) for obj in non_coro_readables.values()]
-                    ),
-                )
-            )
-        )
+        coro_read_rets = await asyncio.gather(*[self._read_single_device(msg, obj) for obj in coro_objs])
+        non_coro_read_rets = await asyncio.gather(*[self._read_single_device(msg, obj) for obj in non_coro_objs])
 
         run_key = msg.run
         if (current_run := self._run_bundlers.get(run_key)) is not None:  # Key abscence sentinel
-            await current_run.read_all(msg, ret)
+            await current_run.read_all(
+                msg, list(zip(coro_objs, coro_read_rets)) + list(zip(non_coro_objs, non_coro_read_rets))
+            )
 
-        return ret
+        read_all_ret = {}
+        for read_ret in coro_read_rets + non_coro_read_rets:
+            read_all_ret.update(read_ret)
+        return read_all_ret
 
     async def _locate(self, msg: Msg):
         """
