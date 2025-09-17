@@ -9,7 +9,6 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
-from collections.abc import Callable, Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
@@ -1803,7 +1802,6 @@ class RunEngine:
             raise stashed_exception
         return plan_return
 
-    ### For bookmarking
     async def _wait_for(self, msg):
         """Instruct the RunEngine to wait for futures and return the resulting tasks.
 
@@ -2110,20 +2108,8 @@ class RunEngine:
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         ret = obj.prepare(*msg.args, **kwargs)
-        p_event = asyncio.Event(**self._loop_for_kwargs)
-        pardon_failures = self._pardon_failures
 
-        def done_callback(status=None):
-            self.log.debug("The object %r reports set is done with status %r", obj, ret.success)
-            self._loop.call_soon_threadsafe(self._status_object_completed, ret, p_event, pardon_failures)
-
-        try:
-            ret.add_callback(done_callback)
-        except AttributeError:
-            # for ophyd < v0.8.0
-            ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait)
-        self._status_objs[group].add(ret)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="prepare")
 
         return ret
 
@@ -2160,26 +2146,9 @@ class RunEngine:
         group = kwargs.pop("group", None)
         warn_if_msg_args_or_kwargs(msg, obj.kickoff, msg.args, kwargs)
         ret = obj.kickoff(*msg.args, **kwargs)
-        p_event = asyncio.Event(**self._loop_for_kwargs)
-        pardon_failures = self._pardon_failures
-
         await current_run.kickoff(msg)
 
-        def done_callback(status=None):
-            self.log.debug(
-                "The object %r reports 'kickoff' is done with status %r",
-                obj,
-                ret.success,
-            )
-            self._loop.call_soon_threadsafe(self._status_object_completed, ret, p_event, pardon_failures)
-
-        try:
-            ret.add_callback(done_callback)
-        except AttributeError:
-            # for ophyd < v0.8.0
-            ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait)
-        self._status_objs[group].add(ret)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="kickoff")
 
         return ret
 
@@ -2207,24 +2176,8 @@ class RunEngine:
         warn_if_msg_args_or_kwargs(msg, obj.complete, msg.args, kwargs)
         ret = obj.complete(*msg.args, **kwargs)
 
-        p_event = asyncio.Event(**self._loop_for_kwargs)
-        pardon_failures = self._pardon_failures
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="complete")
 
-        def done_callback(status=None):
-            self.log.debug(
-                "The object %r reports 'complete' is done with status %r",
-                obj,
-                ret.success,
-            )
-            self._loop.call_soon_threadsafe(self._status_object_completed, ret, p_event, pardon_failures)
-
-        try:
-            ret.add_callback(done_callback)
-        except AttributeError:
-            # for ophyd < v0.8.0
-            ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait)
-        self._status_objs[group].add(ret)
         return ret
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} collect")
@@ -2280,20 +2233,8 @@ class RunEngine:
         group = kwargs.pop("group", None)
         self._movable_objs_touched.add(obj)
         ret = obj.set(*msg.args, **kwargs)
-        p_event = asyncio.Event(**self._loop_for_kwargs)
-        pardon_failures = self._pardon_failures
 
-        def done_callback(status=None):
-            self.log.debug("The object %r reports set is done with status %r", obj, ret.success)
-            self._loop.call_soon_threadsafe(self._status_object_completed, ret, p_event, pardon_failures)
-
-        try:
-            ret.add_callback(done_callback)
-        except AttributeError:
-            # for ophyd < v0.8.0
-            ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait)
-        self._status_objs[group].add(ret)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="set")
 
         return ret
 
@@ -2341,14 +2282,12 @@ class RunEngine:
             group = msg.kwargs["group"]
         error_on_timeout = msg.kwargs.get("error_on_timeout", True)
         watch = msg.kwargs.get("watch", ())
+        watch_task: asyncio.Task | None = None
         if group:
             trace.get_current_span().set_attribute("group", group)
         else:
             trace.get_current_span().set_attribute("no_group_given", True)
         futs = list(self._groups.pop(group, []))
-        watch_futs = []
-        for w in watch:
-            watch_futs.extend(self._groups.get(w, []))
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
@@ -2362,22 +2301,43 @@ class RunEngine:
                     # the information these encapsulate to create a progress
                     # bar.
                     self._call_waiting_hook(status_objs)
-                await self._wait_for(Msg("wait_for", None, futs, timeout=msg.kwargs.get("timeout", None)))
-                watch_task = asyncio.create_task(self._monitor_status_objs(watch_futs))
-                # Monitor the status objects for any failures and raise an exception if any are detected.
-                try:
-                    watch_task.cancel()
-                except Exception:
-                    pass
 
+                async def wait_for_first_exception(futures) -> list[asyncio.Future]:
+                    return await self._wait_for(
+                        Msg(
+                            "wait_for",
+                            None,
+                            futures,
+                            return_when=asyncio.FIRST_EXCEPTION,
+                            timeout=msg.kwargs.get("timeout", None),
+                        )
+                    )
+
+                status_task = asyncio.create_task(wait_for_first_exception(futs))
+                if watch:
+                    # Create a task that waits for an exception on any watch group
+                    watch_futs = []
+                    for w in watch:
+                        watch_futs.extend(self._groups.get(w, []))
+                    watch_task = asyncio.create_task(wait_for_first_exception(watch_futs))
+
+                    def cancel_status_task_if_error(fut: asyncio.Future[list[asyncio.Future]]):
+                        # If _wait_for raised an exception, or if any of the status
+                        # objects in the watch groups failed, cancel the status_task.
+                        if fut.exception() or any(f.exception() for f in fut.result()):
+                            status_task.cancel()
+
+                    watch_task.add_done_callback(cancel_status_task_if_error)
+                await status_task
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
-                futs.extend(watch_futs)
                 self._groups[group] = futs
                 self._status_objs[group] = status_objs
                 if error_on_timeout:
                     raise
             finally:
+                if watch_task:
+                    watch_task.cancel()
                 if error_on_timeout:
                     # Notify the waiting_hook function that we have moved on by
                     # sending it `None`. If all goes well, it could have
@@ -2392,16 +2352,7 @@ class RunEngine:
                         self._seen_wait_and_move_on_keys.remove(group)
             return done
 
-    async def _monitor_status_objs(self, futs: list):
-        futs = [asyncio.ensure_future(f()) for f in futs]
-        completed, pending = await asyncio.wait(futs, **self._loop_for_kwargs)
-        # err = self._exception
-        # if err:
-        #     print(f"Error in monitoring task: {err}")
-        #     self._call_waiting_hook(None)
-        #     raise err
-
-    def _status_object_completed(self, ret, p_event, pardon_failures):
+    def _status_object_completed(self, ret, fut: asyncio.Future, pardon_failures):
         """
         Task to run when a status object is finished.
 
@@ -2422,20 +2373,9 @@ class RunEngine:
                     raise FailedStatus(ret) from exc
                 except Exception as e:
                     self._exception = e
-        p_event.set()
-
-    def _manage_failed_status(self, pardon_failures) -> Callable[[Status], None]:
-        def inner(status: Status):
-            if pardon_failures.is_set() or status.success:
-                return
-            with self._state_lock:
-                try:
-                    exc = status.exception(timeout=0)
-                    raise FailedStatus(status) from exc
-                except Exception as e:
-                    self._exception = e
-
-        return inner
+                    fut.set_exception(e)
+        else:
+            fut.set_result(None)
 
     async def _sleep(self, msg):
         """
@@ -2568,19 +2508,25 @@ class RunEngine:
         return old, new
 
     def _add_status_to_group(self, obj: typing.Any, status_object: Status, group: str, action: str) -> None:
-        p_event = asyncio.Event(**self._loop_for_kwargs)
+        fut = self._loop.create_future()
         pardon_failures = self._pardon_failures
 
-        def done_callback(status=None):
+        def done_callback(status: Status = None):
             self.log.debug("The object %r reports %r is done with status %r.", obj, action, status_object.success)
-            self._loop.call_soon_threadsafe(self._status_object_completed, status_object, p_event, pardon_failures)
+            self._loop.call_soon_threadsafe(self._status_object_completed, status_object, fut, pardon_failures)
 
         try:
             status_object.add_callback(done_callback)
         except AttributeError:
             # for ophyd < v0.8.0
             status_object.finished_cb = done_callback  # type: ignore
-        self._groups[group].add(p_event.wait)
+
+        def return_fut():
+            return fut
+
+        return_fut.__qualname__ = f"{group}_future"
+
+        self._groups[group].add(return_fut)
         self._status_objs[group].add(status_object)
 
     async def _stage(self, msg):

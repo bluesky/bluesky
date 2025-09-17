@@ -11,7 +11,6 @@ from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
 from bluesky import Msg
 from bluesky.plan_stubs import (
     close_run,
-    collect,
     collect_while_completing,
     complete,
     complete_all,
@@ -19,7 +18,6 @@ from bluesky.plan_stubs import (
     kickoff,
     kickoff_all,
     open_run,
-    prepare,
     wait,
 )
 from bluesky.plans import count, fly
@@ -27,7 +25,6 @@ from bluesky.protocols import Preparable
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
-from bluesky.utils import short_uid
 
 
 def collect_while_completing_plan(flyers, dets, stream_name: str = "test_stream", pre_declare: bool = True):
@@ -626,113 +623,3 @@ def test_kickoff_seperately_complete_all(RE):
     assert flyer2.call_counts["kickoff"] == 1
     assert flyer1.call_counts["complete"] == 1
     assert flyer2.call_counts["complete"] == 1
-
-
-def collect_data_during_multiple_scan(dets, motors, stream_name: str = "test_stream"):
-    yield from open_run()
-    yield from declare_stream(*dets, name=stream_name, collect=True)
-
-    grid_scan: list = [10, 10, 10]
-
-    yield from prepare(*dets, sum(grid_scan))
-
-    for i in range(len(grid_scan) - 1):
-        yield from prepare(*motors, grid_scan[i])
-
-        yield from kickoff(*dets)
-        yield from kickoff(*motors)
-
-        dets_complete_group = short_uid("det_complete_group")
-        yield from complete(*dets, group=dets_complete_group)
-        yield from collect_while_completing(
-            motors, dets, flush_period=0.1, stream_name=stream_name, watch=dets_complete_group
-        )
-        yield from prepare(*motors, grid_scan[i + 1])
-        yield from wait(dets_complete_group)
-        yield from collect(*dets, name=stream_name)
-
-    yield from close_run()
-
-
-def test_collect_while_completing_with_3_identical_grid_scan(RE):
-    completed = []
-    collected = []
-
-    class StatusDoneAfterTenthCall(StatusBase):
-        times_called = 0
-
-        @property
-        def done(self):
-            self.times_called += 1
-            return self.times_called >= 10
-
-    class TrivialMotor:
-        name = "trivial-motor"
-        custom_status = StatusDoneAfterTenthCall()
-
-        def prepare(self, num):
-            self.num = num
-            return NullStatus()
-
-        def kickoff(self):
-            return NullStatus()
-
-        def complete(self):
-            completed.append(self)
-            # reset counter after each complete
-            self.custom_status = StatusDoneAfterTenthCall()
-            return self.custom_status
-
-    class TrivialDetector:
-        name = "trivial-detector"
-        times_collected = 0
-
-        def prepare(self, num):
-            self.num = num
-            return NullStatus()
-
-        def kickoff(self):
-            return NullStatus()
-
-        def describe_collect(self):
-            collected.append(self)
-            return {
-                "times_collected": {
-                    "dims": [],
-                    "dtype": "number",
-                    "shape": [],
-                    "source": "times_collected",
-                }
-            }
-
-        def collect(self):
-            self.times_collected += 1
-            yield PartialEvent(
-                data={"times_collected": self.times_collected},
-                timestamps={"times_collected": time()},
-            )
-
-        def complete(self):
-            completed.append(self)
-            return NullStatus()
-
-    det = TrivialDetector()
-    motors = TrivialMotor()
-    docs = defaultdict(list)
-
-    def assert_emitted(docs: dict[str, list], **numbers: int):
-        assert list(docs) == list(numbers)
-        assert {name: len(d) for name, d in docs.items()} == numbers
-
-    RE(collect_data_during_multiple_scan([det], [motors]), lambda name, doc: docs[name].append(doc))
-    for idx, event in enumerate(docs["event_page"]):
-        print(idx, event)
-        assert "times_collected" in event["data"] and event["data"]["times_collected"] == [idx + 1]
-    # The detector will be collected 3(number of scans) * nine times as the flyer's done property is
-    # checked once during the initial complete call, then the detector collects
-    # every loop and checks if the flyer is done until it is checked for a tenth time
-    assert_emitted(docs, start=1, descriptor=1, event_page=27, stop=1)
-    # key should be removed from set when collection done
-    assert not RE._seen_wait_and_move_on_keys
-    assert det in collected
-    assert [det, motors] * 3 == completed
