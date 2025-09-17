@@ -385,18 +385,19 @@ class RunBundler:
 
         return reading
 
-    async def read_all(self, msg, reading):
+    async def read_all(self, msg, objs_with_reading: list[tuple[object, dict]]):
         """Add a reading to the open event bundle.
 
         Expected message object is::
 
             Msg('read_all', obj)
 
-        where ``obj`` is a ``Sequence`` of ``Readable`` objects.
+        where ``obj`` is an ``_ObjTuple`` of ``Readable`` objects.
         """
         if self.bundling:
-            await asyncio.gather(*[self._bundle_single_read(msg, obj, reading[obj.name]) for obj in msg.obj])
-        return reading
+            await asyncio.gather(
+                *[self._bundle_single_read(msg, obj, reading) for obj, reading in objs_with_reading]
+            )
 
     async def _cache_describe(self, obj):
         "Read the object's describe and cache it."
