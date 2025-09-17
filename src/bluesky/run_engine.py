@@ -2511,7 +2511,7 @@ class RunEngine:
         fut = self._loop.create_future()
         pardon_failures = self._pardon_failures
 
-        def done_callback(status: Status = None):
+        def done_callback(status: Status):
             self.log.debug("The object %r reports %r is done with status %r.", obj, action, status_object.success)
             self._loop.call_soon_threadsafe(self._status_object_completed, status_object, fut, pardon_failures)
 

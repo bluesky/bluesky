@@ -1963,7 +1963,7 @@ def test_wait_with_timeout(set_finished, RE, device_pair):
             RE(plan())
 
 
-async def finish_status_later(status: Status, when: float, error: bool):
+async def finish_status_later(status, when: float, error: bool):
     await asyncio.sleep(when)
     if error:
         status.set_exception(ValueError("failed"))
