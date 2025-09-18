@@ -1592,7 +1592,6 @@ class RunEngine:
                             resp = sentinel
                             # If there is at least one plan left in the stack,
                             # stash the new exception go back to top
-                            ### THIS IS THE PLACE WHERE I NEED TO FIX IT
                             if len(self._plan_stack):
                                 stashed_exception = e
                                 continue
@@ -2313,9 +2312,12 @@ class RunEngine:
                         )
                     )
 
+                # Create the task waiting for the given group of statuses to complete
+                # or one of them to fail
                 status_task = asyncio.create_task(wait_for_first_exception(futs))
                 if watch:
                     # Create a task that waits for an exception on any watch group
+                    # so we know whether to stop the wait early because of a watcher failure
                     watch_futs = []
                     for w in watch:
                         watch_futs.extend(self._groups.get(w, []))
@@ -2521,12 +2523,7 @@ class RunEngine:
             # for ophyd < v0.8.0
             status_object.finished_cb = done_callback  # type: ignore
 
-        def return_fut():
-            return fut
-
-        return_fut.__qualname__ = f"{group}_future"
-
-        self._groups[group].add(return_fut)
+        self._groups[group].add(lambda: fut)
         self._status_objs[group].add(status_object)
 
     async def _stage(self, msg):
