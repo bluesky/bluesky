@@ -610,6 +610,8 @@ class _RunWriter(CallbackBase):
         self.data_keys.update(doc.get("data_keys", {}))
 
         # Create a new Container with "composite" spec for the stream if it does not exist
+        # Since the data_keys are guaranteed to be unique, we don't need to perform client-side validation of the
+        # "composite" spec constraints and can use the `.base` (Container) client directly.
         if desc_name not in self._desc_nodes.keys():
             metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
             desc_node = self._streams_node.create_container(
@@ -617,7 +619,7 @@ class _RunWriter(CallbackBase):
                 metadata=truncate_json_overflow(metadata),
                 specs=[Spec("BlueskyEventStream", version="3.0"), Spec("composite")],
                 access_tags=self.access_tags,
-            )
+            ).base
         else:
             # Rare Case: This new descriptor likely updates stream configs mid-experiment
             # We assume tha the full descriptor has been already received, so we don't need to store everything
