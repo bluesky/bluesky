@@ -2042,10 +2042,13 @@ def test_set_failed_before_watch_raises_immediately(RE, device_pair):
         status = yield Msg("stage", device_pair[0], group="test_group")
         yield Msg("stage", device_pair[1], group="watch_group")
         status.set_exception(Exception("Mock device failed"))
-        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+        yield from wait(group="test_group", timeout=1.0, watch=("watch_group",))
 
+    start = ttime.monotonic()
     with pytest.raises(FailedStatus):
         RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(0.0, abs=0.1)
 
 
 async def passing_coroutine():
