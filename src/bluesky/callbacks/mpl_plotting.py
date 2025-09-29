@@ -721,14 +721,12 @@ def plot_peak_stats(peak_stats, ax=None):
     vlines = []
     styles = iter(cycler("color", "krgbm"))
     for style, attr in zip(styles, ["cen", "com"]):
-        print(style, attr)
         val = getattr(ps, attr)
         if val is None:
             continue
         vlines.append(ax.axvline(val, label=attr, **style))
 
     for style, attr in zip(styles, ["max", "min"]):
-        print(style, attr)
         val = getattr(ps, attr)
         if val is None:
             continue

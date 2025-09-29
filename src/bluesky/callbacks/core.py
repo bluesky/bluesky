@@ -8,6 +8,7 @@ import time as ttime
 import warnings
 from collections import OrderedDict, deque, namedtuple
 from datetime import datetime
+from enum import Enum
 from functools import partial as _partial
 from functools import wraps as _wraps
 from itertools import count
@@ -15,14 +16,6 @@ from itertools import count
 from event_model import DocumentRouter
 
 from ..utils import ensure_uid
-
-MIMETYPE_LOOKUP = {
-    "hdf5": "application/x-hdf5",
-    "AD_HDF5_SWMR_STREAM": "application/x-hdf5",
-    "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
-    "AD_TIFF": "multipart/related;type=image/tiff",
-    "AD_HDF5_GERM": "application/x-hdf5",
-}
 
 logger = logging.getLogger(__name__)
 
@@ -287,6 +280,7 @@ class LiveTable(CallbackBase):
         "number": "f",
         "integer": "d",
         "string": "s",
+        "boolean": "s",
     }
     _fm_sty = namedtuple("fm_sty", ["width", "prec", "dtype"])  # type: ignore
     water_mark = "{st[plan_type]} {st[plan_name]} ['{st[uid]:.8s}'] (scan num: {st[scan_id]})"
@@ -358,7 +352,14 @@ class LiveTable(CallbackBase):
                 )
                 continue
 
-            prec = patch_up_precision(dk_entry.get("precision", self._default_prec))
+            if dk_entry["dtype"] == "boolean":
+                prec = 5  # 5 is the length of the string "False"
+            elif dk_entry["dtype"] == "string":
+                # If string, set precision to length of the key minus padding
+                prec = width - 1 - 2 * self._pad_len
+            else:
+                prec = patch_up_precision(dk_entry.get("precision", self._default_prec))
+
             fmt = self._fm_sty(width=width, prec=prec, dtype=self._FMT_MAP[dk_entry["dtype"]])
 
             self._format_info[k] = fmt
@@ -408,7 +409,13 @@ class LiveTable(CallbackBase):
             data[self.ev_time_key] = fmt_time
             data["seq_num"] = doc["seq_num"]
             cols = [
-                f.format(**{f"h{str(hash(k))}": data[k]})
+                # If we have a bool, just `str` it.
+                f.format(**{f"h{str(hash(k))}": str(data[k])})
+                if ((k in data) and isinstance(data[k], (bool)))
+                # If we have an enum, format with it's value
+                else f.format(**{f"h{str(hash(k))}": data[k].value})
+                if ((k in data) and isinstance(data[k], (Enum)))
+                else f.format(**{f"h{str(hash(k))}": data[k]})
                 # Show data[k] if k exists in this Event and is 'filled'.
                 # (The latter is only applicable if the data is
                 # externally-stored -- hence the fallback to `True`.)

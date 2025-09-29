@@ -12,6 +12,7 @@ Msg
    :toctree: generated
 
    Msg
+   MsgGenerator
 
 
 Persistent metadata

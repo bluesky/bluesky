@@ -23,4 +23,5 @@ User Documentation
    from-pyepics-to-bluesky
    comparison-with-spec
    hardware-interfaces
+   tiled-writer
    appendix

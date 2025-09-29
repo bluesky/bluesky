@@ -11,9 +11,18 @@ from traceback import FrameSummary, extract_tb
 import pytest
 from event_model import DocumentNames
 
-from bluesky import Msg
-from bluesky.plan_stubs import abs_set, checkpoint, declare_stream, pause, trigger_and_read, wait, wait_for
-from bluesky.plans import count, grid_scan
+from bluesky import Msg, RunEngine
+from bluesky.plan_stubs import (
+    abs_set,
+    checkpoint,
+    configure,
+    declare_stream,
+    pause,
+    trigger_and_read,
+    wait,
+    wait_for,
+)
+from bluesky.plans import count, grid_scan, scan
 from bluesky.preprocessors import (
     SupplementalData,
     baseline_wrapper,
@@ -1494,7 +1503,7 @@ def test_wait_with_timeout_can_be_repeated(RE):
 
 
 @requires_ophyd
-def test_status_propagates_exception_through_run_engine(RE):
+def test_status_propagates_exception_through_run_engine(RE: RunEngine):
     # just to make sure that 'pardon_failures' does not block *real* failures
     from ophyd import StatusBase
 
@@ -1515,13 +1524,13 @@ def test_status_propagates_exception_through_run_engine(RE):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg("set", dummy1, 1, group="test"), Msg("wait", group="test")])
 
-        traceback: list[FrameSummary] = extract_tb(exc.__traceback__)
+        traceback: list[FrameSummary] = extract_tb(exc.__traceback__)  # type: ignore[attr-defined]
         assert traceback[0].filename == __file__
         assert traceback[0].line == "RE([Msg('set', dummy1, 1, group='test'),"
         assert traceback[-1].name == "set"
         assert traceback[-1].line == "1/0"
 
-        assert isinstance(exc.args[0], ZeroDivisionError)
+        assert isinstance(exc.args[0], ZeroDivisionError)  # type: ignore[attr-defined]
 
 
 def test_colliding_streams(RE, hw):
@@ -2163,3 +2172,92 @@ def test_1event_rewind(RE, hw):
         "save",
         "close_run",
     ]
+
+
+@requires_ophyd
+def test_configure_multiple_descritpors(RE):
+    from ophyd import Component as C
+    from ophyd import Device, sim
+
+    class SynWithConfig(Device):
+        x = C(sim.Signal, value=0)
+        y = C(sim.Signal, value=2)
+        z = C(sim.Signal, value=3)
+
+    det = SynWithConfig(name="det")
+    det.x.name = "x"
+    det.y.name = "y"
+    det.z.name = "z"
+    det.read_attrs = ["x"]
+    det.configuration_attrs = ["y", "z"]
+
+    @run_decorator()
+    def plan(det):
+        # run without an exciting descriptor
+        yield from configure(det, {"z": 3})
+        # force a descriptor to be created
+        yield from declare_stream(det, name="primary")
+        # and an event
+        yield from trigger_and_read([det], name="primary")
+        # update the config which will re-generate the descriptor
+        yield from configure(det, {"z": 4})
+        # and a second event
+        yield from trigger_and_read([det], name="primary")
+
+    d = DocCollector()
+    RE(plan(det), d.insert)
+
+    (start,) = d.start
+    descA, descB = d.descriptor[start["uid"]]
+    stop = d.stop[start["uid"]]
+
+    assert descA["configuration"]["det"]["data"]["z"] == 3
+    assert descB["configuration"]["det"]["data"]["z"] == 4
+
+    for desc in (descA, descB):
+        assert len(d.event[desc["uid"]]) == 1
+
+    assert stop["num_events"]["primary"] == 2
+
+
+def test_sync_scan_id_source(RE):
+    def sync_scan_source(md: dict) -> int:
+        return 314159
+
+    RE.scan_id_source = sync_scan_source
+    RE([Msg("open_run")])
+    assert RE.md["scan_id"] == 314159
+
+
+def test_async_scan_id_source(RE):
+    async def async_scan_source(md: dict) -> int:
+        return 42
+
+    RE.scan_id_source = async_scan_source
+    RE([Msg("open_run")])
+    assert RE.md["scan_id"] == 42
+
+
+@requires_ophyd
+def test_descriptor_order(RE):
+    from itertools import permutations
+
+    from ophyd import Component, Device, Signal
+
+    class Issue1930(Device):
+        alpha = Component(Signal, value=1, kind="hinted")
+        bravo = Component(Signal, value=2, kind="hinted")
+        charlie = Component(Signal, value=3, kind="hinted")
+
+    i1930 = Issue1930(name="i1930")
+
+    for dets in permutations([i1930.alpha, i1930.bravo, i1930.charlie]):
+        key_order = [d.name for d in dets]
+
+        def check(key_order, name, doc):
+            if name == "event":
+                assert list(doc["data"]) == key_order
+            elif name == "descriptor":
+                assert list(doc["data_keys"]) == key_order
+
+        RE(scan(dets, i1930.charlie, -1, 1, 2), lambda name, doc, key_order=key_order: check(key_order, name, doc))

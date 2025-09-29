@@ -7,13 +7,87 @@ Unreleased
 
 Added
 -----
-* ``bps.wait`` now allows an additional ``watch`` parameter to specify
+
+- ``bps.wait`` now allows an additional ``watch`` parameter to specify
   other status groups to watch. If any of the watched groups fail while
   waiting for the main group, their exception will be raised. This is
   needed so a plan can wait for a motion flyer to complete, failing if
   any detector flyer fails, but not having to wait for the detector flyers
   to write all files to disk before the next part of the plan.
 
+v1.14.4 (2025-08-26)
+====================
+
+Changed
+-------
+
+- Update ``TiledWriter`` to match API changes in Tiled
+  (demotion of "composite" from structure family to spec)
+
+v1.14.3 (2025-08-26)
+====================
+
+Changed
+-------
+
+- RunEngine now supports both sync and async functions as a `scan_id_source`
+
+Fixed
+-----
+
+- Fix a Regression Related External Data Present in Multiple Streams
+
+v1.14.2 (2025-06-10)
+====================
+
+TO DO
+
+v1.14.1 (2025-05-21)
+====================
+
+Added
+-----
+
+- The `mv` and `mvr` plans accept a new argument, `timeout`.
+
+Changed
+-------
+
+- The `bluesky.callbacks.tiled_writer.TiledWriter` looks for an
+  optional key `tiled_access_tags` in the 'start' document and,
+  if found, uses it to set `access_tags` on the nodes created
+  in Tiled to store the metadata and data from the BlueskyRun.
+  In additional, some minor refinements were made to the writer.
+
+v1.14.0 (2025-05-06)
+====================
+
+Added
+-----
+
+- Included `ophyd_async` version in start document metadata.
+- Implemented `close()` on the wrapper object `Plan`.
+
+Changed
+-------
+
+- Reworked `bluesky.callbacks.tiled_writer.TiledWriter` and
+  supporting objects to lay out metadata and data from
+  Bluesky documents in a new way, dubbed version 3 of the
+  Tiled `BlueskyRun` spec.
+
+Fixed
+-----
+
+- Removed accidental debug prints in `plot_peak_stats`.
+- Fixed `LiveTable` output for boolean and Enum `ophyd-async` signals
+- Fixed a critical bug where using the ``configure`` machinery would generate a descriptor with stale configuration.
+
+Maintenance
+-----------
+
+- Fixed minor errors in docstrings and documentation.
+- Refactored plot setup logic in Best-Effort Callback for clarity.
 
 v1.13.1 (2024-12-12)
 ====================
@@ -26,9 +100,6 @@ Changed
   process or multiple processes sharing the same files.  ``PersistentDict`` is
   not being removed, but is strongly discouraged for new use.  To get the old pinning use
   ```pip install bluesky[old_persistentdict]`` or install ``zict<3``.
-
-
-
 
 v1.13.0a4 (2024-07-08)
 ======================

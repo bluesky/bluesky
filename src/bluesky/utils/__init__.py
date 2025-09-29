@@ -15,7 +15,7 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Generator, Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
@@ -23,6 +23,7 @@ from typing import (
     Any,
     Callable,
     Optional,
+    TypedDict,
     TypeVar,
     Union,
 )
@@ -32,8 +33,10 @@ import msgpack
 import msgpack_numpy
 import numpy as np
 from cycler import Cycler, cycler
+from event_model.documents import Document, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
+from typing_extensions import TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
@@ -91,6 +94,24 @@ CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat = Union[float, TypingIterable[float]]
+
+# Single function to be used as an event listener
+Subscriber = Callable[[str, P], Any]
+
+OneOrMany = Union[P, Sequence[P]]
+
+
+# Mapping from event type to listener or list of listeners
+class SubscriberMap(TypedDict, total=False):
+    all: OneOrMany[Subscriber[Document]]
+    start: OneOrMany[Subscriber[RunStart]]
+    stop: OneOrMany[Subscriber[RunStop]]
+    event: OneOrMany[Subscriber[Event]]
+    descriptor: OneOrMany[Subscriber[EventDescriptor]]
+
+
+# Single listener, multiple listeners or mapping of listeners by event type
+Subscribers = Union[OneOrMany[Subscriber[Document]], SubscriberMap]
 
 
 class RunEngineControlException(Exception):
@@ -1927,13 +1948,15 @@ async def maybe_collect_asset_docs(
             yield doc
 
 
+def _isawaitable(value: SyncOrAsync[T]) -> TypeIs[Awaitable[T]]:
+    return inspect.isawaitable(value)
+
+
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
-    if inspect.isawaitable(ret):
+    if _isawaitable(ret):
         return await ret
     else:
-        # Mypy does not understand how to narrow type to non-awaitable in this
-        # instance, see https://github.com/python/mypy/issues/15520
-        return ret  # type: ignore
+        return ret
 
 
 class Plan:
@@ -1967,6 +1990,10 @@ class Plan:
     def throw(self, typ, val=None, tb=None):
         self._stack = None
         return self._iter.throw(typ, val, tb)
+
+    def close(self):
+        self._stack = None
+        return self._iter.close()
 
 
 def plan(bs_plan):
@@ -2007,3 +2034,22 @@ def is_plan(bs_plan):
     """
 
     return inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False)
+
+
+def truncate_json_overflow(data):
+    """Truncate large numerical values to avoid overflow issues when serializing as JSON.
+
+    This preemptively truncates large integers and floats with zero fractional part to fit within
+    the JSON limits for integers, i.e. (-2^53, 2^53 - 1], in case the values are implicitly
+    converted during serialization.
+    """
+    if isinstance(data, collections.abc.Mapping):
+        return {k: truncate_json_overflow(v) for k, v in data.items()}
+    elif isinstance(data, collections.abc.Iterable) and not isinstance(data, str):
+        # Handle lists, tuples, arrays, etc., but not strings
+        return [truncate_json_overflow(item) for item in data]
+    elif isinstance(data, (int, float)) and not (data % 1) and not (1 - 2**53 <= data <= 2**53 - 1):
+        return min(max(data, 1 - 2**53), 2**53 - 1)  # Truncate integers to fit in JSON (53 bits max)
+    elif isinstance(data, float) and (data < -1.7976e308 or data > 1.7976e308):
+        return min(max(data, -1.7976e308), 1.7976e308)  # (Approx.) truncate floats to fit in JSON to avoid inf
+    return data

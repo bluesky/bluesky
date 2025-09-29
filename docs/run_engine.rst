@@ -163,7 +163,7 @@ reporting that the addition failed due to a ``TypeError``
         finally:
             yield Msg('print', 'thanks for adding')
 
-Compare the behavior of between ``adding_plan`` and ``addingplan`` in cases
+Compare the behavior of between ``adding_plan`` and ``safe_adding_plan`` in cases
 where they succeed
 
 .. code:: python
@@ -776,6 +776,16 @@ API to control the behavior.
 
 Stop, Abort, Halt
 -----------------
+Stop, Abort, and Halt **stop** a plan in different ways; whether the plan is running or paused,
+whether cleanup is performed, and how the `exit_status` is set.
+The table below summarizes the differences between these methods:
+
+| Method    | Action                            | Cleanup       | Exit Status |
+| --------- | --------------------------------- | ------------- | ----------- |
+| **Abort** | Stop a running or paused plan     | Runs cleanup  | `abort`     |
+| **Stop**  | Stop a running or paused plan     | Runs cleanup  | `success`   |
+| **Halt**  | Stop the running plan immediately | Skips cleanup | `abort`     |
+
 
 Suspending
 ----------

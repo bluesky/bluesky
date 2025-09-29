@@ -15,17 +15,15 @@ classifiers = [
 description = "Experiment specification & orchestration."
 dependencies = [
     "cycler",
-    "event-model>=1.19.8",
+    "event-model>=1.23.1",
     "historydict",
-    "importlib-resources;python_version<'3.9'",
     "msgpack",
     "msgpack-numpy",
     "numpy",
     "opentelemetry-api",
     "toolz",
     "tqdm>=4.44",
-    "typing-extensions>=4.0.0;python_version<'3.11'",
-    "dataclasses;python_version<'3.7'",
+    "typing-extensions>=4.10.0",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -54,6 +52,7 @@ dev = [
     "networkx",
     "numpydoc",
     "ophyd",
+    "orjson",
     "packaging",
     "pandas",
     "pickleshare",
@@ -76,6 +75,7 @@ dev = [
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
+    "sphinxcontrib-mermaid",
     "sphinx_rtd_theme",
     "streamz",
     # These suitcases are test deps of databroker which we need to access

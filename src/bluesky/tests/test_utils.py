@@ -6,11 +6,13 @@ from functools import reduce
 from unittest.mock import patch
 
 import numpy as np
+import orjson
 import pytest
 from cycler import cycler
 
-from bluesky import RunEngine
+from bluesky import RunEngine, RunEngineInterrupted
 from bluesky.plan_stubs import complete_all, mv
+from bluesky.preprocessors import pchain
 from bluesky.run_engine import WaitForTimeoutError
 from bluesky.utils import (
     AsyncInput,
@@ -21,6 +23,7 @@ from bluesky.utils import (
     is_plan,
     merge_cycler,
     plan,
+    truncate_json_overflow,
     warn_if_msg_args_or_kwargs,
 )
 
@@ -545,6 +548,36 @@ def test_warning_behavior(gen_func, iterated):
             RE(gen_func())
 
 
+def pause_plan():
+    return (yield Msg("pause"))
+
+
+def pchain_plan():
+    yield from pchain(sample_plan(), pause_plan(), sample_plan())
+
+
+def test_warnings_with_interruption():
+    RE = RunEngine()
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        with pytest.raises(RunEngineInterrupted):
+            RE(pchain_plan())
+        assert RE.state == "paused"
+        RE.stop()
+        assert not record, "There should be no warnings if properly closed"
+
+
+def test_plan_wrapper_close():
+    plan = sample_plan()
+    plan.close()
+    with pytest.raises(StopIteration):
+        next(plan)
+    plan = pchain_plan()
+    plan.close()
+    with pytest.raises(StopIteration):
+        next(plan)
+
+
 @pytest.mark.parametrize(
     "func, is_plan_result",
     [
@@ -570,7 +603,10 @@ def test_async_input_does_not_block_event_loop(RE, capsys):
         # Patch stdin.readline as a *blocking* function that takes a while to return - the wait_for
         # should time out before this returns, so the input_completed_event should never have a
         # chance to be set.
-        with patch("bluesky.utils.sys.stdin.readline", side_effect=lambda: time.sleep(3 * a_short_time)):
+        with patch(
+            "bluesky.utils.sys.stdin.readline",
+            side_effect=lambda: time.sleep(3 * a_short_time),
+        ):
             await ai("prompt: ")
 
         input_completed_event.set()
@@ -599,3 +635,48 @@ def test_async_input_does_not_block_event_loop(RE, capsys):
             pytest.fail("Should have timed out waiting for input")
 
     RE(plan())
+
+
+def test_truncate_json_overflow():
+    # Test with a large integer
+    data = {"large_pos_int": 2**60, "large_neg_int": -(2**60)}
+    truncated_data = truncate_json_overflow(data)
+    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
+    for val in orjson.loads(orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)).values():
+        assert val is not None
+
+    # Test with a large float
+    data = {"large_pos_float": 2e308, "large_neg_float": -2e308}
+    truncated_data = truncate_json_overflow(data)
+    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
+    for val in orjson.loads(orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)).values():
+        assert val is not None
+
+    # Test with a list of large integers and floats
+    data = [[2**60, -(2**60)], [2e308, -2e308]]
+    truncated_data = truncate_json_overflow(data)
+    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
+
+    # Test with a dictionary containing various types
+    data = {
+        "int": 42,
+        "float": 3.14,
+        "str": "Hello, world!",
+        "list": [1, 2, 3],
+        "dict": {"key": "value"},
+        "large_int": 2**60,
+        "large_float": 2e308,
+        "nested": {
+            "large_neg_int": -(2**60),
+            "large_neg_float": -2e308,
+            "list_of_large_ints": [2**60, -(2**60)],
+            "list_of_large_floats": [2e308, -2e308],
+        },
+    }
+    truncated_data = truncate_json_overflow(data)
+    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
+
+    # Test with a NaN value
+    data = {"nan": float("nan")}
+    truncated_data = truncate_json_overflow(data)
+    assert orjson.loads(orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER))["nan"] is None
