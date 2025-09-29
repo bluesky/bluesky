@@ -2,6 +2,19 @@
  Release History
 =================
 
+Unreleased
+==========
+
+Added
+-----
+* ``bps.wait`` now allows an additional ``watch`` parameter to specify
+  other status groups to watch. If any of the watched groups fail while
+  waiting for the main group, their exception will be raised. This is
+  needed so a plan can wait for a motion flyer to complete, failing if
+  any detector flyer fails, but not having to wait for the detector flyers
+  to write all files to disk before the next part of the plan.
+
+
 v1.13.1 (2024-12-12)
 ====================
 
