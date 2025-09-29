@@ -1945,22 +1945,24 @@ def test_unsubscribe(RE):
     assert len(RE.dispatcher._token_mapping) == 0
 
 
-@pytest.mark.parametrize("set_finished", [True, False])
-def test_wait_with_timeout(set_finished, RE):
+@pytest.fixture
+def device_pair():
     from ophyd import StatusBase
     from ophyd.device import Device
 
     class MockDevice(Device):
         def stage(self):
-            status = StatusBase()
-            if set_finished:
-                status.set_finished()
-            return status
+            return StatusBase()
 
-    mock_device = MockDevice(name="mock_device")
+    return MockDevice(name="device1"), MockDevice(name="device2")
 
+
+@pytest.mark.parametrize("set_finished", [True, False])
+def test_wait_with_timeout(set_finished, RE, device_pair):
     def plan():
-        yield Msg("stage", mock_device, group="test_group")
+        status = yield Msg("stage", device_pair[0], group="test_group")
+        if set_finished:
+            status.set_finished()
         yield from wait(group="test_group", timeout=0.1)
 
     if set_finished:
@@ -1968,6 +1970,94 @@ def test_wait_with_timeout(set_finished, RE):
     else:
         with pytest.raises(TimeoutError):
             RE(plan())
+
+
+async def finish_status_later(status, when: float, error: bool):
+    await asyncio.sleep(when)
+    if error:
+        status.set_exception(ValueError("failed"))
+    else:
+        status.set_finished()
+
+
+@pytest.mark.parametrize(
+    "raises,exception,duration",
+    [
+        (True, FailedStatus, 0.1),
+        (False, WaitForTimeoutError, 0.5),
+    ],
+)
+def test_wait_when_one_status_returns_raises(RE, device_pair, raises, exception, duration):
+    def plan():
+        yield Msg("stage", device_pair[0], group="test_group")
+        status2 = yield Msg("stage", device_pair[1], group="test_group")
+        asyncio.create_task(finish_status_later(status2, 0.05, raises))
+        yield from wait(group="test_group", timeout=0.5)
+
+    start = ttime.monotonic()
+    with pytest.raises(exception):
+        RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(duration, abs=0.1)
+
+
+@pytest.mark.parametrize(
+    "raises,exception,duration",
+    [
+        (True, FailedStatus, 0.1),
+        (False, WaitForTimeoutError, 0.5),
+    ],
+)
+def test_wait_returns_based_on_watch_raises(RE, device_pair, raises, exception, duration):
+    def plan():
+        yield Msg("stage", device_pair[0], group="test_group")
+        stage2 = yield Msg("stage", device_pair[1], group="watch_group")
+        asyncio.create_task(finish_status_later(stage2, 0.05, raises))
+        yield from wait(group="test_group", watch=("watch_group",), timeout=0.5)
+
+    start = ttime.monotonic()
+    with pytest.raises(exception):
+        RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(duration, abs=0.1)
+
+
+def test_set_finished_before_watch_completes_immediately(RE, device_pair):
+    def plan():
+        status = yield Msg("stage", device_pair[0], group="test_group")
+        status.set_finished()
+        yield Msg("stage", device_pair[1], group="watch_group")
+        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+
+    RE(plan())
+
+
+def test_watch_finished_before_set_return_when_set_finishes(RE, device_pair):
+    def plan():
+        status1 = yield Msg("stage", device_pair[0], group="test_group")
+        status2 = yield Msg("stage", device_pair[1], group="watch_group")
+        asyncio.create_task(finish_status_later(status1, 0.2, False))
+        asyncio.create_task(finish_status_later(status2, 0.05, False))
+        yield from wait(group="test_group", timeout=0.3, watch=("watch_group",))
+
+    start = ttime.monotonic()
+    RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(0.2, abs=0.05)
+
+
+def test_set_failed_before_watch_raises_immediately(RE, device_pair):
+    def plan():
+        status = yield Msg("stage", device_pair[0], group="test_group")
+        yield Msg("stage", device_pair[1], group="watch_group")
+        status.set_exception(Exception("Mock device failed"))
+        yield from wait(group="test_group", timeout=1.0, watch=("watch_group",))
+
+    start = ttime.monotonic()
+    with pytest.raises(FailedStatus):
+        RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(0.0, abs=0.1)
 
 
 async def passing_coroutine():
