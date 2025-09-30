@@ -6,9 +6,10 @@ from functools import partial
 import pytest
 
 from bluesky import Msg
-from bluesky.preprocessors import suspend_wrapper
+from bluesky.preprocessors import ignore_suspenders_decorator, ignore_suspenders_wrapper, suspend_wrapper
 from bluesky.run_engine import RunEngineInterrupted
 from bluesky.suspenders import (
+    IgnoreSuspendersContext,
     SuspendBoolHigh,
     SuspendBoolLow,
     SuspendCeil,
@@ -298,3 +299,98 @@ def test_suspender_plans(RE, hw):
     stop = ttime.time()
     delta = stop - start
     assert delta < 0.9
+
+
+@pytest.mark.parametrize(
+    "klass,sc_args,start_val,fail_val",
+    [
+        (SuspendBoolHigh, (), 0, 1),
+    ],
+)
+def test_ignore_suspenders_context(klass, sc_args, start_val, fail_val, RE, hw):
+    """Loose copy of test_suspender, but with ignore_suspenders_context"""
+    sig = hw.bool_sig
+    my_suspender = klass(
+        sig,
+        *sc_args,
+    )
+    RE.install_suspender(my_suspender)
+    scan = [Msg("checkpoint")]
+    msg_lst = []
+
+    def accum(msg):
+        msg_lst.append(msg)
+
+    RE.msg_hook = accum
+
+    sig.put(fail_val)
+    msg_lst.clear()
+    threading.Timer(0.2, sig.put, (start_val,)).start()
+    RE(scan)
+    assert RE.state == "idle"
+    assert len(msg_lst) == 2
+    assert ["wait_for", "checkpoint"] == [m[0] for m in msg_lst]
+
+    msg_lst.clear()
+    sig.put(fail_val)
+    with IgnoreSuspendersContext(my_suspender):
+        RE(scan)
+    assert RE.state == "idle"
+    assert len(msg_lst) == 1
+    assert ["checkpoint"] == [m[0] for m in msg_lst]
+
+
+@pytest.mark.parametrize(
+    "klass,sc_args,start_val,fail_val",
+    [
+        (SuspendBoolHigh, (), 0, 1),
+    ],
+)
+def test_ignore_suspenders_decorate(klass, sc_args, start_val, fail_val, RE, hw):
+    sig = hw.bool_sig
+    my_suspender = klass(
+        sig,
+        *sc_args,
+    )
+    RE.install_suspender(my_suspender)
+    scan = [Msg("checkpoint")]
+    msg_lst = []
+
+    def accum(msg):
+        msg_lst.append(msg)
+
+    RE.msg_hook = accum
+
+    sig.put(fail_val)
+    msg_lst.clear()
+    threading.Timer(0.2, sig.put, (start_val,)).start()
+    RE(scan)
+    assert RE.state == "idle"
+    assert len(msg_lst) == 2
+    assert ["wait_for", "checkpoint"] == [m[0] for m in msg_lst]
+
+    @ignore_suspenders_decorator(my_suspender)
+    def decorated_scan():
+        yield from scan
+
+    msg_lst.clear()
+    sig.put(fail_val)
+    start = ttime.time()
+    threading.Timer(0.3, sig.put, (start_val,)).start()
+    RE(ignore_suspenders_wrapper(scan, suspenders=[my_suspender]))
+    stop = ttime.time()
+    assert RE.state == "idle"
+    assert len(msg_lst) == 4
+    assert ["wait_for", "remove_suspender", "checkpoint", "install_suspender"] == [m[0] for m in msg_lst]
+    assert stop - start < 0.5
+
+    msg_lst.clear()
+    sig.put(fail_val)
+    start = ttime.time()
+    threading.Timer(0.3, sig.put, (start_val,)).start()
+    RE(decorated_scan())
+    stop = ttime.time()
+    assert RE.state == "idle"
+    assert len(msg_lst) == 4
+    assert ["wait_for", "remove_suspender", "checkpoint", "install_suspender"] == [m[0] for m in msg_lst]
+    assert stop - start < 0.5
