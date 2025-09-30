@@ -745,3 +745,56 @@ def test_in_plan_qt_callback(RE, hw):
         return (yield from plan)
 
     RE(my_plan())
+
+
+def test_errorbars_created_if_yerr_is_given():
+    _, ax = plt.subplots()
+    ax.errorbar = MagicMock()
+
+    lp = LivePlot(y="y", x="x", yerr="yerr", ax=ax)
+
+    x = 1
+    y = 2
+    yerr = 3
+
+    # Fake just enough of a start document.
+    lp.start(  # type: ignore
+        {
+            "time": 0,
+            "plan_name": "scan",
+            "uid": 0,
+            "scan_id": 0,
+        }
+    )
+
+    # Fake just enough of an event document.
+    lp.event(
+        {
+            "data": {  # type: ignore
+                "y": y,
+                "x": x,
+                "yerr": yerr,
+            }
+        }
+    )
+
+    lp.ax.errorbar.assert_called_with(y=[y], x=[x], yerr=[yerr], fmt="none")  # type: ignore
+
+
+def test_errorbars_not_created_if_no_yerr():
+    _, ax = plt.subplots()
+    ax.errorbar = MagicMock()
+
+    lp = LivePlot(y="y", x="x", ax=ax)
+
+    lp.start(  # type: ignore
+        {
+            "time": 0,
+            "plan_name": "scan",
+            "uid": 0,
+            "scan_id": 0,
+        }
+    )
+
+    lp.update_plot()
+    assert not lp.ax.errorbar.called
