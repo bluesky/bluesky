@@ -2334,7 +2334,7 @@ class RunEngine:
                 await status_task
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
-                self._groups[group] = futs
+                self._groups[group].update(futs)
                 self._status_objs[group] = status_objs
                 if error_on_timeout:
                     raise
