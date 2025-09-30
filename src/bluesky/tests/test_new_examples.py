@@ -720,13 +720,13 @@ def test_repeat_using_RE(RE):
 
 
 def test_trigger_and_read(hw):
-    det = hw.det
-    msgs = list(trigger_and_read([det]))
+    det1, det2 = hw.det1, hw.det2
+    msgs = list(trigger_and_read([det1]))
     expected = [
-        Msg("trigger", det),
+        Msg("trigger", det1),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="primary"),
-        Msg("read", det),
+        Msg("read", det1),
         Msg("save"),
     ]
     for msg in msgs:
@@ -734,12 +734,25 @@ def test_trigger_and_read(hw):
         msg.kwargs.pop("timeout", None)
     assert msgs == expected
 
-    msgs = list(trigger_and_read([det], "custom"))
+    msgs = list(trigger_and_read([det2], "custom"))
     expected = [
-        Msg("trigger", det),
+        Msg("trigger", det2),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="custom"),
-        Msg("read", det),
+        Msg("read", det2),
+        Msg("save"),
+    ]
+    for msg in msgs:
+        msg.kwargs.pop("group", None)
+        msg.kwargs.pop("timeout", None)
+    assert msgs == expected
+
+    msgs = list(trigger_and_read([det1, det2], "custom"))
+    expected = [
+        Msg("trigger_all", (det1, det2)),
+        Msg("wait"),
+        Msg("create", name="custom"),
+        Msg("read_all", (det1, det2)),
         Msg("save"),
     ]
     for msg in msgs:
