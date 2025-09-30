@@ -65,6 +65,7 @@ from bluesky.preprocessors import (
     monitor_during_wrapper,
     relative_set_wrapper,
     reset_positions_wrapper,
+    save_positions_wrapper,
     subs_decorator,
     subs_wrapper,
     suspend_wrapper,
@@ -536,6 +537,33 @@ def test_finalize_runs_after_error(RE, hw):
         pass  # swallow the Exception; we are interested in msgs below
 
     expected = [Msg("null"), Msg("read", det)]
+
+    assert msgs == expected
+
+
+def test_save_positions(RE, hw):
+    motor = hw.motor
+    motor.set(5)
+
+    msgs = []
+
+    def accumulator(msg):
+        msgs.append(msg)
+
+    RE.msg_hook = accumulator
+
+    def plan():
+        yield from (m for m in [Msg("set", motor, 8)])
+
+    ret = RE(save_positions_wrapper(plan()))
+    if RE.call_returns_result:
+        saved_positions = ret.plan_result[1]
+        assert saved_positions[0][motor] == 5
+
+    expected = [Msg("set", motor, 8)]
+
+    for msg in msgs:
+        msg.kwargs.pop("group", None)
 
     assert msgs == expected
 

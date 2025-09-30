@@ -1152,9 +1152,39 @@ def relative_set_wrapper(plan, devices=None):
     return (yield from plan)
 
 
-def reset_positions_wrapper(plan, devices=None):
+def restore_positions_plan(saved_positions: tuple[OrderedDict, set]):
     """
-    Return movable devices to their initial positions at the end.
+    Restore previously saved positions from movable devices.
+
+    Parameters
+    ----------
+    saved_positions : tuple object
+        Saved movable positions, returned from :func:`bluesky.preprocessors.save_positions_wrapper`.
+
+    Yields
+    ------
+    msg : Msg
+        'set' and 'wait' messages for restoring the positions.
+
+    See Also
+    --------
+    :func:`bluesky.preprocessors.save_positions_wrapper`
+    :func:`bluesky.preprocessors.reset_positions_wrapper`
+    :func:`bluesky.preprocessors.reset_positions_decorator`
+    """
+    initial_positions, coupled_parents = saved_positions
+
+    blk_grp = f"reset-{str(uuid.uuid4())[:6]}"
+    for k, v in initial_positions.items():
+        if k.parent in coupled_parents:
+            continue
+        yield Msg("set", k, v, group=blk_grp)
+    yield Msg("wait", None, group=blk_grp)
+
+
+def save_positions_wrapper(plan, devices=None, *, restore_positions_on_error=False):
+    """
+    Save positions from movable devices for later returning to them.
 
     Parameters
     ----------
@@ -1162,11 +1192,25 @@ def reset_positions_wrapper(plan, devices=None):
         a generator, list, or similar containing `Msg` objects
     devices : collection or None, optional
         If default (None), apply to all devices that are moved by the plan.
+    restore_positions_on_error : bool, optional
+        If default (False), do not restore the positions automatically when
+        an error occurs on the plan.
 
     Yields
     ------
     msg : Msg
-        messages from plan with 'read' and finally 'set' messages inserted
+        messages from plan with 'read' or 'locate' messages possibly inserted
+
+    Returns
+    -------
+    a tuple consisting of the original plan's return value and an object
+    representing the saved positions, respectively.
+
+    See Also
+    --------
+    :func:`bluesky.preprocessors.restore_positions_plan`
+    :func:`bluesky.preprocessors.reset_positions_wrapper`
+    :func:`bluesky.preprocessors.reset_positions_decorator`
     """
     initial_positions = OrderedDict()
     if devices is not None:
@@ -1188,15 +1232,36 @@ def reset_positions_wrapper(plan, devices=None):
         else:
             return None, None
 
-    def reset():
-        blk_grp = f"reset-{str(uuid.uuid4())[:6]}"
-        for k, v in initial_positions.items():
-            if k.parent in coupled_parents:
-                continue
-            yield Msg("set", k, v, group=blk_grp)
-        yield Msg("wait", None, group=blk_grp)
+    def restore_if_error(exc):
+        yield from restore_positions_plan((initial_positions, coupled_parents))
 
-    return (yield from finalize_wrapper(plan_mutator(plan, insert_reads), reset()))
+    plan_with_save = plan_mutator(plan, insert_reads)
+    original_plan_ret = yield from contingency_wrapper(plan_with_save, except_plan=restore_if_error)
+
+    return original_plan_ret, (initial_positions, coupled_parents)
+
+
+def reset_positions_wrapper(plan, devices=None):
+    """
+    Return movable devices to their initial positions at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    devices : collection or None, optional
+        If default (None), apply to all devices that are moved by the plan.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'read' and finally 'set' messages inserted
+    """
+    original_ret, saved_positions = yield from save_positions_wrapper(
+        plan, devices, restore_positions_on_error=True
+    )
+    yield from restore_positions_plan(saved_positions)
+    return original_ret
 
 
 def baseline_wrapper(plan, devices, name="baseline"):
