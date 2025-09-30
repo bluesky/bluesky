@@ -9,10 +9,15 @@ from bluesky.run_engine import RunEngine, TransitionError
 
 
 @pytest.fixture(scope="function", params=[False, True])
-def RE(request):
+def call_returns_result(request):
+    return request.param
+
+
+@pytest.fixture(scope="function")
+def RE(request, call_returns_result):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
-    RE = RunEngine({}, call_returns_result=request.param, loop=loop)
+    RE = RunEngine({}, call_returns_result=call_returns_result, loop=loop)
 
     def clean_event_loop():
         if RE.state not in ("idle", "panicked"):
