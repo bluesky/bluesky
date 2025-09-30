@@ -18,7 +18,6 @@ from collections import namedtuple
 from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
-from inspect import Parameter, Signature
 from typing import (
     Any,
     Callable,
@@ -553,43 +552,6 @@ class _BoundMethodProxy:
 
     def __hash__(self):
         return self._hash
-
-
-# The following two code blocks are adapted from David Beazley's
-# 'Python 3 Metaprogramming' https://www.youtube.com/watch?v=sPiWg5jSoZI
-
-
-class StructMeta(type):
-    def __new__(cls, name, bases, clsdict):
-        clsobj = super().__new__(cls, name, bases, clsdict)
-        args_params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in clsobj._fields]
-        kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None) for name in ["md"]]
-        sig = Signature(args_params + kwargs_params)
-        clsobj.__signature__ = sig
-        return clsobj
-
-
-class Struct(metaclass=StructMeta):
-    "The _fields of any subclass become its attritubes and __init__ args."
-
-    _fields: list[str] = []
-
-    def __init__(self, *args, **kwargs):
-        # Now bind default values of optional arguments.
-        # If it seems like there should be a cleaner way to do this, see
-        # http://bugs.python.org/msg221104
-        bound = self.__signature__.bind(*args, **kwargs)
-        for name, param in self.__signature__.parameters.items():
-            if name not in bound.arguments and param.default is not inspect._empty:
-                bound.arguments[name] = param.default
-        for name, val in bound.arguments.items():
-            setattr(self, name, val)
-        self.flyers = []
-
-    def set(self, **kwargs):
-        "Update attributes as keyword arguments."
-        for attr, val in kwargs.items():
-            setattr(self, attr, val)
 
 
 SUBS_NAMES = ["all", "start", "stop", "event", "descriptor"]

@@ -31,6 +31,7 @@ Changed
 -------
 
 - RunEngine now supports both sync and async functions as a `scan_id_source`
+- Unused Struct and StructMeta base and metaclass removed.
 
 Fixed
 -----
