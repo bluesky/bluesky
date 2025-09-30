@@ -1146,8 +1146,7 @@ def relative_set_wrapper(plan, devices=None):
                     ),
                     None,
                 )
-            else:
-                return None, None
+        return None, None
 
     plan = plan_mutator(plan, insert_reads)
     plan = msg_mutator(plan, rewrite_pos)
