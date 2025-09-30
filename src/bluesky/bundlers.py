@@ -44,12 +44,12 @@ from .protocols import (
 from .utils import (
     IllegalMessageSequence,
     Msg,
-    _rearrange_into_parallel_dicts,
     iterate_maybe_async,
     maybe_await,
     maybe_collect_asset_docs,
     maybe_update_hints,
     new_uid,
+    rearrange_into_parallel_dicts,
     short_uid,
 )
 
@@ -454,7 +454,7 @@ class RunBundler:
                     f"{readable_obj} has async read() method and the callback "
                     "passed to subscribe() was not called with Dict[str, Reading]"
                 )
-            data, timestamps = _rearrange_into_parallel_dicts(readings)
+            data, timestamps = rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
                 timestamps=timestamps,
@@ -581,7 +581,7 @@ class RunBundler:
 
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
-        data, timestamps = _rearrange_into_parallel_dicts(readings)
+        data, timestamps = rearrange_into_parallel_dicts(readings)
         # Mark all externally-stored data as not filled so that consumers
         # know that the corresponding data are identifiers, not dereferenced
         # data.

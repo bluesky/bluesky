@@ -1692,29 +1692,65 @@ class DefaultDuringTask(DuringTask):
         if "matplotlib" in sys.modules:
             import matplotlib
 
-            backend = matplotlib.get_backend().lower()
-            if "qt" in backend:
-                from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
+            backend = matplotlib.get_backend()
+        else:
+            backend = ""
+        if "qt" in backend:
+            # import this for side effects
+            import matplotlib.backends.backend_qt  # noqa
+        if qt_is_imported():
+            from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
 
-                initialize_qt_teleporter()
+            initialize_qt_teleporter()
 
     def block(self, blocking_event):
         # docstring inherited
         global _qapp
-        if "matplotlib" not in sys.modules:
-            # We are not using matplotlib + Qt. Just wait on the Event.
-            blocking_event.wait()
-        # Figure out if we are using matplotlib with which backend
-        # without importing anything that is not already imported.
-        else:
+
+        if "matplotlib" in sys.modules:
             import matplotlib
 
-            backend = matplotlib.get_backend().lower()
+            backend = matplotlib.get_backend()
+            mpl_is_qt = "qt" in backend
+        else:
+            backend = ""
+            mpl_is_qt = False
+        qt_imported = qt_is_imported()
+        _qapp = get_qapplication()
+
+        # check if we are using a mpl web backend
+        if "ipympl" in backend or "nbagg" in backend:
+            Gcf = matplotlib._pylab_helpers.Gcf
+            while True:
+                done = blocking_event.wait(0.1)
+                for f_mgr in Gcf.get_all_fig_managers():
+                    if f_mgr.canvas.figure.stale:
+                        f_mgr.canvas.draw()
+                if done:
+                    return
+        # we do not:
+        #  - have an existing QApplication
+        #  - have an imported qt binding
+        #  - using qtagg from Matplotlib
+        # so wait on teh event
+        elif not (_qapp is not None or qt_imported or mpl_is_qt):
+            blocking_event.wait()
+        # otherwise do the Qt event loop thing
+        else:
             # if with a Qt backend, do the scary thing
-            if "qt" in backend:
+            if ensure_qapp() is not None:
                 import functools
 
-                from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
+                QtWidgets = get_qt_widgets_module("QtWidgets")
+                QtCore = get_qt_widgets_module("QtCore")
+                QT_API = QtCore.__name__.split(".")[0]
+                assert QT_API == QtWidgets.__name__.split(".")[0]
+                if "matplotlib" in sys.modules:
+                    from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
+
+                    initialize_qt_teleporter()
+
+                event_loop = QtCore.QEventLoop()
 
                 @functools.lru_cache(None)
                 def _enum(name):
@@ -1745,12 +1781,6 @@ class DefaultDuringTask(DuringTask):
                     return operator.attrgetter(name if QT_API == "PyQt6" else name.rpartition(".")[0])(
                         sys.modules[QtCore.__package__]
                     )
-
-                app = QtWidgets.QApplication.instance()
-                if app is None:
-                    _qapp = app = QtWidgets.QApplication([b"bluesky"])
-                assert app is not None
-                event_loop = QtCore.QEventLoop()
 
                 def start_killer_thread():
                     def exit_loop():
@@ -1857,21 +1887,48 @@ class DefaultDuringTask(DuringTask):
                         cleanup()
                     finally:
                         sys.excepthook = old_sys_handler
-            elif "ipympl" in backend or "nbagg" in backend:
-                Gcf = matplotlib._pylab_helpers.Gcf
-                while True:
-                    done = blocking_event.wait(0.1)
-                    for f_mgr in Gcf.get_all_fig_managers():
-                        if f_mgr.canvas.figure.stale:
-                            f_mgr.canvas.draw()
-                    if done:
-                        return
+
             else:
                 # We are not using matplotlib + Qt. Just wait on the Event.
                 blocking_event.wait()
 
 
-def _rearrange_into_parallel_dicts(readings):
+def get_qt_module_name(mod="QtWidgets"):
+    qt_modules_names = [f"{p}.{mod}" for p in ("PyQt6", "PySide6", "PyQt5", "PySide2")]
+    module = next((name for name in qt_modules_names if sys.modules.get(name) is not None), None)
+    return module
+
+
+def get_qt_widgets_module(mod="QtWidgets"):
+    qt_modules_names = [f"{p}.{mod}" for p in ("PyQt6", "PySide6", "PyQt5", "PySide2")]
+    qt_widgets = next(
+        (sys.modules.get(name) for name in qt_modules_names if sys.modules.get(name) is not None), None
+    )
+    return qt_widgets
+
+
+def qt_is_imported():
+    return get_qt_widgets_module() is not None
+
+
+def get_qapplication():
+    qt_widgets = get_qt_widgets_module()
+    return qt_widgets.QApplication.instance() if qt_widgets is not None else None
+
+
+def ensure_qapp():
+    QtWidgets = get_qt_widgets_module()
+    global _qapp
+
+    if QtWidgets is None:
+        raise RuntimeError("Can not create the QApplication you asked for.")
+    _qapp = QtWidgets.QApplication.instance()
+    if _qapp is None:
+        _qapp = QtWidgets.QApplication([b"bluesky"])
+    return _qapp
+
+
+def rearrange_into_parallel_dicts(readings):
     data = {}
     timestamps = {}
     for key, payload in readings.items():
