@@ -117,7 +117,6 @@ class Publisher:
         self._serializer = serializer
 
     def __call__(self, name, doc):
-        print(f"{name = }\n{doc}\n")
         doc = copy.deepcopy(doc)
         message = b" ".join([self._prefix, name.encode(), self._serializer(doc)])
         self._socket.send(message)
@@ -380,7 +379,6 @@ class RemoteDispatcher(Dispatcher):
                             f"\n\n{e}"
                         )
                         continue
-                print(f"{name = }\n{doc}")
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
