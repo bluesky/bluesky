@@ -46,7 +46,7 @@ def _normalize_address(inp: Union[str, tuple, int]):
         rest_str = f"localhost:{inp}"
 
     else:
-        raise TypeError(f"Input expected to be str or tuple, not {type(inp)}")
+        raise TypeError(f"Input expected to be int, str, or tuple, not {type(inp)}")
 
     return f"{protocol}://{rest_str}"
 
@@ -117,7 +117,6 @@ class Publisher:
         self._serializer = serializer
 
     def __call__(self, name, doc):
-        print(f"{name = }\n{doc}\n")
         doc = copy.deepcopy(doc)
         message = b" ".join([self._prefix, name.encode(), self._serializer(doc)])
         self._socket.send(message)
@@ -164,9 +163,9 @@ class Proxy:
 
     Attributes
     ----------
-    in_port : int or str
+    in_address: int or str or tuple
         Port that RunEngines should broadcast to.
-    out_port : int or str
+    out_address : int or str or tuple
         Port that subscribers should subscribe to.
     closed : boolean
         True if the Proxy has already been started and subsequently
@@ -232,8 +231,8 @@ class Proxy:
             context.destroy()
             raise
         else:
-            self.in_port = in_port
-            self.out_port = out_port
+            self.in_port = in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port)
+            self.out_port = out_port.addr if hasattr(out_port, "addr") else _normalize_address(out_port)
             self._frontend = frontend
             self._backend = backend
             self._context = context
@@ -380,7 +379,6 @@ class RemoteDispatcher(Dispatcher):
                             f"\n\n{e}"
                         )
                         continue
-                print(f"{name = }\n{doc}")
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
