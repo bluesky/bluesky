@@ -53,7 +53,15 @@ def main():
     args = parser.parse_args()
 
     print("Connecting...")
-    proxy = Proxy(args.in_address, args.out_address)
+    try:
+        in_address = int(args.in_address)
+    except (ValueError, TypeError):
+        in_address = args.in_address
+    try:
+        out_address = int(args.out_address)
+    except (ValueError, TypeError):
+        out_address = args.out_address
+    proxy = Proxy(in_address, out_address)
     print("Receiving on address %s; publishing to address %s." % (proxy.in_port, proxy.out_port))
     if args.verbose:
         from bluesky.log import config_bluesky_logging
