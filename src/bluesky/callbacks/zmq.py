@@ -231,8 +231,8 @@ class Proxy:
             context.destroy()
             raise
         else:
-            self.in_port = in_port.addr if hasattr(in_port, 'addr') else in_port
-            self.out_port = out_port.addr if hasattr(out_port, 'addr') else out_port
+            self.in_port = in_port.addr if hasattr(in_port, "addr") else in_port
+            self.out_port = out_port.addr if hasattr(out_port, "addr") else out_port
             self._frontend = frontend
             self._backend = backend
             self._context = context
