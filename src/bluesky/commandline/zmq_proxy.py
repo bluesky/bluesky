@@ -52,6 +52,9 @@ def main():
     parser.add_argument("--logfile", type=str, help="Redirect logging output to a file on disk.")
     args = parser.parse_args()
 
+    print("Connecting...")
+    proxy = Proxy(args.in_address, args.out_address)
+    print("Receiving on address %s; publishing to address %s." % (proxy.in_port, proxy.out_port))
     if args.verbose:
         from bluesky.log import config_bluesky_logging
 
@@ -62,11 +65,8 @@ def main():
         else:
             config_bluesky_logging(level=level)
         # Set daemon to kill all threads upon IPython exit
-        threading.Thread(target=start_dispatcher, args=(args.out_address), daemon=True).start()
+        threading.Thread(target=start_dispatcher, args=(proxy.out_port,), daemon=True).start()
 
-    print("Connecting...")
-    proxy = Proxy(args.in_address, args.out_address)
-    print("Receiving on address %s; publishing to address %s." % (args.in_address, args.out_address))
     print("Use Ctrl+C to exit.")
     try:
         proxy.start()
