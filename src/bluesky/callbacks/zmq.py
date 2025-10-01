@@ -43,7 +43,7 @@ def _normalize_address(inp: Union[str, tuple, int]):
             (rest_str,) = rest
     elif isinstance(inp, int):
         protocol = "tcp"
-        rest_str = f"localhost:{inp}"
+        rest_str = f"0.0.0.0:{inp}"
 
     else:
         raise TypeError(f"Input expected to be int, str, or tuple, not {type(inp)}")
