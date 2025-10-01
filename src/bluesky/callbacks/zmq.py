@@ -46,7 +46,7 @@ def _normalize_address(inp: Union[str, tuple, int]):
         rest_str = f"localhost:{inp}"
 
     else:
-        raise TypeError(f"Input expected to be str or tuple, not {type(inp)}")
+        raise TypeError(f"Input expected to be int, str, or tuple, not {type(inp)}")
 
     return f"{protocol}://{rest_str}"
 
@@ -164,9 +164,9 @@ class Proxy:
 
     Attributes
     ----------
-    in_port : int or str
+    in_address: int or str or tuple
         Port that RunEngines should broadcast to.
-    out_port : int or str
+    out_address : int or str or tuple
         Port that subscribers should subscribe to.
     closed : boolean
         True if the Proxy has already been started and subsequently
