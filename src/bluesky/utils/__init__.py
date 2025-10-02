@@ -1748,7 +1748,7 @@ class DefaultDuringTask(DuringTask):
 
                 app = QtWidgets.QApplication.instance()
                 if app is None:
-                    _qapp = app = QtWidgets.QApplication([b"bluesky"])
+                    _qapp = app = QtWidgets.QApplication(["bluesky"])
                 assert app is not None
                 event_loop = QtCore.QEventLoop()
 
