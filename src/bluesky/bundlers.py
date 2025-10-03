@@ -426,11 +426,12 @@ class RunBundler:
 
         where kwargs are passed through to ``obj.subscribe()``
         """
-        obj = check_supports(msg.obj, Subscribable)
+        obj = msg.obj
         if msg.args:
             raise ValueError("The 'monitor' Msg does not accept positional arguments.")
         kwargs = dict(msg.kwargs)
         name = kwargs.pop("name", short_uid("monitor"))
+        assert not kwargs, "If subscribe callback called with readings, kwargs are not supported."
         if obj in self._monitor_params:
             raise IllegalMessageSequence(f"A 'monitor' message was sent for {obj} which is already monitored")
 
@@ -439,21 +440,7 @@ class RunBundler:
         stream_bundle = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
         compose_event = stream_bundle[1]
 
-        def emit_event(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
-            if readings is not None:
-                # We were passed something we can use, but check no args or kwargs
-                assert not args and not kwargs, (
-                    "If subscribe callback called with readings, args and kwargs are not supported."
-                )
-            else:
-                # Ignore the inputs. Use this call as a signal to call read on the
-                # object, a crude way to be sure we get all the info we need.
-                readable_obj = check_supports(obj, Readable)  # type: ignore
-                readings = readable_obj.read()  # type: ignore
-                assert not inspect.isawaitable(readings), (
-                    f"{readable_obj} has async read() method and the callback "
-                    "passed to subscribe() was not called with Dict[str, Reading]"
-                )
+        def emit_event(readings: dict[str, Reading]):
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
@@ -461,9 +448,29 @@ class RunBundler:
             )
             self.emit_sync(DocumentNames.event, doc)
 
-        self._monitor_params[obj] = emit_event, kwargs
-        # TODO: deprecate **kwargs when Ophyd.v2 is available
-        obj.subscribe(emit_event, **kwargs)
+        if isinstance(obj, Subscribable):
+            self._monitor_params[obj] = emit_event, kwargs
+            obj.subscribe_reading(emit_event)
+        elif callable(getattr(obj, "subscribe", None)):
+
+            def emit_event_readable(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
+                if readings is None:
+                    # Ignore the inputs. Use this call as a signal to call read on the
+                    # object, a crude way to be sure we get all the info we need.
+                    readable_obj = check_supports(obj, Readable)  # type: ignore
+                    readings = readable_obj.read()  # type: ignore
+                    assert not inspect.isawaitable(readings), (
+                        f"{readable_obj} has async read() method and the callback "
+                        "passed to subscribe() was not called with Dict[str, Reading]"
+                    )
+                emit_event(readings)
+
+            self._monitor_params[obj] = emit_event_readable, kwargs
+            obj.subscribe(emit_event_readable, **kwargs)
+        else:
+            raise RuntimeError(
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
 
     def record_interruption(self, content):
         """
@@ -504,7 +511,14 @@ class RunBundler:
 
             Msg('unmonitor', obj)
         """
-        obj = check_supports(msg.obj, Subscribable)
+        try:
+            obj = check_supports(msg.obj, Subscribable)
+        except AssertionError:
+            # sync ophyd doesn't implement full Subscribable protocol but has clear_sub
+            obj = msg.obj
+            assert callable(getattr(obj, "clear_sub", None)), (
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
         if obj not in self._monitor_params:
             raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not being monitored.")
         cb, kwargs = self._monitor_params[obj]
