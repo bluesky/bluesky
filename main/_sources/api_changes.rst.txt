@@ -2,8 +2,8 @@
  Release History
 =================
 
-Unreleased
-==========
+v1.14.5 (2025-10-03)
+====================
 
 Added
 -----
@@ -14,6 +14,12 @@ Added
   needed so a plan can wait for a motion flyer to complete, failing if
   any detector flyer fails, but not having to wait for the detector flyers
   to write all files to disk before the next part of the plan.
+
+
+Fixed
+-----
+
+- Typing issues with latest versions of tiled, event-model
 
 v1.14.4 (2025-08-26)
 ====================
