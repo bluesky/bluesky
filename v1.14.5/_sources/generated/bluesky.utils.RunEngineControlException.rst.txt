@@ -1,0 +1,6 @@
+﻿bluesky.utils.RunEngineControlException
+=======================================
+
+.. currentmodule:: bluesky.utils
+
+.. autoexception:: RunEngineControlException

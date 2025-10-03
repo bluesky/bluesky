@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.kickoff
+===================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.kickoff

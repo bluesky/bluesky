@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.wait
+========================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: wait

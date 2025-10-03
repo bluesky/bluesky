@@ -1,0 +1,1460 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>The RunEngine run loop &#8212; bluesky 1.14.5 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=59090042"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'run_engine';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.5';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Release History" href="api_changes.html" />
+    <link rel="prev" title="Message Protocol" href="msg.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.14.5" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">How Bluesky Interfaces with Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msg.html">Message Protocol</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">The RunEngine run loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="devindex.html" class="nav-link">Developer Documentation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">The RunEngine run loop</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="the-runengine-run-loop">
+<h1>The RunEngine run loop<a class="headerlink" href="#the-runengine-run-loop" title="Link to this heading">#</a></h1>
+<p><em>Note: This is a technical document not optimized for user readability.</em></p>
+<p>In this document, we start with a simplified version of the bluesky RunEngine.
+We add more complexity step by step, with commentary.</p>
+<p>The heart of bluesky is the <code class="docutils literal notranslate"><span class="pre">RunEngine._run</span></code> co-routine which dispatches the
+<code class="docutils literal notranslate"><span class="pre">Msg</span></code> in the plan to functions that actually carry out the requested task.
+The core operation is obscured by the layers of exception handling, state
+management, and clean up the RunEngine is responsible for. (Some of this may
+be refactored in the near future). This document is only going to discuss the
+run loop, not Document generation or hardware clean up.</p>
+<section id="minimal-runengine">
+<h2>Minimal RunEngine<a class="headerlink" href="#minimal-runengine" title="Link to this heading">#</a></h2>
+<p>A minimal (run-able) RunEngine is</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">Msg</span>
+
+<span class="n">function_map</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;print&#39;</span><span class="p">:</span>
+                <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span>
+                <span class="s1">&#39;sleep&#39;</span><span class="p">:</span>
+                <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">RE_v0</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">function_map</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
+        <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+<span class="n">welcome_plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;hello&#39;</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;sleep&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;world!&#39;</span><span class="p">)]</span>
+
+<span class="n">RE_v0</span><span class="p">(</span><span class="n">welcome_plan</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which captures one of the key abstractions of bluesky: A plan is
+just an iterable of messages. This abstraction means that the to plan an
+experiment you only need to generate a stream of <code class="docutils literal notranslate"><span class="pre">Msg</span></code> objects and the
+RunEngine will take care of actually executing the code.</p>
+</section>
+<section id="adaptive-plans">
+<h2>Adaptive Plans<a class="headerlink" href="#adaptive-plans" title="Link to this heading">#</a></h2>
+<p>Simply having a stream of commands is not quite enough, you may want to
+have the code generating the stream of messages be aware of the return
+value of a previous <code class="docutils literal notranslate"><span class="pre">Msg</span></code> to decide what to do next. This sort of
+thing is supported in python using
+<a class="reference external" href="https://docs.python.org/3.5/reference/expressions.html#generator-iterator-methods">generators</a>
+which ‘suspend’ their execution at a <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement. When you
+iterate over a generator, it runs until the next <code class="docutils literal notranslate"><span class="pre">yield</span></code>
+statement, suspends, and yields the value to the code which is iterating
+over it.</p>
+<p>Switching to generators requires we change our minimal RE to</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_generator</span>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">RE_v1</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+    <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+    <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">last_result</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="c1"># generators indicate they are done by raising</span>
+            <span class="c1"># StopIteration</span>
+            <span class="k">break</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">function_map</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
+        <span class="n">last_result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which still works with the <code class="docutils literal notranslate"><span class="pre">welcome_plan</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE_v1</span><span class="p">([</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;hello&#39;</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;sleep&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;world!&#39;</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>but we can also do more sophisticated things like</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">function_map</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">adding_plan</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1"> = ??&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1"> = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">ret</span><span class="p">))</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;thanks for adding&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Which gives</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE_v1</span><span class="p">(</span><span class="n">adding_plan</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">RE_v1</span><span class="p">(</span><span class="n">adding_plan</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This is obviously overkill for simple addition, but enables this like an
+adaptive dscan that changes the step size based on the local slope.</p>
+</section>
+<section id="exception-handling">
+<h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Link to this heading">#</a></h2>
+<p>In addition to <code class="docutils literal notranslate"><span class="pre">generator.send</span></code> (which inserts a value into the
+generator) you can also use <code class="docutils literal notranslate"><span class="pre">generator.throw</span></code> which raises an
+exception at the point where the generator is paused. If the generator
+handles the exception (via a <code class="docutils literal notranslate"><span class="pre">try...except</span></code> block) then generator
+runs until the next <code class="docutils literal notranslate"><span class="pre">yield</span></code> and <code class="docutils literal notranslate"><span class="pre">throw</span></code> returns the yielded
+value. If the generator does not handle the exception (or raises a
+different exception) then it is (re)raised by <code class="docutils literal notranslate"><span class="pre">throw</span></code>.</p>
+<p>We want to be able to capture any exceptions raised by the <code class="docutils literal notranslate"><span class="pre">RE</span></code>
+and pass those back to the plan.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">RE_v2</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+    <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+    <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">_exception</span><span class="p">)</span>
+                <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">last_result</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">function_map</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
+            <span class="n">last_result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+</pre></div>
+</div>
+<p>We can now write plans that handle exception from the RE, in this case
+reporting that the addition failed due to a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">safe_adding_plan</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1"> = ??&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;can not add </span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1">!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> + </span><span class="si">{}</span><span class="s1"> = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">ret</span><span class="p">))</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="s1">&#39;thanks for adding&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compare the behavior of between <code class="docutils literal notranslate"><span class="pre">adding_plan</span></code> and <code class="docutils literal notranslate"><span class="pre">safe_adding_plan</span></code> in cases
+where they succeed</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE_v2</span><span class="p">(</span><span class="n">safe_adding_plan</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">RE_v2</span><span class="p">(</span><span class="n">adding_plan</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>and fail</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE_v2</span><span class="p">(</span><span class="n">safe_adding_plan</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">RE_v2</span><span class="p">(</span><span class="n">adding_plan</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Again, this is overkill for these simple cases, but this mechanism
+allows us to write delta scans that always return the motors to their
+original position, shut shutters, etc even if the plan fails or is
+canceled.</p>
+</section>
+<section id="turn-into-a-callable-class">
+<h2>Turn into a callable class<a class="headerlink" href="#turn-into-a-callable-class" title="Link to this heading">#</a></h2>
+<p>We are going to want to have access to the internal state of the
+<code class="docutils literal notranslate"><span class="pre">_run</span></code> loop very soon. An way to do this, while maintaining
+the API we have above is to write a callable class instead of a
+function.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RunEngine_v3</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;print&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">,</span>
+            <span class="s1">&#39;sum&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sum</span><span class="p">,</span>
+            <span class="s1">&#39;sleep&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+        <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">_exception</span><span class="p">)</span>
+                    <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">last_result</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
+                <span class="n">last_result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+
+
+<span class="n">RE_v3</span> <span class="o">=</span> <span class="n">RunEngine_v3</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>In doing this we also pulled the function the commands dispatched to
+into the class. While these methods are almost trivial, we will soon
+have methods that alter the internal state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>.</p>
+</section>
+<section id="asyncio-integration">
+<h2><code class="docutils literal notranslate"><span class="pre">asyncio</span></code> integration<a class="headerlink" href="#asyncio-integration" title="Link to this heading">#</a></h2>
+<p>So far all of these RE implementations have been synchronous functions,
+that is they run straight through the plan. However, at a beamline we
+need to be able to support asynchronous functionality and gracefully
+interrupt the plan.</p>
+<p>To enable this we are using <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> from the python standard library
+(new in 3.4) to provide the outer event loop. At this point we are
+integrating together two event loops: the RE loop which is processing
+the plan and the <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> event loop which is managing multiple
+frames of execution. The event loop may switch between execution frames
+when a coroutine is suspended by a <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> statement. Thus we
+change the methods we dispatch to and the main <code class="docutils literal notranslate"><span class="pre">_run</span></code> method to
+co-routines by adding the <code class="docutils literal notranslate"><span class="pre">&#64;asyncio.coroutine</span></code> decorator and calling
+the dispatched functions via <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> rather than with a direct
+function call.</p>
+<p>We also added a <code class="docutils literal notranslate"><span class="pre">msg_hook</span></code> attribute to the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>
+which is a super handy debugging tool to see exactly what messages are
+being processed by the RunEngine. It can be set to any callable which
+takes a single <code class="docutils literal notranslate"><span class="pre">Msg</span></code> as input (ex <code class="docutils literal notranslate"><span class="pre">print</span></code>)</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RunEngine_v4</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># map messages to coro</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;print&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">,</span>
+            <span class="s1">&#39;sum&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sum</span><span class="p">,</span>
+            <span class="s1">&#39;sleep&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">}</span>
+
+        <span class="c1"># debugging hook</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg_hook</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+        <span class="c1"># bind RE to a specific loop</span>
+        <span class="k">if</span> <span class="n">loop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="n">loop</span>
+
+        <span class="c1"># The RunEngine keeps track of a *lot* of state.</span>
+        <span class="c1"># All flags and caches are defined here with a comment. Good luck.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># asyncio.Task associated with call to self._run</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">plan</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">():</span>
+            <span class="n">exc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">exc</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+        <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">_exception</span><span class="p">)</span>
+                    <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">last_result</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg_hook</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">msg_hook</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
+                <span class="n">last_result</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+
+
+<span class="n">RE_v4</span> <span class="o">=</span> <span class="n">RunEngine_v4</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="pausing-resuming-and-rewinding">
+<h2>Pausing, Resuming, and Rewinding<a class="headerlink" href="#pausing-resuming-and-rewinding" title="Link to this heading">#</a></h2>
+<p>Adding the ability to pause/resume/rewind a scan adds a fair amount of
+complexity as now the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> must keep track of a stack of plans
+rather than a single plan, cache <code class="docutils literal notranslate"><span class="pre">Msg</span></code> as they go by and expose enough
+API to control the behavior.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">AsyncInput</span><span class="p">,</span> <span class="n">FailedPause</span><span class="p">,</span> <span class="n">InvalidCommand</span><span class="p">,</span> <span class="n">Msg</span><span class="p">,</span>
+                           <span class="n">ensure_generator</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.run_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngineStateMachine</span><span class="p">,</span> <span class="n">PropertyMachine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky._vendor.super_state_machine.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransitionError</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RunEngine_v5</span><span class="p">:</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">PropertyMachine</span><span class="p">(</span><span class="n">RunEngineStateMachine</span><span class="p">)</span>
+    <span class="n">_UNCACHEABLE_COMMANDS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pause&#39;</span><span class="p">,</span> <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># map messages to coro</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;print&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">,</span>
+            <span class="s1">&#39;sum&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sum</span><span class="p">,</span>
+            <span class="c1"># coros on real RE</span>
+            <span class="s1">&#39;sleep&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">,</span>
+            <span class="s1">&#39;checkpoint&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint</span><span class="p">,</span>
+            <span class="s1">&#39;clear_checkpoint&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clear_checkpoint</span><span class="p">,</span>
+            <span class="s1">&#39;rewindable&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable</span><span class="p">,</span>
+            <span class="s1">&#39;pause&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pause</span><span class="p">,</span>
+            <span class="s1">&#39;input&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input</span><span class="p">,</span>
+            <span class="s1">&#39;null&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_null</span><span class="p">,</span> <span class="p">}</span>
+
+        <span class="c1"># debugging hook</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg_hook</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># bind RE to a specific loop</span>
+        <span class="k">if</span> <span class="n">loop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="n">loop</span>
+
+        <span class="c1"># The RunEngine keeps track of a *lot* of state.</span>
+        <span class="c1"># All flags and caches are defined here with a comment. Good luck.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># asyncio.Task associated with call to self._run</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># pause at next &#39;checkpoint&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># history of processed msgs for rewinding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># if the RE is allowed to replay msgs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># the scan plan instance from __call__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># stack of generators to work off of</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">([</span><span class="kc">None</span><span class="p">])</span>  <span class="c1"># resps to send into the plans</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># True if paused, aborted, or failed</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+        <span class="c1"># First thing&#39;s first: if we are in the wrong state, raise.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">is_idle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;The RunEngine is in a </span><span class="si">%s</span><span class="s2"> state&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear_call_cache</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan</span> <span class="o">=</span> <span class="n">plan</span>
+        <span class="n">gen</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_forever</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">():</span>
+            <span class="n">exc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">exc</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_call_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">([</span><span class="kc">None</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span>
+
+    <span class="nd">@rewindable</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">cur_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resumable</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span> <span class="o">!=</span> <span class="n">cur_state</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resumable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;i.e., can the plan in progress by rewound&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">pending_cancel_exception</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;running&#39;</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+                    <span class="c1"># The case where we have a stashed exception</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1"># throw the exception at the current plan</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="c1"># The current plan did not handle it,</span>
+                            <span class="c1"># maybe the next plan (if any) would like</span>
+                            <span class="c1"># to try</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="p">):</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+                                <span class="k">continue</span>
+                            <span class="c1"># no plans left and still an unhandled exception</span>
+                            <span class="c1"># re-raise to exit the infinite loop</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">raise</span>
+                        <span class="c1"># clear the stashed exception, the top plan</span>
+                        <span class="c1"># handled it.</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="c1"># The normal case of clean operation</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">resp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+                        <span class="c1"># We have exhausted the top generator</span>
+                        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                            <span class="c1"># pop the dead generator go back to the top</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="p">):</span>
+                                <span class="k">continue</span>
+                            <span class="c1"># or reraise to get out of the infinite loop</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">raise</span>
+                        <span class="c1"># Any other exception that comes out of the plan</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="c1"># pop the dead plan, stash the exception and</span>
+                            <span class="c1"># go to the top of the loop</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="p">):</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+                                <span class="k">continue</span>
+                            <span class="c1"># or reraise to get out of the infinite loop</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">raise</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg_hook</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">msg_hook</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+                    <span class="c1"># if this message can be cached for rewinding, cache it</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_rewindable_flag</span> <span class="ow">and</span>
+                            <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_UNCACHEABLE_COMMANDS</span><span class="p">):</span>
+                        <span class="c1"># We have a checkpoint.</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+                    <span class="c1"># try to look up the coroutine to execute the command</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">coro</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
+                    <span class="c1"># replace KeyError with a local sub-class and go</span>
+                    <span class="c1"># to top of the loop</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                        <span class="c1"># TODO make this smarter</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">InvalidCommand</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+                    <span class="c1"># try to finally run the command the user asked for</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="c1"># this is one of two places that &#39;async&#39;</span>
+                        <span class="c1"># exceptions (coming in via throw) can be</span>
+                        <span class="c1"># raised</span>
+                        <span class="n">response</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">coro</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                    <span class="c1"># special case `CancelledError` and let the outer</span>
+                    <span class="c1"># exception block deal with it.</span>
+                    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+                        <span class="k">raise</span>
+                    <span class="c1"># any other exception, stash it and go to the top of loop</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+                        <span class="k">continue</span>
+                    <span class="c1"># normal use, if it runs cleanly, stash the response and</span>
+                    <span class="c1"># go to the top of the loop</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+                <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+                    <span class="c1"># This only happens if some external code captures SIGINT</span>
+                    <span class="c1"># -- overriding the RunEngine -- and then raises instead</span>
+                    <span class="c1"># of (properly) calling the RunEngine&#39;s handler.</span>
+                    <span class="c1"># See https://github.com/NSLS-II/bluesky/pull/242</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;An unknown external library has improperly raised &quot;</span>
+                          <span class="s2">&quot;KeyboardInterrupt. Intercepting and triggering &quot;</span>
+                          <span class="s2">&quot;a hard pause instead.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">call_soon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request_pause</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">PAUSE_MSG</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="c1"># if we are handling this twice, raise and leave the plans</span>
+                    <span class="c1"># alone</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="ow">is</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">e</span>
+                    <span class="c1"># the case where FailedPause, RequestAbort or a coro</span>
+                    <span class="c1"># raised error is not already stashed in _exception</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+                    <span class="n">pending_cancel_exception</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;idle&#39;</span>
+        <span class="c1"># if the task was cancelled</span>
+        <span class="k">if</span> <span class="n">pending_cancel_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">pending_cancel_exception</span>
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">))</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process a &#39;input&#39; Msg. Expected Msg:</span>
+
+<span class="sd">            Msg(&#39;input&#39;, None)</span>
+<span class="sd">            Msg(&#39;input&#39;, None, prompt=&#39;&gt;&#39;)  # customize prompt</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;prompt&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">async_input</span> <span class="o">=</span> <span class="n">AsyncInput</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+        <span class="n">async_input</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">async_input</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">async_input</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Request the run engine to pause</span>
+
+<span class="sd">        Expected message object is:</span>
+
+<span class="sd">            Msg(&#39;pause&#39;, defer=False, name=None, callback=None)</span>
+
+<span class="sd">        See RunEngine.request_pause() docstring for explanation of the three</span>
+<span class="sd">        keyword arguments in the `Msg` signature</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request_pause</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">request_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Command the Run Engine to pause.</span>
+
+<span class="sd">        This function is called by &#39;pause&#39; Messages. It can also be called</span>
+<span class="sd">        by other threads. It cannot be called on the main thread during a run,</span>
+<span class="sd">        but it is called by SIGINT (i.e., Ctrl+C).</span>
+
+<span class="sd">        If there current run has no checkpoint (via the &#39;clear_checkpoint&#39;</span>
+<span class="sd">        message), this will cause the run to abort.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        defer : bool, optional</span>
+<span class="sd">            If False, pause immediately before processing any new messages.</span>
+<span class="sd">            If True, pause at the next checkpoint.</span>
+<span class="sd">            False by default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">defer</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Deferred pause acknowledged. Continuing to checkpoint.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># We are pausing. Cancel any deferred pause previously requested.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pausing...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;paused&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">resumable</span><span class="p">:</span>
+            <span class="c1"># cannot resume, so we cannot pause.  Abort the scan</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No checkpoint; cannot pause.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Aborting: running cleanup and marking &quot;</span>
+                  <span class="s2">&quot;exit_status as &#39;abort&#39;...&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">FailedPause</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_failed_status_tasks</span><span class="p">:</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+            <span class="k">return</span>
+        <span class="c1"># stop accepting new tasks in the event loop (existing tasks will</span>
+        <span class="c1"># still be processed)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resume a paused plan from the last checkpoint.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        uids : list</span>
+<span class="sd">            list of Header uids (a.k.a RunStart uids) of run(s)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># The state machine does not capture the whole picture.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">is_paused</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">TransitionError</span><span class="p">(</span><span class="s2">&quot;The RunEngine is the </span><span class="si">{0}</span><span class="s2"> state. &quot;</span>
+                                  <span class="s2">&quot;You can only resume for the paused state.&quot;</span>
+                                  <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interrupted</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">new_plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewind</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_plan</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resume_event_loop</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Clean up in preparation for resuming from a pause or suspension.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        new_plan : generator</span>
+<span class="sd">             A new plan made from the messages in the message cache</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">new_plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+        <span class="c1"># This is needed to &#39;cancel&#39; an open bundling (e.g. create) if</span>
+        <span class="c1"># the pause happens after a &#39;checkpoint&#39;, after a &#39;create&#39;, but before</span>
+        <span class="c1"># the paired &#39;save&#39;.</span>
+        <span class="k">return</span> <span class="n">new_plan</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resume_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># may be called by &#39;resume&#39; or &#39;abort&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;running&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_sigint_time</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_forever</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">():</span>
+            <span class="n">exc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">exc</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instruct the RunEngine to create a checkpoint so that we can rewind</span>
+<span class="sd">        to this point if necessary</span>
+
+<span class="sd">        Expected message object is:</span>
+
+<span class="sd">            Msg(&#39;checkpoint&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state_coro</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span><span class="p">:</span>
+            <span class="c1"># We are at a checkpoint; we are done deferring the pause.</span>
+            <span class="c1"># Give the _check_for_signals coroutine time to look for</span>
+            <span class="c1"># additional SIGINTs that would trigger an abort.</span>
+            <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">request_pause</span><span class="p">(</span><span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_checkpoint_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+
+    <span class="n">_reset_checkpoint_state_coro</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">coroutine</span><span class="p">(</span><span class="n">_reset_checkpoint_state</span><span class="p">)</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear a set checkpoint</span>
+
+<span class="sd">        Expected message object is:</span>
+
+<span class="sd">            Msg(&#39;clear_checkpoint&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># clear message cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># clear stashed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_teed_sequence_counters</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Set rewindable state of RunEngine</span>
+
+<span class="sd">        Expected message object is:</span>
+
+<span class="sd">            Msg(&#39;rewindable&#39;, None, bool or None)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">rw_flag</span><span class="p">,</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span>
+        <span class="k">if</span> <span class="n">rw_flag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rewindable</span> <span class="o">=</span> <span class="n">rw_flag</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rewindable</span>
+
+    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_null</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A no-op message, mainly for debugging and testing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+
+<span class="n">RE_v5</span> <span class="o">=</span> <span class="n">RunEngine_v5</span><span class="p">()</span>
+<span class="n">RE_v5</span><span class="o">.</span><span class="n">msg_hook</span> <span class="o">=</span> <span class="nb">print</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">pausing_plan</span><span class="p">():</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;pause&#39;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="stop-abort-halt">
+<h2>Stop, Abort, Halt<a class="headerlink" href="#stop-abort-halt" title="Link to this heading">#</a></h2>
+<p>Stop, Abort, and Halt <strong>stop</strong> a plan in different ways; whether the plan is running or paused,
+whether cleanup is performed, and how the <cite>exit_status</cite> is set.
+The table below summarizes the differences between these methods:</p>
+<div class="line-block">
+<div class="line">Method    | Action                            | Cleanup       | Exit Status |</div>
+<div class="line">——— | ——————————— | ————- | ———– |</div>
+<div class="line"><strong>Abort</strong> | Stop a running or paused plan     | Runs cleanup  | <cite>abort</cite>     |</div>
+<div class="line"><strong>Stop</strong>  | Stop a running or paused plan     | Runs cleanup  | <cite>success</cite>   |</div>
+<div class="line"><strong>Halt</strong>  | Stop the running plan immediately | Skips cleanup | <cite>abort</cite>     |</div>
+</div>
+</section>
+<section id="suspending">
+<h2>Suspending<a class="headerlink" href="#suspending" title="Link to this heading">#</a></h2>
+</section>
+<section id="object-hardware-clean-up">
+<h2>Object/hardware clean up<a class="headerlink" href="#object-hardware-clean-up" title="Link to this heading">#</a></h2>
+</section>
+<section id="document-creation-and-emission">
+<h2>Document creation and emission<a class="headerlink" href="#document-creation-and-emission" title="Link to this heading">#</a></h2>
+</section>
+<section id="sigint-interception">
+<h2>SIGINT interception<a class="headerlink" href="#sigint-interception" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="msg.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Message Protocol</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="api_changes.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Release History</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minimal-runengine">Minimal RunEngine</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adaptive-plans">Adaptive Plans</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exception-handling">Exception Handling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#turn-into-a-callable-class">Turn into a callable class</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#asyncio-integration"><code class="docutils literal notranslate"><span class="pre">asyncio</span></code> integration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pausing-resuming-and-rewinding">Pausing, Resuming, and Rewinding</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stop-abort-halt">Stop, Abort, Halt</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#suspending">Suspending</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#object-hardware-clean-up">Object/hardware clean up</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#document-creation-and-emission">Document creation and emission</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sigint-interception">SIGINT interception</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.5/docs/run_engine.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/run_engine.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

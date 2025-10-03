@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.install\_suspender
+======================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: install_suspender

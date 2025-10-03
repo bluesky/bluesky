@@ -1,0 +1,6 @@
+﻿bluesky.simulators.plot\_raster\_path
+=====================================
+
+.. currentmodule:: bluesky.simulators
+
+.. autofunction:: plot_raster_path
