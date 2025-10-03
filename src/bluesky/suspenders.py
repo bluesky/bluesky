@@ -562,7 +562,6 @@ class SuspendWhenChanged(SuspenderBase):
     USE CASE:
 
     :class:`~SuspendWhenChanged()` is useful when ``signal`` is an EPICS enumeration
-    (`"mbbo" <https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output>`_)
     used with a multi-instrument facility.
     Choices predefined in the mbbo record are the
     names of instruments allowed to control any shared hardware.
