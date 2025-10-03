@@ -490,7 +490,6 @@ def test_streams_with_no_events(client, external_assets_folder):
 @pytest.mark.parametrize("include_data_sources", [True, False])
 @pytest.mark.parametrize("fname", ["internal_events", "external_assets", "external_assets_legacy"])
 def test_zero_gets(client, external_assets_folder, fname, include_data_sources):
-    pytest.xfail("Broken after Tiled 0.1.0-b38 release")
     client = client.new_variation(include_data_sources=include_data_sources)
     assert client._include_data_sources == include_data_sources
     tw = TiledWriter(client)
