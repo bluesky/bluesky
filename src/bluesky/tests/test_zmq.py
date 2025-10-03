@@ -11,7 +11,7 @@ import pytest
 from event_model import sanitize_doc
 
 from bluesky import Msg
-from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
+from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher, _normalize_address
 from bluesky.plans import count
 from bluesky.tests import uses_os_kill_sigint
 
@@ -124,21 +124,6 @@ def test_zmq_proxy_blocks_sigint_exits():
     repr(proxy)
     gc.collect()
     gc.collect()
-
-
-@pytest.mark.parametrize("host", ["localhost:5555", ("localhost", 5555)])
-def test_zmq_RD_ports_spec(host):
-    # test that two ways of specifying address are equivalent
-    d = RemoteDispatcher(host)
-    assert d.address == ("localhost", 5555)
-    assert d._socket is None
-    assert d._context is None
-    assert not d.closed
-    d.stop()
-    assert d._socket is None
-    assert d._context is None
-    assert d.closed
-    del d
 
 
 def test_zmq_no_RE(RE):
@@ -345,3 +330,46 @@ def test_zmq_prefix(RE, hw):
     ra = sanitize_doc(remote_accumulator)
     la = sanitize_doc(local_accumulator)
     assert ra == la
+
+
+@pytest.mark.parametrize(
+    "host",
+    ["localhost:5555", ("localhost", 5555)],
+)
+def test_zmq_RD_ports_spec(host):
+    # test that two ways of specifying address are equivalent
+    d = RemoteDispatcher(host)
+    assert d.address == "tcp://localhost:5555"
+    assert d._socket is None
+    assert d._context is None
+    assert not d.closed
+    d.stop()
+    assert d._socket is None
+    assert d._context is None
+    assert d.closed
+    del d
+
+
+@pytest.mark.parametrize(
+    "address",
+    [
+        ("localhost", "tcp://localhost"),
+        ("localhost:9", "tcp://localhost:9"),
+        ("remote.host", "tcp://remote.host"),
+        ("remote.host:9", "tcp://remote.host:9"),
+        ("tcp://remote.host", "tcp://remote.host"),
+        ("tcp://localhost", "tcp://localhost"),
+        ("tcp://localhost:9", "tcp://localhost:9"),
+        ("tcp://remote.host:9", "tcp://remote.host:9"),
+        ("ipc:///tmp/path", "ipc:///tmp/path"),
+        (("localhost",), "tcp://localhost"),
+        (("localhost", 9), "tcp://localhost:9"),
+        (("ipc", "/tmp/path"), "ipc:///tmp/path"),
+        (("tcp", "localhost"), "tcp://localhost"),
+        (("tcp", "localhost", 9), "tcp://localhost:9"),
+        (("tcp", "localhost", "9"), "tcp://localhost:9"),
+    ],
+)
+def test_address_normaliaztion(address):
+    inp, outp = address
+    assert _normalize_address(inp) == outp
