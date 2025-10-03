@@ -2261,7 +2261,7 @@ class RunEngine:
             self.waiting_hook(*args, **kwargs)
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
-    async def _wait(self, msg):
+    async def _wait(self, msg: Msg) -> bool:
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
         true when all triggered objects are done. When the keyword argument
@@ -2287,7 +2287,7 @@ class RunEngine:
             trace.get_current_span().set_attribute("group", group)
         else:
             trace.get_current_span().set_attribute("no_group_given", True)
-        futs = list(self._groups.pop(group, []))
+        futs = self._groups.pop(group, set())
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
@@ -2302,7 +2302,7 @@ class RunEngine:
                     # bar.
                     self._call_waiting_hook(status_objs)
 
-                async def wait_for_first_exception(futures) -> list[asyncio.Future]:
+                async def wait_for_first_exception(futures: set) -> list[asyncio.Future]:
                     return await self._wait_for(
                         Msg(
                             "wait_for",
@@ -2319,9 +2319,9 @@ class RunEngine:
                 if watch:
                     # Create a task that waits for an exception on any watch group
                     # so we know whether to stop the wait early because of a watcher failure
-                    watch_futs = []
+                    watch_futs = set()
                     for w in watch:
-                        watch_futs.extend(self._groups.get(w, []))
+                        watch_futs.update(self._groups.get(w, set()))
                     watch_task = asyncio.create_task(wait_for_first_exception(watch_futs))
 
                     def cancel_status_task_if_error(fut: asyncio.Future[list[asyncio.Future]]):
@@ -2334,7 +2334,7 @@ class RunEngine:
                 await status_task
             except WaitForTimeoutError:
                 # We might wait to call wait again, so put the futures and status objects back in
-                self._groups[group].update(futs)
+                self._groups[group] = futs
                 self._status_objs[group] = status_objs
                 if error_on_timeout:
                     raise
@@ -2353,7 +2353,7 @@ class RunEngine:
                     if done:
                         self._call_waiting_hook(None)
                         self._seen_wait_and_move_on_keys.remove(group)
-            return done
+        return done
 
     def _status_object_completed(self, ret, fut: asyncio.Future, pardon_failures):
         """
