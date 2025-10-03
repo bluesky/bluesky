@@ -1,5 +1,5 @@
 import itertools
-from time import monotonic, time
+from time import time
 from unittest.mock import ANY
 
 import pytest
@@ -120,7 +120,6 @@ def test_monitor(RE, ophyd):
     }
 
 
-@pytest.mark.skip("ophyd-async must be updated to implement Subscribable protocol")
 @requires_ophyd_async
 def test_monitor_async(RE):
     docs = []
@@ -142,7 +141,7 @@ def test_monitor_async(RE):
         "descriptor": ANY,
         "seq_num": 1,
         "time": pytest.approx(time(), rel=0.1),
-        "timestamps": {"soft_signal": pytest.approx(monotonic(), rel=0.1)},
+        "timestamps": {"soft_signal": pytest.approx(time(), rel=0.1)},
         "filled": ANY,
         "uid": ANY,
     }
