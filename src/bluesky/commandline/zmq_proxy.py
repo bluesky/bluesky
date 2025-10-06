@@ -3,12 +3,12 @@ import logging
 import threading
 from pathlib import Path
 
-from bluesky.callbacks.zmq import Proxy, RemoteDispatcher, ServerCurve
+from bluesky.callbacks.zmq import Proxy, RemoteDispatcher, ServerCurve, ClientCurve
 
 logger = logging.getLogger("bluesky")
 
 
-def start_dispatcher(out_address, logfile=None):
+def start_dispatcher(out_address, curve, logfile=None):
     """The dispatcher function
     Parameters
     ----------
@@ -16,7 +16,7 @@ def start_dispatcher(out_address, logfile=None):
         string come from user command. ex --logfile=temp.log
         logfile will be "temp.log". logfile could be empty.
     """
-    dispatcher = RemoteDispatcher(out_address)
+    dispatcher = RemoteDispatcher(out_address, curve_config=curve)
     if logfile is not None:
         raise ValueError(
             "Parameter 'logfile' is deprecated and will be removed in future releases. "
@@ -115,10 +115,14 @@ def main():
         # Set daemon to kill all threads upon IPython exit
         if out_curve is None:
             # We would need client certificates setup to connect to the output port
-            threading.Thread(target=start_dispatcher, args=(proxy.out_port,), daemon=True).start()
+            client_curve = None
         else:
-            # We would need client certificates setup to connect to the output port
-            print("WARING: can not subscribe dispatcher")
+            # this looks funny, but the secret file also contains the public key
+            # this bets that the public key for the server is in the folder of public keys
+            # it will accept and that we can route to the output port on an allowed ip
+            client_curve = ClientCurve(out_curve.secret_path, out_curve.secret_path)
+        threading.Thread(target=start_dispatcher, args=(proxy.out_port, client_curve), daemon=True).start()
+
 
     print("Use Ctrl+C to exit.")
     try:
