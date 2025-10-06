@@ -88,6 +88,7 @@ def main():
     # Configure logging BEFORE creating the proxy so we capture socket configuration debug messages
     if args.verbose:
         from bluesky.log import config_bluesky_logging
+        import bluesky.log
 
         # "INFO" if called with '-v' or '-vv', "DEBUG" if called with '-vvv'
         level = "INFO" if args.verbose <= 2 else "DEBUG"
@@ -96,6 +97,8 @@ def main():
         else:
             print(f"configuring blueskylogging to {level}")
             config_bluesky_logging(level=level)
+        logging.getLogger("zmq").setLevel(level)
+        logging.getLogger("zmq").addHandler(bluesky.log.current_handler)
 
     print("Connecting...")
     try:
