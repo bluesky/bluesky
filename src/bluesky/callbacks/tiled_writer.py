@@ -605,6 +605,9 @@ class _RunWriter(CallbackBase):
         self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)}, drop_revision=True)
 
     def descriptor(self, doc: EventDescriptor):
+        if self.root_node is None:
+            raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
+
         desc_name = doc["name"]  # Name of the descriptor/stream
         self.data_keys.update(doc.get("data_keys", {}))
 
