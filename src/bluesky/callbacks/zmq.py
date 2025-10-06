@@ -219,7 +219,7 @@ class Proxy:
 
     @staticmethod
     def configure_server_socket(
-        ctx, sock_type, address: Union[str, tuple, int, None], curve: ServerCurve, zmq, auth_class
+        ctx, sock_type, address: Union[str, tuple, int, None], curve: Union[ServerCurve, None], zmq, auth_class
     ):
         socket = ctx.socket(sock_type)
         norm_address = _normalize_address(address)
@@ -277,7 +277,6 @@ class Proxy:
             frontend, in_port = self.configure_server_socket(
                 context, zmq.SUB, in_address, in_curve, zmq, ThreadAuthenticator
             )
-            # TODO, change to XSUB, XPUB and avoid this?
             frontend.setsockopt_string(zmq.SUBSCRIBE, "")
 
             backend, out_port = self.configure_server_socket(
@@ -294,7 +293,10 @@ class Proxy:
                 backend.close()
             except NameError:
                 ...
-            context.destroy()
+            try:
+                context.destroy()
+            except NameError:
+                ...
             raise
         else:
             self.in_port = in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port)
