@@ -397,6 +397,8 @@ class RemoteDispatcher(Dispatcher):
                 # Load the client cert pair
                 client_public, client_secret = zmq.auth.load_certificate(curve_config.secret_path)
                 sock.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+                if client_secret is None:
+                    raise ValueError("The client secret key could not be found.")
                 sock.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
 
                 # Load the server public key and register with the socket
