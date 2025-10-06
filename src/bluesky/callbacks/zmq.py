@@ -223,23 +223,29 @@ class Proxy:
     ):
         socket = ctx.socket(sock_type)
         norm_address = _normalize_address(address)
+        logger.debug(f"Creating socket of type {sock_type} for address {norm_address}")
         random_port = False
         if norm_address.startswith("tcp"):
             if ":" not in norm_address[6:]:
                 random_port = True
         if curve is not None:
+            logger.debug(f"Configuring CURVE security with secret_path={curve.secret_path}")
             # build authenticator
             auth = auth_class(ctx)
             auth.start()
+            logger.debug("Started ZMQ authenticator")
             if curve.allow is not None:
                 auth.allow(*curve.allow)
+                logger.debug(f"Configured IP address allowlist: {curve.allow}")
 
             # Tell the authenticator how to handle CURVE requests
             if curve.client_public_keys is None:
                 # accept any client that knows the public key
                 auth.configure_curve(domain="*", location=zmq.auth.CURVE_ALLOW_ANY)
+                logger.debug("Configured CURVE to allow any client with valid public key")
             else:
                 auth.configure_curve(domain="*", location=curve.client_public_keys)
+                logger.debug(f"Configured CURVE client public keys from: {curve.client_public_keys}")
 
             # get public and private keys from the certificate
             server_public, server_secret = zmq.auth.load_certificate(curve.secret_path)
@@ -247,11 +253,14 @@ class Proxy:
             socket.setsockopt(zmq.CURVE_PUBLICKEY, server_public)
             socket.setsockopt(zmq.CURVE_SECRETKEY, server_secret)
             socket.setsockopt(zmq.CURVE_SERVER, True)
+            logger.debug("Applied CURVE keys and enabled CURVE server mode")
 
         if random_port:
             port = socket.bind_to_random_port(norm_address)
+            logger.debug(f"Bound to random port: {port}")
         else:
             port = socket.bind(norm_address)
+            logger.debug(f"Bound to address: {norm_address}")
 
         return socket, port
 

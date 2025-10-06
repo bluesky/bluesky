@@ -85,6 +85,18 @@ def main():
     in_curve = build_server_curve(args.in_curve_secret, args.in_curve_client_keys, args.in_curve_allow)
     out_curve = build_server_curve(args.out_curve_secret, args.out_curve_client_keys, args.out_curve_allow)
 
+    # Configure logging BEFORE creating the proxy so we capture socket configuration debug messages
+    if args.verbose:
+        from bluesky.log import config_bluesky_logging
+
+        # "INFO" if called with '-v' or '-vv', "DEBUG" if called with '-vvv'
+        level = "INFO" if args.verbose <= 2 else "DEBUG"
+        if args.logfile:
+            config_bluesky_logging(level=level, file=args.logfile)
+        else:
+            print(f"configuring blueskylogging to {level}")
+            config_bluesky_logging(level=level)
+
     print("Connecting...")
     try:
         in_address = int(args.in_address)
@@ -97,14 +109,6 @@ def main():
     proxy = Proxy(in_address, out_address, in_curve=in_curve, out_curve=out_curve)
     print("Receiving on address %s; publishing to address %s." % (proxy.in_port, proxy.out_port))
     if args.verbose:
-        from bluesky.log import config_bluesky_logging
-
-        # "INFO" if called with '-v' or '-vv', "DEBUG" if called with '-vvv'
-        level = "INFO" if args.verbose <= 2 else "DEBUG"
-        if args.logfile:
-            config_bluesky_logging(level=level, file=args.logfile)
-        else:
-            config_bluesky_logging(level=level)
         # Set daemon to kill all threads upon IPython exit
         if out_curve is None:
             # We would need client certificates setup to connect to the output port
