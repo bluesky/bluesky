@@ -48,6 +48,7 @@ dev = [
     "mongoquery",
     "multiprocess",
     "myst-parser",
+    "mypy",
     "networkx",
     "numpydoc",
     "ophyd",
