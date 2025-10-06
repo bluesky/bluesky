@@ -102,6 +102,8 @@ class Publisher:
         mocking its interface is accepted.
     serializer: function, optional
         optional function to serialize data. Default is pickle.dumps
+    curve_config: ClientCurve, optional
+        CURVE security configuration for client authentication.
 
     Examples
     --------
@@ -113,7 +115,7 @@ class Publisher:
     >>> RE.subscribe(publisher)
     """
 
-    def __init__(self, address, *, prefix=b"", RE=None, zmq=None, serializer=pickle.dumps):
+    def __init__(self, address, *, prefix=b"", RE=None, zmq=None, serializer=pickle.dumps, curve_config=None):
         if RE is not None:
             warnings.warn(  # noqa: B028
                 "The RE argument to Publisher is deprecated and "
@@ -128,6 +130,7 @@ class Publisher:
             raise ValueError(f"prefix {prefix!r} may not contain b' '")
         if zmq is None:
             import zmq
+            import zmq.auth
 
         self.address = _normalize_address(address)
         self.RE = RE
@@ -135,6 +138,19 @@ class Publisher:
         self._prefix = bytes(prefix)
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
+
+        if curve_config is not None:
+            # Load the client cert pair
+            client_public, client_secret = zmq.auth.load_certificate(curve_config.secret_path)
+            self._socket.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+            if client_secret is None:
+                raise ValueError("The client secret key could not be found.")
+            self._socket.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
+
+            # Load the server public key and register with the socket
+            server_key, _ = zmq.auth.load_certificate(curve_config.server_public_key)
+            self._socket.setsockopt(zmq.CURVE_SERVERKEY, server_key)
+
         self._socket.connect(self.address)
         if RE:
             self._subscription_token = RE.subscribe(self)
