@@ -47,7 +47,6 @@ dev = [
     "matplotlib >=3.5.0",
     "mongoquery",
     "multiprocess",
-    "mypy",
     "myst-parser",
     "networkx",
     "numpydoc",
@@ -59,9 +58,10 @@ dev = [
     "pipdeptree",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyepics<=3.5.2;python_version<'3.9'",    # Needed to pass CI/CD tests; To be removed once we drop support for py3.8
+    "pyepics<=3.5.2;python_version<'3.9'", # Needed to pass CI/CD tests; To be removed once we drop support for py3.8
     "pyepics;python_version>='3.9'",
     "pyqt5",
+    "pyright",
     "pytest",
     "pytest-cov",
     "pytest-faulthandler",
@@ -110,12 +110,12 @@ GitHub = "https://github.com/bluesky/bluesky"
 [[project.authors]] # Further authors may be added by duplicating this section
 name = "danielballan"
 
-
 [tool.setuptools_scm]
 version_file = "src/bluesky/_version.py"
 
-[tool.mypy]
-ignore_missing_imports = true # Ignore missing stubs in imported modules
+[tool.pyright]
+typeCheckingMode = "standard"
+reportMissingImports = false       # Ignore missing stubs in imported modules
 exclude = ["src/bluesky/_vendor/"]
 
 [tool.pytest.ini_options]
@@ -150,22 +150,18 @@ source = ["src", "**/site-packages/"]
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 115
-exclude = [
-    "docs/source/conf.py",
-    "docs/source/examples",
-    "src/bluesky/_vendor"
-]
+exclude = ["docs/source/conf.py", "docs/source/examples", "src/bluesky/_vendor"]
 
 
 [tool.ruff.lint]
 select = [
-    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "B",  # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4", # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",  # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
 ignore = ["UP031"] # Ignore %-format strings until #1848 is done
 
@@ -198,12 +194,12 @@ passenv = *
 allowlist_externals =
     pytest
     pre-commit
-    mypy
+    pyright
     sphinx-build
     sphinx-autobuild
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: mypy src {posargs}
+    type-checking: pyright src {posargs}
     tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """

@@ -12,4 +12,4 @@ github_org: bluesky
 package_name: bluesky
 pypi: true
 repo_name: bluesky
-type_checker: mypy
+type_checker: pyright
