@@ -289,7 +289,7 @@ def test_stream_datum_readable_counts(RE, client, tmp_path):
     tw = TiledWriter(client)
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     RE(bp.count([det], 3), tw)
-    stream = client.values().last()["streams"]["primary"]
+    stream = client.values().last()["primary"]
     keys = sorted(set(stream.base.keys()).difference({"internal"}))
 
     assert stream[keys[0]].shape == (3,)
@@ -305,7 +305,7 @@ def test_stream_datum_readable_with_two_detectors(RE, client, tmp_path):
     det2 = StreamDatumReadableCollectable(name="det2", root=str(tmp_path))
     tw = TiledWriter(client)
     RE(bp.count([det1, det2], 3), tw)
-    stream = client.values().last()["streams"]["primary"]
+    stream = client.values().last()["primary"]
     keys = sorted(set(stream.base.keys()).difference({"internal"}))
 
     assert stream[keys[0]].shape == (3,)
@@ -326,7 +326,7 @@ def test_stream_datum_collectable(RE, client, tmp_path):
     det = StreamDatumReadableCollectable(name="det", root=str(tmp_path))
     tw = TiledWriter(client)
     RE(collect_plan(det, name="primary"), tw)
-    stream = client.values().last()["streams"]["primary"]
+    stream = client.values().last()["primary"]
     keys = sorted(set(stream.base.keys()).difference({"internal"}))
 
     assert stream[keys[0]].read() is not None
@@ -348,8 +348,8 @@ def test_handling_non_stream_resource(RE, client, tmp_path, frames_per_event):
     )
     tw = TiledWriter(client)
     RE(bp.count([det], 3), tw)
-    extr = client.values().last()["streams"]["primary"].base["img"]
-    intr = client.values().last()["streams"]["primary"].base["internal"]
+    extr = client.values().last()["primary"].base["img"]
+    intr = client.values().last()["primary"].base["internal"]
     assert extr.shape == (3, frames_per_event, 10, 15)
     assert extr.read() is not None
     assert set(intr.columns) == {"seq_num", "time"}
@@ -378,7 +378,7 @@ def test_with_correct_sample_runs(client, batch_size, external_assets_folder, fn
 
     run = client[uid]
 
-    for stream in run["streams"].values():
+    for stream in run.values():
         assert stream.read() is not None
 
 
@@ -416,10 +416,10 @@ def test_validate_external_data(client, external_assets_folder, error_type, vali
     run = client[uid]
     if not validate and not error_type == "chunks":
         with pytest.raises(ValueError):
-            assert run["streams"]["primary"].read() is not None
+            assert run["primary"].read() is not None
     else:
-        assert run["streams"]["primary"].read() is not None
-        assert run["streams"]["primary"]["det-key2"].read().shape == (8, 13, 17)
+        assert run["primary"].read() is not None
+        assert run["primary"]["det-key2"].read().shape == (8, 13, 17)
 
 
 @pytest.mark.parametrize("squeeze", [True, False])
@@ -443,7 +443,7 @@ def test_slice_and_squeeze(client, external_assets_folder, squeeze):
         tw(name, doc)
 
     # Try reading the imported data
-    assert client[uid]["streams"]["primary"].read() is not None
+    assert client[uid]["primary"].read() is not None
 
 
 def test_legacy_multiplier_parameter(client, external_assets_folder):
@@ -464,7 +464,7 @@ def test_legacy_multiplier_parameter(client, external_assets_folder):
         tw(name, doc)
 
     # Try reading the imported data
-    assert client[uid]["streams"]["primary"].read() is not None
+    assert client[uid]["primary"].read() is not None
 
 
 def test_streams_with_no_events(client, external_assets_folder):
@@ -482,9 +482,9 @@ def test_streams_with_no_events(client, external_assets_folder):
         tw(name, doc)
 
     # Try reading the data -- should return an empty dataset
-    assert client[uid]["streams"]["primary"].read() is not None
-    assert client[uid]["streams"]["primary"].read().data_vars == {}
-    assert client[uid]["streams"]["primary"].metadata is not None
+    assert client[uid]["primary"].read() is not None
+    assert client[uid]["primary"].read().data_vars == {}
+    assert client[uid]["primary"].metadata is not None
 
 
 @pytest.mark.parametrize("include_data_sources", [True, False])
@@ -530,7 +530,7 @@ def test_bad_document_order(client, external_assets_folder):
 
     run = client[uid]
 
-    for stream in run["streams"].values():
+    for stream in run.values():
         assert stream.read() is not None
         assert "time" in stream.keys()
         assert "seq_num" in stream.keys()
@@ -555,9 +555,9 @@ def test_json_backup(client, tmpdir, monkeypatch):
 
     run = client[uid]
 
-    assert "primary" in run["streams"]  # The Descriptor was processed and the primary stream was created
-    assert run["streams"]["primary"].read() is not None  # The stream can be read
-    assert len(run["streams"]["primary"].read()) == 0  # No events were processed due to the error
+    assert "primary" in run  # The Descriptor was processed and the primary stream was created
+    assert run["primary"].read() is not None  # The stream can be read
+    assert len(run["primary"].read()) == 0  # No events were processed due to the error
     assert "stop" in run.metadata  # The TiledWriter did not crash
 
     # Check that the backup file was created

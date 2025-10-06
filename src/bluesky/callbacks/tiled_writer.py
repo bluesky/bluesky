@@ -575,7 +575,6 @@ class _RunWriter(CallbackBase):
             specs=[Spec("BlueskyRun", version="3.0")],
             access_tags=self.access_tags,
         )
-        self._streams_node = self.root_node.create_container(key="streams", access_tags=self.access_tags)
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -612,7 +611,7 @@ class _RunWriter(CallbackBase):
         # Create a new Container with "composite" spec for the stream if it does not exist
         if desc_name not in self._desc_nodes.keys():
             metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
-            desc_node = self._streams_node.create_container(
+            desc_node = self.root_node.create_container(
                 key=desc_name,
                 metadata=truncate_json_overflow(metadata),
                 specs=[Spec("BlueskyEventStream", version="3.0"), Spec("composite")],
