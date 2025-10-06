@@ -1,8 +1,9 @@
 import argparse
 import logging
 import threading
+from pathlib import Path
 
-from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
+from bluesky.callbacks.zmq import Proxy, RemoteDispatcher, ServerCurve
 
 logger = logging.getLogger("bluesky")
 
@@ -43,6 +44,22 @@ def main():
     parser = argparse.ArgumentParser(description=DESC)
     parser.add_argument("--in-address", help="port that RunEngines should broadcast to")
     parser.add_argument("--out-address", help="port that subscribers should subscribe to")
+    # CURVE security options for input socket
+    parser.add_argument("--in-curve-secret", type=str, help="Path to CURVE server secret key for input socket")
+    parser.add_argument(
+        "--in-curve-client-keys", type=str, help="Path to folder of client public keys for input socket"
+    )
+    parser.add_argument(
+        "--in-curve-allow", type=str, nargs="*", help="Set of IP addresses to allow for input socket"
+    )
+    # CURVE security options for output socket
+    parser.add_argument("--out-curve-secret", type=str, help="Path to CURVE server secret key for output socket")
+    parser.add_argument(
+        "--out-curve-client-keys", type=str, help="Path to folder of client public keys for output socket"
+    )
+    parser.add_argument(
+        "--out-curve-allow", type=str, nargs="*", help="Set of IP addresses to allow for output socket"
+    )
     parser.add_argument(
         "--verbose",
         "-v",
@@ -51,6 +68,22 @@ def main():
     )
     parser.add_argument("--logfile", type=str, help="Redirect logging output to a file on disk.")
     args = parser.parse_args()
+
+    # Helper to build ServerCurve or None
+    def build_server_curve(
+        secret: str | None, client_keys: str | None, allow: list[str] | None
+    ) -> ServerCurve | None:
+        if secret is None:
+            if client_keys is not None or allow is not None:
+                raise ValueError("Cannot specify client_keys or allow without providing a secret key")
+            return None
+        secret_path = Path(secret)
+        client_public_keys = Path(client_keys) if client_keys else None
+        allow_set = set(allow) if allow else None
+        return ServerCurve(secret_path=secret_path, client_public_keys=client_public_keys, allow=allow_set)
+
+    in_curve = build_server_curve(args.in_curve_secret, args.in_curve_client_keys, args.in_curve_allow)
+    out_curve = build_server_curve(args.out_curve_secret, args.out_curve_client_keys, args.out_curve_allow)
 
     print("Connecting...")
     try:
@@ -61,7 +94,7 @@ def main():
         out_address = int(args.out_address)
     except (ValueError, TypeError):
         out_address = args.out_address
-    proxy = Proxy(in_address, out_address)
+    proxy = Proxy(in_address, out_address, in_curve=in_curve, out_curve=out_curve)
     print("Receiving on address %s; publishing to address %s." % (proxy.in_port, proxy.out_port))
     if args.verbose:
         from bluesky.log import config_bluesky_logging
@@ -73,7 +106,12 @@ def main():
         else:
             config_bluesky_logging(level=level)
         # Set daemon to kill all threads upon IPython exit
-        threading.Thread(target=start_dispatcher, args=(proxy.out_port,), daemon=True).start()
+        if out_curve is None:
+            # We would need client certificates setup to connect to the output port
+            threading.Thread(target=start_dispatcher, args=(proxy.out_port,), daemon=True).start()
+        else:
+            # We would need client certificates setup to connect to the output port
+            print("WARING: can not subscribe dispatcher")
 
     print("Use Ctrl+C to exit.")
     try:

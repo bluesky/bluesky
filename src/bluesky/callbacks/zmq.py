@@ -14,14 +14,35 @@ to listen to.  Typically this is started with the cli tool ``bluesky-zmq-proxy``
 
 import asyncio
 import copy
+import logging
+from typing import NamedTuple
+from pathlib import Path
 import pickle
 import warnings
 from typing import Union
 
 from ..run_engine import Dispatcher, DocumentNames
 
+logger = logging.getLogger(__name__)
 
-def _normalize_address(inp: Union[str, tuple, int]):
+
+class ServerCurve(NamedTuple):
+    # path to the secret key for the server
+    secret_path: Path
+    # path to folder of client's public keys.  If None, allow all clients
+    client_public_keys: Path | None
+    # set of ip addresses to allow
+    allow: set[str] | None
+
+
+class ClientCurve(NamedTuple):
+    # path to the secret key for the server
+    secret_path: Path
+    # path to the servers public key
+    server_public_key: Path
+
+
+def _normalize_address(inp: Union[str, tuple, int, None]):
     if isinstance(inp, str):
         if "://" in inp:
             protocol, _, rest_str = inp.partition("://")
@@ -44,6 +65,9 @@ def _normalize_address(inp: Union[str, tuple, int]):
     elif isinstance(inp, int):
         protocol = "tcp"
         rest_str = f"0.0.0.0:{inp}"
+    elif inp is None:
+        protocol = "tcp"
+        rest_str = "*"
 
     else:
         raise TypeError(f"Input expected to be int, str, or tuple, not {type(inp)}")
@@ -193,30 +217,63 @@ class Proxy:
     >>> proxy.start()  # runs until interrupted
     """
 
-    def __init__(self, in_address=None, out_address=None, *, zmq=None):
+    @staticmethod
+    def configure_server_socket(
+        ctx, sock_type, address: Union[str, tuple, int, None], curve: ServerCurve, zmq, auth_class
+    ):
+        socket = ctx.socket(sock_type)
+        norm_address = _normalize_address(address)
+        random_port = False
+        if norm_address.startswith("tcp"):
+            if ":" not in norm_address[6:]:
+                random_port = True
+        if curve is not None:
+            # build authenticator
+            auth = auth_class(ctx)
+            auth.start()
+            if curve.allow is not None:
+                auth.allow(*curve.allow)
+
+            # Tell the authenticator how to handle CURVE requests
+            if curve.client_public_keys is None:
+                # accept any client that knows the public key
+                auth.configure_curve(domain="*", location=zmq.auth.CURVE_ALLOW_ANY)
+            else:
+                auth.configure_curve(domain="*", location=curve.client_public_keys)
+
+            # get public and private keys from the certificate
+            server_public, server_secret = zmq.auth.load_certificate(curve.secret_path)
+            # attach them to the
+            socket.setsockopt(zmq.CURVE_PUBLICKEY, server_public)
+            socket.setsockopt(zmq.CURVE_SECRETKEY, server_secret)
+            socket.setsockopt(zmq.CURVE_SERVER, True)
+
+        if random_port:
+            port = socket.bind_to_random_port(norm_address)
+        else:
+            port = socket.bind(norm_address)
+
+        return socket, port
+
+    def __init__(self, in_address=None, out_address=None, *, zmq=None, in_curve=None, out_curve=None):
         if zmq is None:
             import zmq
         self.zmq = zmq
         self.closed = False
+
         try:
             context = zmq.Context(1)
-            # Socket facing clients
-            frontend = context.socket(zmq.SUB)
-            if in_address is None:
-                in_port = frontend.bind_to_random_port("tcp://*")
-            else:
-                in_address = _normalize_address(in_address)
-                in_port = frontend.bind(in_address)
+            from zmq.auth.thread import ThreadAuthenticator
 
+            frontend, in_port = self.configure_server_socket(
+                context, zmq.SUB, in_address, in_curve, zmq, ThreadAuthenticator
+            )
+            # TODO, change to XSUB, XPUB and avoid this?
             frontend.setsockopt_string(zmq.SUBSCRIBE, "")
 
-            # Socket facing services
-            backend = context.socket(zmq.PUB)
-            if out_address is None:
-                out_port = backend.bind_to_random_port("tcp://*")
-            else:
-                out_address = _normalize_address(out_address)
-                out_port = backend.bind(out_address)
+            backend, out_port = self.configure_server_socket(
+                context, zmq.PUB, out_address, out_curve, zmq, ThreadAuthenticator
+            )
 
         except BaseException:
             # Clean up whichever components we have defined so far.
@@ -297,6 +354,7 @@ class RemoteDispatcher(Dispatcher):
         zmq_asyncio=None,
         deserializer=pickle.loads,
         strict=False,
+        curve_config=None,
     ):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
