@@ -374,8 +374,10 @@ class RemoteDispatcher(Dispatcher):
         self._prefix = prefix
         if zmq is None:
             import zmq
+            import zmq.auth
         if zmq_asyncio is None:
             import zmq.asyncio as zmq_asyncio
+
         self._deserializer = deserializer
         self.address = _normalize_address(address)
 
@@ -389,7 +391,17 @@ class RemoteDispatcher(Dispatcher):
             asyncio.set_event_loop(self.loop)
 
             self._context = zmq_asyncio.Context()
-            self._socket = self._context.socket(zmq.SUB)
+            self._socket = sock = self._context.socket(zmq.SUB)
+
+            if curve_config is not None:
+                # Load the client cert pair
+                client_public, client_secret = zmq.auth.load_certificate(curve_config.secret_path)
+                sock.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+                sock.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
+
+                # Load the server public key and register with the socket
+                server_key, _ = zmq.auth.load_certificate(curve_config.server_public_key)
+                sock.setsockopt(zmq.CURVE_SERVERKEY, server_key)
 
             self._socket.connect(self.address)
             self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
