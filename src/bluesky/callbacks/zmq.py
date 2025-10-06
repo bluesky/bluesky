@@ -235,52 +235,79 @@ class Proxy:
 
     @staticmethod
     def configure_server_socket(
-        ctx, sock_type, address: Union[str, tuple, int, None], curve: Union[ServerCurve, None], zmq, auth_class
+        ctx, sock_type, address: Union[str, tuple, int, None], curve: Union[ServerCurve, ClientCurve, None], zmq, auth_class, bind: bool = True
     ):
         socket = ctx.socket(sock_type)
         norm_address = _normalize_address(address)
-        logger.debug(f"Creating socket of type {sock_type} for address {norm_address}")
+        logger.debug(f"Creating socket of type {sock_type} for address {norm_address}, bind={bind}")
         random_port = False
         if norm_address.startswith("tcp"):
             if ":" not in norm_address[6:]:
                 random_port = True
+
         if curve is not None:
-            logger.debug(f"Configuring CURVE security with secret_path={curve.secret_path}")
-            # build authenticator
-            auth = auth_class(ctx)
-            auth.start()
-            logger.debug("Started ZMQ authenticator")
-            if curve.allow is not None:
-                auth.allow(*curve.allow)
-                logger.debug(f"Configured IP address allowlist: {curve.allow}")
+            if bind:
+                # Server mode - expect ServerCurve
+                if not isinstance(curve, ServerCurve):
+                    raise TypeError("When bind=True, curve must be a ServerCurve instance")
+                logger.debug(f"Configuring CURVE server security with secret_path={curve.secret_path}")
+                # build authenticator
+                auth = auth_class(ctx)
+                auth.start()
+                logger.debug("Started ZMQ authenticator")
+                if curve.allow is not None:
+                    auth.allow(*curve.allow)
+                    logger.debug(f"Configured IP address allowlist: {curve.allow}")
 
-            # Tell the authenticator how to handle CURVE requests
-            if curve.client_public_keys is None:
-                # accept any client that knows the public key
-                auth.configure_curve(domain="*", location=zmq.auth.CURVE_ALLOW_ANY)
-                logger.debug("Configured CURVE to allow any client with valid public key")
+                # Tell the authenticator how to handle CURVE requests
+                if curve.client_public_keys is None:
+                    # accept any client that knows the public key
+                    auth.configure_curve(domain="*", location=zmq.auth.CURVE_ALLOW_ANY)
+                    logger.debug("Configured CURVE to allow any client with valid public key")
+                else:
+                    auth.configure_curve(domain="*", location=curve.client_public_keys)
+                    logger.debug(f"Configured CURVE client public keys from: {curve.client_public_keys}")
+
+                # get public and private keys from the certificate
+                server_public, server_secret = zmq.auth.load_certificate(curve.secret_path)
+                # attach them to the socket
+                socket.setsockopt(zmq.CURVE_PUBLICKEY, server_public)
+                socket.setsockopt(zmq.CURVE_SECRETKEY, server_secret)
+                socket.setsockopt(zmq.CURVE_SERVER, True)
+                logger.debug("Applied CURVE keys and enabled CURVE server mode")
             else:
-                auth.configure_curve(domain="*", location=curve.client_public_keys)
-                logger.debug(f"Configured CURVE client public keys from: {curve.client_public_keys}")
+                # Client mode - expect ClientCurve
+                if not isinstance(curve, ClientCurve):
+                    raise TypeError("When bind=False, curve must be a ClientCurve instance")
+                logger.debug(f"Configuring CURVE client security with secret_path={curve.secret_path}")
 
-            # get public and private keys from the certificate
-            server_public, server_secret = zmq.auth.load_certificate(curve.secret_path)
-            # attach them to the
-            socket.setsockopt(zmq.CURVE_PUBLICKEY, server_public)
-            socket.setsockopt(zmq.CURVE_SECRETKEY, server_secret)
-            socket.setsockopt(zmq.CURVE_SERVER, True)
-            logger.debug("Applied CURVE keys and enabled CURVE server mode")
+                # Load the client cert pair
+                client_public, client_secret = zmq.auth.load_certificate(curve.secret_path)
+                socket.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+                if client_secret is None:
+                    raise ValueError("The client secret key could not be found.")
+                socket.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
 
-        if random_port:
-            port = socket.bind_to_random_port(norm_address)
-            logger.debug(f"Bound to random port: {port}")
+                # Load the server public key and register with the socket
+                server_key, _ = zmq.auth.load_certificate(curve.server_public_key)
+                socket.setsockopt(zmq.CURVE_SERVERKEY, server_key)
+                logger.debug("Applied CURVE client keys and server public key")
+
+        if bind:
+            if random_port:
+                port = socket.bind_to_random_port(norm_address)
+                logger.debug(f"Bound to random port: {port}")
+            else:
+                port = socket.bind(norm_address)
+                logger.debug(f"Bound to address: {norm_address}")
         else:
-            port = socket.bind(norm_address)
-            logger.debug(f"Bound to address: {norm_address}")
+            socket.connect(norm_address)
+            port = norm_address
+            logger.debug(f"Connected to address: {norm_address}")
 
         return socket, port
 
-    def __init__(self, in_address=None, out_address=None, *, zmq=None, in_curve=None, out_curve=None):
+    def __init__(self, in_address=None, out_address=None, *, zmq=None, in_curve=None, out_curve=None, in_bind=True, out_bind=True):
         if zmq is None:
             import zmq
         self.zmq = zmq
@@ -291,12 +318,12 @@ class Proxy:
             from zmq.auth.thread import ThreadAuthenticator
 
             frontend, in_port = self.configure_server_socket(
-                context, zmq.SUB, in_address, in_curve, zmq, ThreadAuthenticator
+                context, zmq.SUB, in_address, in_curve, zmq, ThreadAuthenticator, bind=in_bind
             )
             frontend.setsockopt_string(zmq.SUBSCRIBE, "")
 
             backend, out_port = self.configure_server_socket(
-                context, zmq.PUB, out_address, out_curve, zmq, ThreadAuthenticator
+                context, zmq.PUB, out_address, out_curve, zmq, ThreadAuthenticator, bind=out_bind
             )
 
         except BaseException:
@@ -315,8 +342,8 @@ class Proxy:
                 ...
             raise
         else:
-            self.in_port = in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port)
-            self.out_port = out_port.addr if hasattr(out_port, "addr") else _normalize_address(out_port)
+            self.in_port = in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port) if in_bind else in_port
+            self.out_port = out_port.addr if hasattr(out_port, "addr") else _normalize_address(out_port) if out_bind else out_port
             self._frontend = frontend
             self._backend = backend
             self._context = context
