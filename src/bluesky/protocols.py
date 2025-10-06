@@ -1,11 +1,9 @@
 from abc import abstractmethod
-from collections.abc import AsyncIterator, Awaitable, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from typing import (
     Any,
-    Callable,
     Generic,
     Literal,
-    Optional,
     Protocol,
     TypeVar,
     Union,
@@ -82,7 +80,7 @@ class Status(Protocol):
         ...
 
     @abstractmethod
-    def exception(self, timeout: Optional[float] = 0.0) -> Optional[BaseException]: ...
+    def exception(self, timeout: float | None = 0.0) -> BaseException | None: ...
 
     @property
     @abstractmethod
@@ -112,7 +110,7 @@ class HasName(Protocol):
 class HasParent(Protocol):
     @property
     @abstractmethod
-    def parent(self) -> Optional[Any]:
+    def parent(self) -> Any | None:
         """``None``, or a reference to a parent device.
 
         Used by the RE to stop duplicate stages.
@@ -152,7 +150,7 @@ class WritesExternalAssets(Protocol):
 @runtime_checkable
 class WritesStreamAssets(Protocol):
     @abstractmethod
-    def collect_asset_docs(self, index: Optional[int] = None) -> SyncOrAsyncIterator[StreamAsset]:
+    def collect_asset_docs(self, index: int | None = None) -> SyncOrAsyncIterator[StreamAsset]:
         """Create the resource and datum documents describing data in external
             source up to a given index if provided.
 
@@ -304,7 +302,7 @@ class Readable(HasName, Protocol[T]):
 @runtime_checkable
 class Collectable(HasName, Protocol):
     @abstractmethod
-    def describe_collect(self) -> SyncOrAsync[Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]]:
+    def describe_collect(self) -> SyncOrAsync[dict[str, DataKey] | dict[str, dict[str, DataKey]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
         Since a flyer can potentially return more than one event stream, this is either
@@ -396,7 +394,7 @@ class Stageable(Protocol):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     @abstractmethod
-    def stage(self) -> Union[Status, list[Any]]:
+    def stage(self) -> Status | list[Any]:
         """An optional hook for "setting up" the device for acquisition.
 
         It should return a ``Status`` that is marked done when the device is
@@ -405,7 +403,7 @@ class Stageable(Protocol):
         ...
 
     @abstractmethod
-    def unstage(self) -> Union[Status, list[Any]]:
+    def unstage(self) -> Status | list[Any]:
         """A hook for "cleaning up" the device after acquisition.
 
         It should return a ``Status`` that is marked done when the device is finished

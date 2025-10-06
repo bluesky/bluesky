@@ -1,6 +1,5 @@
 import re
 from collections.abc import Iterator
-from typing import Optional
 
 import pytest
 from event_model.documents import Datum
@@ -128,7 +127,7 @@ def get_index(self) -> int:
     return 10
 
 
-def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) -> Iterator[StreamAsset]:
+def collect_asset_docs_stream_datum(self: Named, index: int | None = None) -> Iterator[StreamAsset]:
     """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
     index = index or 1
     for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:

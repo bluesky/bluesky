@@ -15,13 +15,12 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable, Sequence
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
     Any,
-    Callable,
     Optional,
     TypedDict,
     TypeVar,
@@ -1309,15 +1308,15 @@ class ProgressBarBase(abc.ABC):  # noqa: B024
         self,
         pos: Any,
         *,
-        name: Optional[str] = None,
+        name: str | None = None,
         current: Any = None,
         initial: Any = None,
         target: Any = None,
         unit: str = "units",
         precision: Any = None,
         fraction: Any = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
     ): ...
 
     def clear(self): ...  # noqa: B027
@@ -1464,7 +1463,7 @@ def default_progress_bar(status_objs_or_none) -> ProgressBarBase:
 
 class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
-    pbar: Optional[ProgressBarBase]
+    pbar: ProgressBarBase | None
 
     def __init__(self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
@@ -1933,8 +1932,8 @@ async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator
 
 
 async def maybe_collect_asset_docs(
-    msg, obj, index: Optional[int] = None, *args, **kwargs
-) -> AsyncIterable[Union[Asset, StreamAsset]]:
+    msg, obj, index: int | None = None, *args, **kwargs
+) -> AsyncIterable[Asset | StreamAsset]:
     # The if/elif statement must be done in this order because isinstance for protocol
     # doesn't check for exclusive signatures, and WritesExternalAssets will also
     # return true for a WritesStreamAsset as they both contain collect_asset_docs

@@ -5,7 +5,7 @@ from typing import Optional
 import pytest
 
 # some module level globals.
-ophyd: Optional[ModuleType]
+ophyd: ModuleType | None
 ophyd = None
 reason = ""
 

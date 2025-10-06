@@ -4,7 +4,7 @@ import enum
 import os
 import re
 import warnings
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Literal, cast
 
 import numpy as np
 from event_model.documents import EventDescriptor, StreamDatum, StreamResource
@@ -35,17 +35,17 @@ class Management(str, enum.Enum):
 class Asset:
     data_uri: str
     is_directory: bool
-    parameter: Optional[str]
-    num: Optional[int] = None
-    id: Optional[int] = None
+    parameter: str | None
+    num: int | None = None
+    id: int | None = None
 
 
 @dataclasses.dataclass
 class DataSource:
     structure_family: StructureFamily
     structure: Any
-    id: Optional[int] = None
-    mimetype: Optional[str] = None
+    id: int | None = None
+    mimetype: str | None = None
     parameters: dict = dataclasses.field(default_factory=dict)
     assets: list[Asset] = dataclasses.field(default_factory=list)
     management: Management = Management.writable
@@ -119,7 +119,7 @@ class ConsolidatorBase:
                     # TODO: Check consistency with chunk_shape
 
         # Determine the machine data type
-        self.data_type: Union[BuiltinDtype, StructDtype]
+        self.data_type: BuiltinDtype | StructDtype
         dtype_numpy = np.dtype(data_desc.get("dtype_numpy"))  # Falls back to np.dtype("float64") if not set
         if dtype_numpy.kind == "V":
             self.data_type = StructDtype.from_numpy_dtype(dtype_numpy)
