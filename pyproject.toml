@@ -7,10 +7,10 @@ name = "bluesky"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 description = "Experiment specification & orchestration."
 dependencies = [
@@ -28,7 +28,7 @@ dependencies = [
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [project.optional-dependencies]
 dev = [
@@ -59,8 +59,7 @@ dev = [
     "pipdeptree",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    "pyepics<=3.5.2;python_version<'3.9'",    # Needed to pass CI/CD tests; To be removed once we drop support for py3.8
-    "pyepics;python_version>='3.9'",
+    "pyepics",
     "pyqt5",
     "pytest",
     "pytest-cov",
