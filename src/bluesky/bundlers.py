@@ -2,10 +2,10 @@ import asyncio
 import inspect
 import time as ttime
 from collections import defaultdict, deque
-from collections.abc import Iterable
+from collections.abc import Iterable, Callable
 from itertools import combinations
 from logging import LoggerAdapter
-from typing import Any, Callable, Literal, Optional, Union, cast
+from typing import Any, Literal, Optional, Union, cast, TypeGuard
 
 from event_model import (
     ComposeDescriptorBundle,
@@ -59,7 +59,7 @@ ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
 
 def _describe_collect_dict_is_valid(
     describe_collect_dict: Union[Any, dict[str, Any]],
-) -> bool:  # TODO: change to TypeGuard[dict[str, DataKey]] after python 3.9
+) -> TypeGuard[dict[str, DataKey]]:
     """
     Check if the describe_collect dictionary contains valid DataKeys.
     """
@@ -685,21 +685,19 @@ class RunBundler:
 
         def _contains_message_stream_name(
             describe_collect_dict: Union[Any, dict[str, Any]],
-        ) -> bool:  # TODO: change to TypeGuard[dict[str, dict[str, DataKey]]] after python 3.9
+        ) -> TypeGuard[dict[str, dict[str, DataKey]]]:
             return isinstance(describe_collect_dict, dict) and all(
                 _describe_collect_dict_is_valid(v) for v in describe_collect_dict.values()
             )
 
         if describe_collect_dict:
             if _describe_collect_dict_is_valid(describe_collect_dict):
-                # TODO: remove cast after python 3.9 is no longer supported
-                flat_describe_collect_dict = cast(dict[str, DataKey], describe_collect_dict)
+                flat_describe_collect_dict = describe_collect_dict
                 return [(message_stream_name or "primary", flat_describe_collect_dict)]
             # Validate that all of the values nested values are DataKeys
             elif _contains_message_stream_name(describe_collect_dict):
                 # We have Dict[str, Dict[str, DataKey]] so return its items
-                # TODO: remove cast after python 3.9 is no longer supported
-                nested_describe_collect_dict = cast(dict[str, dict[str, DataKey]], describe_collect_dict)
+                nested_describe_collect_dict = describe_collect_dict
                 if message_stream_name and list(nested_describe_collect_dict) != [message_stream_name]:
                     # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
                     # this is only acceptable if the only key in the parent dict is message_stream_name
