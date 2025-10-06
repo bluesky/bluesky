@@ -2,8 +2,9 @@ import argparse
 import logging
 import threading
 from pathlib import Path
+from typing import Union
 
-from bluesky.callbacks.zmq import Proxy, RemoteDispatcher, ServerCurve, ClientCurve
+from bluesky.callbacks.zmq import ClientCurve, Proxy, RemoteDispatcher, ServerCurve
 
 logger = logging.getLogger("bluesky")
 
@@ -46,8 +47,18 @@ def main():
     parser.add_argument("--out-address", help="port that subscribers should subscribe to")
 
     # Socket mode options
-    parser.add_argument("--in-mode", choices=["bind", "connect"], default="bind", help="Input socket mode: bind (server) or connect (client)")
-    parser.add_argument("--out-mode", choices=["bind", "connect"], default="bind", help="Output socket mode: bind (server) or connect (client)")
+    parser.add_argument(
+        "--in-mode",
+        choices=["bind", "connect"],
+        default="bind",
+        help="Input socket mode: bind (server) or connect (client)",
+    )
+    parser.add_argument(
+        "--out-mode",
+        choices=["bind", "connect"],
+        default="bind",
+        help="Output socket mode: bind (server) or connect (client)",
+    )
 
     # CURVE security options for input socket (server mode)
     parser.add_argument("--in-curve-secret", type=str, help="Path to CURVE server secret key for input socket")
@@ -91,26 +102,38 @@ def main():
     if in_bind:
         # Server mode - check for client mode flags
         if args.in_client_secret or args.in_server_public:
-            raise ValueError("Cannot use client CURVE options (--in-client-secret, --in-server-public) when input is in bind mode")
+            raise ValueError(
+                "Cannot use client CURVE options (--in-client-secret, --in-server-public) when "
+                + "input is in bind mode"
+            )
     else:
         # Client mode - check for server mode flags
         if args.in_curve_secret or args.in_curve_client_keys or args.in_curve_allow:
-            raise ValueError("Cannot use server CURVE options (--in-curve-secret, --in-curve-client-keys, --in-curve-allow) when input is in connect mode")
+            raise ValueError(
+                "Cannot use server CURVE options (--in-curve-secret, --in-curve-client-keys, --in-curve-allow) "
+                + "when input is in connect mode"
+            )
 
     # Validate CURVE configuration consistency for output
     if out_bind:
         # Server mode - check for client mode flags
         if args.out_client_secret or args.out_server_public:
-            raise ValueError("Cannot use client CURVE options (--out-client-secret, --out-server-public) when output is in bind mode")
+            raise ValueError(
+                "Cannot use client CURVE options (--out-client-secret, --out-server-public) "
+                + "when output is in bind mode"
+            )
     else:
         # Client mode - check for server mode flags
         if args.out_curve_secret or args.out_curve_client_keys or args.out_curve_allow:
-            raise ValueError("Cannot use server CURVE options (--out-curve-secret, --out-curve-client-keys, --out-curve-allow) when output is in connect mode")
+            raise ValueError(
+                "Cannot use server CURVE options (--out-curve-secret, --out-curve-client-keys, --out-curve-allow) "
+                + "when output is in connect mode"
+            )
 
     # Helper to build ServerCurve or None
     def build_server_curve(
-        secret: str | None, client_keys: str | None, allow: list[str] | None
-    ) -> ServerCurve | None:
+        secret: Union[str, None], client_keys: Union[str, None], allow: Union[list[str], None]
+    ) -> Union[ServerCurve, None]:
         if secret is None:
             if client_keys is not None or allow is not None:
                 raise ValueError("Cannot specify client_keys or allow without providing a secret key")
@@ -121,9 +144,7 @@ def main():
         return ServerCurve(secret_path=secret_path, client_public_keys=client_public_keys, allow=allow_set)
 
     # Helper to build ClientCurve or None
-    def build_client_curve(
-        secret: str | None, server_public: str | None
-    ) -> ClientCurve | None:
+    def build_client_curve(secret: Union[str, None], server_public: Union[str, None]) -> Union[ClientCurve, None]:
         if secret is None and server_public is None:
             return None
         if secret is None or server_public is None:
@@ -143,8 +164,8 @@ def main():
 
     # Configure logging BEFORE creating the proxy so we capture socket configuration debug messages
     if args.verbose:
-        from bluesky.log import config_bluesky_logging
         import bluesky.log
+        from bluesky.log import config_bluesky_logging
 
         # "INFO" if called with '-v' or '-vv', "DEBUG" if called with '-vvv'
         level = "INFO" if args.verbose <= 2 else "DEBUG"
@@ -165,7 +186,9 @@ def main():
         out_address = int(args.out_address)
     except (ValueError, TypeError):
         out_address = args.out_address
-    proxy = Proxy(in_address, out_address, in_curve=in_curve, out_curve=out_curve, in_bind=in_bind, out_bind=out_bind)
+    proxy = Proxy(
+        in_address, out_address, in_curve=in_curve, out_curve=out_curve, in_bind=in_bind, out_bind=out_bind
+    )
     print("Receiving on address %s; publishing to address %s." % (proxy.in_port, proxy.out_port))
     if args.verbose:
         # Set daemon to kill all threads upon IPython exit
@@ -192,7 +215,6 @@ def main():
 
         if dispatcher_address is not None:
             threading.Thread(target=start_dispatcher, args=(dispatcher_address, client_curve), daemon=True).start()
-
 
     print("Use Ctrl+C to exit.")
     try:

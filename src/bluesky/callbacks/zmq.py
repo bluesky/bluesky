@@ -15,11 +15,10 @@ to listen to.  Typically this is started with the cli tool ``bluesky-zmq-proxy``
 import asyncio
 import copy
 import logging
-from typing import NamedTuple
-from pathlib import Path
 import pickle
 import warnings
-from typing import Union
+from pathlib import Path
+from typing import NamedTuple, Union
 
 from ..run_engine import Dispatcher, DocumentNames
 
@@ -30,9 +29,9 @@ class ServerCurve(NamedTuple):
     # path to the secret key for the server
     secret_path: Path
     # path to folder of client's public keys.  If None, allow all clients
-    client_public_keys: Path | None
+    client_public_keys: Union[Path, None]
     # set of ip addresses to allow
-    allow: set[str] | None
+    allow: Union[set[str], None]
 
 
 class ClientCurve(NamedTuple):
@@ -235,7 +234,13 @@ class Proxy:
 
     @staticmethod
     def configure_server_socket(
-        ctx, sock_type, address: Union[str, tuple, int, None], curve: Union[ServerCurve, ClientCurve, None], zmq, auth_class, bind: bool = True
+        ctx,
+        sock_type,
+        address: Union[str, tuple, int, None],
+        curve: Union[ServerCurve, ClientCurve, None],
+        zmq,
+        auth_class,
+        bind: bool = True,
     ):
         socket = ctx.socket(sock_type)
         norm_address = _normalize_address(address)
@@ -307,7 +312,17 @@ class Proxy:
 
         return socket, port
 
-    def __init__(self, in_address=None, out_address=None, *, zmq=None, in_curve=None, out_curve=None, in_bind=True, out_bind=True):
+    def __init__(
+        self,
+        in_address=None,
+        out_address=None,
+        *,
+        zmq=None,
+        in_curve=None,
+        out_curve=None,
+        in_bind=True,
+        out_bind=True,
+    ):
         if zmq is None:
             import zmq
         self.zmq = zmq
@@ -342,8 +357,16 @@ class Proxy:
                 ...
             raise
         else:
-            self.in_port = in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port) if in_bind else in_port
-            self.out_port = out_port.addr if hasattr(out_port, "addr") else _normalize_address(out_port) if out_bind else out_port
+            self.in_port = (
+                in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port) if in_bind else in_port
+            )
+            self.out_port = (
+                out_port.addr
+                if hasattr(out_port, "addr")
+                else _normalize_address(out_port)
+                if out_bind
+                else out_port
+            )
             self._frontend = frontend
             self._backend = backend
             self._context = context
