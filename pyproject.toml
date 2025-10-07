@@ -166,7 +166,10 @@ select = [
     "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
-ignore = ["UP031"] # Ignore %-format strings until #1848 is done
+ignore = [
+    "UP031", # Ignore %-format strings until #1848 is done
+    "B905",  # adding strict=False to every zip call is just noise
+]
 
 [tool.ruff.lint.per-file-ignores]
 # By default, private member access is allowed in tests
