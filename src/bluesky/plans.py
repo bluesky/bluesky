@@ -7,7 +7,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Union
+from typing import Any, TypeAlias
 
 import numpy as np
 from cycler import Cycler
@@ -47,7 +47,7 @@ PerStepND = Callable[
     ],
     MsgGenerator,
 ]
-PerStep = Union[PerStep1D, PerStepND]
+PerStep: TypeAlias = PerStep1D | PerStepND
 
 
 def _check_detectors_type_input(detectors):

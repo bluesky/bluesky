@@ -21,10 +21,9 @@ from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
     Any,
-    Optional,
+    TypeAlias,
     TypedDict,
     TypeVar,
-    Union,
 )
 from weakref import WeakKeyDictionary, ref
 
@@ -92,12 +91,12 @@ MsgGenerator = Generator[Msg, Any, P]
 CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
-ScalarOrIterableFloat = Union[float, TypingIterable[float]]
+ScalarOrIterableFloat: TypeAlias = float | TypingIterable[float]
 
 # Single function to be used as an event listener
 Subscriber = Callable[[str, P], Any]
 
-OneOrMany = Union[P, Sequence[P]]
+OneOrMany: TypeAlias = P | Sequence[P]
 
 
 # Mapping from event type to listener or list of listeners
@@ -110,7 +109,7 @@ class SubscriberMap(TypedDict, total=False):
 
 
 # Single listener, multiple listeners or mapping of listeners by event type
-Subscribers = Union[OneOrMany[Subscriber[Document]], SubscriberMap]
+Subscribers: TypeAlias = OneOrMany[Subscriber[Document]] | SubscriberMap
 
 
 class RunEngineControlException(Exception):

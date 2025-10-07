@@ -5,7 +5,7 @@ from collections import defaultdict, deque
 from collections.abc import Callable, Iterable
 from itertools import combinations
 from logging import LoggerAdapter
-from typing import Any, Literal, TypeGuard, Union, cast
+from typing import Any, Literal, TypeAlias, TypeGuard, cast
 
 from event_model import (
     ComposeDescriptorBundle,
@@ -54,7 +54,7 @@ from .utils import (
 )
 
 ObjDict = dict[Any, dict[str, T]]
-ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
+ExternalAssetDoc: TypeAlias = Datum | Resource | StreamDatum | StreamResource
 
 
 def _describe_collect_dict_is_valid(

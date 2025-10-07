@@ -1,14 +1,6 @@
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
-from typing import (
-    Any,
-    Generic,
-    Literal,
-    Protocol,
-    TypeVar,
-    Union,
-    runtime_checkable,
-)
+from typing import Any, Generic, Literal, Protocol, TypeAlias, TypeVar, runtime_checkable
 
 from event_model.documents import Datum, StreamDatum, StreamResource
 from event_model.documents.event import PartialEvent
@@ -50,20 +42,16 @@ class Reading(Generic[T], ReadingOptional):
     timestamp: float
 
 
-Asset = Union[
-    tuple[Literal["resource"], PartialResource],
-    tuple[Literal["datum"], Datum],
-]
+Asset: TypeAlias = tuple[Literal["resource"], PartialResource] | tuple[Literal["datum"], Datum]
 
 
-StreamAsset = Union[
-    tuple[Literal["stream_resource"], StreamResource],
-    tuple[Literal["stream_datum"], StreamDatum],
-]
+StreamAsset: TypeAlias = (
+    tuple[Literal["stream_resource"], StreamResource] | tuple[Literal["stream_datum"], StreamDatum]
+)
 
 
-SyncOrAsync = Union[T, Awaitable[T]]
-SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
+SyncOrAsync: TypeAlias = T | Awaitable[T]
+SyncOrAsyncIterator: TypeAlias = Iterator[T] | AsyncIterator[T]
 
 
 @runtime_checkable

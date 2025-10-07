@@ -1,6 +1,5 @@
 import os
 from types import ModuleType
-from typing import Optional
 
 import pytest
 
