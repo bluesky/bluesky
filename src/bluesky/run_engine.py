@@ -2353,6 +2353,8 @@ class RunEngine:
                     if done:
                         self._call_waiting_hook(None)
                         self._seen_wait_and_move_on_keys.remove(group)
+        else:
+            done = True
         return done
 
     def _status_object_completed(self, ret, fut: asyncio.Future, pardon_failures):
