@@ -17,6 +17,7 @@ from inspect import iscoroutine
 from itertools import count
 from warnings import warn
 
+import event_model
 from event_model import DocumentNames
 from opentelemetry import trace
 from opentelemetry.trace import Span
@@ -467,6 +468,7 @@ class RunEngine:
         from ._version import __version__
 
         self.md["versions"]["bluesky"] = __version__
+        self.md["versions"]["event_model"] = event_model.__version__
 
         if preprocessors is None:
             preprocessors = []
