@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Release History &#8212; bluesky 1.14.5.dev26+ge3236924c documentation</title>
+    <title>Release History &#8212; bluesky 1.14.6.dev4+ga80b9bc89 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=5e1d217a"></script>
+    <script src="_static/documentation_options.js?v=05727a5e"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api_changes';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.5.dev26+ge3236924c';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.6.dev4+ga80b9bc89';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -56,7 +56,7 @@
     <link rel="prev" title="The RunEngine run loop" href="run_engine.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.5.dev26+ge3236924c" />
+  <meta name="docsearch:version" content="1.14.6.dev4+ga80b9bc89" />
   </head>
   
   
@@ -999,7 +999,7 @@ change in a future release.</p></li>
 <li><p>Reorganized utils into subpackage, no API changes.</p></li>
 <li><p>Added <code class="xref py py-class docutils literal notranslate"><span class="pre">bluesky.utils.jupyter.NotebookProgressBar</span></code>.</p></li>
 <li><p><a class="reference internal" href="generated/bluesky.utils.PersistentDict.html#bluesky.utils.PersistentDict" title="bluesky.utils.PersistentDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">bluesky.utils.PersistentDict</span></code></a> now inherits from
-<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">collections.abc.MutableMapping</span></code></a>.</p></li>
+<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">collections.abc.MutableMapping</span></code></a>.</p></li>
 <li><p>New module <code class="xref py py-mod docutils literal notranslate"><span class="pre">bluesky.protocols</span></code> designed for type checking devices.
 See PEP 544.</p></li>
 </ul>
@@ -1188,13 +1188,13 @@ the bottom of <code class="docutils literal notranslate"><span class="pre">RunEn
 <a class="reference internal" href="generated/bluesky.run_engine.RunEngine.request_pause.html#bluesky.run_engine.RunEngine.request_pause" title="bluesky.run_engine.RunEngine.request_pause"><code class="xref py py-meth docutils literal notranslate"><span class="pre">request_pause()</span></code></a> to un-block the main thread and return
 control to the user terminal.  Now we must find an alternative way to achieve
 this effect.</p>
-<p>There is a a <a class="reference external" href="https://docs.python.org/3/library/threading.html#threading.Event" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Event</span></code></a> on the <a class="reference internal" href="generated/bluesky.run_engine.RunEngine.html#bluesky.run_engine.RunEngine" title="bluesky.run_engine.RunEngine"><code class="xref py py-class docutils literal notranslate"><span class="pre">RunEngine</span></code></a> that
+<p>There is a a <a class="reference external" href="https://docs.python.org/3/library/threading.html#threading.Event" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Event</span></code></a> on the <a class="reference internal" href="generated/bluesky.run_engine.RunEngine.html#bluesky.run_engine.RunEngine" title="bluesky.run_engine.RunEngine"><code class="xref py py-class docutils literal notranslate"><span class="pre">RunEngine</span></code></a> that
 will be set when the task for <code class="docutils literal notranslate"><span class="pre">RunEngine._run</span></code> in completed,
 however we can not simple wait on that event as that would again cause the Qt
 windows to freeze.  We also do not want to bake a Matplotlib / Qt dependency
 directly into the <a class="reference internal" href="generated/bluesky.run_engine.RunEngine.html#bluesky.run_engine.RunEngine" title="bluesky.run_engine.RunEngine"><code class="xref py py-class docutils literal notranslate"><span class="pre">RunEngine</span></code></a> so we added a hook, set at init
 time, for an object expected to implement the method <code class="docutils literal notranslate"><span class="pre">block(event)</span></code>.
-While the RunEngine executes a plan, it is passed the <a class="reference external" href="https://docs.python.org/3/library/threading.html#threading.Event" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Event</span></code></a>
+While the RunEngine executes a plan, it is passed the <a class="reference external" href="https://docs.python.org/3/library/threading.html#threading.Event" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Event</span></code></a>
 and is responsible for blocking until the Event is set.  This function can do
 other things (such as run the Qt event loop) during that time.  The required
 signature is</p>
@@ -1211,7 +1211,7 @@ the case of Matplotlib not being imported.</p>
 result in re-using the coroutines passed through.  This has always
 been broken, but due to the way were stopping the event loop to pause
 the scan it was passing tests.</p>
-<p>Instead of directly passing the values passed into <a class="reference external" href="https://docs.python.org/3/library/asyncio-task.html#asyncio.wait" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">asyncio.wait()</span></code></a>, we
+<p>Instead of directly passing the values passed into <a class="reference external" href="https://docs.python.org/3/library/asyncio-task.html#asyncio.wait" title="(in Python v3.14)"><code class="xref py py-func docutils literal notranslate"><span class="pre">asyncio.wait()</span></code></a>, we
 now expect that the iterable passed in is callables with the signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">fut_fac</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">awaitable</span><span class="p">:</span>
     <span class="s1">&#39;This must work multiple times&#39;</span>
@@ -2817,7 +2817,7 @@ not have any effect on user code.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.5.dev26+ge3236924c/docs/api_changes.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.6.dev4+ga80b9bc89/docs/api_changes.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
