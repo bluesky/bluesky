@@ -1,0 +1,2095 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bluesky.preprocessors &#8212; bluesky 1.14.6 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=6ef18a28"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/preprocessors';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.6';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.14.6" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/bluesky-logo-dark.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/bluesky-logo-dark.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">bluesky</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../userindex.html">
+    User Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../devindex.html">
+    Developer Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/bluesky">
+    bluesky
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/ophyd">
+    ophyd
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/databroker">
+    databroker
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/amostra">
+    amostra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://nsls-ii.github.io/datamuxer">
+    datamuxer
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://blueskyproject.io/suitcase">
+    suitcase
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/">
+    NSLS-II Repositories
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://github.com/NSLS-II/Bug-Reports/issues">
+    Bug Reports
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky.preprocessors</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for bluesky.preprocessors</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChainMap</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">deque</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Locatable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">close_run</span><span class="p">,</span>
+    <span class="n">declare_stream</span><span class="p">,</span>
+    <span class="n">mv</span><span class="p">,</span>
+    <span class="n">open_run</span><span class="p">,</span>
+    <span class="n">pause</span><span class="p">,</span>
+    <span class="n">stage_all</span><span class="p">,</span>
+    <span class="n">trigger_and_read</span><span class="p">,</span>
+    <span class="n">unstage_all</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Msg</span><span class="p">,</span>
+    <span class="n">RunEngineControlException</span><span class="p">,</span>
+    <span class="n">ensure_generator</span><span class="p">,</span>
+    <span class="n">get_hinted_fields</span><span class="p">,</span>
+    <span class="n">make_decorator</span><span class="p">,</span>
+    <span class="n">merge_axis</span><span class="p">,</span>
+    <span class="n">normalize_subs_input</span><span class="p">,</span>
+    <span class="n">root_ancestor</span><span class="p">,</span>
+    <span class="n">separate_devices</span><span class="p">,</span>
+    <span class="n">single_gen</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">short_uid</span> <span class="k">as</span> <span class="n">_short_uid</span>
+
+
+<div class="viewcode-block" id="plan_mutator">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.plan_mutator.html#bluesky.preprocessors.plan_mutator">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">msg_proc</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Alter the contents of a plan on the fly by changing or inserting messages.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : generator</span>
+
+<span class="sd">        a generator that yields messages (`Msg` objects)</span>
+<span class="sd">    msg_proc : callable</span>
+<span class="sd">        This function takes in a message and specifies messages(s) to replace</span>
+<span class="sd">        it with. The function must account for what type of response the</span>
+<span class="sd">        message would prompt. For example, an &#39;open_run&#39; message causes the</span>
+<span class="sd">        RunEngine to send a uid string back to the plan, while a &#39;set&#39; message</span>
+<span class="sd">        causes the RunEngine to send a status object back to the plan. The</span>
+<span class="sd">        function should return a pair of generators ``(head, tail)`` that yield</span>
+<span class="sd">        messages. The last message out of the ``head`` generator is the one</span>
+<span class="sd">        whose response will be sent back to the host plan. Therefore, that</span>
+<span class="sd">        message should prompt a response compatible with the message that it is</span>
+<span class="sd">        replacing. Any responses to all other messages will be swallowed. As</span>
+<span class="sd">        shorthand, either ``head`` or ``tail`` can be replaced by ``None``.</span>
+<span class="sd">        This means:</span>
+
+<span class="sd">        * ``(None, None)`` No-op. Let the original message pass through.</span>
+<span class="sd">        * ``(head, None)`` Mutate and/or insert messages before the original</span>
+<span class="sd">          message.</span>
+<span class="sd">        * ``(head, tail)`` As above, and additionally insert messages after.</span>
+<span class="sd">        * ``(None, tail)`` Let the original message pass through and then</span>
+<span class="sd">          insert messages after.</span>
+
+<span class="sd">        The reason for returning a pair of generators instead of just one is to</span>
+<span class="sd">        provide a way to specify which message&#39;s response should be sent out to</span>
+<span class="sd">        the host plan. Again, it&#39;s the last message yielded by the first</span>
+<span class="sd">        generator (``head``).</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from `plan`, altered by `msg_proc`</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plans.msg_mutator`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># internal stacks</span>
+    <span class="n">msgs_seen</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+    <span class="n">plan_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+    <span class="n">result_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+    <span class="n">tail_cache</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+    <span class="n">tail_result_cache</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+    <span class="n">exception</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">parent_plan</span> <span class="o">=</span> <span class="n">plan</span>
+    <span class="n">ret_value</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># seed initial conditions</span>
+    <span class="n">plan_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+    <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># get last result</span>
+        <span class="k">if</span> <span class="n">exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># if we have a stashed exception, pass it along</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">plan_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># discard the exhausted generator</span>
+                <span class="n">exhausted_gen</span> <span class="o">=</span> <span class="n">plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="c1"># if this is the parent plan, capture it&#39;s return value</span>
+                <span class="k">if</span> <span class="n">exhausted_gen</span> <span class="ow">is</span> <span class="n">parent_plan</span><span class="p">:</span>
+                    <span class="n">ret_value</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span>
+
+                <span class="c1"># if we just came out of a &#39;tail&#39; generator,</span>
+                <span class="c1"># discard its return value and replace it with the</span>
+                <span class="c1"># cached one (from the last message in its paired</span>
+                <span class="c1"># &#39;new_gen&#39;)</span>
+                <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_result_cache</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">tail_result_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">))</span>
+
+                <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_cache</span><span class="p">:</span>
+                    <span class="n">gen</span> <span class="o">=</span> <span class="n">tail_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">gen</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">plan_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+                        <span class="n">saved_result</span> <span class="o">=</span> <span class="n">result_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                        <span class="n">tail_result_cache</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">gen</span><span class="p">)]</span> <span class="o">=</span> <span class="n">saved_result</span>
+                        <span class="c1"># must use None to prime generator</span>
+                        <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">plan_stack</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ret_value</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># if we catch an exception,</span>
+                <span class="c1"># the current top plan is dead so pop it</span>
+                <span class="n">plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">plan_stack</span><span class="p">:</span>
+                    <span class="c1"># stash the exception and go to the top</span>
+                    <span class="n">exception</span> <span class="o">=</span> <span class="n">e</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exception</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">result_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">plan_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># discard the exhausted generator</span>
+                <span class="n">exhausted_gen</span> <span class="o">=</span> <span class="n">plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="c1"># if this is the parent plan, capture it&#39;s return value</span>
+                <span class="k">if</span> <span class="n">exhausted_gen</span> <span class="ow">is</span> <span class="n">parent_plan</span><span class="p">:</span>
+                    <span class="n">ret_value</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span>
+
+                <span class="c1"># if we just came out of a &#39;tail&#39; generator,</span>
+                <span class="c1"># discard its return value and replace it with the</span>
+                <span class="c1"># cached one (from the last message in its paired</span>
+                <span class="c1"># &#39;new_gen&#39;)</span>
+                <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_result_cache</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">tail_result_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">))</span>
+
+                <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_cache</span><span class="p">:</span>
+                    <span class="n">gen</span> <span class="o">=</span> <span class="n">tail_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">gen</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">plan_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+                        <span class="n">saved_result</span> <span class="o">=</span> <span class="n">result_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                        <span class="n">tail_result_cache</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">gen</span><span class="p">)]</span> <span class="o">=</span> <span class="n">saved_result</span>
+                        <span class="c1"># must use None to prime generator</span>
+                        <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">plan_stack</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ret_value</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                <span class="c1"># we are here because an exception came out of the send</span>
+                <span class="c1"># this may be due to</span>
+                <span class="c1"># a) the plan really raising or</span>
+                <span class="c1"># b) an exception that came out of the run engine via ophyd</span>
+
+                <span class="c1"># in either case the current plan is dead so pop it</span>
+                <span class="n">failed_gen</span> <span class="o">=</span> <span class="n">plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">failed_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_cache</span><span class="p">:</span>
+                    <span class="n">gen</span> <span class="o">=</span> <span class="n">tail_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">failed_gen</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">gen</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">plan_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+                <span class="c1"># if there is at least</span>
+                <span class="k">if</span> <span class="n">plan_stack</span><span class="p">:</span>
+                    <span class="n">exception</span> <span class="o">=</span> <span class="n">ex</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ex</span>
+        <span class="c1"># if inserting / mutating, put new generator on the stack</span>
+        <span class="c1"># and replace the current msg with the first element from the</span>
+        <span class="c1"># new generator</span>
+        <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">msgs_seen</span><span class="p">:</span>
+            <span class="c1"># Use the id as a hash, and hold a reference to the msg so that</span>
+            <span class="c1"># it cannot be garbage collected until the plan is complete.</span>
+            <span class="n">msgs_seen</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">msg</span><span class="p">)]</span> <span class="o">=</span> <span class="n">msg</span>
+
+            <span class="n">new_gen</span><span class="p">,</span> <span class="n">tail_gen</span> <span class="o">=</span> <span class="n">msg_proc</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="c1"># mild correctness check</span>
+            <span class="k">if</span> <span class="n">tail_gen</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">new_gen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">new_gen</span> <span class="o">=</span> <span class="n">single_gen</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_gen</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># stash the new generator</span>
+                <span class="n">plan_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_gen</span><span class="p">)</span>
+                <span class="c1"># put in a result value to prime it</span>
+                <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="c1"># stash the tail generator</span>
+                <span class="n">tail_cache</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">new_gen</span><span class="p">)]</span> <span class="o">=</span> <span class="n">tail_gen</span>
+                <span class="c1"># go to the top of the loop</span>
+                <span class="k">continue</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># yield out the &#39;current message&#39; and collect the return</span>
+            <span class="n">inner_ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">msg</span>
+        <span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+            <span class="c1"># special case GeneratorExit.  We must clean up all of our plans</span>
+            <span class="c1"># and exit with out yielding anything else.</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">plan_stack</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">plan_stack</span><span class="p">:</span>
+                <span class="n">exception</span> <span class="o">=</span> <span class="n">ex</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inner_ret</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="msg_mutator">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.msg_mutator.html#bluesky.preprocessors.msg_mutator">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">msg_proc</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A simple preprocessor that mutates or deletes single messages in a plan.</span>
+
+<span class="sd">    To *insert* messages, use ``plan_mutator`` instead.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : generator</span>
+<span class="sd">        a generator that yields messages (`Msg` objects)</span>
+<span class="sd">    msg_proc : callable</span>
+<span class="sd">        Expected signature `f(msg) -&gt; new_msg or None`</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from `plan`, altered by `msg_proc`</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plans.plan_mutator`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">_e</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg_proc</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="c1"># if None, just skip message</span>
+                <span class="c1"># feed &#39;None&#39; back down into the base plan,</span>
+                <span class="c1"># this may break some plans</span>
+                <span class="k">if</span> <span class="n">msg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">_s</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_s</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">msg</span>
+            <span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+                <span class="n">plan</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">raise</span>
+            <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">_e</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">_e</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">_e</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">_s</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">_e</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">break</span>
+
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="pchain">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.pchain.html#bluesky.preprocessors.pchain">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pchain</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Like `itertools.chain` but using `yield from`</span>
+
+<span class="sd">    This ensures than `.send` works as expected and the underlying</span>
+<span class="sd">    plans get the return values. Provides cleanup for Interruptions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    args :</span>
+<span class="sd">        generators (plans)</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        The messages from each plan in turn</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rets</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="n">rets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="k">yield from</span> <span class="n">p</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">RunEngineControlException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="n">e</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rets</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">print_summary_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print summary of plan as it goes by</span>
+
+<span class="sd">    Prints a minimal version of the plan, showing only moves and</span>
+<span class="sd">    where events are created.  Yields the `Msg` unchanged.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable</span>
+<span class="sd">        Must yield `Msg` objects</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : `Msg`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">read_cache</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">spy</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">nonlocal</span> <span class="n">read_cache</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span>
+        <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{:=^80}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot; Open Run &quot;</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{:=^80}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot; Close Run &quot;</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;create&quot;</span><span class="p">:</span>
+            <span class="n">read_cache</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
+            <span class="n">read_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;save&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Read </span><span class="si">{</span><span class="n">read_cache</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">spy</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="run_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.run_wrapper.html#bluesky.preprocessors.run_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enclose in &#39;open_run&#39; and &#39;close_run&#39; messages.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    md : dict, optional</span>
+<span class="sd">        metadata to be passed into the &#39;open_run&#39; message</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rs_uid</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">except_plan</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">RunEngineControlException</span><span class="p">):</span>
+            <span class="k">yield from</span> <span class="n">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">exit_status</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="o">=</span><span class="s2">&quot;fail&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="k">yield from</span> <span class="n">contingency_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">except_plan</span><span class="o">=</span><span class="n">except_plan</span><span class="p">,</span> <span class="n">else_plan</span><span class="o">=</span><span class="n">close_run</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rs_uid</span></div>
+
+
+
+<div class="viewcode-block" id="subs_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.subs_wrapper.html#bluesky.preprocessors.subs_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">subs_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">subs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Subscribe callbacks to the document stream; finally, unsubscribe.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    subs : callable, list of callables, or dict of lists of callables</span>
+<span class="sd">         Documents of each type are routed to a list of functions.</span>
+<span class="sd">         Input is normalized to a dict of lists of functions, like so:</span>
+
+<span class="sd">         None -&gt; {&#39;all&#39;: [], &#39;start&#39;: [], &#39;stop&#39;: [], &#39;event&#39;: [],</span>
+<span class="sd">                  &#39;descriptor&#39;: []}</span>
+
+<span class="sd">         func -&gt; {&#39;all&#39;: [func], &#39;start&#39;: [], &#39;stop&#39;: [], &#39;event&#39;: [],</span>
+<span class="sd">                  &#39;descriptor&#39;: []}</span>
+
+<span class="sd">         [f1, f2] -&gt; {&#39;all&#39;: [f1, f2], &#39;start&#39;: [], &#39;stop&#39;: [], &#39;event&#39;: [],</span>
+<span class="sd">                      &#39;descriptor&#39;: []}</span>
+
+<span class="sd">         {&#39;event&#39;: [func]} -&gt;  {&#39;all&#39;: [], &#39;start&#39;: [], &#39;stop&#39;: [],</span>
+<span class="sd">                                &#39;event&#39;: [func], &#39;descriptor&#39;: []}</span>
+
+<span class="sd">         Signature of functions must conform to `f(name, doc)` where</span>
+<span class="sd">         name is one of {&#39;all&#39;, &#39;start&#39;, &#39;stop&#39;, &#39;event&#39;, &#39;descriptor&#39;} and</span>
+<span class="sd">         doc is a dictionary.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan, with &#39;subscribe&#39; and &#39;unsubscribe&#39; messages</span>
+<span class="sd">        inserted and appended</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">subs</span> <span class="o">=</span> <span class="n">normalize_subs_input</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_subscribe</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">funcs</span> <span class="ow">in</span> <span class="n">subs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">:</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;subscribe&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="n">tokens</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unsubscribe</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;unsubscribe&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_inner_plan</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">_subscribe</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">_inner_plan</span><span class="p">(),</span> <span class="n">_unsubscribe</span><span class="p">()))</span></div>
+
+
+
+<div class="viewcode-block" id="suspend_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.suspend_wrapper.html#bluesky.preprocessors.suspend_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">suspend_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">suspenders</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Install suspenders to the RunEngine, and remove them at the end.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    suspenders : suspender or list of suspenders</span>
+<span class="sd">        Suspenders to use for the duration of the wrapper</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan, with &#39;install_suspender&#39; and &#39;remove_suspender&#39;</span>
+<span class="sd">        messages inserted and appended</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">suspenders</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+        <span class="n">suspenders</span> <span class="o">=</span> <span class="p">[</span><span class="n">suspenders</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_install</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">susp</span> <span class="ow">in</span> <span class="n">suspenders</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;install_suspender&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">susp</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">susp</span> <span class="ow">in</span> <span class="n">suspenders</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;remove_suspender&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">susp</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_inner_plan</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">_install</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">_inner_plan</span><span class="p">(),</span> <span class="n">_remove</span><span class="p">()))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">configure_count_time_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Preprocessor that sets all devices with a `count_time` to the same time.</span>
+
+<span class="sd">    The original setting is stashed and restored at the end.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    time : float or None</span>
+<span class="sd">        If None, the plan passes through unchanged.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan, with &#39;set&#39; messages inserted</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">devices_seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">original_times</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_set</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">devices_seen</span><span class="p">:</span>
+            <span class="n">devices_seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;count_time&quot;</span><span class="p">):</span>
+                <span class="c1"># TODO Do this with a &#39;read&#39; Msg once reads can be</span>
+                <span class="c1"># marked as belonging to a different event stream (or no</span>
+                <span class="c1"># event stream.</span>
+                <span class="n">original_times</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">count_time</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="c1"># TODO do this with configure</span>
+                <span class="k">return</span> <span class="n">pchain</span><span class="p">(</span><span class="n">mv</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">count_time</span><span class="p">,</span> <span class="n">time</span><span class="p">),</span> <span class="n">single_gen</span><span class="p">(</span><span class="n">msg</span><span class="p">)),</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">original_times</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">yield from</span> <span class="n">mv</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">count_time</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># no-op</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">insert_set</span><span class="p">),</span> <span class="n">reset</span><span class="p">()))</span>
+
+
+<div class="viewcode-block" id="finalize_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.finalize_wrapper.html#bluesky.preprocessors.finalize_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">finalize_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">final_plan</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pause_for_debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;try...finally helper</span>
+
+<span class="sd">    Run the first plan and then the second.  If any of the messages</span>
+<span class="sd">    raise an error in the RunEngine (or otherwise), the second plan</span>
+<span class="sd">    will attempted to be run anyway.</span>
+
+<span class="sd">    See :func:`contingency_wrapper` for a more complex and more</span>
+<span class="sd">    feature-complete error-handling preprocessor.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    final_plan : callable, iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects or a callable</span>
+<span class="sd">        that reurns one; attempted to be run no matter what happens in the</span>
+<span class="sd">        first plan</span>
+<span class="sd">    pause_for_debug : bool, optional</span>
+<span class="sd">        If the plan should pause before running the clean final_plan in</span>
+<span class="sd">        the case of an Exception.  This is intended as a debugging tool only.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from `plan` until it terminates or an error is raised, then</span>
+<span class="sd">        messages from `final_plan`</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`contingency_wrapper`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If final_plan is a generator *function* (as opposed to a generator</span>
+    <span class="c1"># *instance*), call it.</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">final_plan</span><span class="p">):</span>
+        <span class="n">final_plan_instance</span> <span class="o">=</span> <span class="n">final_plan</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">final_plan_instance</span> <span class="o">=</span> <span class="n">final_plan</span>
+    <span class="n">cleanup</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">plan</span>
+    <span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+        <span class="n">cleanup</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">pause_for_debug</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">pause</span><span class="p">()</span>
+        <span class="k">raise</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># if the exception raised in `GeneratorExit` that means</span>
+        <span class="c1"># someone called `gen.close()` on this generator.  In those</span>
+        <span class="c1"># cases generators must either re-raise the GeneratorExit or</span>
+        <span class="c1"># raise a different exception.  Trying to yield any values</span>
+        <span class="c1"># results in a RuntimeError being raised where `close` is</span>
+        <span class="c1"># called.  Thus, we catch, the GeneratorExit, disable cleanup</span>
+        <span class="c1"># and then re-raise</span>
+
+        <span class="c1"># https://docs.python.org/3/reference/expressions.html?#generator.close</span>
+        <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">final_plan_instance</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="contingency_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.contingency_wrapper.html#bluesky.preprocessors.contingency_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">contingency_wrapper</span><span class="p">(</span>
+    <span class="n">plan</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">except_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">else_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">final_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">pause_for_debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">auto_raise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;try...except...else...finally helper</span>
+
+<span class="sd">    See :func:`finalize_wrapper` for a simplified but less powerful</span>
+<span class="sd">    error-handling preprocessor.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    except_plan : generator function, optional</span>
+<span class="sd">        This will be called with the exception as the only input.  The</span>
+<span class="sd">        plan does not need to re-raise, but may if you want to change the</span>
+<span class="sd">        exception.</span>
+
+<span class="sd">        Only subclasses of `Exception` will be passed in, will not see</span>
+<span class="sd">        `GeneratorExit`, `SystemExit`, or `KeyboardInterrupt`</span>
+<span class="sd">    else_plan : generator function, optional</span>
+<span class="sd">        This will be called with no arguments if plan completes without raising</span>
+<span class="sd">    final_plan : generator function, optional</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects or a callable</span>
+<span class="sd">        that reurns one; attempted to be run no matter what happens in the</span>
+<span class="sd">        first plan</span>
+<span class="sd">    pause_for_debug : bool, optional</span>
+<span class="sd">        If the plan should pause before running the clean final_plan in</span>
+<span class="sd">        the case of an Exception.  This is intended as a debugging tool only.</span>
+<span class="sd">    auto_raise : bool, optional</span>
+<span class="sd">        If the exception should be always be re-raised, reagardless of what</span>
+<span class="sd">        except_plan does. Note this defaults to True for backwards compatibility,</span>
+<span class="sd">        which is not the usual behaviour of an except statement</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from `plan` until it terminates or an error is raised, then</span>
+<span class="sd">        messages from `final_plan`</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`finalize_wrapper`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cleanup</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">plan</span>
+    <span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+        <span class="n">cleanup</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">pause_for_debug</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">pause</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">except_plan</span><span class="p">:</span>
+            <span class="c1"># it might be better to throw this in, but this is simpler</span>
+            <span class="c1"># to implement for now</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">except_plan</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">auto_raise</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">else_plan</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">else_plan</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># if the exception raised in `GeneratorExit` that means</span>
+        <span class="c1"># someone called `gen.close()` on this generator.  In those</span>
+        <span class="c1"># cases generators must either re-raise the GeneratorExit or</span>
+        <span class="c1"># raise a different exception.  Trying to yield any values</span>
+        <span class="c1"># results in a RuntimeError being raised where `close` is</span>
+        <span class="c1"># called.  Thus, we catch, the GeneratorExit, disable cleanup</span>
+        <span class="c1"># and then re-raise</span>
+
+        <span class="c1"># https://docs.python.org/3/reference/expressions.html?#generator.close</span>
+        <span class="k">if</span> <span class="n">cleanup</span> <span class="ow">and</span> <span class="n">final_plan</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">final_plan</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="finalize_decorator">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.finalize_decorator.html#bluesky.preprocessors.finalize_decorator">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">finalize_decorator</span><span class="p">(</span><span class="n">final_plan</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;try...finally helper</span>
+
+<span class="sd">    Run the first plan and then the second.  If any of the messages</span>
+<span class="sd">    raise an error in the RunEngine (or otherwise), the second plan</span>
+<span class="sd">    will attempted to be run anyway.</span>
+
+<span class="sd">    Notice that, this decorator requires a generator *function* so that it can</span>
+<span class="sd">    be used multiple times, whereas :func:`bluesky.plans.finalize_wrapper`</span>
+<span class="sd">    accepts either a generator function or a generator instance.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    final_plan : callable</span>
+<span class="sd">        a callable that returns a generator, list, or similar containing `Msg`</span>
+<span class="sd">        objects; attempted to be run no matter what happens in the first plan</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from `plan` until it terminates or an error is raised, then</span>
+<span class="sd">        messages from `final_plan`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">dec</span><span class="p">(</span><span class="n">gen_func</span><span class="p">):</span>
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">gen_func</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">dec_inner</span><span class="p">(</span><span class="o">*</span><span class="n">inner_args</span><span class="p">,</span> <span class="o">**</span><span class="n">inner_kwargs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">final_plan</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">&quot;final_plan must be a callable (e.g., a &quot;</span>
+                    <span class="s2">&quot;generator function) not an iterable (e.g., a &quot;</span>
+                    <span class="s2">&quot;generator instance).&quot;</span>
+                <span class="p">)</span>
+            <span class="n">final_plan_instance</span> <span class="o">=</span> <span class="n">final_plan</span><span class="p">()</span>
+            <span class="n">plan</span> <span class="o">=</span> <span class="n">gen_func</span><span class="p">(</span><span class="o">*</span><span class="n">inner_args</span><span class="p">,</span> <span class="o">**</span><span class="n">inner_kwargs</span><span class="p">)</span>
+            <span class="n">cleanup</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">plan</span>
+            <span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+                <span class="n">cleanup</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">raise</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="c1"># if the exception raised in `GeneratorExit` that means</span>
+                <span class="c1"># someone called `gen.close()` on this generator.  In those</span>
+                <span class="c1"># cases generators must either re-raise the GeneratorExit or</span>
+                <span class="c1"># raise a different exception.  Trying to yield any values</span>
+                <span class="c1"># results in a RuntimeError being raised where `close` is</span>
+                <span class="c1"># called.  Thus, we catch, the GeneratorExit, disable cleanup</span>
+                <span class="c1"># and then re-raise</span>
+
+                <span class="c1"># https://docs.python.org/3/reference/expressions.html?#generator.close</span>
+                <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
+                    <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">final_plan_instance</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ret</span>
+
+        <span class="k">return</span> <span class="n">dec_inner</span>
+
+    <span class="k">return</span> <span class="n">dec</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">rewindable_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">rewindable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Toggle the &#39;rewindable&#39; state of the RE</span>
+
+<span class="sd">    Allow or disallow rewinding during the processing of the wrapped messages.</span>
+<span class="sd">    Then restore the initial state (rewindable or not rewindable).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : generator</span>
+<span class="sd">        The plan to wrap in a &#39;rewindable&#39; or &#39;not rewindable&#39; context</span>
+<span class="sd">    rewindable : bool</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">initial_rewindable</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">capture_rewindable_state</span><span class="p">():</span>
+        <span class="k">nonlocal</span> <span class="n">initial_rewindable</span>
+        <span class="n">initial_rewindable</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;rewindable&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_rewindable</span><span class="p">(</span><span class="n">rewindable</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">initial_rewindable</span> <span class="o">!=</span> <span class="n">rewindable</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;rewindable&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rewindable</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">restore_rewindable</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">initial_rewindable</span> <span class="o">!=</span> <span class="n">rewindable</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;rewindable&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">initial_rewindable</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rewindable</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">capture_rewindable_state</span><span class="p">()</span>
+        <span class="k">yield from</span> <span class="n">set_rewindable</span><span class="p">(</span><span class="n">rewindable</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">restore_rewindable</span><span class="p">()))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="inject_md_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.inject_md_wrapper.html#bluesky.preprocessors.inject_md_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">inject_md_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">md</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inject additional metadata into a run.</span>
+
+<span class="sd">    This takes precedences over the original metadata dict in the event of</span>
+<span class="sd">    overlapping keys, but it does not mutate the original metadata dict.</span>
+<span class="sd">    (It uses ChainMap.)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    md : dict</span>
+<span class="sd">        metadata</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_inject_md</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">kwargs</span><span class="o">=</span><span class="n">ChainMap</span><span class="p">(</span><span class="n">md</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">_inject_md</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">stub_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove Msg object in order to use plan as a stub</span>
+
+<span class="sd">    This will remove any `open_run`, `close_run`, `stage` and `unstage` `Msg`</span>
+<span class="sd">    objects present in the plan in order for it to be run as part of a larger</span>
+<span class="sd">    scan. Note, that any metadata from the provided plan will not be sent to</span>
+<span class="sd">    the RunEngine automatically.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        A generator list or similar containing `Msg` objects</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    md : dict</span>
+<span class="sd">        Metadata discovered from `open_run` Msg</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">md</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_block_run_control</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Block open and close run messages</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Capture the metadata from open_run</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+            <span class="n">md</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;close_run&quot;</span><span class="p">,</span> <span class="s2">&quot;stage&quot;</span><span class="p">,</span> <span class="s2">&quot;unstage&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
+    <span class="k">yield from</span> <span class="n">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">_block_run_control</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">md</span>
+
+
+<div class="viewcode-block" id="monitor_during_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.monitor_during_wrapper.html#bluesky.preprocessors.monitor_during_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">monitor_during_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">signals</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Monitor (asynchronously read) devices during runs.</span>
+
+<span class="sd">    This is a preprocessor that insert messages immediately after a run is</span>
+<span class="sd">    opened and before it is closed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    signals : collection</span>
+<span class="sd">        objects that support the Signal interface</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan with &#39;monitor&#39;, and &#39;unmontior&#39; messages inserted</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plans.fly_during_wrapper`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">monitor_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">sig</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_monitor&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">sig</span> <span class="ow">in</span> <span class="n">signals</span><span class="p">]</span>
+    <span class="n">unmonitor_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;unmonitor&quot;</span><span class="p">,</span> <span class="n">sig</span><span class="p">)</span> <span class="k">for</span> <span class="n">sig</span> <span class="ow">in</span> <span class="n">signals</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_after_open</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
+                <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">monitor_msgs</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">single_gen</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span> <span class="n">new_gen</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_before_close</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
+                <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">unmonitor_msgs</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="n">msg</span>
+
+            <span class="k">return</span> <span class="n">new_gen</span><span class="p">(),</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="c1"># Apply nested mutations.</span>
+    <span class="n">plan1</span> <span class="o">=</span> <span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">insert_after_open</span><span class="p">)</span>
+    <span class="n">plan2</span> <span class="o">=</span> <span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan1</span><span class="p">,</span> <span class="n">insert_before_close</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan2</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="fly_during_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.fly_during_wrapper.html#bluesky.preprocessors.fly_during_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fly_during_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">flyers</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Kickoff and collect &quot;flyer&quot; (asynchronously collect) objects during runs.</span>
+
+<span class="sd">    This is a preprocessor that insert messages immediately after a run is</span>
+<span class="sd">    opened and before it is closed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    flyers : collection</span>
+<span class="sd">        objects that support the flyer interface</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan with &#39;kickoff&#39;, &#39;wait&#39; and &#39;collect&#39; messages</span>
+<span class="sd">        inserted</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plans.fly`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">grp1</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">&quot;flyers-kickoff&quot;</span><span class="p">)</span>
+    <span class="n">grp2</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">&quot;flyers-complete&quot;</span><span class="p">)</span>
+    <span class="n">kickoff_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;kickoff&quot;</span><span class="p">,</span> <span class="n">flyer</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp1</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
+    <span class="n">complete_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="n">flyer</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp2</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
+    <span class="n">collect_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;collect&quot;</span><span class="p">,</span> <span class="n">flyer</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">flyers</span><span class="p">:</span>
+        <span class="c1"># If there are any flyers, insert a &#39;wait&#39; Msg after kickoff, complete</span>
+        <span class="n">kickoff_msgs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp1</span><span class="p">)]</span>
+        <span class="n">complete_msgs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp2</span><span class="p">)]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_after_open</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
+                <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">kickoff_msgs</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">single_gen</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span> <span class="n">new_gen</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_before_close</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
+                <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">complete_msgs</span><span class="p">)</span>
+                <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">collect_msgs</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="n">msg</span>
+
+            <span class="k">return</span> <span class="n">new_gen</span><span class="p">(),</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="c1"># Apply nested mutations.</span>
+    <span class="n">plan1</span> <span class="o">=</span> <span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">insert_after_open</span><span class="p">)</span>
+    <span class="n">plan2</span> <span class="o">=</span> <span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan1</span><span class="p">,</span> <span class="n">insert_before_close</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan2</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="lazily_stage_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.lazily_stage_wrapper.html#bluesky.preprocessors.lazily_stage_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">lazily_stage_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a preprocessor that inserts &#39;stage&#39; messages and appends &#39;unstage&#39;.</span>
+
+<span class="sd">    The first time an object is seen in `plan`, it is staged. To avoid</span>
+<span class="sd">    redundant staging we actually stage the object&#39;s ultimate parent.</span>
+
+<span class="sd">    At the end, in a `finally` block, an &#39;unstage&#39; Message issued for every</span>
+<span class="sd">    &#39;stage&#39; Message.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan with &#39;stage&#39; messages inserted and &#39;unstage&#39;</span>
+<span class="sd">        messages appended</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">COMMANDS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="s2">&quot;trigger&quot;</span><span class="p">,</span> <span class="s2">&quot;kickoff&quot;</span><span class="p">])</span>  <span class="c1"># noqa: C405</span>
+    <span class="c1"># Cache devices in the order they are staged; then unstage in reverse.</span>
+    <span class="n">devices_staged</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="ow">in</span> <span class="n">COMMANDS</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">devices_staged</span><span class="p">:</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="n">root_ancestor</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
+                <span class="c1"># Here we insert a &#39;stage&#39; message</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;stage&quot;</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
+                <span class="c1"># and cache the result</span>
+                <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># The generator may be being list-ified.</span>
+                    <span class="c1"># This is a hack to make that possible.</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="n">root</span><span class="p">]</span>
+                <span class="n">devices_staged</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="c1"># and then proceed with our regularly scheduled programming</span>
+                <span class="k">yield</span> <span class="n">msg</span>
+
+            <span class="k">return</span> <span class="n">new_gen</span><span class="p">(),</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_unstage_all</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">unstage_all</span><span class="p">(</span><span class="o">*</span><span class="nb">reversed</span><span class="p">(</span><span class="n">devices_staged</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">inner</span><span class="p">),</span> <span class="n">inner_unstage_all</span><span class="p">()))</span></div>
+
+
+
+<div class="viewcode-block" id="stage_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.stage_wrapper.html#bluesky.preprocessors.stage_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stage_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &#39;Stage&#39; devices (i.e., prepare them for use, &#39;arm&#39; them) and then unstage.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    devices : collection</span>
+<span class="sd">        list of devices to stage immediately on entrance and unstage on exit</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan with &#39;stage&#39; and finally &#39;unstage&#39; messages inserted</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`bluesky.plans.lazily_stage_wrapper`</span>
+<span class="sd">    :func:`bluesky.plans.stage`</span>
+<span class="sd">    :func:`bluesky.plans.unstage`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">devices</span> <span class="o">=</span> <span class="n">separate_devices</span><span class="p">(</span><span class="n">root_ancestor</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stage_devices</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">stage_all</span><span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">unstage_devices</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">unstage_all</span><span class="p">(</span><span class="o">*</span><span class="nb">reversed</span><span class="p">(</span><span class="n">devices</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">stage_devices</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">inner</span><span class="p">(),</span> <span class="n">unstage_devices</span><span class="p">()))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_devices</span><span class="p">(</span><span class="n">devices</span><span class="p">):</span>
+    <span class="n">coupled_parents</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="c1"># if we have any pseudo devices then setting any part of it</span>
+    <span class="c1"># needs to trigger the relative behavior.</span>
+    <span class="n">io</span><span class="p">,</span> <span class="n">co</span><span class="p">,</span> <span class="n">go</span> <span class="o">=</span> <span class="n">merge_axis</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>
+    <span class="n">devices</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">io</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">co</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">go</span><span class="p">)</span>
+    <span class="c1"># if a device with coupled children is directly in the</span>
+    <span class="c1"># list, include all the coupled children as well</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">co</span><span class="p">:</span>
+        <span class="n">devices</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">)</span>
+        <span class="n">coupled_parents</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="c1"># if at least one child of a device with coupled children</span>
+    <span class="c1"># only include the coupled children if at least of the children</span>
+    <span class="c1"># directly included is one of the coupled ones.</span>
+    <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">type_map</span> <span class="ow">in</span> <span class="n">go</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">type_map</span><span class="p">[</span><span class="s2">&quot;pseudo&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">devices</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">)</span>
+            <span class="n">coupled_parents</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">devices</span><span class="p">,</span> <span class="n">coupled_parents</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">__get_result_of_message</span><span class="p">(</span><span class="n">msg_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="n">msg_type</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># this plan may be being list-ified</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;*** all positions for </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> are relative to current position ***&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">__read_and_stash_a_motor</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">initial_positions</span><span class="p">,</span> <span class="n">coupled_parents</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal plan for relative set and reset wrappers</span>
+
+
+<span class="sd">    .. warning ::</span>
+
+<span class="sd">       Do not use this plan directly for any reason.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># First check if it is a locatable, and use its location if it is</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Locatable</span><span class="p">):</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">__get_result_of_message</span><span class="p">(</span><span class="s2">&quot;locate&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">setpoint</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">setpoint</span> <span class="o">=</span> <span class="n">location</span><span class="p">[</span><span class="s2">&quot;setpoint&quot;</span><span class="p">]</span>
+    <span class="c1"># Otherwise it might have a `position` attribution</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">):</span>
+        <span class="n">setpoint</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">position</span>
+    <span class="c1"># Otherwise fallback to read obj and grab the value of the first key</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">reading</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">__get_result_of_message</span><span class="p">(</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reading</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">setpoint</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="n">get_hinted_fields</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">k</span><span class="p">,)</span> <span class="o">=</span> <span class="n">fields</span>
+                <span class="n">setpoint</span> <span class="o">=</span> <span class="n">reading</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">k</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">reading</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">setpoint</span> <span class="o">=</span> <span class="n">reading</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;do not yet know how to deal with &quot;</span>
+                    <span class="s2">&quot;non pseudopositioner multi-axis.  Please &quot;</span>
+                    <span class="s2">&quot;contact DAMA to justify why you need &quot;</span>
+                    <span class="s2">&quot;this.&quot;</span>
+                <span class="p">)</span>
+
+    <span class="n">initial_positions</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">setpoint</span>
+
+    <span class="c1"># if we move a pseudo positioner also stash it&#39;s children</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">coupled_parents</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">,</span> <span class="n">setpoint</span><span class="p">):</span>
+            <span class="n">initial_positions</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
+
+    <span class="c1"># if we move a pseudo single, also stash it&#39;s parent and siblings</span>
+    <span class="n">parent</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">parent</span>
+    <span class="k">if</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">coupled_parents</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">parent</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">:</span>
+        <span class="n">parent_pos</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">position</span>
+        <span class="n">initial_positions</span><span class="p">[</span><span class="n">parent</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent_pos</span>
+        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">,</span> <span class="n">parent_pos</span><span class="p">):</span>
+            <span class="n">initial_positions</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
+
+    <span class="c1"># TODO forbid mixed pseudo / real motion</span>
+
+
+<div class="viewcode-block" id="relative_set_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.relative_set_wrapper.html#bluesky.preprocessors.relative_set_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">relative_set_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interpret &#39;set&#39; messages on devices as relative to initial position.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    devices : collection or None, optional</span>
+<span class="sd">        if default (None), apply to all devices that are moved by the plan</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan, with &#39;read&#39; messages inserted and &#39;set&#39; messages</span>
+<span class="sd">        mutated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">initial_positions</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">devices</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">devices</span><span class="p">,</span> <span class="n">coupled_parents</span> <span class="o">=</span> <span class="n">_normalize_devices</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">coupled_parents</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">rewrite_pos</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">initial_positions</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">rel_pos</span><span class="p">,)</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span>
+            <span class="n">abs_pos</span> <span class="o">=</span> <span class="n">initial_positions</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">]</span> <span class="o">+</span> <span class="n">rel_pos</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">abs_pos</span><span class="p">,))</span>
+            <span class="k">return</span> <span class="n">new_msg</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">msg</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_reads</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="n">eligible</span> <span class="o">=</span> <span class="p">(</span><span class="n">devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">)</span>
+        <span class="n">seen</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">initial_positions</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">eligible</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">pchain</span><span class="p">(</span>
+                    <span class="n">__read_and_stash_a_motor</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">initial_positions</span><span class="p">,</span> <span class="n">coupled_parents</span><span class="p">),</span>
+                    <span class="n">single_gen</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span>
+                <span class="p">),</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">plan</span> <span class="o">=</span> <span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">insert_reads</span><span class="p">)</span>
+    <span class="n">plan</span> <span class="o">=</span> <span class="n">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">rewrite_pos</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="reset_positions_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.reset_positions_wrapper.html#bluesky.preprocessors.reset_positions_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">reset_positions_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return movable devices to their initial positions at the end.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    devices : collection or None, optional</span>
+<span class="sd">        If default (None), apply to all devices that are moved by the plan.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan with &#39;read&#39; and finally &#39;set&#39; messages inserted</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">initial_positions</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">devices</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">devices</span><span class="p">,</span> <span class="n">coupled_parents</span> <span class="o">=</span> <span class="n">_normalize_devices</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">coupled_parents</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_reads</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="n">eligible</span> <span class="o">=</span> <span class="n">devices</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">devices</span>
+        <span class="n">seen</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">initial_positions</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">eligible</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">pchain</span><span class="p">(</span>
+                    <span class="n">__read_and_stash_a_motor</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">initial_positions</span><span class="p">,</span> <span class="n">coupled_parents</span><span class="p">),</span>
+                    <span class="n">single_gen</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span>
+                <span class="p">),</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">():</span>
+        <span class="n">blk_grp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;reset-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())[:</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">initial_positions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">parent</span> <span class="ow">in</span> <span class="n">coupled_parents</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">blk_grp</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">blk_grp</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">insert_reads</span><span class="p">),</span> <span class="n">reset</span><span class="p">()))</span></div>
+
+
+
+<div class="viewcode-block" id="baseline_wrapper">
+<a class="viewcode-back" href="../../generated/bluesky.preprocessors.baseline_wrapper.html#bluesky.preprocessors.baseline_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">baseline_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;baseline&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Preprocessor that records a baseline of all `devices` after `open_run`</span>
+
+<span class="sd">    The readings are designated for a separate event stream named &#39;baseline&#39; by</span>
+<span class="sd">    default.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    devices : collection</span>
+<span class="sd">        collection of Devices to read</span>
+<span class="sd">        If None, the plan passes through unchanged.</span>
+<span class="sd">    name : string, optional</span>
+<span class="sd">        name for event stream; by default, &#39;baseline&#39;</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        messages from plan, with &#39;set&#39; messages inserted</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">head</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">trigger_and_read</span><span class="p">(</span><span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_baseline</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">set_run_key_wrapper</span><span class="p">(</span><span class="n">head</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">head</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">post_baseline</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">yield from</span> <span class="n">set_run_key_wrapper</span><span class="p">(</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">),</span> <span class="n">run</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield from</span> <span class="n">trigger_and_read</span><span class="p">(</span><span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">msg</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">post_baseline</span><span class="p">(),</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">devices</span><span class="p">:</span>
+        <span class="c1"># no-op</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">insert_baseline</span><span class="p">))</span></div>
+
+
+
+<span class="c1"># Make generator function decorator for each generator instance wrapper.</span>
+<span class="n">baseline_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">baseline_wrapper</span><span class="p">)</span>
+<span class="n">subs_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">subs_wrapper</span><span class="p">)</span>
+<span class="n">suspend_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">suspend_wrapper</span><span class="p">)</span>
+<span class="n">relative_set_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">relative_set_wrapper</span><span class="p">)</span>
+<span class="n">reset_positions_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">reset_positions_wrapper</span><span class="p">)</span>
+<span class="c1"># finalize_decorator is custom-made since it takes a plan as its</span>
+<span class="c1"># argument. See its docstring for details why.</span>
+<span class="n">lazily_stage_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">lazily_stage_wrapper</span><span class="p">)</span>
+<span class="n">stage_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">stage_wrapper</span><span class="p">)</span>
+<span class="n">fly_during_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">fly_during_wrapper</span><span class="p">)</span>
+<span class="n">monitor_during_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">monitor_during_wrapper</span><span class="p">)</span>
+<span class="n">inject_md_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">inject_md_wrapper</span><span class="p">)</span>
+<span class="n">run_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">run_wrapper</span><span class="p">)</span>
+<span class="n">contingency_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">contingency_wrapper</span><span class="p">)</span>
+<span class="n">stub_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">stub_wrapper</span><span class="p">)</span>
+<span class="n">configure_count_time_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">configure_count_time_wrapper</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SupplementalData">
+<a class="viewcode-back" href="../../plans.html#bluesky.preprocessors.SupplementalData">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SupplementalData</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A configurable preprocessor for supplemental measurements</span>
+
+<span class="sd">    This is a plan preprocessor. It inserts messages into plans to:</span>
+
+<span class="sd">    * take &quot;baseline&quot; readings at the beginning and end of each run for the</span>
+<span class="sd">      devices listed in its ``baseline`` atrribute</span>
+<span class="sd">    * monitor signals in its ``monitors`` attribute for asynchronous</span>
+<span class="sd">      updates during each run.</span>
+<span class="sd">    * kick off &quot;flyable&quot; devices listed in its ``flyers`` attribute at the</span>
+<span class="sd">      beginning of each run and collect their data at the end</span>
+
+<span class="sd">    Internally, it uses the plan preprocessors:</span>
+
+<span class="sd">    * :func:`baseline_wrapper`</span>
+<span class="sd">    * :func:`monitor_during_wrapper`</span>
+<span class="sd">    * :func:`fly_during_wrapper`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    baseline : list</span>
+<span class="sd">        Devices to be read at the beginning and end of each run</span>
+<span class="sd">    monitors : list</span>
+<span class="sd">        Signals (not multi-signal Devices) to be monitored during each run,</span>
+<span class="sd">        generating readings asynchronously</span>
+<span class="sd">    flyers : list</span>
+<span class="sd">        &quot;Flyable&quot; Devices to be kicked off before each run and collected</span>
+<span class="sd">        at the end of each run</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Create an instance of SupplementalData and apply it to a RunEngine.</span>
+
+<span class="sd">    &gt;&gt;&gt; sd = SupplementalData(baseline=[some_motor, some_detector]),</span>
+<span class="sd">    ...                       monitors=[some_signal],</span>
+<span class="sd">    ...                       flyers=[some_flyer])</span>
+<span class="sd">    &gt;&gt;&gt; RE = RunEngine({})</span>
+<span class="sd">    &gt;&gt;&gt; RE.preprocessors.append(sd)</span>
+
+<span class="sd">    Now all plans executed by RE will be modified to add baseline readings</span>
+<span class="sd">    (before and after each run), monitors (during each run), and flyers</span>
+<span class="sd">    (kicked off before each run and collected afterward).</span>
+
+<span class="sd">    Inspect or update the lists of devices interactively.</span>
+
+<span class="sd">    &gt;&gt;&gt; sd.baseline</span>
+<span class="sd">    [some_motor, some_detector]</span>
+
+<span class="sd">    &gt;&gt;&gt; sd.baseline.remove(some_motor)</span>
+
+<span class="sd">    &gt;&gt;&gt; sd.baseline</span>
+<span class="sd">    [some_detector]</span>
+
+<span class="sd">    &gt;&gt;&gt; sd.baseline.append(another_detector)</span>
+
+<span class="sd">    &gt;&gt;&gt; sd.baseline</span>
+<span class="sd">    [some_detector, another_detector]</span>
+
+<span class="sd">    Each attribute (``baseline``, ``monitors``, ``flyers``) is an ordinary</span>
+<span class="sd">    Python list, support all the standard list methods, such as:</span>
+
+<span class="sd">    &gt;&gt;&gt; sd.baseline.clear()</span>
+
+<span class="sd">    The arguments to SupplementalData are optional. All the lists</span>
+<span class="sd">    will empty by default.  As shown above, they can be populated</span>
+<span class="sd">    interactively.</span>
+
+<span class="sd">    &gt;&gt;&gt; sd = SupplementalData()</span>
+<span class="sd">    &gt;&gt;&gt; RE = RunEngine({})</span>
+<span class="sd">    &gt;&gt;&gt; RE.preprocessors.append(sd)</span>
+<span class="sd">    &gt;&gt;&gt; sd.baseline.append(some_detector)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">monitors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flyers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">baseline</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">baseline</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">monitors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">monitors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">flyers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flyers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">baseline</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">monitors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flyers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">flyers</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{cls}</span><span class="s2">(baseline=</span><span class="si">{baseline}</span><span class="s2">, monitors=</span><span class="si">{monitors}</span><span class="s2">, flyers=</span><span class="si">{flyers}</span><span class="s2">)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="o">**</span><span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="c1"># I&#39;m not sure why anyone would want to pickle this but it&#39;s good manners</span>
+    <span class="c1"># to avoid breaking pickling.</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">baseline</span><span class="p">,</span> <span class="n">monitors</span><span class="p">,</span> <span class="n">flyers</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span> <span class="o">=</span> <span class="n">baseline</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitors</span> <span class="o">=</span> <span class="n">monitors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flyers</span> <span class="o">=</span> <span class="n">flyers</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitors</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flyers</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Insert messages into a plan.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        plan : iterable or iterator</span>
+<span class="sd">            a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Read this as going from the inside out: first we wrap the plan in the</span>
+        <span class="c1"># flying instructions, then monitoring, then baseline, so that the</span>
+        <span class="c1"># order of operations is:</span>
+        <span class="c1"># - Take baseline readings</span>
+        <span class="c1"># - Start monitoring.</span>
+        <span class="c1"># - Kick off flyers and wait for them to be kicked off.</span>
+        <span class="c1"># - Do `plan`.</span>
+        <span class="c1"># - Complete and collect flyers.</span>
+        <span class="c1"># - Stop monitoring.</span>
+        <span class="c1"># - Take baseline readings.</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="n">fly_during_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flyers</span><span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="n">monitor_during_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitors</span><span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="n">baseline_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">plan</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">set_run_key_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add a run key to each message in wrapped plan</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plan : iterable or iterator</span>
+<span class="sd">        a generator, list, or similar containing `Msg` objects</span>
+<span class="sd">    run : str or any other type except None</span>
+<span class="sd">        The run key to set on each Msg. It is recommended that run key represents</span>
+<span class="sd">        informative string for better readability of plans. But value of any other</span>
+<span class="sd">        type can be used if needed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;run ID can not be None&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_run_key</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+        <span class="c1"># Replace only the default value None</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">_set_run_key</span><span class="p">))</span>
+
+
+<span class="n">set_run_key_decorator</span> <span class="o">=</span> <span class="n">make_decorator</span><span class="p">(</span><span class="n">set_run_key_wrapper</span><span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2015, Brookhaven National Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+﻿bluesky.run\_engine.RunEngine.halt
+==================================
+
+.. currentmodule:: bluesky.run_engine
+
+.. automethod:: RunEngine.halt
