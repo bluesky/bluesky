@@ -575,7 +575,6 @@ class _RunWriter(CallbackBase):
             specs=[Spec("BlueskyRun", version="3.0")],
             access_tags=self.access_tags,
         )
-        self._streams_node = self.root_node.create_container(key="streams", access_tags=self.access_tags)
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -606,6 +605,9 @@ class _RunWriter(CallbackBase):
         self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)}, drop_revision=True)
 
     def descriptor(self, doc: EventDescriptor):
+        if self.root_node is None:
+            raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
+
         desc_name = doc["name"]  # Name of the descriptor/stream
         self.data_keys.update(doc.get("data_keys", {}))
 
@@ -614,7 +616,7 @@ class _RunWriter(CallbackBase):
         # "composite" spec constraints and can use the `.base` (Container) client directly.
         if desc_name not in self._desc_nodes.keys():
             metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
-            desc_node = self._streams_node.create_container(
+            desc_node = self.root_node.create_container(
                 key=desc_name,
                 metadata=truncate_json_overflow(metadata),
                 specs=[Spec("BlueskyEventStream", version="3.0"), Spec("composite")],
