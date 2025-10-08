@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Integration with Tiled &#8212; bluesky 1.14.6.dev6+g100a05496 documentation</title>
+    <title>Integration with Tiled &#8212; bluesky 1.14.6.dev9+g7d4e0748d documentation</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=5ec788ee"></script>
+    <script src="_static/documentation_options.js?v=3bb88580"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
@@ -54,7 +54,7 @@ window.addEventListener("load", () => mermaid.run());
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.6.dev6+g100a05496';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.6.dev9+g7d4e0748d';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -64,7 +64,7 @@ window.addEventListener("load", () => mermaid.run());
     <link rel="prev" title="Hardware Interface Packages" href="hardware-interfaces.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.6.dev6+g100a05496" />
+  <meta name="docsearch:version" content="1.14.6.dev9+g7d4e0748d" />
   </head>
   
   
@@ -583,24 +583,21 @@ window.addEventListener("load", () => mermaid.run());
 <p>It implicitly distinguishes between “internal” and “external” data. The internal data are associated with the <cite>Event</cite> documents generated during a run; typically this represents scalar measurements from sensors, motor positions, etc, which is stored in a form of a table with columns corresponding to different data keys and each row representing a measurement at a single timestamp.</p>
 <p>On the other hand, the external data are written by detectors directly on disk and usually take the form of images or multidimensional arrays. The references to the external files are provided in <cite>StreamResource</cite> (<cite>Resource</cite> in legacy implementations) documents, which register the corresponding array-like <cite>DataSources</cite> in Tiled. <cite>StreamDatum</cite> (or <cite>Datum</cite>) documents are processed via the mechanism of <cite>Consolidators</cite> and determine the correspondence between the indexing within these external arrays and the physically-meaningful sequence of timestamps.</p>
 <p>The time dimension (that is, the sequence of measurements) is usually shared between internal and external data. Tiled handles this by writing all data from the same Bluesky stream into a container with a dedicated <cite>“composite”</cite> spec, which tells the Tiled client how the data are aligned. Each stream node’s metadata includes the specifications for the related data keys as well as the configuration parameters provided in the <cite>EventDescriptor</cite> document.</p>
-<p>Finally, nodes for multiple streams are grouped together and placed into a container for the entire run; its metadata contains the <cite>Start</cite> and <cite>Stop</cite> documents. While the structure of the <cite>streams</cite> container is fixed, the parent Run allows for optional user-controlled namespaces within <cite>views</cite> and <cite>aux</cite> containers. The Run container created by TiledWriter is designated with the <cite>BlueskyRun</cite> version <cite>3.0</cite> spec to enable its back-compatibility with legacy code via bluesky-tiled-plugins.</p>
+<p>Finally, nodes for multiple streams are grouped together and placed into a container for the entire run; its metadata contains the <cite>Start</cite> and <cite>Stop</cite> documents. The Run container created by TiledWriter is designated with the <cite>BlueskyRun</cite> version <cite>3.0</cite> spec to enable its back-compatibility with legacy code via bluesky-tiled-plugins.</p>
 <p>An example of the Tiled catalog structure for a Bluesky run might look like this:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>BlueskyRun_v3 &lt;Container&gt;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>BlueskyRun &lt;Container (&quot;BlueskyRun_v3&quot;)&gt;
 │
-├─ streams &lt;Container&gt;
-│      ├─ baseline &lt;Container (&quot;composite&quot;)&gt;
-│      │       ├─ internal &lt;Table&gt;   -- written by Tiled
-│      │       ├─ image_1 &lt;Array&gt;    -- external data from files
-│      │       │      ...
-│      │       └─ image_n &lt;Array&gt;
-│      ├─ primary &lt;Container (&quot;composite&quot;)&gt;
-│      │       ├─ internal &lt;Table&gt;   -- written by Tiled
-│      │       ├─ image_1 &lt;Array&gt;    -- external data from files
-│      │       │      ...
-│      │       └─ image_n &lt;Array&gt;
-│      └─ third_stream &lt;Container (&quot;composite&quot;)&gt;
-├─ views &lt;Container&gt;    -- optional
-└─ aux &lt;Container&gt;      -- optional
+├─ baseline &lt;Container (&quot;composite&quot;)&gt;
+│       ├─ internal &lt;Table&gt;   -- written by Tiled
+│       ├─ image_1 &lt;Array&gt;    -- external data from files
+│       │      ...
+│       └─ image_n &lt;Array&gt;
+├─ primary &lt;Container (&quot;composite&quot;)&gt;
+│       ├─ internal &lt;Table&gt;   -- written by Tiled
+│       ├─ image_1 &lt;Array&gt;    -- external data from files
+│       │      ...
+│       └─ image_n &lt;Array&gt;
+└─ third_stream &lt;Container (&quot;composite&quot;)&gt;
 </pre></div>
 </div>
 <div class="admonition note">
@@ -699,11 +696,11 @@ window.addEventListener("load", () => mermaid.run());
 
 <span class="c1"># Run an experiment collecting internal data</span>
 <span class="n">uid</span><span class="p">,</span> <span class="o">=</span> <span class="n">RE</span><span class="p">(</span><span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">tiled_client</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s1">&#39;streams/primary/det&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">tiled_client</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s1">&#39;primary/det&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 
 <span class="c1"># Run an experiment collecting external data</span>
 <span class="n">uid</span><span class="p">,</span> <span class="o">=</span> <span class="n">RE</span><span class="p">(</span><span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="n">hw</span><span class="p">(</span><span class="n">save_path</span><span class="o">=</span><span class="n">save_path</span><span class="p">)</span><span class="o">.</span><span class="n">img</span><span class="p">],</span> <span class="mi">2</span><span class="p">))</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">tiled_client</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s1">&#39;streams/primary/img&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">tiled_client</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s1">&#39;primary/img&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 </pre></div>
 </div>
 </section>
@@ -766,7 +763,7 @@ window.addEventListener("load", () => mermaid.run());
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.6.dev6+g100a05496/docs/tiled-writer.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.6.dev9+g7d4e0748d/docs/tiled-writer.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
