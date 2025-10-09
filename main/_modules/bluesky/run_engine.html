@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.14.6.dev9+g7d4e0748d documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.14.7.dev2+g8adfe3ab1 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=3bb88580"></script>
+    <script src="../../_static/documentation_options.js?v=9fdceabc"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
@@ -53,7 +53,7 @@ window.addEventListener("load", () => mermaid.run());
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.6.dev9+g7d4e0748d';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev2+g8adfe3ab1';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -61,7 +61,7 @@ window.addEventListener("load", () => mermaid.run());
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.6.dev9+g7d4e0748d" />
+  <meta name="docsearch:version" content="1.14.7.dev2+g8adfe3ab1" />
   </head>
   
   
@@ -557,6 +557,7 @@ window.addEventListener("load", () => mermaid.run());
 <span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">event_model</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">event_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DocumentNames</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">Span</span>
@@ -1014,6 +1015,7 @@ window.addEventListener("load", () => mermaid.run());
         <span class="kn">from</span><span class="w"> </span><span class="nn">._version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;versions&quot;</span><span class="p">][</span><span class="s2">&quot;bluesky&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">__version__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;versions&quot;</span><span class="p">][</span><span class="s2">&quot;event_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_model</span><span class="o">.</span><span class="n">__version__</span>
 
         <span class="k">if</span> <span class="n">preprocessors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">preprocessors</span> <span class="o">=</span> <span class="p">[]</span>
