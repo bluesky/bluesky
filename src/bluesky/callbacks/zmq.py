@@ -14,10 +14,64 @@ to listen to.  Typically this is started with the cli tool ``bluesky-zmq-proxy``
 
 import asyncio
 import copy
+import logging
 import pickle
 import warnings
+from pathlib import Path
+from typing import NamedTuple, Union
 
 from ..run_engine import Dispatcher, DocumentNames
+
+logger = logging.getLogger(__name__)
+
+
+class ServerCurve(NamedTuple):
+    # path to the secret key for the server
+    secret_path: Path
+    # path to folder of client's public keys.  If None, allow all clients
+    client_public_keys: Union[Path, None]
+    # set of ip addresses to allow
+    allow: Union[set[str], None]
+
+
+class ClientCurve(NamedTuple):
+    # path to the secret key for the server
+    secret_path: Path
+    # path to the servers public key
+    server_public_key: Path
+
+
+def _normalize_address(inp: Union[str, tuple, int, None]):
+    if isinstance(inp, str):
+        if "://" in inp:
+            protocol, _, rest_str = inp.partition("://")
+        else:
+            protocol = "tcp"
+            rest_str = inp
+    elif isinstance(inp, tuple):
+        if inp[0] in ["tcp", "ipc"]:
+            protocol, *rest = inp
+        else:
+            protocol = "tcp"
+            rest = list(inp)
+        if protocol == "tcp":
+            if len(rest) == 2:
+                rest_str = ":".join(str(r) for r in rest)
+            else:
+                (rest_str,) = rest
+        else:
+            (rest_str,) = rest
+    elif isinstance(inp, int):
+        protocol = "tcp"
+        rest_str = f"0.0.0.0:{inp}"
+    elif inp is None:
+        protocol = "tcp"
+        rest_str = "*"
+
+    else:
+        raise TypeError(f"Input expected to be int, str, or tuple, not {type(inp)}")
+
+    return f"{protocol}://{rest_str}"
 
 
 class Bluesky0MQDecodeError(Exception):
@@ -47,6 +101,8 @@ class Publisher:
         mocking its interface is accepted.
     serializer: function, optional
         optional function to serialize data. Default is pickle.dumps
+    curve_config: ClientCurve, optional
+        CURVE security configuration for client authentication.
 
     Examples
     --------
@@ -58,7 +114,7 @@ class Publisher:
     >>> RE.subscribe(publisher)
     """
 
-    def __init__(self, address, *, prefix=b"", RE=None, zmq=None, serializer=pickle.dumps):
+    def __init__(self, address, *, prefix=b"", RE=None, zmq=None, serializer=pickle.dumps, curve_config=None):
         if RE is not None:
             warnings.warn(  # noqa: B028
                 "The RE argument to Publisher is deprecated and "
@@ -73,15 +129,28 @@ class Publisher:
             raise ValueError(f"prefix {prefix!r} may not contain b' '")
         if zmq is None:
             import zmq
-        if isinstance(address, str):
-            address = address.split(":", maxsplit=1)
-        self.address = (address[0], int(address[1]))
+            import zmq.auth
+
+        self.address = _normalize_address(address)
         self.RE = RE
-        url = "tcp://%s:%d" % self.address
+
         self._prefix = bytes(prefix)
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
-        self._socket.connect(url)
+
+        if curve_config is not None:
+            # Load the client cert pair
+            client_public, client_secret = zmq.auth.load_certificate(curve_config.secret_path)
+            self._socket.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+            if client_secret is None:
+                raise ValueError("The client secret key could not be found.")
+            self._socket.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
+
+            # Load the server public key and register with the socket
+            server_key, _ = zmq.auth.load_certificate(curve_config.server_public_key)
+            self._socket.setsockopt(zmq.CURVE_SERVERKEY, server_key)
+
+        self._socket.connect(self.address)
         if RE:
             self._subscription_token = RE.subscribe(self)
         self._serializer = serializer
@@ -102,23 +171,40 @@ class Proxy:
     """
     Start a 0MQ proxy on the local host.
 
+    The addresses can be specified flexibly.  It is best to use
+    a domain_socket (available on unix):
+
+     - ``'icp:///tmp/domain_socket'``
+     - ``('ipc', '/tmp/domain_socket')``
+
+    tcp sockets are also supported:
+
+     - ``'tcp://localhost:6557'``
+     - ``6657``  (implicitly binds to ``'tcp://localhost:6657'``
+     - ``('tcp', 'localhost', 6657)``
+     - ``('localhost', 6657)``
+
     Parameters
     ----------
-    in_port : int, optional
-        Port that RunEngines should broadcast to. If None, a random port is
-        used.
-    out_port : int, optional
-        Port that subscribers should subscribe to. If None, a random port is
-        used.
+    in_address : str or tuple or int, optional
+        Address that RunEngines should broadcast to.
+
+        If None, a random tcp port on all interfaces is used.
+
+    out_address : str or tuple or int, optional
+        Address that subscribers should subscribe to.
+
+        If None, a random tcp port on all interfaces is used.
+
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
 
     Attributes
     ----------
-    in_port : int
+    in_address: int or str or tuple
         Port that RunEngines should broadcast to.
-    out_port : int
+    out_address : int or str or tuple
         Port that subscribers should subscribe to.
     closed : boolean
         True if the Proxy has already been started and subsequently
@@ -146,28 +232,115 @@ class Proxy:
     >>> proxy.start()  # runs until interrupted
     """
 
-    def __init__(self, in_port=None, out_port=None, *, zmq=None):
+    @staticmethod
+    def configure_server_socket(
+        ctx,
+        sock_type,
+        address: Union[str, tuple, int, None],
+        curve: Union[ServerCurve, ClientCurve, None],
+        zmq,
+        auth_class,
+        bind: bool = True,
+    ):
+        socket = ctx.socket(sock_type)
+        norm_address = _normalize_address(address)
+        logger.debug(f"Creating socket of type {sock_type} for address {norm_address}, bind={bind}")
+        random_port = False
+        if norm_address.startswith("tcp"):
+            if ":" not in norm_address[6:]:
+                random_port = True
+
+        if curve is not None:
+            if bind:
+                # Server mode - expect ServerCurve
+                if not isinstance(curve, ServerCurve):
+                    raise TypeError("When bind=True, curve must be a ServerCurve instance")
+                logger.debug(f"Configuring CURVE server security with secret_path={curve.secret_path}")
+                # build authenticator
+                auth = auth_class(ctx)
+                auth.start()
+                logger.debug("Started ZMQ authenticator")
+                if curve.allow is not None:
+                    auth.allow(*curve.allow)
+                    logger.debug(f"Configured IP address allowlist: {curve.allow}")
+
+                # Tell the authenticator how to handle CURVE requests
+                if curve.client_public_keys is None:
+                    # accept any client that knows the public key
+                    auth.configure_curve(domain="*", location=zmq.auth.CURVE_ALLOW_ANY)
+                    logger.debug("Configured CURVE to allow any client with valid public key")
+                else:
+                    auth.configure_curve(domain="*", location=curve.client_public_keys)
+                    logger.debug(f"Configured CURVE client public keys from: {curve.client_public_keys}")
+
+                # get public and private keys from the certificate
+                server_public, server_secret = zmq.auth.load_certificate(curve.secret_path)
+                # attach them to the socket
+                socket.setsockopt(zmq.CURVE_PUBLICKEY, server_public)
+                socket.setsockopt(zmq.CURVE_SECRETKEY, server_secret)
+                socket.setsockopt(zmq.CURVE_SERVER, True)
+                logger.debug("Applied CURVE keys and enabled CURVE server mode")
+            else:
+                # Client mode - expect ClientCurve
+                if not isinstance(curve, ClientCurve):
+                    raise TypeError("When bind=False, curve must be a ClientCurve instance")
+                logger.debug(f"Configuring CURVE client security with secret_path={curve.secret_path}")
+
+                # Load the client cert pair
+                client_public, client_secret = zmq.auth.load_certificate(curve.secret_path)
+                socket.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+                if client_secret is None:
+                    raise ValueError("The client secret key could not be found.")
+                socket.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
+
+                # Load the server public key and register with the socket
+                server_key, _ = zmq.auth.load_certificate(curve.server_public_key)
+                socket.setsockopt(zmq.CURVE_SERVERKEY, server_key)
+                logger.debug("Applied CURVE client keys and server public key")
+
+        if bind:
+            if random_port:
+                port = socket.bind_to_random_port(norm_address)
+                logger.debug(f"Bound to random port: {port}")
+            else:
+                port = socket.bind(norm_address)
+                logger.debug(f"Bound to address: {norm_address}")
+        else:
+            socket.connect(norm_address)
+            port = norm_address
+            logger.debug(f"Connected to address: {norm_address}")
+
+        return socket, port
+
+    def __init__(
+        self,
+        in_address=None,
+        out_address=None,
+        *,
+        zmq=None,
+        in_curve=None,
+        out_curve=None,
+        in_bind=True,
+        out_bind=True,
+    ):
         if zmq is None:
             import zmq
         self.zmq = zmq
         self.closed = False
+
         try:
             context = zmq.Context(1)
-            # Socket facing clients
-            frontend = context.socket(zmq.SUB)
-            if in_port is None:
-                in_port = frontend.bind_to_random_port("tcp://*")
-            else:
-                frontend.bind("tcp://*:%d" % in_port)
+            from zmq.auth.thread import ThreadAuthenticator
 
+            frontend, in_port = self.configure_server_socket(
+                context, zmq.SUB, in_address, in_curve, zmq, ThreadAuthenticator, bind=in_bind
+            )
             frontend.setsockopt_string(zmq.SUBSCRIBE, "")
 
-            # Socket facing services
-            backend = context.socket(zmq.PUB)
-            if out_port is None:
-                out_port = backend.bind_to_random_port("tcp://*")
-            else:
-                backend.bind("tcp://*:%d" % out_port)
+            backend, out_port = self.configure_server_socket(
+                context, zmq.PUB, out_address, out_curve, zmq, ThreadAuthenticator, bind=out_bind
+            )
+
         except BaseException:
             # Clean up whichever components we have defined so far.
             try:
@@ -178,11 +351,22 @@ class Proxy:
                 backend.close()
             except NameError:
                 ...
-            context.destroy()
+            try:
+                context.destroy()
+            except NameError:
+                ...
             raise
         else:
-            self.in_port = in_port
-            self.out_port = out_port
+            self.in_port = (
+                in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port) if in_bind else in_port
+            )
+            self.out_port = (
+                out_port.addr
+                if hasattr(out_port, "addr")
+                else _normalize_address(out_port)
+                if out_bind
+                else out_port
+            )
             self._frontend = frontend
             self._backend = backend
             self._context = context
@@ -247,6 +431,7 @@ class RemoteDispatcher(Dispatcher):
         zmq_asyncio=None,
         deserializer=pickle.loads,
         strict=False,
+        curve_config=None,
     ):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
@@ -255,12 +440,12 @@ class RemoteDispatcher(Dispatcher):
         self._prefix = prefix
         if zmq is None:
             import zmq
+            import zmq.auth
         if zmq_asyncio is None:
             import zmq.asyncio as zmq_asyncio
-        if isinstance(address, str):
-            address = address.split(":", maxsplit=1)
+
         self._deserializer = deserializer
-        self.address = (address[0], int(address[1]))
+        self.address = _normalize_address(address)
 
         if loop is None:
             loop = asyncio.new_event_loop()
@@ -272,10 +457,21 @@ class RemoteDispatcher(Dispatcher):
             asyncio.set_event_loop(self.loop)
 
             self._context = zmq_asyncio.Context()
-            self._socket = self._context.socket(zmq.SUB)
+            self._socket = sock = self._context.socket(zmq.SUB)
 
-            url = "tcp://%s:%d" % self.address
-            self._socket.connect(url)
+            if curve_config is not None:
+                # Load the client cert pair
+                client_public, client_secret = zmq.auth.load_certificate(curve_config.secret_path)
+                sock.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+                if client_secret is None:
+                    raise ValueError("The client secret key could not be found.")
+                sock.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
+
+                # Load the server public key and register with the socket
+                server_key, _ = zmq.auth.load_certificate(curve_config.server_public_key)
+                sock.setsockopt(zmq.CURVE_SERVERKEY, server_key)
+
+            self._socket.connect(self.address)
             self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
         self.__factory = __finish_setup
