@@ -6,9 +6,10 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal, Optional, Union
+from typing import Any, Optional, TypeVar, Union
 
 from cycler import cycler
+from typing_extensions import Literal
 
 from bluesky.suspenders import SuspenderBase
 
@@ -56,6 +57,8 @@ from .utils import (
 
 #: Any plan function that takes a reading given a list of Readables
 TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
+
+T = TypeVar("T")
 
 
 @plan
@@ -147,7 +150,7 @@ def drop() -> MsgGenerator:
 
 
 @plan
-def read(obj: Readable) -> MsgGenerator[Reading]:
+def read(obj: Readable[T]) -> MsgGenerator[dict[str, Reading[T]]]:
     """
     Take a reading and add it to the current bundle of readings.
 
@@ -169,20 +172,22 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
 
 
 @typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+def locate(obj: Locatable[T], /, *, squeeze: Literal[True] = True) -> MsgGenerator[Location[T]]: ...
 @typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
+def locate(
+    obj1: Locatable, obj2: Locatable, /, *objs: Locatable, squeeze: bool = True
+) -> MsgGenerator[list[Location]]: ...
 @plan
-def locate(*objs, squeeze=True):
+def locate(*objs, squeeze: bool = True) -> MsgGenerator[Location | list[Location]]:
     """
     Locate some Movables and return their locations.
 
     Parameters
     ----------
-    obj : Device or Signal
-    sqeeze: bool
-        If True, return the result as a list.
-        If False, always return a list of retults even with a single object.
+    obj or objs: one (or many) Device or Signal
+    squeeze: bool
+        If True, return the result directly when called with a single device.
+        If False, always return a list of results even with a single object.
 
     Yields
     ------
