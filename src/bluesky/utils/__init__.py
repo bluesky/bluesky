@@ -715,7 +715,7 @@ def first_key_heuristic(device):
     return next(iter(device.describe()))
 
 
-def ancestry(obj):
+def ancestry(obj: HasParent):
     """
     List self, parent, grandparent, ... back to ultimate ancestor.
 
@@ -738,7 +738,7 @@ def ancestry(obj):
         ancestor = ancestor.parent
 
 
-def root_ancestor(obj):
+def root_ancestor(obj: HasParent):
     """
     Traverse ancestry to obtain root ancestor.
 
@@ -754,7 +754,7 @@ def root_ancestor(obj):
     return ancestry(obj)[-1]
 
 
-def share_ancestor(obj1, obj2):
+def share_ancestor(obj1: HasParent, obj2: HasParent) -> bool:
     """
     Check whether obj1 and obj2 have a common ancestor.
 
@@ -772,13 +772,13 @@ def share_ancestor(obj1, obj2):
     return ancestry(obj1)[-1] is ancestry(obj2)[-1]
 
 
-def separate_devices(devices):
+def separate_devices(devices: Iterable[HasParent]) -> list[HasParent]:
     """
     Filter out elements that have other elements as their ancestors.
 
     If A is an ancestor of B, [A, B, C] -> [A, C].
 
-    Paremeters
+    Parameters
     ----------
     devices : list
         All elements must have a `parent` attribute.

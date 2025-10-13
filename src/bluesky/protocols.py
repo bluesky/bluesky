@@ -527,6 +527,12 @@ class NamedMovable(Movable[T_co], HasHints, Protocol):
 
     ...
 
+# This is a convenience alias for when you need a Readable that also has a parent.
+# This is required in declare_stream.
+@runtime_checkable
+class ChildReadable(Readable[T], HasParent, Protocol):
+    """A readable object that has a parent device."""
+
 
 def check_supports(obj: Any, protocol: type[T]) -> T:
     """Check that an object supports a protocol
