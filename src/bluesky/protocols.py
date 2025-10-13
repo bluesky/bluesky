@@ -9,6 +9,7 @@ from typing import (
     Protocol,
     TypeVar,
     Union,
+    cast,
     runtime_checkable,
 )
 
@@ -527,7 +528,7 @@ class NamedMovable(Movable[T_co], HasHints, Protocol):
     ...
 
 
-def check_supports(obj: T, protocol: type[Any]) -> T:
+def check_supports(obj: Any, protocol: type[T]) -> T:
     """Check that an object supports a protocol
 
     This exists so that multiple protocol checks can be run in a mypy
@@ -537,9 +538,24 @@ def check_supports(obj: T, protocol: type[Any]) -> T:
         triggerable.trigger()
         readable = check_supports(obj, Readable)
         readable.read()
+
+    Note: Due to Python's type system limitations, chaining check_supports
+    calls loses previous protocol information:
+
+        device = check_supports(obj, Readable)
+        device = check_supports(device, Triggerable)
+        # Type checker only knows about Triggerable, not Readable
+        device.read()      # Type error - Readable info lost
+        device.trigger()   # Works
+
+    For multiple protocols, use protocol inheritance instead (see examples
+    in this file like ReadableAndTriggerable).
     """
     assert isinstance(obj, protocol), "%s does not implement all %s methods" % (obj, protocol.__name__)  # noqa: UP031
-    return obj
+    # The isinstance check above ensures obj implements the protocol at runtime.
+    # This cast informs the type checker that obj now has the protocol's type.
+
+    return cast(T, obj)
 
 
 # Descriptor with previous name on imports for backwards compatibility.
