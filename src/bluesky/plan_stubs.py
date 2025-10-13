@@ -23,11 +23,13 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    ChildReadable,
     Configurable,
     Flyable,
     Locatable,
     Location,
     Movable,
+    NamedChild,
     PartialEvent,
     Preparable,
     Readable,
@@ -63,7 +65,7 @@ T = TypeVar("T")
 
 @plan
 def declare_stream(
-    *objs: Readable, name: str, collect: bool = False
+    *objs: Union[NamedChild, ChildReadable], name: str, collect: bool = False
 ) -> MsgGenerator[tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
@@ -1426,7 +1428,9 @@ def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs) -> MsgGe
 
 
 @plan
-def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgGenerator[Mapping[str, Reading]]:
+def trigger_and_read(
+    devices: Sequence[ChildReadable], name: str = "primary"
+) -> MsgGenerator[Mapping[str, Reading]]:
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -1453,6 +1457,7 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
         yield from null()
+        return {}
     devices = separate_devices(devices)  # remove redundant entries
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
 

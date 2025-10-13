@@ -21,7 +21,16 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .protocols import Flyable, HintedMovable, Movable, NamedMovable, Readable, check_supports
+from .protocols import (
+    ChildReadable,
+    Flyable,
+    HintedMovable,
+    Movable,
+    NamedChildHintedMovable,
+    NamedMovable,
+    Readable,
+    check_supports,
+)
 from .utils import (
     CustomPlanMetadata,
     Msg,
@@ -65,7 +74,7 @@ class PerStepND(Protocol):
 PerStep = Union[PerStep1D, PerStepND]
 
 
-def _check_detectors_type_input(detectors):
+def _check_detectors_type_input(detectors: Sequence):
     if not isinstance(detectors, Sequence):
         raise TypeError("The input argument must be either as a list or a tuple of Readable objects.")
 
@@ -79,7 +88,7 @@ def derive_default_hints(motors: list[Any]) -> dict[str, Sequence]:
 
 
 def count(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadable],
     num: Optional[int] = 1,
     delay: ScalarOrIterableFloat = 0.0,
     *,
@@ -145,7 +154,7 @@ def count(
 
 
 def list_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadable],
     *args: Union[NamedMovable, list[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -239,7 +248,7 @@ def list_scan(
 
 
 def rel_list_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadable],
     *args: Union[NamedMovable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -296,7 +305,7 @@ def rel_list_scan(
 
 
 def list_grid_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadable],
     *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -373,7 +382,7 @@ def list_grid_scan(
 
 
 def rel_list_grid_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadable],
     *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -560,8 +569,8 @@ def _rel_scan_1d(
 
 
 def log_scan(
-    detectors: Sequence[Readable],
-    motor: HintedMovable,
+    detectors: Sequence[ChildReadable],
+    motor: NamedChildHintedMovable,
     start: float,
     stop: float,
     num: int,
@@ -633,6 +642,7 @@ def log_scan(
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
         if predeclare:
+            # BUG: motor is not a Readable
             yield from bps.declare_stream(motor, *detectors, name="primary")
         for step in steps:
             yield from per_step(detectors, motor, step)
@@ -642,8 +652,8 @@ def log_scan(
 
 
 def rel_log_scan(
-    detectors: Sequence[Readable],
-    motor: Movable,
+    detectors: Sequence[ChildReadable],
+    motor: NamedChildHintedMovable,
     start: float,
     stop: float,
     num: int,
@@ -689,9 +699,9 @@ def rel_log_scan(
 
 
 def adaptive_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadable],
     target_field: str,
-    motor: HintedMovable,
+    motor: NamedChildHintedMovable,
     start: float,
     stop: float,
     min_step: float,
@@ -775,7 +785,7 @@ def adaptive_scan(
             direction_sign = 1
         else:
             direction_sign = -1
-        devices = tuple(utils.separate_devices(detectors + [motor]))
+        devices = tuple(utils.separate_devices(list(detectors) + [motor]))
         if os.environ.get("BLUESKY_PREDECLARE", False):
             yield from bps.declare_stream(*devices, name="primary")
         while next_pos * direction_sign < stop * direction_sign:
@@ -1042,7 +1052,7 @@ def tune_centroid(
 
 
 def scan_nd(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadable],
     cycler: Cycler,
     *,
     per_step: Optional[PerStep] = None,

@@ -530,6 +530,11 @@ class HasHints(HasName, Protocol):
         ...
 
 
+@runtime_checkable
+class NamedChild(HasParent, HasName, Generic[T_co]):
+    """A child object that has a name and a parent device."""
+
+
 # This is a convenience alias for when you need a Movable that also has a name.
 # This is required in plans.list_scan.
 @runtime_checkable
@@ -542,11 +547,29 @@ class HintedMovable(Movable[T_co], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
 
-# This is a convenience alias for when you need a Readable that also has a parent.
-# This is required in declare_stream.
+# TODO if this is too ugly, just include HasParent into all devices
+# Adding this here to make it easy to search the codebase for places where it is needed.
 @runtime_checkable
-class ChildReadable(Readable[T], HasParent, Protocol):
-    """A readable object that has a parent device."""
+class ChildHintedMovable(HasParent, HintedMovable[T_co]):
+    """A movable object that has a parent device and hints."""
+
+
+@runtime_checkable
+class NamedChildHintedMovable(NamedChild, HintedMovable[T_co]):
+    """A movable object that has a name, a parent device and hints."""
+
+
+# This is a convenience alias for when you need a Readable that also has a parent.
+@runtime_checkable
+class ChildReadable(HasParent, Readable):
+    """A readable object that has a parent device (and a name because they're readable)."""
+
+
+# The stage wrapper uses separate_devices to avoid staging parents multiple times.
+# Therefore we need to ensure the device is both stageable and has a parent.
+@runtime_checkable
+class ChildStageable(HasParent, Stageable):
+    """A stageable object that has a parent device."""
 
 
 def check_supports(obj: Any, protocol: type[T]) -> T:

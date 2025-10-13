@@ -3,7 +3,8 @@ from collections import ChainMap, OrderedDict, deque
 from collections.abc import Iterable
 from functools import wraps
 
-from bluesky.protocols import Locatable
+from bluesky.protocols import ChildStageable, Locatable, Stageable, check_supports
+from bluesky.utils import MsgGenerator, P
 
 from .plan_stubs import (
     close_run,
@@ -505,7 +506,7 @@ def configure_count_time_wrapper(plan, time):
         return (yield from finalize_wrapper(plan_mutator(plan, insert_set), reset()))
 
 
-def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
+def finalize_wrapper(plan: MsgGenerator[P], final_plan, *, pause_for_debug=False) -> MsgGenerator[P]:
     """try...finally helper
 
     Run the first plan and then the second.  If any of the messages
@@ -521,7 +522,7 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
         a generator, list, or similar containing `Msg` objects
     final_plan : callable, iterable or iterator
         a generator, list, or similar containing `Msg` objects or a callable
-        that reurns one; attempted to be run no matter what happens in the
+        that returns one; attempted to be run no matter what happens in the
         first plan
     pause_for_debug : bool, optional
         If the plan should pause before running the clean final_plan in
@@ -976,7 +977,7 @@ def lazily_stage_wrapper(plan):
     return (yield from finalize_wrapper(plan_mutator(plan, inner), inner_unstage_all()))
 
 
-def stage_wrapper(plan, devices):
+def stage_wrapper(plan: MsgGenerator[P], devices: Iterable[ChildStageable]):
     """
     'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.
 
@@ -998,13 +999,14 @@ def stage_wrapper(plan, devices):
     :func:`bluesky.plans.stage`
     :func:`bluesky.plans.unstage`
     """
-    devices = separate_devices(root_ancestor(device) for device in devices)
+    _devices = separate_devices(root_ancestor(device) for device in devices)
+    _devices = [check_supports(device, Stageable) for device in _devices]
 
     def stage_devices():
-        yield from stage_all(*devices)
+        yield from stage_all(*_devices)
 
     def unstage_devices():
-        yield from unstage_all(*reversed(devices))
+        yield from unstage_all(*reversed(_devices))
 
     def inner():
         yield from stage_devices()

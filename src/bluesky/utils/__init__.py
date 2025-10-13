@@ -83,6 +83,8 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
+T_child_contra = TypeVar("T_child_contra", contravariant=True, bound=HasParent)
+
 #: Return type of a plan, usually None. Always optional for dry-runs.
 P = TypeVar("P")
 
@@ -715,7 +717,7 @@ def first_key_heuristic(device):
     return next(iter(device.describe()))
 
 
-def ancestry(obj: HasParent):
+def ancestry(obj: HasParent) -> list[HasParent]:
     """
     List self, parent, grandparent, ... back to ultimate ancestor.
 
@@ -738,7 +740,7 @@ def ancestry(obj: HasParent):
         ancestor = ancestor.parent
 
 
-def root_ancestor(obj: HasParent):
+def root_ancestor(obj: HasParent) -> HasParent:
     """
     Traverse ancestry to obtain root ancestor.
 
@@ -772,7 +774,7 @@ def share_ancestor(obj1: HasParent, obj2: HasParent) -> bool:
     return ancestry(obj1)[-1] is ancestry(obj2)[-1]
 
 
-def separate_devices(devices: Iterable[HasParent]) -> list[HasParent]:
+def separate_devices(devices: Iterable[T_child_contra]) -> list[T_child_contra]:
     """
     Filter out elements that have other elements as their ancestors.
 
@@ -790,6 +792,7 @@ def separate_devices(devices: Iterable[HasParent]) -> list[HasParent]:
     """
     result = []
     for det in devices:
+        check_supports(det, HasParent)
         for existing_det in result[:]:
             if existing_det in ancestry(det):
                 # known issue: here we assume that det is in the read_attrs

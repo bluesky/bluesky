@@ -261,7 +261,7 @@ class RunBundler:
             coros.append(self._cache_read_config(obj))
         await asyncio.gather(*coros)
 
-    async def declare_stream(self, msg):
+    async def declare_stream(self, msg: Msg):
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs.get("name")

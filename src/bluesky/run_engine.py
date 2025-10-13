@@ -15,6 +15,7 @@ from datetime import datetime
 from enum import Enum
 from inspect import iscoroutine
 from itertools import count
+from typing import cast
 from warnings import warn
 
 from event_model import DocumentNames
@@ -1939,7 +1940,7 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.create(msg)
 
-    async def _declare_stream(self, msg):
+    async def _declare_stream(self, msg: Msg):
         """Trigger the run engine to start bundling future obj.describe() calls for
          an Event document
 
@@ -1963,6 +1964,7 @@ class RunEngine:
                 "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
             raise IllegalMessageSequence(ims_msg)
+        current_run = cast(RunBundler, current_run)
         return await current_run.declare_stream(msg)
 
     async def _read(self, msg):
