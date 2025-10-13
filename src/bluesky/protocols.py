@@ -494,17 +494,26 @@ class Checkable(Protocol[T_co]):
         ...
 
 
-class Hints(TypedDict, total=False):
-    """A dictionary of optional hints for visualization"""
+class _HintsRequired(TypedDict):
+    """Required fields for hints"""
 
     #: A list of the interesting fields to plot
     fields: list[str]
+
+
+class _HintsOptional(TypedDict, total=False):
+    """Optional fields for hints"""
+
     #: Partition fields (and their stream name) into dimensions for plotting
     #:
     #: ``'dimensions': [(fields, stream_name), (fields, stream_name), ...]``
     dimensions: list[tuple[list[str], str]]
     #: Include this if scan data is sampled on a regular rectangular grid
     gridding: Literal["rectilinear", "rectilinear_nonsequential"]
+
+
+class Hints(_HintsRequired, _HintsOptional):
+    """A dictionary of hints for visualization with required fields field"""
 
 
 @runtime_checkable
@@ -521,11 +530,17 @@ class HasHints(HasName, Protocol):
         ...
 
 
+# This is a convenience alias for when you need a Movable that also has a name.
+# This is required in plans.list_scan.
 @runtime_checkable
-class NamedMovable(Movable[T_co], HasHints, Protocol):
+class NamedMovable(Movable[T_co], HasName):
+    """A movable object that has a name."""
+
+
+@runtime_checkable
+class HintedMovable(Movable[T_co], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
-    ...
 
 # This is a convenience alias for when you need a Readable that also has a parent.
 # This is required in declare_stream.

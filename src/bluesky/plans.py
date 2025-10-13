@@ -7,7 +7,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Protocol, Union, cast
 
 import numpy as np
 from cycler import Cycler
@@ -21,7 +21,7 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .protocols import Flyable, Movable, NamedMovable, Readable
+from .protocols import Flyable, HintedMovable, Movable, NamedMovable, Readable, check_supports
 from .utils import (
     CustomPlanMetadata,
     Msg,
@@ -33,20 +33,35 @@ from .utils import (
 #: Plan function that can be used for each shot in a detector acquisition involving no actuation
 PerShot = Callable[[Sequence[Readable], Optional[bps.TakeReading]], MsgGenerator]
 
+
 #: Plan function that can be used for each step in a scan
-PerStep1D = Callable[
-    [Sequence[Readable], Movable, Any, Optional[bps.TakeReading]],
-    MsgGenerator,
-]
-PerStepND = Callable[
-    [
-        Sequence[Readable],
-        Mapping[Movable, Any],
-        dict[Movable, Any],
-        Optional[bps.TakeReading],
-    ],
-    MsgGenerator,
-]
+class PerStep1D(Protocol):
+    """Protocol for per-step functions in 1D scans.
+
+    Supports both 3-argument and 4-argument signatures:
+    - (detectors, motor, step) -> MsgGenerator
+    - (detectors, motor, step, take_reading) -> MsgGenerator
+    """
+
+    def __call__(
+        self,
+        detectors: Sequence[Readable],
+        motor: Movable,
+        step: Any,
+        take_reading: Optional[bps.TakeReading] = ...,
+    ) -> MsgGenerator: ...
+
+
+class PerStepND(Protocol):
+    def __call__(
+        self,
+        detectors: Sequence[Readable],
+        motors: Mapping[Movable, Any],
+        step: dict[Movable, Any],
+        take_reading: Optional[bps.TakeReading] = ...,
+    ) -> MsgGenerator: ...
+
+
 PerStep = Union[PerStep1D, PerStepND]
 
 
@@ -131,7 +146,7 @@ def count(
 
 def list_scan(
     detectors: Sequence[Readable],
-    *args: tuple[Union[Movable, Any], list[Any]],
+    *args: Union[NamedMovable, list[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -176,10 +191,11 @@ def list_scan(
 
     # set some variables and check that all lists are the same length
     lengths = {}
-    motors: list[Any] = []
+    motors: list[NamedMovable] = []
     pos_lists = []
     length = None
     for motor, pos_list in partition(2, args):
+        motor = cast(NamedMovable, motor)  # mypy hint
         pos_list = list(pos_list)  # Ensure list (accepts any finite iterable).
         lengths[motor.name] = len(pos_list)
         if not length:
@@ -224,7 +240,7 @@ def list_scan(
 
 def rel_list_scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
+    *args: Union[NamedMovable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -269,7 +285,7 @@ def rel_list_scan(
     _md = {"plan_name": "rel_list_scan"}
     _md.update(md or {})
 
-    motors = [motor for motor, pos_list in partition(2, args)]
+    motors = [check_supports(motor, NamedMovable) for motor, pos_list in partition(2, args)]
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
@@ -425,7 +441,7 @@ def _scan_1d(
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
+    per_step: Optional[PerStep1D] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
     """
@@ -475,7 +491,7 @@ def _scan_1d(
     }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints["fields"], "primary")]
+        dimensions = [(motor.hints["fields"], "primary")]  # type: ignore
     except (AttributeError, KeyError):
         pass
     else:
@@ -491,18 +507,19 @@ def _scan_1d(
     def inner_scan():
         for step in steps:
             yield from per_step(detectors, motor, step)
+        # TODO return str to respect _scan_1d signature
 
     return (yield from inner_scan())
 
 
 def _rel_scan_1d(
     detectors: Sequence[Readable],
-    motor: Movable,
+    motor: NamedMovable,
     start: float,
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
+    per_step: Optional[PerStep1D] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
     """
@@ -544,7 +561,7 @@ def _rel_scan_1d(
 
 def log_scan(
     detectors: Sequence[Readable],
-    motor: NamedMovable,
+    motor: HintedMovable,
     start: float,
     stop: float,
     num: int,
@@ -619,6 +636,7 @@ def log_scan(
             yield from bps.declare_stream(motor, *detectors, name="primary")
         for step in steps:
             yield from per_step(detectors, motor, step)
+        # TODO return str to respect log_scan signature
 
     return (yield from inner_log_scan())
 
@@ -673,7 +691,7 @@ def rel_log_scan(
 def adaptive_scan(
     detectors: Sequence[Readable],
     target_field: str,
-    motor: NamedMovable,
+    motor: HintedMovable,
     start: float,
     stop: float,
     min_step: float,
@@ -873,7 +891,7 @@ def rel_adaptive_scan(
 def tune_centroid(
     detectors: Sequence[Readable],
     signal: str,
-    motor: NamedMovable,
+    motor: HintedMovable,
     start: float,
     stop: float,
     min_step: float,
@@ -1184,7 +1202,7 @@ def inner_product_scan(
 
 def scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
+    *args: Union[NamedMovable, Any],
     num: Optional[int] = None,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -1247,7 +1265,8 @@ def scan(
         )
 
     md_args = list(chain(*((repr(motor), start, stop) for motor, start, stop in partition(3, args))))
-    motor_names = tuple(motor.name for motor, start, stop in partition(3, args))
+    motors = [check_supports(motor, NamedMovable) for motor, start, stop in partition(3, args)]
+    motor_names = tuple(motor.name for motor in motors)
     md = md or {}
     _md = {
         "plan_args": {
@@ -1599,7 +1618,7 @@ def rel_scan(
 def tweak(
     detector: Readable,
     target_field: str,
-    motor: NamedMovable,
+    motor: HintedMovable,
     step: float,
     *,
     md: Optional[CustomPlanMetadata] = None,
@@ -1684,8 +1703,8 @@ def tweak(
 
 def spiral_fermat(
     detectors: Sequence[Readable],
-    x_motor: NamedMovable,
-    y_motor: NamedMovable,
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_start: float,
     y_start: float,
     x_range: float,
@@ -1867,8 +1886,8 @@ def rel_spiral_fermat(
 
 def spiral(
     detectors: Sequence[Readable],
-    x_motor: NamedMovable,
-    y_motor: NamedMovable,
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_start: float,
     y_start: float,
     x_range: float,
@@ -2045,8 +2064,8 @@ def rel_spiral(
 
 def spiral_square(
     detectors: Sequence[Readable],
-    x_motor: NamedMovable,
-    y_motor: NamedMovable,
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_center: float,
     y_center: float,
     x_range: float,
@@ -2340,8 +2359,8 @@ def fly(
 
 def x2x_scan(
     detectors: Sequence[Readable],
-    motor1: NamedMovable,
-    motor2: NamedMovable,
+    motor1: HintedMovable,
+    motor2: HintedMovable,
     start: float,
     stop: float,
     num: int,
