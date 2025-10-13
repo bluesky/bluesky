@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, cast
 
 from cycler import cycler
 from typing_extensions import Literal
@@ -518,10 +518,11 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
     elif len(hints) == 0:
         hint = None
         if hasattr(obj, "read_attrs"):
-            if len(obj.read_attrs) != 1:
+            obj_read_attrs = cast(list, obj.read_attrs)  # type: ignore
+            if len(obj_read_attrs) != 1:
                 msg = (
                     f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
-                    f"and has {len(obj.read_attrs)} read attrs.  We do not know how to "
+                    f"and has {len(obj_read_attrs)} read attrs.  We do not know how to "
                     "pick out a single value.  Please adjust the hinting/read_attrs by "
                     "setting the kind of the components of this device or by reading one "
                     "of its components"
