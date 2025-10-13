@@ -220,7 +220,7 @@ class Triggerable(Protocol):
 @runtime_checkable
 class Preparable(Protocol):
     @abstractmethod
-    def prepare(self, value) -> Status:
+    def prepare(self, *args, **kwargs) -> Status:
         """Prepare a device for scanning.
 
         This method provides similar functionality to ``Stageable.stage`` and
