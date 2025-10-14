@@ -543,6 +543,16 @@ class NamedMovable(Movable[T_co], HasName, Protocol):
 
 
 @runtime_checkable
+class NamedChildMovable(NamedChild, Movable[T_co], Protocol):
+    """A movable object that has a name and a parent device."""
+
+
+@runtime_checkable
+class NamedChildMovableAndStageable(NamedChild, Movable[T_co], Stageable, Protocol):
+    """A movable and stageable object that has a name and a parent device."""
+
+
+@runtime_checkable
 class HintedMovable(Movable[T_co], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
@@ -570,6 +580,12 @@ class ChildReadable(HasParent, Readable[T], Protocol):
 @runtime_checkable
 class ChildStageable(HasParent, Stageable, Protocol):
     """A stageable object that has a parent device."""
+
+
+# Some plans use a stage decorator on detectors
+@runtime_checkable
+class ChildReadableAndStageable(ChildReadable[T], ChildStageable, Protocol):
+    """A readable and stageable object that has a parent device."""
 
 
 def check_supports(obj: Any, protocol: type[T]) -> T:
