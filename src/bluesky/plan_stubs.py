@@ -57,10 +57,10 @@ from .utils import (
     short_uid as _short_uid,
 )
 
-#: Any plan function that takes a reading given a list of Readables
-TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
-
 T = TypeVar("T")
+
+#: Any plan function that takes a reading given a list of Readables
+TakeReading = Callable[[Sequence[ChildReadable[T]]], MsgGenerator[Mapping[str, Reading[T]]]]
 
 
 @plan
@@ -1429,8 +1429,8 @@ def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs) -> MsgGe
 
 @plan
 def trigger_and_read(
-    devices: Sequence[ChildReadable], name: str = "primary"
-) -> MsgGenerator[Mapping[str, Reading]]:
+    devices: Sequence[ChildReadable[T]], name: str = "primary"
+) -> MsgGenerator[Mapping[str, Reading[T]]]:
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -1605,7 +1605,9 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]
 
 
 @plan
-def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator[None]:
+def one_shot(
+    detectors: Sequence[Readable[T]], take_reading: Optional[TakeReading[T]] = None
+) -> MsgGenerator[None]:
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1636,11 +1638,11 @@ def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] 
 
 @plan
 def one_1d_step(
-    detectors: Sequence[Readable],
+    detectors: Sequence[Readable[T]],
     motor: Movable,
     step: Any,
-    take_reading: Optional[TakeReading] = None,
-) -> MsgGenerator[Mapping[str, Reading]]:
+    take_reading: Optional[TakeReading[T]] = None,
+) -> MsgGenerator[Mapping[str, Reading[T]]]:
     """
     Inner loop of a 1D step scan
 

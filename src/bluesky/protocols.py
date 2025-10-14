@@ -561,7 +561,7 @@ class NamedChildHintedMovable(NamedChild, HintedMovable[T_co], Protocol):
 
 # This is a convenience alias for when you need a Readable that also has a parent.
 @runtime_checkable
-class ChildReadable(HasParent, Readable, Protocol):
+class ChildReadable(HasParent, Readable[T], Protocol):
     """A readable object that has a parent device (and a name because they're readable)."""
 
 
