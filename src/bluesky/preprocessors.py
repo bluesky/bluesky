@@ -350,7 +350,7 @@ def print_summary_wrapper(plan):
     return (yield from msg_mutator(plan, spy))
 
 
-def run_wrapper(plan, *, md=None):
+def run_wrapper(plan: MsgGenerator[P], *, md=None) -> MsgGenerator[str]:
     """Enclose in 'open_run' and 'close_run' messages.
 
     Parameters

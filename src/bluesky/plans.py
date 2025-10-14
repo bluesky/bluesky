@@ -516,7 +516,6 @@ def _scan_1d(
     def inner_scan():
         for step in steps:
             yield from per_step(detectors, motor, step)
-        # TODO return str to respect _scan_1d signature
 
     return (yield from inner_scan())
 
