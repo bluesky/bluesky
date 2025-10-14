@@ -65,7 +65,7 @@ T = TypeVar("T")
 
 @plan
 def declare_stream(
-    *objs: Union[NamedChild, ChildReadable], name: str, collect: bool = False
+    *objs: NamedChild, name: str, collect: bool = False
 ) -> MsgGenerator[tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.

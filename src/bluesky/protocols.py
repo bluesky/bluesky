@@ -531,7 +531,7 @@ class HasHints(HasName, Protocol):
 
 
 @runtime_checkable
-class NamedChild(HasParent, HasName, Generic[T_co]):
+class NamedChild(HasParent, HasName, Protocol):
     """A child object that has a name and a parent device."""
 
 
