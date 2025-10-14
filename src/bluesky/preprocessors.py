@@ -1,10 +1,13 @@
 import uuid
 from collections import ChainMap, OrderedDict, deque
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import wraps
+from typing import Optional, Union, overload
+
+from typing_extensions import TypeVar
 
 from bluesky.protocols import ChildStageable, Locatable, Stageable, check_supports
-from bluesky.utils import MsgGenerator, P
+from bluesky.utils import MsgGenerator
 
 from .plan_stubs import (
     close_run,
@@ -29,6 +32,10 @@ from .utils import (
     single_gen,
 )
 from .utils import short_uid as _short_uid
+
+# Return types of Plans
+P = TypeVar("P")
+P2 = TypeVar("P2")
 
 
 def plan_mutator(plan, msg_proc):
@@ -569,15 +576,39 @@ def finalize_wrapper(plan: MsgGenerator[P], final_plan, *, pause_for_debug=False
     return ret
 
 
+@overload
 def contingency_wrapper(
-    plan,
+    plan: MsgGenerator[P],
     *,
-    except_plan=None,
+    except_plan: None = None,
     else_plan=None,
     final_plan=None,
     pause_for_debug=False,
     auto_raise=True,
-):
+) -> MsgGenerator[P]: ...
+
+
+@overload
+def contingency_wrapper(
+    plan: MsgGenerator[P],
+    *,
+    except_plan: Callable[..., MsgGenerator[P2]],
+    else_plan=None,
+    final_plan=None,
+    pause_for_debug=False,
+    auto_raise=True,
+) -> MsgGenerator[Union[P, P2]]: ...
+
+
+def contingency_wrapper(
+    plan: MsgGenerator[P],
+    *,
+    except_plan: Optional[Callable[..., MsgGenerator[P2]]] = None,
+    else_plan=None,
+    final_plan=None,
+    pause_for_debug=False,
+    auto_raise=True,
+) -> MsgGenerator[Union[P, P2]] | MsgGenerator[P]:
     """try...except...else...finally helper
 
     See :func:`finalize_wrapper` for a simplified but less powerful
