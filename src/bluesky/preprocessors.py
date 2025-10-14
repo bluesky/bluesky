@@ -38,7 +38,9 @@ P = TypeVar("P")
 P2 = TypeVar("P2")
 
 
-def plan_mutator(plan, msg_proc):
+def plan_mutator(
+    plan: MsgGenerator[P], msg_proc: Callable[[Msg], tuple[Optional[MsgGenerator], Optional[MsgGenerator]]]
+) -> MsgGenerator[P]:
     """
     Alter the contents of a plan on the fly by changing or inserting messages.
 
@@ -235,7 +237,7 @@ def plan_mutator(plan, msg_proc):
             result_stack.append(inner_ret)
 
 
-def msg_mutator(plan, msg_proc):
+def msg_mutator(plan: MsgGenerator[P], msg_proc: Callable[[Msg], Optional[Msg]]) -> MsgGenerator[P]:
     """
     A simple preprocessor that mutates or deletes single messages in a plan.
 
@@ -1134,7 +1136,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     # TODO forbid mixed pseudo / real motion
 
 
-def relative_set_wrapper(plan, devices=None):
+def relative_set_wrapper(plan: MsgGenerator[P], devices=None) -> MsgGenerator[P]:
     """
     Interpret 'set' messages on devices as relative to initial position.
 
@@ -1185,7 +1187,7 @@ def relative_set_wrapper(plan, devices=None):
     return (yield from plan)
 
 
-def reset_positions_wrapper(plan, devices=None):
+def reset_positions_wrapper(plan: MsgGenerator[P], devices=None):
     """
     Return movable devices to their initial positions at the end.
 
@@ -1207,7 +1209,7 @@ def reset_positions_wrapper(plan, devices=None):
     else:
         coupled_parents = set()
 
-    def insert_reads(msg):
+    def insert_reads(msg: Msg):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
         if (msg.command == "set") and eligible and not seen:
