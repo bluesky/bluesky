@@ -884,7 +884,7 @@ data from the 'start' document into a readable log entry. You can also write
 customize templates and pass them to ``logbook_cb_factory``.
 
 You may specify a custom template. Here is a very simple example; see the
-`source code <https://github.com/NSLS-II/bluesky/blob/master/bluesky/callbacks/olog.py>`_
+`source code <https://github.com/NSLS-II/bluesky/blob/main/src/bluesky/callbacks/olog.py>`_
 for a more complex example (the default template).
 
 .. code-block:: python
@@ -1192,7 +1192,7 @@ as the console.
         d.start()
 
 
-As `described above <kickers>`_, if you want to use any live-updating plots,
+As :ref:`described above <kickers>`, if you want to use any live-updating plots,
 you will need to install a "kicker". It needs to be installed on the same
 event loop used by the RemoteDispatcher, like so, and it must be done before
 calling ``d.start()``.

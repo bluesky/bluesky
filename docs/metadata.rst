@@ -33,7 +33,7 @@ about.  For example the location of important, but un-scanned motors
 or the configuration of beam attenuators.  If the values *should* be fixed over
 the course of the experiment then this it is a good candidate for
 being a "baseline device" either via the `Supplemental pre-processor
-<https://blueskyproject.io/bluesky/tutorial.html#baseline-readings-and-other-supplemental-data>`_
+<https://blueskyproject.io/bluesky/main/tutorial.html#baseline-readings-and-other-supplemental-data>`_
 or explicitly in custom plans.  This will put the readings in a separate stream
 (which is a peer to the "primary" data).  In principle, these values *could* be
 read from the control system once and put into the Start document along with
@@ -46,15 +46,15 @@ the *a priori* information, however that has several draw backs:
    units, and shape of the value and any configuration information about the
    hardware it is being read from.
 
-A third class of information that can be called "metadata" is
-configuration information of pieces of hardware.  These are things
-like the velocity of a motor or the integration time of a detector.
-These readings are embedded in the `Descriptor
-<https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_
-and are extracted from the hardware via the `read_configuration
-<https://blueskyproject.io/bluesky/hardware.html#ReadableDevice.read_configuration>`_
-method of the hardware.  We expect that these values will not change over
-the course of the experiment so only read them once.
+A third class of information that can be called "metadata" is configuration
+information of pieces of hardware.  These are things like the velocity of a
+motor or the integration time of a detector.  These readings are embedded in
+the `Descriptor
+<https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_ and
+are extracted from the hardware via the `read_configuration
+<https://blueskyproject.io/bluesky/main/hardware.html#bluesky.protocols.Configurable.read_configuration>`_
+method of the hardware.  We expect that these values will not change over the
+course of the experiment so only read them once.
 
 Information that does not fall into one of these categories, because
 you expect it to change during the experiment,
