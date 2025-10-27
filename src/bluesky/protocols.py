@@ -9,7 +9,6 @@ from typing import (
     Protocol,
     TypeVar,
     Union,
-    cast,
     runtime_checkable,
 )
 
@@ -615,7 +614,7 @@ def check_supports(obj: Any, protocol: type[T]) -> T:
     # The isinstance check above ensures obj implements the protocol at runtime.
     # This cast informs the type checker that obj now has the protocol's type.
 
-    return cast(T, obj)
+    return obj
 
 
 # Descriptor with previous name on imports for backwards compatibility.
