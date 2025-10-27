@@ -219,7 +219,7 @@ class Triggerable(Protocol):
 @runtime_checkable
 class Preparable(Protocol):
     @abstractmethod
-    def prepare(self, value) -> Status:
+    def prepare(self, *args, **kwargs) -> Status:
         """Prepare a device for scanning.
 
         This method provides similar functionality to ``Stageable.stage`` and
@@ -493,17 +493,26 @@ class Checkable(Protocol[T_co]):
         ...
 
 
-class Hints(TypedDict, total=False):
-    """A dictionary of optional hints for visualization"""
+class _HintsRequired(TypedDict):
+    """Required fields for hints"""
 
     #: A list of the interesting fields to plot
     fields: list[str]
+
+
+class _HintsOptional(TypedDict, total=False):
+    """Optional fields for hints"""
+
     #: Partition fields (and their stream name) into dimensions for plotting
     #:
     #: ``'dimensions': [(fields, stream_name), (fields, stream_name), ...]``
     dimensions: list[tuple[list[str], str]]
     #: Include this if scan data is sampled on a regular rectangular grid
     gridding: Literal["rectilinear", "rectilinear_nonsequential"]
+
+
+class Hints(_HintsRequired, _HintsOptional):
+    """A dictionary of hints for visualization with required fields field"""
 
 
 @runtime_checkable
@@ -521,13 +530,64 @@ class HasHints(HasName, Protocol):
 
 
 @runtime_checkable
-class NamedMovable(Movable[T_co], HasHints, Protocol):
+class NamedChild(HasParent, HasName, Protocol):
+    """A child object that has a name and a parent device."""
+
+
+# This is a convenience alias for when you need a Movable that also has a name.
+# This is required in plans.list_scan.
+@runtime_checkable
+class NamedMovable(Movable[T_co], HasName, Protocol):
+    """A movable object that has a name."""
+
+
+@runtime_checkable
+class NamedChildMovable(NamedChild, Movable[T_co], Protocol):
+    """A movable object that has a name and a parent device."""
+
+
+@runtime_checkable
+class NamedChildMovableAndStageable(NamedChild, Movable[T_co], Stageable, Protocol):
+    """A movable and stageable object that has a name and a parent device."""
+
+
+@runtime_checkable
+class HintedMovable(Movable[T_co], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
-    ...
+
+# TODO if this is too ugly, just include HasParent into all devices
+# Adding this here to make it easy to search the codebase for places where it is needed.
+@runtime_checkable
+class ChildHintedMovable(HasParent, HintedMovable[T_co], Protocol):
+    """A movable object that has a parent device and hints."""
 
 
-def check_supports(obj: T, protocol: type[Any]) -> T:
+@runtime_checkable
+class NamedChildHintedMovable(NamedChild, HintedMovable[T_co], Protocol):
+    """A movable object that has a name, a parent device and hints."""
+
+
+# This is a convenience alias for when you need a Readable that also has a parent.
+@runtime_checkable
+class ChildReadable(HasParent, Readable[T], Protocol):
+    """A readable object that has a parent device (and a name because they're readable)."""
+
+
+# The stage wrapper uses separate_devices to avoid staging parents multiple times.
+# Therefore we need to ensure the device is both stageable and has a parent.
+@runtime_checkable
+class ChildStageable(HasParent, Stageable, Protocol):
+    """A stageable object that has a parent device."""
+
+
+# Some plans use a stage decorator on detectors
+@runtime_checkable
+class ChildReadableAndStageable(ChildReadable[T], ChildStageable, Protocol):
+    """A readable and stageable object that has a parent device."""
+
+
+def check_supports(obj: Any, protocol: type[T]) -> T:
     """Check that an object supports a protocol
 
     This exists so that multiple protocol checks can be run in a mypy
@@ -537,8 +597,23 @@ def check_supports(obj: T, protocol: type[Any]) -> T:
         triggerable.trigger()
         readable = check_supports(obj, Readable)
         readable.read()
+
+    Note: Due to Python's type system limitations, chaining check_supports
+    calls loses previous protocol information:
+
+        device = check_supports(obj, Readable)
+        device = check_supports(device, Triggerable)
+        # Type checker only knows about Triggerable, not Readable
+        device.read()      # Type error - Readable info lost
+        device.trigger()   # Works
+
+    For multiple protocols, use protocol inheritance instead (see examples
+    in this file like ReadableAndTriggerable).
     """
     assert isinstance(obj, protocol), "%s does not implement all %s methods" % (obj, protocol.__name__)  # noqa: UP031
+    # The isinstance check above ensures obj implements the protocol at runtime.
+    # This cast informs the type checker that obj now has the protocol's type.
+
     return obj
 
 

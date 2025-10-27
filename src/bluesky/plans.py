@@ -1,4 +1,3 @@
-import collections
 import inspect
 import os
 import sys
@@ -7,7 +6,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Protocol, Union, cast
 
 import numpy as np
 from cycler import Cycler
@@ -21,7 +20,16 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .protocols import Flyable, Movable, NamedMovable, Readable
+from .protocols import (
+    ChildReadableAndStageable,
+    Flyable,
+    HintedMovable,
+    Movable,
+    NamedChildMovableAndStageable,
+    NamedMovable,
+    Readable,
+    check_supports,
+)
 from .utils import (
     CustomPlanMetadata,
     Msg,
@@ -33,24 +41,39 @@ from .utils import (
 #: Plan function that can be used for each shot in a detector acquisition involving no actuation
 PerShot = Callable[[Sequence[Readable], Optional[bps.TakeReading]], MsgGenerator]
 
+
 #: Plan function that can be used for each step in a scan
-PerStep1D = Callable[
-    [Sequence[Readable], Movable, Any, Optional[bps.TakeReading]],
-    MsgGenerator,
-]
-PerStepND = Callable[
-    [
-        Sequence[Readable],
-        Mapping[Movable, Any],
-        dict[Movable, Any],
-        Optional[bps.TakeReading],
-    ],
-    MsgGenerator,
-]
+class PerStep1D(Protocol):
+    """Protocol for per-step functions in 1D scans.
+
+    Supports both 3-argument and 4-argument signatures:
+    - (detectors, motor, step) -> MsgGenerator
+    - (detectors, motor, step, take_reading) -> MsgGenerator
+    """
+
+    def __call__(
+        self,
+        detectors: Sequence[Readable],
+        motor: Movable,
+        step: Any,
+        take_reading: Optional[bps.TakeReading] = ...,
+    ) -> MsgGenerator: ...
+
+
+class PerStepND(Protocol):
+    def __call__(
+        self,
+        detectors: Sequence[Readable],
+        motors: Mapping[Movable, Any],
+        step: dict[Movable, Any],
+        take_reading: Optional[bps.TakeReading] = ...,
+    ) -> MsgGenerator: ...
+
+
 PerStep = Union[PerStep1D, PerStepND]
 
 
-def _check_detectors_type_input(detectors):
+def _check_detectors_type_input(detectors: Sequence):
     if not isinstance(detectors, Sequence):
         raise TypeError("The input argument must be either as a list or a tuple of Readable objects.")
 
@@ -64,7 +87,7 @@ def derive_default_hints(motors: list[Any]) -> dict[str, Sequence]:
 
 
 def count(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     num: Optional[int] = 1,
     delay: ScalarOrIterableFloat = 0.0,
     *,
@@ -130,8 +153,8 @@ def count(
 
 
 def list_scan(
-    detectors: Sequence[Readable],
-    *args: tuple[Union[Movable, Any], list[Any]],
+    detectors: Sequence[ChildReadableAndStageable],
+    *args: Union[NamedMovable, list[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -176,10 +199,11 @@ def list_scan(
 
     # set some variables and check that all lists are the same length
     lengths = {}
-    motors: list[Any] = []
+    motors: list[NamedMovable] = []
     pos_lists = []
     length = None
     for motor, pos_list in partition(2, args):
+        motor = cast(NamedMovable, motor)  # mypy hint
         pos_list = list(pos_list)  # Ensure list (accepts any finite iterable).
         lengths[motor.name] = len(pos_list)
         if not length:
@@ -223,8 +247,8 @@ def list_scan(
 
 
 def rel_list_scan(
-    detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
+    detectors: Sequence[ChildReadableAndStageable],
+    *args: Union[NamedMovable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -269,7 +293,7 @@ def rel_list_scan(
     _md = {"plan_name": "rel_list_scan"}
     _md.update(md or {})
 
-    motors = [motor for motor, pos_list in partition(2, args)]
+    motors = [check_supports(motor, NamedMovable) for motor, pos_list in partition(2, args)]
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
@@ -280,7 +304,7 @@ def rel_list_scan(
 
 
 def list_grid_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -357,7 +381,7 @@ def list_grid_scan(
 
 
 def rel_list_grid_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -419,13 +443,13 @@ def rel_list_grid_scan(
 
 
 def _scan_1d(
-    detectors: Sequence[Readable],
-    motor: NamedMovable,
+    detectors: Sequence[ChildReadableAndStageable],
+    motor: NamedChildMovableAndStageable,
     start: float,
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
+    per_step: Optional[PerStep1D] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
     """
@@ -475,7 +499,7 @@ def _scan_1d(
     }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints["fields"], "primary")]
+        dimensions = [(motor.hints["fields"], "primary")]  # type: ignore
     except (AttributeError, KeyError):
         pass
     else:
@@ -496,13 +520,13 @@ def _scan_1d(
 
 
 def _rel_scan_1d(
-    detectors: Sequence[Readable],
-    motor: Movable,
+    detectors: Sequence[ChildReadableAndStageable],
+    motor: NamedChildMovableAndStageable,
     start: float,
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
+    per_step: Optional[PerStep1D] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
     """
@@ -543,8 +567,8 @@ def _rel_scan_1d(
 
 
 def log_scan(
-    detectors: Sequence[Readable],
-    motor: NamedMovable,
+    detectors: Sequence[ChildReadableAndStageable],
+    motor: NamedChildMovableAndStageable,
     start: float,
     stop: float,
     num: int,
@@ -600,7 +624,7 @@ def log_scan(
     _md.update(md or {})
 
     try:
-        dimensions = [(motor.hints["fields"], "primary")]
+        dimensions = [(motor.hints["fields"], "primary")]  # type: ignore
     except (AttributeError, KeyError):
         pass
     else:
@@ -616,16 +640,18 @@ def log_scan(
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
         if predeclare:
+            # BUG: motor is not a Readable
             yield from bps.declare_stream(motor, *detectors, name="primary")
         for step in steps:
             yield from per_step(detectors, motor, step)
+        # TODO return str to respect log_scan signature
 
     return (yield from inner_log_scan())
 
 
 def rel_log_scan(
-    detectors: Sequence[Readable],
-    motor: Movable,
+    detectors: Sequence[ChildReadableAndStageable],
+    motor: NamedChildMovableAndStageable,
     start: float,
     stop: float,
     num: int,
@@ -671,16 +697,16 @@ def rel_log_scan(
 
 
 def adaptive_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     target_field: str,
-    motor: NamedMovable,
+    motor: NamedChildMovableAndStageable,
     start: float,
     stop: float,
     min_step: float,
     max_step: float,
     target_delta: float,
     backstep: bool,
-    threshold: Optional[float] = 0.8,
+    threshold: float = 0.8,
     *,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -739,7 +765,8 @@ def adaptive_scan(
     }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints["fields"], "primary")]
+        # if motor is not hinted, this will raise an AttributeError
+        dimensions = [(motor.hints["fields"], "primary")]  # type: ignore
     except (AttributeError, KeyError):
         pass
     else:
@@ -757,7 +784,7 @@ def adaptive_scan(
             direction_sign = 1
         else:
             direction_sign = -1
-        devices = tuple(utils.separate_devices(detectors + [motor]))
+        devices = tuple(utils.separate_devices(list(detectors) + [motor]))
         if os.environ.get("BLUESKY_PREDECLARE", False):
             yield from bps.declare_stream(*devices, name="primary")
         while next_pos * direction_sign < stop * direction_sign:
@@ -800,16 +827,16 @@ def adaptive_scan(
 
 
 def rel_adaptive_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     target_field: str,
-    motor: Movable,
+    motor: NamedChildMovableAndStageable,
     start: float,
     stop: float,
     min_step: float,
     max_step: float,
     target_delta: float,
     backstep: bool,
-    threshold: Optional[float] = 0.8,
+    threshold: float = 0.8,
     *,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -871,9 +898,9 @@ def rel_adaptive_scan(
 
 
 def tune_centroid(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     signal: str,
-    motor: NamedMovable,
+    motor: NamedChildMovableAndStageable,
     start: float,
     stop: float,
     min_step: float,
@@ -947,7 +974,7 @@ def tune_centroid(
     if step_factor <= 1.0:
         raise ValueError("step_factor must be greater than 1.0")
     try:
-        (motor_name,) = motor.hints["fields"]
+        (motor_name,) = motor.hints["fields"]  # type: ignore
     except (AttributeError, ValueError):
         motor_name = motor.name
     _md = {
@@ -966,7 +993,7 @@ def tune_centroid(
     }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints["fields"], "primary")]
+        dimensions = [(motor.hints["fields"], "primary")]  # type: ignore
     except (AttributeError, KeyError):
         pass
     else:
@@ -1024,7 +1051,7 @@ def tune_centroid(
 
 
 def scan_nd(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     cycler: Cycler,
     *,
     per_step: Optional[PerStep] = None,
@@ -1163,13 +1190,13 @@ def scan_nd(
         if predeclare:
             yield from bps.declare_stream(*motors, *detectors, name="primary")
         for step in list(cycler):
-            yield from per_step(detectors, step, pos_cache)
+            yield from per_step(detectors, step, pos_cache)  # type: ignore
 
     return (yield from inner_scan_nd())
 
 
 def inner_product_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     num: int,
     *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
@@ -1183,8 +1210,8 @@ def inner_product_scan(
 
 
 def scan(
-    detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
+    detectors: Sequence[ChildReadableAndStageable],
+    *args: Union[NamedMovable, Any],
     num: Optional[int] = None,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -1247,7 +1274,8 @@ def scan(
         )
 
     md_args = list(chain(*((repr(motor), start, stop) for motor, start, stop in partition(3, args))))
-    motor_names = tuple(motor.name for motor, start, stop in partition(3, args))
+    motors = [check_supports(motor, NamedMovable) for motor, start, stop in partition(3, args)]
+    motor_names = tuple(motor.name for motor in motors)
     md = md or {}
     _md = {
         "plan_args": {
@@ -1292,7 +1320,7 @@ def scan(
 
 
 def grid_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     *args,
     snake_axes: Optional[Union[Iterable, bool]] = None,
     per_step: Optional[PerStep] = None,
@@ -1382,7 +1410,7 @@ def grid_scan(
             _motor, _start, _stop, _num, _snake = chunk
             return _motor, _start, _stop, _num, value
 
-        if isinstance(snake_axes, collections.abc.Iterable) and not isinstance(snake_axes, str):
+        if isinstance(snake_axes, Iterable) and not isinstance(snake_axes, str):
             # Always convert to a tuple (in case a `snake_axes` is an iterator).
             snake_axes = tuple(snake_axes)
 
@@ -1439,6 +1467,7 @@ def grid_scan(
     motor_names = []
     motors = []
     for i, (motor, start, stop, num, snake) in enumerate(chunk_args):
+        motor = check_supports(motor, NamedMovable)
         md_args.extend([repr(motor), start, stop, num])
         if i > 0:
             # snake argument only shows up after the first motor
@@ -1469,7 +1498,7 @@ def grid_scan(
 
 
 def rel_grid_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     *args: Union[Movable, Any],
     snake_axes: Optional[Union[Iterable, bool]] = None,
     per_step: Optional[PerStep] = None,
@@ -1528,7 +1557,7 @@ def rel_grid_scan(
 
 
 def relative_inner_product_scan(  # type: ignore
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     num: int,
     *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
@@ -1538,11 +1567,11 @@ def relative_inner_product_scan(  # type: ignore
     # Notice the swapped order here.
     md = md or {}
     md.setdefault("plan_name", "relative_inner_product_scan")
-    yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
+    return (yield from rel_scan(detectors, *args, num, per_step=per_step, md=md))
 
 
 def rel_scan(
-    detectors: Sequence[Readable],
+    detectors: Sequence[ChildReadableAndStageable],
     *args: Union[Movable, Any],
     num=None,
     per_step: Optional[PerStep] = None,
@@ -1597,9 +1626,9 @@ def rel_scan(
 
 
 def tweak(
-    detector: Readable,
+    detector: ChildReadableAndStageable,
     target_field: str,
-    motor: NamedMovable,
+    motor: NamedChildMovableAndStageable,
     step: float,
     *,
     md: Optional[CustomPlanMetadata] = None,
@@ -1633,7 +1662,7 @@ def tweak(
         "hints": {},
     }
     try:
-        dimensions = [(motor.hints["fields"], "primary")]
+        dimensions = [(motor.hints["fields"], "primary")]  # type: ignore
     except (AttributeError, KeyError):
         pass
     else:
@@ -1683,9 +1712,9 @@ def tweak(
 
 
 def spiral_fermat(
-    detectors: Sequence[Readable],
-    x_motor: NamedMovable,
-    y_motor: NamedMovable,
+    detectors: Sequence[ChildReadableAndStageable],
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_start: float,
     y_start: float,
     x_range: float,
@@ -1750,11 +1779,11 @@ def spiral_fermat(
         dr_y=dr_y,
         tilt=tilt,
     )
-    cyc = plan_patterns.spiral_fermat(**pattern_args)
+    cyc = plan_patterns.spiral_fermat(**pattern_args)  # type: ignore
 
     # Before including pattern_args in metadata, replace objects with reprs.
-    pattern_args["x_motor"] = repr(x_motor)
-    pattern_args["y_motor"] = repr(y_motor)
+    pattern_args["x_motor"] = repr(x_motor)  # type: ignore
+    pattern_args["y_motor"] = repr(y_motor)  # type: ignore
     _md = {
         "plan_args": {
             "detectors": list(map(repr, detectors)),
@@ -1789,9 +1818,9 @@ def spiral_fermat(
 
 
 def rel_spiral_fermat(
-    detectors: Sequence[Readable],
-    x_motor: Movable,
-    y_motor: Movable,
+    detectors: Sequence[ChildReadableAndStageable],
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_range: float,
     y_range: float,
     dr: float,
@@ -1866,9 +1895,9 @@ def rel_spiral_fermat(
 
 
 def spiral(
-    detectors: Sequence[Readable],
-    x_motor: NamedMovable,
-    y_motor: NamedMovable,
+    detectors: Sequence[ChildReadableAndStageable],
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_start: float,
     y_start: float,
     x_range: float,
@@ -1931,11 +1960,11 @@ def spiral(
         dr_y=dr_y,
         tilt=tilt,
     )
-    cyc = plan_patterns.spiral(**pattern_args)
+    cyc = plan_patterns.spiral(**pattern_args)  # type: ignore
 
     # Before including pattern_args in metadata, replace objects with reprs.
-    pattern_args["x_motor"] = repr(x_motor)
-    pattern_args["y_motor"] = repr(y_motor)
+    pattern_args["x_motor"] = repr(x_motor)  # type: ignore
+    pattern_args["y_motor"] = repr(y_motor)  # type: ignore
     _md = {
         "plan_args": {
             "detectors": list(map(repr, detectors)),
@@ -1970,9 +1999,9 @@ def spiral(
 
 
 def rel_spiral(
-    detectors: Sequence[Readable],
-    x_motor: Movable,
-    y_motor: Movable,
+    detectors: Sequence[ChildReadableAndStageable],
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_range: float,
     y_range: float,
     dr: float,
@@ -2044,9 +2073,9 @@ def rel_spiral(
 
 
 def spiral_square(
-    detectors: Sequence[Readable],
-    x_motor: NamedMovable,
-    y_motor: NamedMovable,
+    detectors: Sequence[ChildReadableAndStageable],
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_center: float,
     y_center: float,
     x_range: float,
@@ -2107,8 +2136,8 @@ def spiral_square(
     cyc = plan_patterns.spiral_square_pattern(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
-    pattern_args["x_motor"] = repr(x_motor)
-    pattern_args["y_motor"] = repr(y_motor)
+    pattern_args["x_motor"] = repr(x_motor)  # type: ignore
+    pattern_args["y_motor"] = repr(y_motor)  # type: ignore
     _md = {
         "plan_args": {
             "detectors": list(map(repr, detectors)),
@@ -2142,9 +2171,9 @@ def spiral_square(
 
 
 def rel_spiral_square(
-    detectors: Sequence[Readable],
-    x_motor: Movable,
-    y_motor: Movable,
+    detectors: Sequence[ChildReadableAndStageable],
+    x_motor: HintedMovable,
+    y_motor: HintedMovable,
     x_range: float,
     y_range: float,
     x_num: float,
@@ -2339,9 +2368,9 @@ def fly(
 
 
 def x2x_scan(
-    detectors: Sequence[Readable],
-    motor1: NamedMovable,
-    motor2: NamedMovable,
+    detectors: Sequence[ChildReadableAndStageable],
+    motor1: HintedMovable,
+    motor2: HintedMovable,
     start: float,
     stop: float,
     num: int,

@@ -1,16 +1,22 @@
-import collections
+import collections.abc
 import functools
 import operator
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import numpy as np
 from cycler import cycler
 
-try:
-    # cytools is a drop-in replacement for toolz, implemented in Cython
-    from cytools import partition
-except ImportError:
+from bluesky.protocols import Movable
+
+if TYPE_CHECKING:
     from toolz import partition
+else:
+    try:
+        # cytools is a drop-in replacement for toolz, implemented in Cython
+        from cytools import partition
+    except ImportError:
+        from toolz import partition
 
 from .utils import is_movable, snake_cyclers
 
@@ -345,7 +351,7 @@ def outer_list_product(args, snake_axes):
     return snake_cyclers(cyclers, snaking)
 
 
-def inner_product(num, args):
+def inner_product(num, args: list[Movable[float] | float]):
     """Scan over one multi-motor trajectory.
 
     Parameters
@@ -369,7 +375,7 @@ def inner_product(num, args):
         start,
         stop,
     ) in partition(3, args):
-        steps = np.linspace(start, stop, num=num, endpoint=True)
+        steps = np.linspace(float(start), float(stop), num=num, endpoint=True)
         c = cycler(motor, steps)
         cyclers.append(c)
     return functools.reduce(operator.add, cyclers)
@@ -559,7 +565,7 @@ def outer_product(args):
         shape.append(num)
         extents.append([start, stop])
         snaking.append(snake)
-        steps = np.linspace(start, stop, num=num, endpoint=True)
+        steps = np.linspace(float(start), float(stop), num=int(num), endpoint=True)
         c = cycler(motor, steps)
         cyclers.append(c)
 

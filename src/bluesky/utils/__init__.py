@@ -22,6 +22,7 @@ from inspect import Parameter, Signature
 from typing import (
     Any,
     Callable,
+    Concatenate,
     Optional,
     TypedDict,
     TypeVar,
@@ -36,7 +37,7 @@ from cycler import Cycler, cycler
 from event_model.documents import Document, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
-from typing_extensions import TypeIs
+from typing_extensions import ParamSpec, TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
@@ -83,6 +84,8 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
+T_child_contra = TypeVar("T_child_contra", contravariant=True, bound=HasParent)
+
 #: Return type of a plan, usually None. Always optional for dry-runs.
 P = TypeVar("P")
 
@@ -116,6 +119,8 @@ Subscribers = Union[OneOrMany[Subscriber[Document]], SubscriberMap]
 
 class RunEngineControlException(Exception):
     """Exception for signaling within the RunEngine."""
+
+    exit_status: str
 
 
 class RequestAbort(RunEngineControlException):
@@ -715,7 +720,7 @@ def first_key_heuristic(device):
     return next(iter(device.describe()))
 
 
-def ancestry(obj):
+def ancestry(obj: HasParent) -> list[HasParent]:
     """
     List self, parent, grandparent, ... back to ultimate ancestor.
 
@@ -738,7 +743,7 @@ def ancestry(obj):
         ancestor = ancestor.parent
 
 
-def root_ancestor(obj):
+def root_ancestor(obj: HasParent) -> HasParent:
     """
     Traverse ancestry to obtain root ancestor.
 
@@ -754,7 +759,7 @@ def root_ancestor(obj):
     return ancestry(obj)[-1]
 
 
-def share_ancestor(obj1, obj2):
+def share_ancestor(obj1: HasParent, obj2: HasParent) -> bool:
     """
     Check whether obj1 and obj2 have a common ancestor.
 
@@ -772,13 +777,13 @@ def share_ancestor(obj1, obj2):
     return ancestry(obj1)[-1] is ancestry(obj2)[-1]
 
 
-def separate_devices(devices):
+def separate_devices(devices: Iterable[T_child_contra]) -> list[T_child_contra]:
     """
     Filter out elements that have other elements as their ancestors.
 
     If A is an ancestor of B, [A, B, C] -> [A, C].
 
-    Paremeters
+    Parameters
     ----------
     devices : list
         All elements must have a `parent` attribute.
@@ -790,6 +795,7 @@ def separate_devices(devices):
     """
     result = []
     for det in devices:
+        check_supports(det, HasParent)
         for existing_det in result[:]:
             if existing_det in ancestry(det):
                 # known issue: here we assume that det is in the read_attrs
@@ -1246,7 +1252,17 @@ def ts_msg_hook(msg, file=sys.stdout):
     print(f"{t} {msg_fmt}", file=file)
 
 
-def make_decorator(wrapper):
+P_Return = TypeVar("P_Return", covariant=True)
+PWrapperSpec = ParamSpec("PWrapperSpec")
+PGenFuncSpec = ParamSpec("PGenFuncSpec")
+
+
+def make_decorator(
+    wrapper: Callable[Concatenate[MsgGenerator[P], PWrapperSpec], MsgGenerator[P_Return]],
+) -> Callable[
+    PWrapperSpec,
+    Callable[[Callable[PGenFuncSpec, MsgGenerator[P]]], Callable[PGenFuncSpec, MsgGenerator[P_Return]]],
+]:
     """
     Turn a generator instance wrapper into a generator function decorator.
 
@@ -1270,13 +1286,15 @@ def make_decorator(wrapper):
     """
 
     @wraps(wrapper)
-    def dec_outer(*args, **kwargs):
-        def dec(gen_func):
+    def dec_outer(*args: PWrapperSpec.args, **kwargs: PWrapperSpec.kwargs):
+        def dec(gen_func: Callable[PGenFuncSpec, MsgGenerator[P]]):
             @wraps(gen_func)
-            def dec_inner(*inner_args, **inner_kwargs):
+            def dec_inner(
+                *inner_args: PGenFuncSpec.args, **inner_kwargs: PGenFuncSpec.kwargs
+            ) -> MsgGenerator[P_Return]:
                 plan = gen_func(*inner_args, **inner_kwargs)
-                plan = wrapper(plan, *args, **kwargs)
-                return (yield from plan)
+                wrapped_plan = wrapper(plan, *args, **kwargs)
+                return (yield from wrapped_plan)
 
             return dec_inner
 

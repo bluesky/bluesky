@@ -6,9 +6,10 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal, Optional, Union
+from typing import Any, Optional, TypeVar, Union, cast
 
 from cycler import cycler
+from typing_extensions import Literal
 
 from bluesky.suspenders import SuspenderBase
 
@@ -22,11 +23,13 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    ChildReadable,
     Configurable,
     Flyable,
     Locatable,
     Location,
     Movable,
+    NamedChild,
     PartialEvent,
     Preparable,
     Readable,
@@ -54,13 +57,15 @@ from .utils import (
     short_uid as _short_uid,
 )
 
+T = TypeVar("T")
+
 #: Any plan function that takes a reading given a list of Readables
-TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
+TakeReading = Callable[[Sequence[ChildReadable[T]]], MsgGenerator[Mapping[str, Reading[T]]]]
 
 
 @plan
 def declare_stream(
-    *objs: Readable, name: str, collect: bool = False
+    *objs: NamedChild, name: str, collect: bool = False
 ) -> MsgGenerator[tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
@@ -147,7 +152,7 @@ def drop() -> MsgGenerator:
 
 
 @plan
-def read(obj: Readable) -> MsgGenerator[Reading]:
+def read(obj: Readable[T]) -> MsgGenerator[dict[str, Reading[T]]]:
     """
     Take a reading and add it to the current bundle of readings.
 
@@ -169,20 +174,22 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
 
 
 @typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+def locate(obj: Locatable[T], /, *, squeeze: Literal[True] = True) -> MsgGenerator[Location[T]]: ...
 @typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
+def locate(
+    obj1: Locatable, obj2: Locatable, /, *objs: Locatable, squeeze: bool = True
+) -> MsgGenerator[list[Location]]: ...
 @plan
-def locate(*objs, squeeze=True):
+def locate(*objs, squeeze: bool = True) -> MsgGenerator[Location | list[Location]]:
     """
     Locate some Movables and return their locations.
 
     Parameters
     ----------
-    obj : Device or Signal
-    sqeeze: bool
-        If True, return the result as a list.
-        If False, always return a list of retults even with a single object.
+    obj or objs: one (or many) Device or Signal
+    squeeze: bool
+        If True, return the result directly when called with a single device.
+        If False, always return a list of results even with a single object.
 
     Yields
     ------
@@ -513,10 +520,11 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
     elif len(hints) == 0:
         hint = None
         if hasattr(obj, "read_attrs"):
-            if len(obj.read_attrs) != 1:
+            obj_read_attrs = cast(list, obj.read_attrs)  # type: ignore
+            if len(obj_read_attrs) != 1:
                 msg = (
                     f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
-                    f"and has {len(obj.read_attrs)} read attrs.  We do not know how to "
+                    f"and has {len(obj_read_attrs)} read attrs.  We do not know how to "
                     "pick out a single value.  Please adjust the hinting/read_attrs by "
                     "setting the kind of the components of this device or by reading one "
                     "of its components"
@@ -1420,7 +1428,9 @@ def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs) -> MsgGe
 
 
 @plan
-def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgGenerator[Mapping[str, Reading]]:
+def trigger_and_read(
+    devices: Sequence[ChildReadable[T]], name: str = "primary"
+) -> MsgGenerator[Mapping[str, Reading[T]]]:
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -1447,6 +1457,7 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
         yield from null()
+        return {}
     devices = separate_devices(devices)  # remove redundant entries
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
 
@@ -1594,7 +1605,9 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]
 
 
 @plan
-def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator[None]:
+def one_shot(
+    detectors: Sequence[Readable[T]], take_reading: Optional[TakeReading[T]] = None
+) -> MsgGenerator[None]:
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1625,11 +1638,11 @@ def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] 
 
 @plan
 def one_1d_step(
-    detectors: Sequence[Readable],
+    detectors: Sequence[Readable[T]],
     motor: Movable,
     step: Any,
-    take_reading: Optional[TakeReading] = None,
-) -> MsgGenerator[Mapping[str, Reading]]:
+    take_reading: Optional[TakeReading[T]] = None,
+) -> MsgGenerator[Mapping[str, Reading[T]]]:
     """
     Inner loop of a 1D step scan
 
