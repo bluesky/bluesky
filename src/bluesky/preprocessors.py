@@ -6,7 +6,7 @@ from typing import Optional, Union, overload
 
 from typing_extensions import TypeVar
 
-from bluesky.protocols import ChildStageable, Locatable, Stageable, check_supports
+from bluesky.protocols import HasParent, Locatable, Stageable, check_supports
 from bluesky.utils import MsgGenerator
 
 from .plan_stubs import (
@@ -1010,7 +1010,7 @@ def lazily_stage_wrapper(plan):
     return (yield from finalize_wrapper(plan_mutator(plan, inner), inner_unstage_all()))
 
 
-def stage_wrapper(plan: MsgGenerator[P], devices: Iterable[ChildStageable]):
+def stage_wrapper(plan: MsgGenerator[P], devices: Iterable[Stageable]):
     """
     'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.
 
@@ -1032,7 +1032,10 @@ def stage_wrapper(plan: MsgGenerator[P], devices: Iterable[ChildStageable]):
     :func:`bluesky.plans.stage`
     :func:`bluesky.plans.unstage`
     """
-    _devices = separate_devices(root_ancestor(device) for device in devices)
+
+    _devices_with_parent = [device for device in devices if isinstance(device, HasParent)]
+    _devices_without_parent = [device for device in devices if not isinstance(device, HasParent)]
+    _devices = separate_devices(root_ancestor(device) for device in _devices_with_parent) + _devices_without_parent
     _devices = [check_supports(device, Stageable) for device in _devices]
 
     def stage_devices():
