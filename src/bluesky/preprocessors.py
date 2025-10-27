@@ -264,7 +264,7 @@ def msg_mutator(plan: MsgGenerator[P], msg_proc: Callable[[Msg], Optional[Msg]])
     except StopIteration as _e:
         ret = _e.value
     else:
-        while 1:
+        while True:
             try:
                 msg = msg_proc(msg)
                 # if None, just skip message
@@ -1081,7 +1081,7 @@ def __get_result_of_message(msg_type: str, obj):
     return result
 
 
-def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
+def __read_and_stash_a_motor(obj: HasParent, initial_positions, coupled_parents):
     """Internal plan for relative set and reset wrappers
 
 
@@ -1124,6 +1124,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     initial_positions[obj] = setpoint
 
     # if we move a pseudo positioner also stash it's children
+    # TODO implement protocol for .pseudo_positioners
     if obj in coupled_parents:
         for c, p in zip(obj.pseudo_positioners, setpoint):
             initial_positions[c] = p
