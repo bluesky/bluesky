@@ -33,6 +33,7 @@ requires-python = ">=3.9"
 [project.optional-dependencies]
 dev = [
     "attrs",
+    "bluesky_tiled_plugins",
     "cloudpickle",
     "copier",
     "coverage",
@@ -86,7 +87,6 @@ dev = [
     "tifffile",
     "tox-direct",
     "types-mock",
-    "tiled[all]",
     "vendoring",
     "zict",
 ]
