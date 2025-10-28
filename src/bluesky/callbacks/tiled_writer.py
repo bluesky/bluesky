@@ -556,14 +556,16 @@ class _RunWriter(CallbackBase):
         patch = consolidator.consume_stream_datum(doc)
         self._update_data_source_for_node(sres_node, consolidator.get_data_source(), patch)
 
-    def _update_data_source_for_node(self, node: BaseClient, data_source: DataSource, patch: Patch):
+    def _update_data_source_for_node(
+        self, node: BaseClient, data_source: DataSource, patch: Optional[Patch] = None
+    ):
         """Update StreamResource node in Tiled"""
         data_source.id = node.data_sources()[0].id  # ID of the existing DataSource record
         handle_error(
             node.context.http_client.put(
                 node.uri.replace("/metadata/", "/data_source/", 1),
                 content=safe_json_dump({"data_source": data_source}),
-                params={"patch_shape": patch.shape, "patch_offset": patch.offset},
+                params={"patch_shape": patch.shape, "patch_offset": patch.offset} if patch else None,
             )
         ).json()
 
