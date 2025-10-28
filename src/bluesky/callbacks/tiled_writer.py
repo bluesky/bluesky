@@ -562,7 +562,8 @@ class _RunWriter(CallbackBase):
         handle_error(
             node.context.http_client.put(
                 node.uri.replace("/metadata/", "/data_source/", 1),
-                content=safe_json_dump({"data_source": data_source, "patch": patch}),
+                content=safe_json_dump({"data_source": data_source}),
+                params={"patch_shape": patch.shape, "patch_offset": patch.offset},
             )
         ).json()
 

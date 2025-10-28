@@ -53,9 +53,8 @@ class DataSource:
 
 @dataclasses.dataclass
 class Patch:
-    shape: tuple[int]
-    offset: tuple[int]
-    extend: bool
+    shape: tuple[int, ...]
+    offset: tuple[int, ...]
 
 
 class ConsolidatorBase:
@@ -268,7 +267,6 @@ class ConsolidatorBase:
         return Patch(
             offset=(old_shape[0], *[0 for _ in self.shape[1:]]),
             shape=(self.shape[0] - old_shape[0], *self.shape[1:]),
-            extend=True,
         )
 
     def get_data_source(self) -> DataSource:
