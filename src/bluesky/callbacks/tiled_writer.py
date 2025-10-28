@@ -335,8 +335,8 @@ class RunNormalizer(CallbackBase):
                 self.emit(DocumentNames.stream_datum, sdat_doc)
             else:
                 raise RuntimeError(
-                    f"Cannot emit StreamDatum for {data_key} because the corresponding Datum document is missing."
-                )
+                    f"Missing Datum document {datum_id} for {data_key} referenced in Event #{seq_num}."
+                )  # noqa
 
         self.emit(DocumentNames.stop, doc)
 
@@ -598,7 +598,7 @@ class _RunWriter(CallbackBase):
                     consolidator.validate(fix_errors=True)
                 except Exception as e:
                     msg = f"{type(e).__name__}: " + str(e).replace("\n", " ").replace("\r", "").strip()
-                    warn(f"Validation of StreamResource {sres_uid} failed with error: {msg}", stacklevel=2)
+                    warn(f"Validation of StreamResource {sres_uid!r} failed with {msg!r}", stacklevel=2)
                 self._update_data_source_for_node(sres_node, consolidator.get_data_source())
 
         # Write the stop document to the metadata
