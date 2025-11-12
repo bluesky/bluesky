@@ -55,13 +55,13 @@ from .utils import (
     InvalidCommand,
     Msg,
     NoReplayAllowed,
+    ObjTuple,
     PlanHalt,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
     SigintHandler,
     Subscribers,
-    _ObjTuple,
     ensure_generator,
     normalize_subs_input,
     single_gen,
@@ -1654,7 +1654,7 @@ class RunEngine:
                     )
 
                     # update the running set of all objects we have seen
-                    if isinstance(msg.obj, _ObjTuple):
+                    if isinstance(msg.obj, ObjTuple):
                         for obj in msg.obj:
                             self._objs_seen.add(obj)
                     else:
@@ -2014,7 +2014,7 @@ class RunEngine:
 
             Msg('read_all', obj)
 
-        where ``obj`` is an ``_ObjTuple`` of ``Device``.
+        where ``obj`` is an ``ObjTuple`` of ``Device``.
         """
         coro_objs, non_coro_objs = [], []
 
@@ -2314,7 +2314,7 @@ class RunEngine:
 
             Msg('trigger', obj)
 
-        where ``obj`` is an ``_ObjTuple`` of ``Device``.
+        where ``obj`` is an ``ObjTuple`` of ``Device``.
         """
         ret = await asyncio.gather(*[self._add_single_trigger_to_group(msg, obj) for obj in msg.obj])
         return dict(zip([obj.name for obj in msg.obj], ret))

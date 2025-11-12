@@ -392,7 +392,7 @@ class RunBundler:
 
             Msg('read_all', obj)
 
-        where ``obj`` is an ``_ObjTuple`` of ``Readable`` objects.
+        where ``obj`` is an ``ObjTuple`` of ``Readable`` objects.
         """
         if self.bundling:
             await asyncio.gather(

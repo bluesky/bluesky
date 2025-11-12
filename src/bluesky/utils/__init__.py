@@ -62,7 +62,7 @@ except ImportError:
     from toolz import groupby
 
 
-class _ObjTuple(tuple):
+class ObjTuple(tuple):
     """Used so that we can check internally if sequences of objects are passed into a message, vs a single device
     which is also a sequence."""
 
