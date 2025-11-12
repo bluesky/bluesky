@@ -1655,8 +1655,7 @@ class RunEngine:
 
                     # update the running set of all objects we have seen
                     if isinstance(msg.obj, ObjTuple):
-                        for obj in msg.obj:
-                            self._objs_seen.add(obj)
+                        self._objs_seen.update(msg.obj)
                     else:
                         self._objs_seen.add(msg.obj)
 

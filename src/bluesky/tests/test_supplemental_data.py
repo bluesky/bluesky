@@ -64,18 +64,18 @@ def test_baseline(hw):
         == original[:2]
         + [
             "declare_stream",
-            "trigger",
+            "trigger_all",
             "wait",
             "create",
-            "read",
+            "read_all",
             "save",
         ]
         + original[2:4]
         + [
-            "trigger",
+            "trigger_all",
             "wait",
             "create",
-            "read",
+            "read_all",
             "save",
         ]
         + original[4:]
@@ -171,10 +171,10 @@ def test_order(hw):
         "open_run",
         # baseline
         "declare_stream",
-        "trigger",
+        "trigger_all",
         "wait",
         "create",
-        "read",
+        "read_all",
         "save",
         # monitors
         "monitor",
@@ -190,10 +190,10 @@ def test_order(hw):
         # montiors
         "unmonitor",
         # baseline
-        "trigger",
+        "trigger_all",
         "wait",
         "create",
-        "read",
+        "read_all",
         "save",
         "close_run",
     ]

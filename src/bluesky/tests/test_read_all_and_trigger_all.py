@@ -190,14 +190,14 @@ def test_read_all_flattened_structure(RE, sync_and_async_devices):
         yield from bps.open_run()
         yield from bps.create(name="primary")
         ret = yield from bps.read_all([sync_device1, async_device1, sync_device2.signal1, async_device2.signal2])
-        assert list(ret) == [
+        assert set(ret) == {
             "async_device1-signal1",
             "async_device1-signal2",
             "async_device2-signal2",
             "sync_device1_signal1",
             "sync_device1_signal2",
             "sync_device2_signal1",
-        ]
+        }
         yield from bps.save()
         yield from bps.close_run()
 

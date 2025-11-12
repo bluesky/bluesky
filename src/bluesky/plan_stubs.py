@@ -1513,10 +1513,7 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
 
     def inner_trigger_and_read():
         triggerable_devices = [obj for obj in devices if isinstance(obj, Triggerable)]
-        if len(triggerable_devices) == 1:
-            yield from trigger(triggerable_devices[0], group=_short_uid("trigger"), wait=True)
-        elif triggerable_devices:
-            yield from trigger_all(triggerable_devices, group=_short_uid("trigger"), wait=True)
+        yield from trigger_all(triggerable_devices, group=_short_uid("trigger"), wait=True)
         yield from create(name)
 
         def standard_path():
