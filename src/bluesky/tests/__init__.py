@@ -26,6 +26,7 @@ requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
 try:
     if sys.version_info < (3, 11):
         ophyd_async = None
+        reason = "ophyd-async only supports more recent python releases"
     else:
         import ophyd_async  # type: ignore
 except ImportError as ie:
