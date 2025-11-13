@@ -55,6 +55,7 @@ from .utils import (
     InvalidCommand,
     Msg,
     NoReplayAllowed,
+    ObjTuple,
     PlanHalt,
     RequestAbort,
     RequestStop,
@@ -526,7 +527,7 @@ class RunEngine:
         self._task = None  # asyncio.Task associated with call to self._run
         self._task_fut = None  # future proxy to the task above
         self._pardon_failures = None  # will hold an asyncio.Event
-        self._plan = None  # the plan instance from __call__
+        self._plan: typing.Iterable[Msg] | None = None  # the plan instance from __call__
         self._require_stream_declaration = False
         self._command_registry = {
             "declare_stream": self._declare_stream,
@@ -534,6 +535,7 @@ class RunEngine:
             "save": self._save,
             "drop": self._drop,
             "read": self._read,
+            "read_all": self._read_all,
             "locate": self._locate,
             "monitor": self._monitor,
             "unmonitor": self._unmonitor,
@@ -542,6 +544,7 @@ class RunEngine:
             "stop": self._stop,
             "set": self._set,
             "trigger": self._trigger,
+            "trigger_all": self._trigger_all,
             "sleep": self._sleep,
             "wait": self._wait,
             "checkpoint": self._checkpoint,
@@ -1651,7 +1654,10 @@ class RunEngine:
                     )
 
                     # update the running set of all objects we have seen
-                    self._objs_seen.add(msg.obj)
+                    if isinstance(msg.obj, ObjTuple):
+                        self._objs_seen.update(msg.obj)
+                    else:
+                        self._objs_seen.add(msg.obj)
 
                     # if this message can be cached for rewinding, cache it
                     if (
@@ -1967,17 +1973,7 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
-    async def _read(self, msg):
-        """
-        Add a reading to the open event bundle.
-
-        Expected message object is:
-
-            Msg('read', obj)
-        """
-        obj = check_supports(msg.obj, Readable)
-        # actually _read_ the object
-        warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
+    async def _read_single_device(self, msg, obj):
         ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
 
         if ret is None:
@@ -1986,13 +1982,61 @@ class RunEngine:
                 "This is a bug in your object implementation, "
                 "`read` must return a dictionary."
             )
+        return ret
+
+    async def _read(self, msg: Msg):
+        """
+        Add a reading to the open event bundle.
+
+        Expected message object is:
+
+            Msg('read', obj)
+
+        where ``obj`` is a ``Device``.
+        """
+        obj = check_supports(msg.obj, Readable)
+        # actually _read_ the object
+        warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
+        ret = await self._read_single_device(msg, obj)
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is not key_absence_sentinel:
+        if (current_run := self._run_bundlers.get(run_key)) is not None:  # Key abscence sentinel
             await current_run.read(msg, ret)
 
         return ret
+
+    async def _read_all(self, msg: Msg):
+        """
+        Add a reading to the open event bundle. Where the reading is
+        the read of multiple devices. Here obj is an iterable containing Reabable's.
+
+        Expected message object is:
+
+            Msg('read_all', obj)
+
+        where ``obj`` is an ``ObjTuple`` of ``Device``.
+        """
+        coro_objs, non_coro_objs = [], []
+
+        for obj in msg.obj:
+            check_supports(obj, Readable)
+            if inspect.iscoroutinefunction(obj.read):
+                coro_objs.append(obj)
+            else:
+                non_coro_objs.append(obj)
+
+        coro_read_rets = await asyncio.gather(*[self._read_single_device(msg, obj) for obj in coro_objs])
+        non_coro_read_rets = await asyncio.gather(*[self._read_single_device(msg, obj) for obj in non_coro_objs])
+
+        run_key = msg.run
+        if (current_run := self._run_bundlers.get(run_key)) is not None:  # Key abscence sentinel
+            await current_run.read_all(
+                msg, list(zip(coro_objs, coro_read_rets)) + list(zip(non_coro_objs, non_coro_read_rets))
+            )
+
+        read_all_ret = {}
+        for read_ret in coro_read_rets + non_coro_read_rets:
+            read_all_ret.update(read_ret)
+        return read_all_ret
 
     async def _locate(self, msg: Msg):
         """
@@ -2240,15 +2284,8 @@ class RunEngine:
 
         return ret
 
-    async def _trigger(self, msg):
-        """
-        Trigger a device and cache the returned status object.
-
-        Expected message object is:
-
-            Msg('trigger', obj)
-        """
-        obj = check_supports(msg.obj, Triggerable)
+    async def _add_single_trigger_to_group(self, msg, obj):
+        obj = check_supports(obj, Triggerable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         warn_if_msg_args_or_kwargs(msg, obj.trigger, msg.args, kwargs)
@@ -2257,6 +2294,29 @@ class RunEngine:
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="trigger")
 
         return ret
+
+    async def _trigger(self, msg):
+        """
+        Trigger a device and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('trigger', obj)
+        """
+        await self._add_single_trigger_to_group(msg, msg.obj)
+
+    async def _trigger_all(self, msg):
+        """
+        Trigger a sequence of devices and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('trigger', obj)
+
+        where ``obj`` is an ``ObjTuple`` of ``Device``.
+        """
+        ret = await asyncio.gather(*[self._add_single_trigger_to_group(msg, obj) for obj in msg.obj])
+        return dict(zip([obj.name for obj in msg.obj], ret))
 
     def _call_waiting_hook(self, *args, **kwargs):
         if self.waiting_hook is not None:

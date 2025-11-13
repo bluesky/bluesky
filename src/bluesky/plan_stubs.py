@@ -12,6 +12,8 @@ from cycler import cycler
 
 from bluesky.suspenders import SuspenderBase
 
+from .utils import ObjTuple
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
@@ -166,6 +168,29 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
         Reading object representing information recorded
     """
     return (yield Msg("read", obj))
+
+
+@plan
+def read_all(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
+    """
+    Take a reading on every device in a sequence and add it to the current bundle of readings.
+
+    Parameters
+    ----------
+    obj : A sequence of Device or Signal
+
+    Yields
+    ------
+    msg : Msg
+        Msg('read', obj)
+
+    Returns
+    -------
+    reading :
+        Reading object representing information recorded
+    """
+    objs = separate_devices(objs)
+    return (yield Msg("read_all", ObjTuple(objs)))
 
 
 @typing.overload
@@ -580,6 +605,42 @@ def trigger(
 
     Parameters
     ----------
+    obj : A sequence of Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+
+    Yields
+    ------
+    msg : Msg
+
+    Returns
+    -------
+    status :
+        Status that completes when all the triggers are complete. If `wait` is True,
+        this will always be complete by the time it is returned.
+
+    """
+    ret = yield Msg("trigger", obj, group=group)
+    if wait:
+        yield Msg("wait", None, group=group)
+    return ret
+
+
+@plan
+def trigger_all(
+    objs: Sequence[Triggerable],
+    *,
+    group: Optional[Hashable] = None,
+    wait: bool = False,
+) -> MsgGenerator[Status]:
+    """
+    Trigger an acquisition for all devices in a sequence. Optionally, wait for it to complete.
+
+    Parameters
+    ----------
     obj : Device
     group : string (or any hashable object), optional
         identifier used by 'wait'; None by default
@@ -598,7 +659,7 @@ def trigger(
         this will always be complete by the time it is returned.
 
     """
-    ret = yield Msg("trigger", obj, group=group)
+    ret = yield Msg("trigger_all", ObjTuple(objs), group=group)
     if wait:
         yield Msg("wait", None, group=group)
     return ret
@@ -1451,24 +1512,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
 
     def inner_trigger_and_read():
-        grp = _short_uid("trigger")
-        no_wait = True
-        for obj in devices:
-            if isinstance(obj, Triggerable):
-                no_wait = False
-                yield from trigger(obj, group=grp)
-        # Skip 'wait' if none of the devices implemented a trigger method.
-        if not no_wait:
-            yield from wait(group=grp)
+        triggerable_devices = [obj for obj in devices if isinstance(obj, Triggerable)]
+        yield from trigger_all(triggerable_devices, group=_short_uid("trigger"), wait=True)
         yield from create(name)
-
-        def read_plan():
-            ret = {}  # collect and return readings to give plan access to them
-            for obj in devices:
-                reading = yield from read(obj)
-                if reading is not None:
-                    ret.update(reading)
-            return ret
 
         def standard_path():
             yield from save()
@@ -1477,7 +1523,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
             yield from drop()
             raise exp
 
-        ret = yield from contingency_wrapper(read_plan(), except_plan=exception_path, else_plan=standard_path)
+        ret = yield from contingency_wrapper(
+            read_all(devices), except_plan=exception_path, else_plan=standard_path
+        )
         return ret
 
     from .preprocessors import rewindable_wrapper

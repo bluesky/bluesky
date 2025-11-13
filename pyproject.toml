@@ -52,6 +52,7 @@ dev = [
     "networkx",
     "numpydoc",
     "ophyd",
+    "ophyd-async",
     "orjson",
     "packaging",
     "pandas",
