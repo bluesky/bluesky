@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 from collections.abc import Coroutine
 from typing import Any, Optional
@@ -145,6 +146,10 @@ def test_trigger_all(RE, sync_and_async_devices):
     assert sync_device2.trigger_time - sync_device1.trigger_time == pytest.approx(SIM_SLEEP_TIME, abs=0.03)
 
 
+# async latency is worse on windows
+OS_DEPENDENT_TIME_DIFFERENCE = 0.04 if os.name == "nt" else 0.01
+
+
 @requires_ophyd
 @requires_ophyd_async
 def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
@@ -173,10 +178,12 @@ def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
             assert v < first_sync_device_timestamps  # async devices are ran first
 
         for i in range(1, len(async_timestamps)):
-            assert async_timestamps[i] - async_timestamps[0] == pytest.approx(0, abs=0.03)
+            assert async_timestamps[i] - async_timestamps[0] == pytest.approx(0, abs=OS_DEPENDENT_TIME_DIFFERENCE)
 
         for i in range(len(sync_timestamps) - 1):
-            assert sync_timestamps[i + 1] - sync_timestamps[i] == pytest.approx(SIM_SLEEP_TIME, abs=0.03)
+            assert sync_timestamps[i + 1] - sync_timestamps[i] == pytest.approx(
+                SIM_SLEEP_TIME, abs=OS_DEPENDENT_TIME_DIFFERENCE
+            )
 
 
 @requires_ophyd
