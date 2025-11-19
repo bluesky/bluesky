@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from functools import partial
 from warnings import warn
 
+from bluesky.protocols import Subscribable
+
 
 class SuspenderBase(metaclass=ABCMeta):
     """An ABC to manage the callbacks between asyincio and pyepics.
@@ -30,12 +32,9 @@ class SuspenderBase(metaclass=ABCMeta):
     tripped_message : str, optional
         Message to include in the trip notification
 
-    is_async : bool, optional
-        Whether the signal is asynchronous and implements `subscribe_value`
-        or is synchronous and implements `subscribe`
     """
 
-    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message="", is_async=False):
+    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message=""):
         """ """
         self.RE = None
         self._ev = None
@@ -47,7 +46,8 @@ class SuspenderBase(metaclass=ABCMeta):
         self._pre_plan = pre_plan
         self._post_plan = post_plan
         self._last_value = None
-        self._is_async = is_async
+        # TODO also check if is ophyd-style of Subscribable
+        self._implements_protocol = isinstance(signal, Subscribable)
 
     def __repr__(self):
         return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
@@ -75,8 +75,8 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         with self._lock:
             self.RE = RE
-        if self._is_async:
-            self.RE.loop.call_soon_threadsafe(partial(self._sig.subscribe_value, self))
+        if self._implements_protocol:
+            self.RE.loop.call_soon_threadsafe(partial(self._sig.subscribe_reading, self))
         else:
             self._sig.subscribe(self, event_type=event_type, run=True)
 
@@ -140,6 +140,9 @@ class SuspenderBase(metaclass=ABCMeta):
             if self.RE is None:
                 return
             loop = self.RE._loop
+            if self._implements_protocol:
+                # TODO, handle signal name here properly
+                value = list(value.values())[0]["value"]
             self._last_value = value
             if self._should_suspend(value):
                 self._tripped = True
@@ -165,7 +168,7 @@ class SuspenderBase(metaclass=ABCMeta):
         """Make or return the asyncio.Event to use as a bridge."""
         assert self._lock.locked()
         if self._ev is None and self.RE is not None:
-            if self._is_async:
+            if self._implements_protocol:
                 self._ev = asyncio.Event()
             else:
                 th_ev = threading.Event()

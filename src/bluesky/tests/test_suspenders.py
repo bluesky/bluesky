@@ -18,8 +18,8 @@ from bluesky.suspenders import (
     SuspendOutBand,
     SuspendWhenOutsideBand,
 )
-from bluesky.tests.utils import MsgCollector
 from bluesky.tests import requires_ophyd_async
+from bluesky.tests.utils import MsgCollector
 
 from .utils import _fabricate_asycio_event
 
@@ -100,9 +100,9 @@ async def test_suspender_async_signal(klass, sc_args, start_val, fail_val, resum
         deprecated = False
     if deprecated:
         with pytest.warns(UserWarning):
-            my_suspender = klass(sig, *sc_args, sleep=wait_time, is_async=True)
+            my_suspender = klass(sig, *sc_args, sleep=wait_time)
     else:
-        my_suspender = klass(sig, *sc_args, sleep=wait_time, is_async=True)
+        my_suspender = klass(sig, *sc_args, sleep=wait_time)
     my_suspender.install(RE)
 
     async def _set_after_time(delay, value):
