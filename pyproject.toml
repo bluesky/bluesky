@@ -64,6 +64,7 @@ dev = [
     "pyepics;python_version>='3.9'",
     "pyqt5",
     "pytest",
+    "pytest-asyncio",
     "pytest-cov",
     "pytest-faulthandler",
     "pyyaml",

@@ -19,6 +19,7 @@ from bluesky.suspenders import (
     SuspendWhenOutsideBand,
 )
 from bluesky.tests.utils import MsgCollector
+from bluesky.tests import requires_ophyd_async
 
 from .utils import _fabricate_asycio_event
 
@@ -84,8 +85,8 @@ def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, R
     assert delta > 0.5 + wait_time + 0.2
 
 
-@pytest.mark.skipif(not ophyd_async_imported, reason="Could not import ophyd-async")
 @parametrize_suspenders
+@requires_ophyd_async
 @pytest.mark.asyncio
 async def test_suspender_async_signal(klass, sc_args, start_val, fail_val, resume_val, wait_time, RE):
     fail_time = 0.1
