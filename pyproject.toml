@@ -52,7 +52,7 @@ dev = [
     "networkx",
     "numpydoc",
     "ophyd",
-    "ophyd-async[ca];python_version>='3.10'",
+    "ophyd-async;python_version>='3.11'",
     "orjson",
     "packaging",
     "pandas",
