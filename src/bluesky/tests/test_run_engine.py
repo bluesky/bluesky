@@ -2277,3 +2277,20 @@ def test_descriptor_order(RE):
                 assert list(doc["data_keys"]) == key_order
 
         RE(scan(dets, i1930.charlie, -1, 1, 2), lambda name, doc, key_order=key_order: check(key_order, name, doc))
+
+
+@requires_ophyd
+@pytest.mark.parametrize("wait", [True, False])
+def test_abs_set_fails(RE, wait):
+    from ophyd import Device, StatusBase
+
+    class FailingMovable(Device):
+        def set(self, value) -> Status:
+            status = StatusBase()
+            status.set_exception(LookupError("Movement failed"))
+            return status
+
+    device = FailingMovable(name="failing_device")
+
+    with pytest.raises(FailedStatus):
+        RE(abs_set(device, 10, wait=wait))
