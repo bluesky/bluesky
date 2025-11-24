@@ -5,6 +5,7 @@ from functools import partial
 
 import pytest
 
+import bluesky.plan_stubs as bps
 from bluesky import Msg
 from bluesky.preprocessors import suspend_wrapper
 from bluesky.run_engine import RunEngineInterrupted
@@ -17,12 +18,22 @@ from bluesky.suspenders import (
     SuspendOutBand,
     SuspendWhenOutsideBand,
 )
+from bluesky.tests import requires_ophyd_async
 from bluesky.tests.utils import MsgCollector
 
 from .utils import _fabricate_asycio_event
 
+try:
+    import asyncio
 
-@pytest.mark.parametrize(
+    from ophyd_async.core import soft_signal_rw
+
+    ophyd_async_imported = True
+
+except ImportError:
+    ophyd_async_imported = False
+
+parametrize_suspenders = pytest.mark.parametrize(
     "klass,sc_args,start_val,fail_val,resume_val,wait_time",
     [
         (SuspendBoolHigh, (), 0, 1, 0, 0.2),
@@ -34,6 +45,9 @@ from .utils import _fabricate_asycio_event
         ((SuspendOutBand, True), (0.5, 1.5), 0, 1, 0, 0.2),
     ],
 )  # deprecated
+
+
+@parametrize_suspenders
 def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, RE, hw):
     sig = hw.bool_sig
     try:
@@ -69,6 +83,50 @@ def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, R
     delta = stop - start
     print(delta)
     assert delta > 0.5 + wait_time + 0.2
+
+
+@parametrize_suspenders
+@requires_ophyd_async
+@pytest.mark.asyncio
+async def test_suspender_async_signal(klass, sc_args, start_val, fail_val, resume_val, wait_time, RE):
+    fail_time = 0.1
+    resume_time = 0.5
+    sleep_time = 0.2
+    sig = soft_signal_rw(float, start_val)
+    await sig.connect()
+    try:
+        klass, deprecated = klass
+    except TypeError:
+        deprecated = False
+    if deprecated:
+        with pytest.warns(UserWarning):
+            my_suspender = klass(sig, *sc_args, sleep=wait_time)
+    else:
+        my_suspender = klass(sig, *sc_args, sleep=wait_time)
+    my_suspender.install(RE)
+
+    async def _set_after_time(delay, value):
+        await asyncio.sleep(delay)
+        await sig.set(value)
+
+    tasks = []
+
+    RE.install_suspender(my_suspender)
+
+    def _plan():
+        # set up tasks to cause suspension during sleep, then resume
+        tasks.append(asyncio.create_task(_set_after_time(fail_time, fail_val)))
+        tasks.append(asyncio.create_task(_set_after_time(resume_time, resume_val)))
+        yield from bps.checkpoint()
+        yield from bps.sleep(sleep_time)
+
+    start = time.time()
+    RE(_plan())
+    stop = time.time()
+    for task in tasks:
+        await task
+    delta = stop - start
+    assert delta >= resume_time + sleep_time + wait_time
 
 
 def test_pretripped(RE, hw):

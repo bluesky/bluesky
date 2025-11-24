@@ -8,7 +8,7 @@ from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import declare_stream, trigger_and_read
 from bluesky.preprocessors import run_decorator
 from bluesky.protocols import Callback, Descriptor, Reading
-from bluesky.tests import ophyd, requires_ophyd
+from bluesky.tests import ophyd, ophyd_async, requires_ophyd, requires_ophyd_async
 from bluesky.utils import ancestry, separate_devices, share_ancestor
 
 from .utils import DocCollector
@@ -28,6 +28,10 @@ if ophyd:
     class DCM(Device):
         th = Cpt(Signal, value=0)
         x = Cpt(Signal, value=0)
+
+
+if ophyd_async:
+    from ophyd_async.core import soft_signal_rw
 
 
 class SigNew:
@@ -111,6 +115,33 @@ def test_monitor(RE, ophyd):
         "seq_num": 1,
         "time": pytest.approx(time(), rel=0.1),
         "timestamps": {"a_s1": pytest.approx(time(), rel=0.1)},
+        "filled": ANY,
+        "uid": ANY,
+    }
+
+
+@requires_ophyd_async
+def test_monitor_async(RE):
+    docs = []
+
+    def collect(name, doc):
+        docs.append(doc)
+
+    sig = soft_signal_rw(float, 0.0, "soft_signal")
+
+    def plan():
+        yield Msg("open_run")
+        yield Msg("monitor", sig)
+        yield Msg("close_run")
+
+    RE(plan(), collect)
+    assert len(docs) == 4
+    assert docs[2] == {
+        "data": {"soft_signal": 0.0},
+        "descriptor": ANY,
+        "seq_num": 1,
+        "time": pytest.approx(time(), rel=0.1),
+        "timestamps": {"soft_signal": pytest.approx(time(), rel=0.1)},
         "filled": ANY,
         "uid": ANY,
     }
