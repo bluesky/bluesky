@@ -457,8 +457,8 @@ class RunBundler:
                 if readings is None:
                     # Ignore the inputs. Use this call as a signal to call read on the
                     # object, a crude way to be sure we get all the info we need.
-                    readable_obj = check_supports(obj, Readable)  # type: ignore
-                    readings = readable_obj.read()  # type: ignore
+                    readable_obj = check_supports(obj, Readable)
+                    readings = readable_obj.read()
                     assert not inspect.isawaitable(readings), (
                         f"{readable_obj} has async read() method and the callback "
                         "passed to subscribe() was not called with Dict[str, Reading]"
