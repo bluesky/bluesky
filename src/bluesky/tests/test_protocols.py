@@ -38,7 +38,10 @@ def test_pausable():
     assert isinstance(sim.det1, bs_protocols.Pausable)
 
 
-@pytest.mark.skip("ophyd signals do not properly implement Subscribable protocol")
+@pytest.mark.xfail(
+    reason="Subscribable Protocol was not written to match ophyd's implementation. "
+    "Future ophyd will implement new Protocol"
+)
 def test_subscribable():
     assert isinstance(sim.det1, bs_protocols.Subscribable)
     assert isinstance(sim.motor1, bs_protocols.Subscribable)
