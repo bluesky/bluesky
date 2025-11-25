@@ -431,7 +431,8 @@ class RunBundler:
             raise ValueError("The 'monitor' Msg does not accept positional arguments.")
         kwargs = dict(msg.kwargs)
         name = kwargs.pop("name", short_uid("monitor"))
-        assert not kwargs, "If subscribe callback called with readings, kwargs are not supported."
+        if kwargs:
+            raise RuntimeError("If subscribe callback called with readings, kwargs are not supported.")
         if obj in self._monitor_params:
             raise IllegalMessageSequence(f"A 'monitor' message was sent for {obj} which is already monitored")
 
@@ -459,10 +460,11 @@ class RunBundler:
                     # object, a crude way to be sure we get all the info we need.
                     readable_obj = check_supports(obj, Readable)
                     readings = readable_obj.read()
-                    assert not inspect.isawaitable(readings), (
-                        f"{readable_obj} has async read() method and the callback "
-                        "passed to subscribe() was not called with Dict[str, Reading]"
-                    )
+                    if inspect.isawaitable(readings):
+                        raise RuntimeError(
+                            f"{readable_obj} has async read() method and the callback "
+                            "passed to subscribe() was not called with Dict[str, Reading]"
+                        )
                 emit_event(readings)
 
             self._monitor_params[obj] = emit_event_readable, kwargs
