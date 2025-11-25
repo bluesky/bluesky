@@ -513,12 +513,9 @@ class RunBundler:
 
             Msg('unmonitor', obj)
         """
-        try:
-            obj = check_supports(msg.obj, Subscribable)
-        except AssertionError:
-            # sync ophyd doesn't implement full Subscribable protocol but has clear_sub
-            obj = msg.obj
-            assert callable(getattr(obj, "clear_sub", None)), (
+        obj = msg.obj
+        if not callable(getattr(obj, "clear_sub", None)):
+            raise RuntimeError(
                 "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
             )
         if obj not in self._monitor_params:
