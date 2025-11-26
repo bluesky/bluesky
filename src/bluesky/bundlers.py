@@ -410,7 +410,7 @@ class RunBundler:
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
 
-    async def monitor(self, msg):
+    async def monitor(self, msg, timestamp_cutoff_delay: float = 0.1):
         """
         Monitor a signal. Emit event documents asynchronously.
 
@@ -454,6 +454,12 @@ class RunBundler:
                     f"{readable_obj} has async read() method and the callback "
                     "passed to subscribe() was not called with Dict[str, Reading]"
                 )
+            if readings is None:
+                raise ValueError("The callback passed to subscribe() was not called with Dict[str, Reading]")
+            now = ttime.time()
+            if any(r["timestamp"] - now > timestamp_cutoff_delay for r in readings.values()):  # type: ignore
+                doc_logger.debug("WARNING: The timestamps in the readings are too old.")
+                return
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
