@@ -15,17 +15,15 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable, Sequence
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
     Any,
-    Callable,
-    Optional,
+    TypeAlias,
     TypedDict,
     TypeVar,
-    Union,
 )
 from weakref import WeakKeyDictionary, ref
 
@@ -93,12 +91,12 @@ MsgGenerator = Generator[Msg, Any, P]
 CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
-ScalarOrIterableFloat = Union[float, TypingIterable[float]]
+ScalarOrIterableFloat: TypeAlias = float | TypingIterable[float]
 
 # Single function to be used as an event listener
 Subscriber = Callable[[str, P], Any]
 
-OneOrMany = Union[P, Sequence[P]]
+OneOrMany: TypeAlias = P | Sequence[P]
 
 
 # Mapping from event type to listener or list of listeners
@@ -111,7 +109,7 @@ class SubscriberMap(TypedDict, total=False):
 
 
 # Single listener, multiple listeners or mapping of listeners by event type
-Subscribers = Union[OneOrMany[Subscriber[Document]], SubscriberMap]
+Subscribers: TypeAlias = OneOrMany[Subscriber[Document]] | SubscriberMap
 
 
 class RunEngineControlException(Exception):
@@ -1309,15 +1307,15 @@ class ProgressBarBase(abc.ABC):  # noqa: B024
         self,
         pos: Any,
         *,
-        name: Optional[str] = None,
+        name: str | None = None,
         current: Any = None,
         initial: Any = None,
         target: Any = None,
         unit: str = "units",
         precision: Any = None,
         fraction: Any = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
     ): ...
 
     def clear(self): ...  # noqa: B027
@@ -1464,7 +1462,7 @@ def default_progress_bar(status_objs_or_none) -> ProgressBarBase:
 
 class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
-    pbar: Optional[ProgressBarBase]
+    pbar: ProgressBarBase | None
 
     def __init__(self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
@@ -1933,8 +1931,8 @@ async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator
 
 
 async def maybe_collect_asset_docs(
-    msg, obj, index: Optional[int] = None, *args, **kwargs
-) -> AsyncIterable[Union[Asset, StreamAsset]]:
+    msg, obj, index: int | None = None, *args, **kwargs
+) -> AsyncIterable[Asset | StreamAsset]:
     # The if/elif statement must be done in this order because isinstance for protocol
     # doesn't check for exclusive signatures, and WritesExternalAssets will also
     # return true for a WritesStreamAsset as they both contain collect_asset_docs

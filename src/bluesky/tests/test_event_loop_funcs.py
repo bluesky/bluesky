@@ -1,5 +1,4 @@
 import asyncio
-import sys
 
 import pytest
 
@@ -24,12 +23,8 @@ def test_call_in_bluesky_event_loop(RE):
         nonlocal event_loop
         event_loop = asyncio.get_running_loop()
 
-    if sys.version_info >= (3, 10):
-        # For some reason asyncio.run reuses the RE loop, then closes
-        # it at the end on python 3.9 and below, which makes test_examples.py
-        # fail, so skip this bit for that python
-        asyncio.run(check())
-        assert event_loop and event_loop != RE._loop
+    asyncio.run(check())
+    assert event_loop and event_loop != RE._loop
 
     call_in_bluesky_event_loop(check())
     assert event_loop == RE._loop

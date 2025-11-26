@@ -2,10 +2,10 @@ import asyncio
 import inspect
 import time as ttime
 from collections import defaultdict, deque
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from itertools import combinations
 from logging import LoggerAdapter
-from typing import Any, Callable, Literal, Optional, Union, cast
+from typing import Any, Literal, TypeAlias, TypeGuard, cast
 
 from event_model import (
     ComposeDescriptorBundle,
@@ -54,12 +54,12 @@ from .utils import (
 )
 
 ObjDict = dict[Any, dict[str, T]]
-ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
+ExternalAssetDoc: TypeAlias = Datum | Resource | StreamDatum | StreamResource
 
 
 def _describe_collect_dict_is_valid(
-    describe_collect_dict: Union[Any, dict[str, Any]],
-) -> bool:  # TODO: change to TypeGuard[dict[str, DataKey]] after python 3.9
+    describe_collect_dict: Any | dict[str, Any],
+) -> TypeGuard[dict[str, DataKey]]:
     """
     Check if the describe_collect dictionary contains valid DataKeys.
     """
@@ -74,7 +74,7 @@ def _describe_collect_dict_is_valid(
 class RunBundler:
     def __init__(
         self,
-        md: Optional[dict],
+        md: dict | None,
         record_interruptions: bool,
         emit: Callable,
         emit_sync: Callable,
@@ -90,9 +90,9 @@ class RunBundler:
         self._run_start_uid = None  # The (future) runstart uid
         self._objs_read: deque[HasName] = deque()  # objects read in one Event
         self._read_cache: deque[dict[str, Reading]] = deque()  # cache of obj.read() in one Event
-        self._asset_docs_cache: deque[Union[Asset, StreamAsset]] = deque()  # cache of obj.collect_asset_docs()
+        self._asset_docs_cache: deque[Asset | StreamAsset] = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output  # noqa: C408
-        self._describe_collect_cache: dict[Any, Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]] = dict()  # noqa: C408  # cache of all obj.describe() output
+        self._describe_collect_cache: dict[Any, dict[str, DataKey] | dict[str, dict[str, DataKey]]] = dict()  # noqa: C408  # cache of all obj.describe() output
 
         self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()  # noqa: C408
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values  # noqa: C408
@@ -439,7 +439,7 @@ class RunBundler:
         stream_bundle = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
         compose_event = stream_bundle[1]
 
-        def emit_event(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
+        def emit_event(readings: dict[str, Reading] | None = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
                 assert not args and not kwargs, (
@@ -672,8 +672,8 @@ class RunBundler:
 
     def _format_datakeys_with_stream_name(
         self,
-        describe_collect_dict: Union[dict[str, DataKey], dict[str, dict[str, DataKey]]],
-        message_stream_name: Optional[str] = None,
+        describe_collect_dict: dict[str, DataKey] | dict[str, dict[str, DataKey]],
+        message_stream_name: str | None = None,
     ) -> list[tuple[str, dict[str, DataKey]]]:
         """
         Check if the dictionary returned by describe collect is a dict
@@ -684,22 +684,20 @@ class RunBundler:
         """
 
         def _contains_message_stream_name(
-            describe_collect_dict: Union[Any, dict[str, Any]],
-        ) -> bool:  # TODO: change to TypeGuard[dict[str, dict[str, DataKey]]] after python 3.9
+            describe_collect_dict: Any | dict[str, Any],
+        ) -> TypeGuard[dict[str, dict[str, DataKey]]]:
             return isinstance(describe_collect_dict, dict) and all(
                 _describe_collect_dict_is_valid(v) for v in describe_collect_dict.values()
             )
 
         if describe_collect_dict:
             if _describe_collect_dict_is_valid(describe_collect_dict):
-                # TODO: remove cast after python 3.9 is no longer supported
-                flat_describe_collect_dict = cast(dict[str, DataKey], describe_collect_dict)
+                flat_describe_collect_dict = describe_collect_dict
                 return [(message_stream_name or "primary", flat_describe_collect_dict)]
             # Validate that all of the values nested values are DataKeys
             elif _contains_message_stream_name(describe_collect_dict):
                 # We have Dict[str, Dict[str, DataKey]] so return its items
-                # TODO: remove cast after python 3.9 is no longer supported
-                nested_describe_collect_dict = cast(dict[str, dict[str, DataKey]], describe_collect_dict)
+                nested_describe_collect_dict = describe_collect_dict
                 if message_stream_name and list(nested_describe_collect_dict) != [message_stream_name]:
                     # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
                     # this is only acceptable if the only key in the parent dict is message_stream_name
@@ -720,7 +718,7 @@ class RunBundler:
     async def _cache_describe_collect(self, obj: Collectable):
         "Read the object's describe and cache it."
         obj = check_supports(obj, Collectable)
-        c: Union[dict[str, DataKey], dict[str, dict[str, DataKey]]] = await maybe_await(obj.describe_collect())
+        c: dict[str, DataKey] | dict[str, dict[str, DataKey]] = await maybe_await(obj.describe_collect())
         self._describe_collect_cache[obj] = c
 
     async def _describe_collect(self, collect_object: Flyable):
@@ -827,7 +825,7 @@ class RunBundler:
 
     # message strem name here?
     async def _pack_external_assets(
-        self, asset_docs: Iterable[Union[Asset, StreamAsset]], message_stream_name: Optional[str]
+        self, asset_docs: Iterable[Asset | StreamAsset], message_stream_name: str | None
     ):
         """Packs some external asset documents with relevant information from the run."""
 
@@ -920,7 +918,7 @@ class RunBundler:
         collect_obj: EventCollectable,
         local_descriptors,
         return_payload: bool,
-        message_stream_name: Optional[str],
+        message_stream_name: str | None,
     ):
         payload = []
         pages: dict[frozenset[str], list[Event]] = defaultdict(list)
@@ -969,7 +967,7 @@ class RunBundler:
         collect_obj: EventPageCollectable,
         local_descriptors,
         return_payload: bool,
-        message_stream_name: Optional[str],
+        message_stream_name: str | None,
     ):
         payload = []
 
@@ -1015,7 +1013,7 @@ class RunBundler:
         Where there must be at least one collect object. If multiple are used
         they must obey the WritesStreamAssets protocol.
         """
-        stream_name: Optional[str] = None
+        stream_name: str | None = None
 
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
@@ -1057,7 +1055,7 @@ class RunBundler:
             self._uncollected.discard(obj)
 
         # Get the provided message stream name for singly nested scans
-        message_stream_name: Optional[str] = msg.kwargs.get("name", None)
+        message_stream_name: str | None = msg.kwargs.get("name", None)
 
         # Retrive the stream names from pre-declared streams
         declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])

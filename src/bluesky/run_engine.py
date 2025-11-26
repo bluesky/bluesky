@@ -70,7 +70,7 @@ from .utils import (
 
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
-current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
+current_task: typing.Callable[[asyncio.AbstractEventLoop | None], asyncio.Task | None]
 try:
     from asyncio import current_task
 except ImportError:
@@ -112,7 +112,7 @@ class RunEngineResult:
     exit_status: str
     interrupted: bool
     reason: str
-    exception: typing.Optional[Exception]
+    exception: Exception | None
 
 
 class RunEngineStateMachine(StateMachine):
@@ -404,15 +404,15 @@ class RunEngine:
 
     def __init__(
         self,
-        md: typing.Optional[dict] = None,
+        md: dict | None = None,
         *,
-        loop: typing.Optional[asyncio.AbstractEventLoop] = None,
-        preprocessors: typing.Optional[list] = None,
-        context_managers: typing.Optional[list] = None,
-        md_validator: typing.Optional[typing.Callable] = None,
-        md_normalizer: typing.Optional[typing.Callable] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        preprocessors: list | None = None,
+        context_managers: list | None = None,
+        md_validator: typing.Callable | None = None,
+        md_normalizer: typing.Callable | None = None,
         scan_id_source: typing.Callable[[dict], SyncOrAsync[int]] = default_scan_id_source,
-        during_task: typing.Optional[DuringTask] = None,
+        during_task: DuringTask | None = None,
         call_returns_result: bool = False,
     ):
         if loop is None:
@@ -871,10 +871,10 @@ class RunEngine:
     def __call__(
         self,
         plan: typing.Iterable[Msg],
-        subs: typing.Optional[Subscribers] = None,
+        subs: Subscribers | None = None,
         /,
         **metadata_kw: typing.Any,
-    ) -> typing.Union[RunEngineResult, tuple[str, ...]]:
+    ) -> RunEngineResult | tuple[str, ...]:
         """Execute a plan.
 
         Any keyword arguments will be interpreted as metadata and recorded with
@@ -2875,7 +2875,7 @@ def in_bluesky_event_loop() -> bool:
         return loop is _bluesky_event_loop
 
 
-def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Optional[float] = None) -> T:
+def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: float | None = None) -> T:
     if _bluesky_event_loop is None or not _bluesky_event_loop.is_running():
         # Quell "coroutine never awaited" warnings
         if iscoroutine(coro):
