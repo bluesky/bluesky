@@ -511,7 +511,7 @@ class RunBundler:
                 emit_event_from_readings(readings)
 
             self._monitor_params[obj] = emit_event_for_subscribe, kwargs
-            obj.subscribe(emit_event_for_subscribe, **kwargs)
+            obj.subscribe(emit_event_for_subscribe)
         else:
             raise RuntimeError(
                 "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
