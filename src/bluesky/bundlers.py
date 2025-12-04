@@ -484,7 +484,7 @@ class RunBundler:
         stream_bundle = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
         compose_event = stream_bundle[1]
 
-        def emit_event(readings: dict[str, Reading]):
+        def emit_event_from_readings(readings: dict[str, Reading]):
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
@@ -493,11 +493,11 @@ class RunBundler:
             self.emit_sync(DocumentNames.event, doc)
 
         if isinstance(obj, Subscribable):
-            self._monitor_params[obj] = emit_event, kwargs
-            obj.subscribe_reading(emit_event)
+            self._monitor_params[obj] = emit_event_from_readings, kwargs
+            obj.subscribe_reading(emit_event_from_readings)
         elif callable(getattr(obj, "subscribe", None)):
 
-            def emit_event_readable(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
+            def emit_event_for_subscribe(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
                 if readings is None:
                     # Ignore the inputs. Use this call as a signal to call read on the
                     # object, a crude way to be sure we get all the info we need.
@@ -508,10 +508,10 @@ class RunBundler:
                             f"{readable_obj} has async read() method and the callback "
                             "passed to subscribe() was not called with Dict[str, Reading]"
                         )
-                emit_event(readings)
+                emit_event_from_readings(readings)
 
-            self._monitor_params[obj] = emit_event_readable, kwargs
-            obj.subscribe(emit_event_readable, **kwargs)
+            self._monitor_params[obj] = emit_event_for_subscribe, kwargs
+            obj.subscribe(emit_event_for_subscribe, **kwargs)
         else:
             raise RuntimeError(
                 "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
