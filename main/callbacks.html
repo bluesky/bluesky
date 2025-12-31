@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Live Visualization and Processing &#8212; bluesky 1.14.7.dev2+g8adfe3ab1 documentation</title>
+    <title>Live Visualization and Processing &#8212; bluesky 1.14.7.dev14+g38f592f6d documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=9fdceabc"></script>
+    <script src="_static/documentation_options.js?v=6fe47878"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'callbacks';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev2+g8adfe3ab1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev14+g38f592f6d';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -56,7 +56,7 @@
     <link rel="prev" title="Recording Metadata" href="metadata.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev2+g8adfe3ab1" />
+  <meta name="docsearch:version" content="1.14.7.dev14+g38f592f6d" />
   </head>
   
   
@@ -744,16 +744,16 @@ row is added to the table. Demo:</p>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 00:46:04.2 |      1.000 |      0.607 |</span>
-<span class="go">|         2 | 00:46:04.2 |      2.000 |      0.135 |</span>
-<span class="go">|         3 | 00:46:04.2 |      3.000 |      0.011 |</span>
-<span class="go">|         4 | 00:46:04.2 |      4.000 |      0.000 |</span>
-<span class="go">|         5 | 00:46:04.2 |      5.000 |      0.000 |</span>
+<span class="go">|         1 | 16:03:57.5 |      1.000 |      0.607 |</span>
+<span class="go">|         2 | 16:03:57.5 |      2.000 |      0.135 |</span>
+<span class="go">|         3 | 16:03:57.5 |      3.000 |      0.011 |</span>
+<span class="go">|         4 | 16:03:57.5 |      4.000 |      0.000 |</span>
+<span class="go">|         5 | 16:03:57.5 |      5.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;6dd08533&#39;] (scan num: 1)</span>
+<span class="go">generator scan [&#39;2ea66245&#39;] (scan num: 1)</span>
 
 
-<span class="gh">Out[4]: </span><span class="go">(&#39;6dd08533-c722-4870-9afb-b0773ddafaa2&#39;,)</span>
+<span class="gh">Out[4]: </span><span class="go">(&#39;2ea66245-5424-4f75-b74c-aa77d3d0448e&#39;,)</span>
 </pre></div>
 </div>
 <p>Pass an empty list of columns to show simply ‘time’ and ‘seq_num’ (sequence
@@ -1043,9 +1043,9 @@ pixel to fill in.</p>
 </dd>
 <dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x and y axis</p>
 </dd>
-<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.6)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.8)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
-<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.6)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.8)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
 <dt><strong>ax</strong><span class="classifier">Axes, optional</span></dt><dd><p>matplotib Axes; if none specified, new figure and axes are made.</p>
 </dd>
@@ -1420,23 +1420,23 @@ plans in <code class="xref py py-mod docutils literal notranslate"><span class="
 <span class="gp">In [9]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>  <span class="c1"># automatically prints table, shows plot</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2025-10-09 00:46:23</span>
-<span class="go">Persistent Unique Scan ID: &#39;7b1c2f92-f338-44f2-84f6-c43952dfc8f9&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2025-12-31 16:04:16</span>
+<span class="go">Persistent Unique Scan ID: &#39;9928e02d-428f-4ed6-bdd6-7341fb5efa5c&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 00:46:23.3 |      1.000 |      0.000 |      0.271 |</span>
-<span class="go">|         2 | 00:46:23.5 |      2.000 |      0.000 |      0.271 |</span>
-<span class="go">|         3 | 00:46:23.6 |      3.000 |      0.000 |      0.271 |</span>
-<span class="go">|         4 | 00:46:23.8 |      4.000 |      0.000 |      0.271 |</span>
-<span class="go">|         5 | 00:46:24.0 |      5.000 |      0.000 |      0.271 |</span>
+<span class="go">|         1 | 16:04:16.3 |      1.000 |      0.000 |      0.271 |</span>
+<span class="go">|         2 | 16:04:16.5 |      2.000 |      0.000 |      0.271 |</span>
+<span class="go">|         3 | 16:04:16.9 |      3.000 |      0.000 |      0.271 |</span>
+<span class="go">|         4 | 16:04:17.1 |      4.000 |      0.000 |      0.271 |</span>
+<span class="go">|         5 | 16:04:17.2 |      5.000 |      0.000 |      0.271 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;7b1c2f92&#39;] (scan num: 2)</span>
+<span class="go">generator scan [&#39;9928e02d&#39;] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">(&#39;7b1c2f92-f338-44f2-84f6-c43952dfc8f9&#39;,)</span>
+<span class="gh">Out[9]: </span><span class="go">(&#39;9928e02d-428f-4ed6-bdd6-7341fb5efa5c&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1894,20 +1894,20 @@ We are setting up a <em>subscription</em>.</p>
 <span class="gp">In [13]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="p">{</span><span class="s1">&#39;event&#39;</span><span class="p">:</span> <span class="n">print_data</span><span class="p">})</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2025-10-09 00:46:25</span>
-<span class="go">Persistent Unique Scan ID: &#39;bb82e139-62a9-41d7-b75f-12e63274a320&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2025-12-31 16:04:18</span>
+<span class="go">Persistent Unique Scan ID: &#39;2f649bdc-25fe-4c93-af6f-5cda709693db&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 00:46:25.2 |      0.000 |</span>
+<span class="go">|         1 | 16:04:18.5 |      0.000 |</span>
 <span class="go">Measured: {&#39;det&#39;: np.float64(3.726653172078671e-06)}</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;bb82e139&#39;] (scan num: 3)</span>
+<span class="go">generator count [&#39;2f649bdc&#39;] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[13]: </span><span class="go">(&#39;bb82e139-62a9-41d7-b75f-12e63274a320&#39;,)</span>
+<span class="gh">Out[13]: </span><span class="go">(&#39;2f649bdc-25fe-4c93-af6f-5cda709693db&#39;,)</span>
 </pre></div>
 </div>
 <p>Each time the RunEngine generates a new Event Document (i.e., data point)
@@ -2074,16 +2074,33 @@ RemoteDispatcher should print the documents generated by this plan.</p>
 <h3>Publisher / RemoteDispatcher API<a class="headerlink" href="#publisher-remotedispatcher-api" title="Link to this heading">#</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.Proxy">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_address</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_address</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">#</a></dt>
 <dd><p>Start a 0MQ proxy on the local host.</p>
-<dl class="field-list simple">
+<p>The addresses can be specified flexibly.  It is best to use
+a domain_socket (available on unix):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'icp:///tmp/domain_socket'</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">('ipc',</span> <span class="pre">'/tmp/domain_socket')</span></code></p></li>
+</ul>
+</div></blockquote>
+<p>tcp sockets are also supported:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'tcp://localhost:6557'</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">6657</span></code>  (implicitly binds to <code class="docutils literal notranslate"><span class="pre">'tcp://localhost:6557'</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">('tcp',</span> <span class="pre">'localhost',</span> <span class="pre">6657)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">('localhost',</span> <span class="pre">6657)</span></code></p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>in_port</strong><span class="classifier">int, optional</span></dt><dd><p>Port that RunEngines should broadcast to. If None, a random port is
-used.</p>
+<dd class="field-odd"><dl>
+<dt><strong>in_address</strong><span class="classifier">str or tuple or int, optional</span></dt><dd><p>Address that RunEngines should broadcast to.</p>
+<p>If None, a random tcp port on all interfaces is used.</p>
 </dd>
-<dt><strong>out_port</strong><span class="classifier">int, optional</span></dt><dd><p>Port that subscribers should subscribe to. If None, a random port is
-used.</p>
+<dt><strong>out_address</strong><span class="classifier">str or tuple or int, optional</span></dt><dd><p>Address that subscribers should subscribe to.</p>
+<p>If None, a random tcp port on all interfaces is used.</p>
 </dd>
 <dt><strong>zmq</strong><span class="classifier">object, optional</span></dt><dd><p>By default, the ‘zmq’ module is imported and used. Anything else
 mocking its interface is accepted.</p>
@@ -2092,9 +2109,9 @@ mocking its interface is accepted.</p>
 </dd>
 <dt class="field-even">Attributes<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>in_port</strong><span class="classifier">int</span></dt><dd><p>Port that RunEngines should broadcast to.</p>
+<dt><strong>in_address: int or str or tuple</strong></dt><dd><p>Port that RunEngines should broadcast to.</p>
 </dd>
-<dt><strong>out_port</strong><span class="classifier">int</span></dt><dd><p>Port that subscribers should subscribe to.</p>
+<dt><strong>out_address</strong><span class="classifier">int or str or tuple</span></dt><dd><p>Port that subscribers should subscribe to.</p>
 </dd>
 <dt><strong>closed</strong><span class="classifier">boolean</span></dt><dd><p>True if the Proxy has already been started and subsequently
 interrupted and is therefore unusable.</p>
@@ -2540,7 +2557,7 @@ anywhere.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev2+g8adfe3ab1/docs/callbacks.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev14+g38f592f6d/docs/callbacks.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
