@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.protocols &#8212; bluesky 1.14.7.dev14+g38f592f6d documentation</title>
+    <title>bluesky.protocols &#8212; bluesky 1.14.7.dev20+gaa191e31b documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=6fe47878"></script>
+    <script src="../../_static/documentation_options.js?v=cac50013"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
@@ -410,7 +410,7 @@ window.addEventListener("load", load);
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev14+g38f592f6d';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev20+gaa191e31b';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -418,7 +418,7 @@ window.addEventListener("load", load);
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev14+g38f592f6d" />
+  <meta name="docsearch:version" content="1.14.7.dev20+gaa191e31b" />
   </head>
   
   
@@ -896,18 +896,8 @@ window.addEventListener("load", load);
                   
   <h1>Source code for bluesky.protocols</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Iterator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">Any</span><span class="p">,</span>
-    <span class="n">Callable</span><span class="p">,</span>
-    <span class="n">Generic</span><span class="p">,</span>
-    <span class="n">Literal</span><span class="p">,</span>
-    <span class="n">Optional</span><span class="p">,</span>
-    <span class="n">Protocol</span><span class="p">,</span>
-    <span class="n">TypeVar</span><span class="p">,</span>
-    <span class="n">Union</span><span class="p">,</span>
-    <span class="n">runtime_checkable</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Datum</span><span class="p">,</span> <span class="n">StreamDatum</span><span class="p">,</span> <span class="n">StreamResource</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents.event</span><span class="w"> </span><span class="kn">import</span> <span class="n">PartialEvent</span>
@@ -955,20 +945,16 @@ window.addEventListener("load", load);
 
 
 
-<span class="n">Asset</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
-    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">],</span> <span class="n">PartialResource</span><span class="p">],</span>
-    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;datum&quot;</span><span class="p">],</span> <span class="n">Datum</span><span class="p">],</span>
-<span class="p">]</span>
+<span class="n">Asset</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">],</span> <span class="n">PartialResource</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;datum&quot;</span><span class="p">],</span> <span class="n">Datum</span><span class="p">]</span>
 
 
-<span class="n">StreamAsset</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
-    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">],</span> <span class="n">StreamResource</span><span class="p">],</span>
-    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_datum&quot;</span><span class="p">],</span> <span class="n">StreamDatum</span><span class="p">],</span>
-<span class="p">]</span>
+<span class="n">StreamAsset</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">],</span> <span class="n">StreamResource</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_datum&quot;</span><span class="p">],</span> <span class="n">StreamDatum</span><span class="p">]</span>
+<span class="p">)</span>
 
 
-<span class="n">SyncOrAsync</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span>
-<span class="n">SyncOrAsyncIterator</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Iterator</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span>
+<span class="n">SyncOrAsync</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">T</span> <span class="o">|</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
+<span class="n">SyncOrAsyncIterator</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">|</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="Status">
@@ -992,7 +978,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="Status.exception">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Status.exception">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">]:</span> <span class="o">...</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="ne">BaseException</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span></div>
 
 
     <span class="nd">@property</span>
@@ -1029,7 +1015,7 @@ window.addEventListener("load", load);
 <span class="k">class</span><span class="w"> </span><span class="nc">HasParent</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">parent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;``None``, or a reference to a parent device.</span>
 
 <span class="sd">        Used by the RE to stop duplicate stages.</span>
@@ -1080,7 +1066,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="WritesStreamAssets.collect_asset_docs">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets.collect_asset_docs">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">collect_asset_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">StreamAsset</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">collect_asset_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">StreamAsset</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the resource and datum documents describing data in external</span>
 <span class="sd">            source up to a given index if provided.</span>
 
@@ -1271,7 +1257,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="Collectable.describe_collect">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Collectable.describe_collect">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;This is like ``describe()`` on readable devices, but with an extra layer of nesting.</span>
 
 <span class="sd">        Since a flyer can potentially return more than one event stream, this is either</span>
@@ -1405,7 +1391,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="Stageable.stage">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stageable.stage">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;An optional hook for &quot;setting up&quot; the device for acquisition.</span>
 
 <span class="sd">        It should return a ``Status`` that is marked done when the device is</span>
@@ -1417,7 +1403,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="Stageable.unstage">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stageable.unstage">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">unstage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unstage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A hook for &quot;cleaning up&quot; the device after acquisition.</span>
 
 <span class="sd">        It should return a ``Status`` that is marked done when the device is finished</span>

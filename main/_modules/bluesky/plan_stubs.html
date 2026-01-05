@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.14.7.dev14+g38f592f6d documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.14.7.dev20+gaa191e31b documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=6fe47878"></script>
+    <script src="../../_static/documentation_options.js?v=cac50013"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
@@ -410,7 +410,7 @@ window.addEventListener("load", load);
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev14+g38f592f6d';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev20+gaa191e31b';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -418,7 +418,7 @@ window.addEventListener("load", load);
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev14+g38f592f6d" />
+  <meta name="docsearch:version" content="1.14.7.dev20+gaa191e31b" />
   </head>
   
   
@@ -903,7 +903,7 @@ window.addEventListener("load", load);
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
 
@@ -1104,7 +1104,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="monitor">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.monitor.html#bluesky.plan_stubs.monitor">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">monitor</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">monitor</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Asynchronously monitor for new values and emit Event documents.</span>
 
@@ -1177,7 +1177,7 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">abs_set</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Status</span><span class="p">]:</span>
@@ -1228,7 +1228,7 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">rel_set</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Status</span><span class="p">]:</span>
@@ -1275,9 +1275,9 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.mv.html#bluesky.plan_stubs.mv">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">mv</span><span class="p">(</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1330,7 +1330,7 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.mvr.html#bluesky.plan_stubs.mvr">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">mvr</span><span class="p">(</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Move one or more devices to a relative setpoint. Wait for all to complete.</span>
@@ -1510,7 +1510,7 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">trigger</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Triggerable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Status</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1571,9 +1571,9 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.wait.html#bluesky.plan_stubs.wait">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">wait</span><span class="p">(</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">error_on_timeout</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">watch</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
 <span class="p">):</span>
@@ -1717,7 +1717,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="prepare">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.prepare.html#bluesky.plan_stubs.prepare">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Preparable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Preparable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Prepare a device ready for trigger or kickoff.</span>
 
@@ -1757,7 +1757,7 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">kickoff</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Status</span><span class="p">]:</span>
@@ -1800,7 +1800,7 @@ window.addEventListener("load", load);
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">kickoff_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kickoff_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Kickoff one or more fly-scanning devices.</span>
 
@@ -1846,7 +1846,7 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Status</span><span class="p">]:</span>
@@ -1896,7 +1896,7 @@ window.addEventListener("load", load);
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">complete_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">complete_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Tell one or more flyable objects, &#39;stop collecting, whenever you are ready&#39;.</span>
 
@@ -1946,7 +1946,7 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.collect.html#bluesky.plan_stubs.collect">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span>
-    <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Collect data cached by one or more fly-scanning devices and emit documents.</span>
@@ -2061,9 +2061,9 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">stage</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">wait</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]]:</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Status</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &#39;Stage&#39; a device (i.e., prepare it for use, &#39;arm&#39; it).</span>
 
@@ -2110,7 +2110,7 @@ window.addEventListener("load", load);
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">stage_all</span><span class="p">(</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &#39;Stage&#39; one or more devices (i.e., prepare them for use, &#39;arm&#39; them).</span>
@@ -2149,9 +2149,9 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">unstage</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">wait</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Status</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]]:</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Status</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &#39;Unstage&#39; a device (i.e., put it in standby, &#39;disarm&#39; it).</span>
 
@@ -2196,7 +2196,7 @@ window.addEventListener("load", load);
 
 
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">unstage_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unstage_all</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Stageable</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Hashable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &#39;Unstage&#39; one or more devices (i.e., put them in standby, &#39;disarm&#39; them).</span>
 
@@ -2338,7 +2338,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="open_run">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.open_run.html#bluesky.plan_stubs.open_run">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">open_run</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">open_run</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Mark the beginning of a new &#39;run&#39;. Emit a RunStart document.</span>
 
@@ -2368,7 +2368,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="close_run">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.close_run.html#bluesky.plan_stubs.close_run">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Mark the end of the current &#39;run&#39;. Emit a RunStop document.</span>
 
@@ -2535,7 +2535,7 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.repeater.html#bluesky.plan_stubs.repeater">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">repeater</span><span class="p">(</span>
-    <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">gen_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">MsgGenerator</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -2576,7 +2576,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="caching_repeater">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.caching_repeater.html#bluesky.plan_stubs.caching_repeater">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">caching_repeater</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">plan</span><span class="p">:</span> <span class="n">MsgGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">caching_repeater</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plan</span><span class="p">:</span> <span class="n">MsgGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate n chained copies of the messages in a plan.</span>
 
@@ -2613,7 +2613,7 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="one_shot">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.one_shot.html#bluesky.plan_stubs.one_shot">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">one_shot</span><span class="p">(</span><span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">take_reading</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TakeReading</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_shot</span><span class="p">(</span><span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">take_reading</span><span class="p">:</span> <span class="n">TakeReading</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Inner loop of a count.</span>
 
 <span class="sd">    This is the default function for ``per_shot`` in count plans.</span>
@@ -2650,7 +2650,7 @@ window.addEventListener("load", load);
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-    <span class="n">take_reading</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TakeReading</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">take_reading</span><span class="p">:</span> <span class="n">TakeReading</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inner loop of a 1D step scan</span>
@@ -2736,7 +2736,7 @@ window.addEventListener("load", load);
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">step</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">pos_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">take_reading</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TakeReading</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">take_reading</span><span class="p">:</span> <span class="n">TakeReading</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inner loop of an N-dimensional step scan</span>
@@ -2777,7 +2777,7 @@ window.addEventListener("load", load);
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">repeat</span><span class="p">(</span>
     <span class="n">plan</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">MsgGenerator</span><span class="p">],</span>
-    <span class="n">num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">delay</span><span class="p">:</span> <span class="n">ScalarOrIterableFloat</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>

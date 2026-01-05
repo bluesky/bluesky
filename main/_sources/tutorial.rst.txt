@@ -12,14 +12,14 @@ Before You Begin
     software, and you can skip the rest of this section.  Go to
     `https://try.nsls2.bnl.gov <https://try.nsls2.bnl.gov>`_.
 
-* You will need Python 3.9 or newer. From a shell ("Terminal" on OSX,
+* You will need Python 3.10 or newer. From a shell ("Terminal" on OSX,
   "Command Prompt" on Windows), check your current Python version.
 
   .. code-block:: bash
 
     python3 --version
 
-  If that version is less than 3.9, you must update it.
+  If that version is less than 3.10, you must update it.
 
   We recommend install bluesky into a "virtual environment" so this
   installation will not interfere with any existing Python software:
@@ -35,7 +35,7 @@ Before You Begin
 
   .. code-block:: bash
 
-    conda create -n bluesky-tutorial "python>=3.9"
+    conda create -n bluesky-tutorial "python>=3.10"
     conda activate bluesky-tutorial
 
 * Install the latest versions of bluesky and ophyd. Also install the databroker

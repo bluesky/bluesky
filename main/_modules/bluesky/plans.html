@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plans &#8212; bluesky 1.14.7.dev14+g38f592f6d documentation</title>
+    <title>bluesky.plans &#8212; bluesky 1.14.7.dev20+gaa191e31b documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=6fe47878"></script>
+    <script src="../../_static/documentation_options.js?v=cac50013"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
@@ -410,7 +410,7 @@ window.addEventListener("load", load);
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev14+g38f592f6d';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev20+gaa191e31b';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -418,7 +418,7 @@ window.addEventListener("load", load);
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev14+g38f592f6d" />
+  <meta name="docsearch:version" content="1.14.7.dev20+gaa191e31b" />
   </head>
   
   
@@ -901,10 +901,10 @@ window.addEventListener("load", load);
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">zip_longest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeAlias</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cycler</span>
@@ -928,11 +928,11 @@ window.addEventListener("load", load);
 <span class="p">)</span>
 
 <span class="c1">#: Plan function that can be used for each shot in a detector acquisition involving no actuation</span>
-<span class="n">PerShot</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bps</span><span class="o">.</span><span class="n">TakeReading</span><span class="p">]],</span> <span class="n">MsgGenerator</span><span class="p">]</span>
+<span class="n">PerShot</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">bps</span><span class="o">.</span><span class="n">TakeReading</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span> <span class="n">MsgGenerator</span><span class="p">]</span>
 
 <span class="c1">#: Plan function that can be used for each step in a scan</span>
 <span class="n">PerStep1D</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span>
-    <span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bps</span><span class="o">.</span><span class="n">TakeReading</span><span class="p">]],</span>
+    <span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">bps</span><span class="o">.</span><span class="n">TakeReading</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
     <span class="n">MsgGenerator</span><span class="p">,</span>
 <span class="p">]</span>
 <span class="n">PerStepND</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span>
@@ -940,11 +940,11 @@ window.addEventListener("load", load);
         <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
         <span class="n">Mapping</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="nb">dict</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">bps</span><span class="o">.</span><span class="n">TakeReading</span><span class="p">],</span>
+        <span class="n">bps</span><span class="o">.</span><span class="n">TakeReading</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">],</span>
     <span class="n">MsgGenerator</span><span class="p">,</span>
 <span class="p">]</span>
-<span class="n">PerStep</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">PerStep1D</span><span class="p">,</span> <span class="n">PerStepND</span><span class="p">]</span>
+<span class="n">PerStep</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">PerStep1D</span> <span class="o">|</span> <span class="n">PerStepND</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_check_detectors_type_input</span><span class="p">(</span><span class="n">detectors</span><span class="p">):</span>
@@ -964,11 +964,11 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.count.html#bluesky.plans.count">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="n">num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">delay</span><span class="p">:</span> <span class="n">ScalarOrIterableFloat</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_shot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerShot</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_shot</span><span class="p">:</span> <span class="n">PerShot</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Take one or more readings from detectors.</span>
@@ -1033,9 +1033,9 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.list_scan.html#bluesky.plans.list_scan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">list_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one or more variables in steps simultaneously (inner product).</span>
@@ -1129,9 +1129,9 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_list_scan.html#bluesky.plans.rel_list_scan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">rel_list_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one variable in steps relative to current position.</span>
@@ -1189,10 +1189,10 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.list_grid_scan.html#bluesky.plans.list_grid_scan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">list_grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">snake_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over a mesh; each motor is on an independent trajectory.</span>
@@ -1269,10 +1269,10 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_list_grid_scan.html#bluesky.plans.rel_list_grid_scan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">rel_list_grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">snake_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over a mesh; each motor is on an independent trajectory. Each point is</span>
@@ -1337,8 +1337,8 @@ window.addEventListener("load", load);
     <span class="n">stop</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one variable in equally spaced steps.</span>
@@ -1414,8 +1414,8 @@ window.addEventListener("load", load);
     <span class="n">stop</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one variable in equally spaced steps relative to current positon.</span>
@@ -1547,8 +1547,8 @@ window.addEventListener("load", load);
     <span class="n">stop</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one variable in log-spaced steps relative to current position.</span>
@@ -1600,9 +1600,9 @@ window.addEventListener("load", load);
     <span class="n">max_step</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">target_delta</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">backstep</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one variable with adaptively tuned step size.</span>
@@ -1732,9 +1732,9 @@ window.addEventListener("load", load);
     <span class="n">max_step</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">target_delta</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">backstep</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Relative scan over one variable with adaptively tuned step size.</span>
@@ -1807,7 +1807,7 @@ window.addEventListener("load", load);
     <span class="n">step_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
     <span class="n">snake</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    plan: tune a motor to the centroid of signal(motor)</span>
@@ -1956,8 +1956,8 @@ window.addEventListener("load", load);
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">cycler</span><span class="p">:</span> <span class="n">Cycler</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over an arbitrary N-dimensional trajectory.</span>
@@ -2101,9 +2101,9 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">inner_product_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
     <span class="c1"># For scan, num is the _last_ positional arg instead of the first one.</span>
     <span class="c1"># Notice the swapped order here.</span>
@@ -2116,10 +2116,10 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.scan.html#bluesky.plans.scan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one multi-motor trajectory.</span>
@@ -2229,9 +2229,9 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-    <span class="n">snake_axes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Iterable</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">snake_axes</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over a mesh; each motor is on an independent trajectory.</span>
@@ -2408,10 +2408,10 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_grid_scan.html#bluesky.plans.rel_grid_scan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">rel_grid_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">snake_axes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Iterable</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">snake_axes</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over a mesh relative to current position.</span>
@@ -2469,9 +2469,9 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">relative_inner_product_scan</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
     <span class="c1"># For rel_scan, num is the _last_ positional arg instead of the first one.</span>
     <span class="c1"># Notice the swapped order here.</span>
@@ -2484,10 +2484,10 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../generated/bluesky.plans.rel_scan.html#bluesky.plans.rel_scan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">rel_scan</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Movable</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scan over one multi-motor trajectory relative to current position.</span>
@@ -2546,7 +2546,7 @@ window.addEventListener("load", load);
     <span class="n">motor</span><span class="p">:</span> <span class="n">NamedMovable</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Move and motor and read a detector with an interactive prompt.</span>
@@ -2640,10 +2640,10 @@ window.addEventListener("load", load);
     <span class="n">dr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">dr_y</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">tilt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dr_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Absolute fermat spiral scan, centered around (x_start, y_start)</span>
 
@@ -2747,10 +2747,10 @@ window.addEventListener("load", load);
     <span class="n">dr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">dr_y</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">tilt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dr_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Relative fermat spiral scan</span>
 
@@ -2829,10 +2829,10 @@ window.addEventListener("load", load);
     <span class="n">dr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">nth</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">dr_y</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">tilt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dr_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Spiral scan, centered around (x_start, y_start)</span>
 
@@ -2934,10 +2934,10 @@ window.addEventListener("load", load);
     <span class="n">dr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">nth</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">dr_y</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dr_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Relative spiral scan</span>
 
@@ -3013,8 +3013,8 @@ window.addEventListener("load", load);
     <span class="n">x_num</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">y_num</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Absolute square spiral scan, centered around (x_center, y_center)</span>
 
@@ -3112,8 +3112,8 @@ window.addEventListener("load", load);
     <span class="n">x_num</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">y_num</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Relative square spiral scan, centered around current (x, y) position.</span>
 
@@ -3181,9 +3181,9 @@ window.addEventListener("load", load);
     <span class="n">monitor_sig</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
     <span class="n">inner_plan_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">MsgGenerator</span><span class="p">],</span>
     <span class="n">take_pre_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">period</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">period</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Take data while ramping one or more positioners.</span>
 
@@ -3273,7 +3273,7 @@ window.addEventListener("load", load);
 <span class="k">def</span><span class="w"> </span><span class="nf">fly</span><span class="p">(</span>
     <span class="n">flyers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Flyable</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Perform a fly scan with one or more &#39;flyers&#39;.</span>
@@ -3315,8 +3315,8 @@ window.addEventListener("load", load);
     <span class="n">stop</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">per_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerStep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">md</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CustomPlanMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">per_step</span><span class="p">:</span> <span class="n">PerStep</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">md</span><span class="p">:</span> <span class="n">CustomPlanMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Relatively scan over two motors in a 2:1 ratio</span>
