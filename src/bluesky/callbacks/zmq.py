@@ -16,12 +16,11 @@ import asyncio
 import copy
 import pickle
 import warnings
-from typing import Union
 
 from ..run_engine import Dispatcher, DocumentNames
 
 
-def _normalize_address(inp: Union[str, tuple, int]):
+def _normalize_address(inp: str | tuple | int):
     if isinstance(inp, str):
         if "://" in inp:
             protocol, _, rest_str = inp.partition("://")
