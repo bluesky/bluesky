@@ -15,7 +15,7 @@ The same exact information can be "data" in one
 experiment, but "metadata" in a different experiment done on the exact
 same hardware.
 The `Document Model
-<https://blueskyproject.io/event-model/data-model.html>`_ provides a framework
+<https://blueskyproject.io/event-model/main/explanations/data-model.html>`_ provides a framework
 for deciding _where_ to record a particular piece of information.
 
 There are some things that we know *a priori* before doing an experiment;
@@ -23,7 +23,7 @@ where are we? who is the user? what sample are we looking at? what did
 the user just ask us to do?  These are all things that we can, in
 principle, know independent of the control system.  These are the
 prime candidates for inclusion in the `Start Document
-<https://blueskyproject.io/event-model/data-model.html#run-start-document>`_.
+<https://blueskyproject.io/event-model/main/explanations/data-model.html#run-start-document>`_.
 Downstream DataBroker provides tools to do rich searches on this data.
 The more information you can include the better.
 
@@ -50,7 +50,7 @@ A third class of information that can be called "metadata" is
 configuration information of pieces of hardware.  These are things
 like the velocity of a motor or the integration time of a detector.
 These readings are embedded in the `Descriptor
-<https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_
+<https://blueskyproject.io/event-model/main/explanations/data-model.html#event-descriptor>`_
 and are extracted from the hardware via the `read_configuration
 <https://blueskyproject.io/bluesky/hardware.html#ReadableDevice.read_configuration>`_
 method of the hardware.  We expect that these values will not change over

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Recording Metadata &#8212; bluesky 1.14.7.dev22+g5f35e6be8 documentation</title>
+    <title>Recording Metadata &#8212; bluesky 1.14.7.dev25+ga9ed87072 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=ca54b411"></script>
+    <script src="_static/documentation_options.js?v=104efae8"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'metadata';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev22+g5f35e6be8';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev25+ga9ed87072';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -56,7 +56,7 @@
     <link rel="prev" title="Documents" href="documents.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev22+g5f35e6be8" />
+  <meta name="docsearch:version" content="1.14.7.dev25+ga9ed87072" />
   </head>
   
   
@@ -577,13 +577,13 @@ analysis tools can be.</p>
 The same exact information can be “data” in one
 experiment, but “metadata” in a different experiment done on the exact
 same hardware.
-The <a class="reference external" href="https://blueskyproject.io/event-model/data-model.html">Document Model</a> provides a framework
+The <a class="reference external" href="https://blueskyproject.io/event-model/main/explanations/data-model.html">Document Model</a> provides a framework
 for deciding _where_ to record a particular piece of information.</p>
 <p>There are some things that we know <em>a priori</em> before doing an experiment;
 where are we? who is the user? what sample are we looking at? what did
 the user just ask us to do?  These are all things that we can, in
 principle, know independent of the control system.  These are the
-prime candidates for inclusion in the <a class="reference external" href="https://blueskyproject.io/event-model/data-model.html#run-start-document">Start Document</a>.
+prime candidates for inclusion in the <a class="reference external" href="https://blueskyproject.io/event-model/main/explanations/data-model.html#run-start-document">Start Document</a>.
 Downstream DataBroker provides tools to do rich searches on this data.
 The more information you can include the better.</p>
 <p>There is some information that we need that is nominally independent of
@@ -607,7 +607,7 @@ hardware it is being read from.</p></li>
 <p>A third class of information that can be called “metadata” is
 configuration information of pieces of hardware.  These are things
 like the velocity of a motor or the integration time of a detector.
-These readings are embedded in the <a class="reference external" href="https://blueskyproject.io/event-model/data-model.html#event-descriptor">Descriptor</a>
+These readings are embedded in the <a class="reference external" href="https://blueskyproject.io/event-model/main/explanations/data-model.html#event-descriptor">Descriptor</a>
 and are extracted from the hardware via the <a class="reference external" href="https://blueskyproject.io/bluesky/hardware.html#ReadableDevice.read_configuration">read_configuration</a>
 method of the hardware.  We expect that these values will not change over
 the course of the experiment so only read them once.</p>
@@ -1034,7 +1034,7 @@ argument and raises if ‘sample_number’ is not found.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev22+g5f35e6be8/docs/metadata.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev25+ga9ed87072/docs/metadata.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
