@@ -45,7 +45,7 @@ class SigNew:
     def describe(self) -> dict[str, Descriptor]:
         return {self.name: dict(source="", dtype="number", shape=[])}  # noqa: C408
 
-    def subscribe(self, function: Callback) -> None:
+    def subscribe_reading(self, function: Callback) -> None:
         self._callbacks.append(function)
 
     def clear_sub(self, function: Callback) -> None:

@@ -474,8 +474,6 @@ class RunBundler:
             raise ValueError("The 'monitor' Msg does not accept positional arguments.")
         kwargs = dict(msg.kwargs)
         name = kwargs.pop("name", short_uid("monitor"))
-        if kwargs:
-            raise RuntimeError("If subscribe callback called with readings, kwargs are not supported.")
         if obj in self._monitor_params:
             raise IllegalMessageSequence(f"A 'monitor' message was sent for {obj} which is already monitored")
 
@@ -497,21 +495,20 @@ class RunBundler:
             obj.subscribe_reading(emit_event_from_readings)
         elif callable(getattr(obj, "subscribe", None)):
 
-            def emit_event_for_subscribe(readings: Optional[dict[str, Reading]] = None, *args, **kwargs):
-                if readings is None:
-                    # Ignore the inputs. Use this call as a signal to call read on the
-                    # object, a crude way to be sure we get all the info we need.
-                    readable_obj = check_supports(obj, Readable)
-                    readings = readable_obj.read()
-                    if inspect.isawaitable(readings):
-                        raise RuntimeError(
-                            f"{readable_obj} has async read() method and the callback "
-                            "passed to subscribe() was not called with Dict[str, Reading]"
-                        )
+            def read_and_emit(*args, **kwargs):
+                # Ignore the inputs. Use this call as a signal to call read on the
+                # object, a crude way to be sure we get all the info we need.
+                readable_obj = check_supports(obj, Readable)
+                readings = readable_obj.read()
+                if inspect.isawaitable(readings):
+                    raise RuntimeError(
+                        f"{readable_obj} has async read() method and the callback "
+                        "passed to subscribe() was not called with Dict[str, Reading]"
+                    )
                 emit_event_from_readings(readings)
 
-            self._monitor_params[obj] = emit_event_for_subscribe, kwargs
-            obj.subscribe(emit_event_for_subscribe)
+            self._monitor_params[obj] = read_and_emit, kwargs
+            obj.subscribe(read_and_emit, **kwargs)
         else:
             raise RuntimeError(
                 "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
