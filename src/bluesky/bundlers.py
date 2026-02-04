@@ -502,8 +502,9 @@ class RunBundler:
                 readings = readable_obj.read()
                 if inspect.isawaitable(readings):
                     raise RuntimeError(
-                        f"{readable_obj} has async read() method and the callback "
-                        "passed to subscribe() was not called with Dict[str, Reading]"
+                        f"{readable_obj} has a subscribe() method rather than a "
+                        "subscribe_readings() method and an async read() method. "
+                        "If using ophyd-async, make sure you are using at least v0.13.5."
                     )
                 emit_event_from_readings(readings)
 
