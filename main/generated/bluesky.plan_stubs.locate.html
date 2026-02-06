@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>bluesky.preprocessors.single_gen &#8212; bluesky 1.14.7.dev29+gfb2c32466 documentation</title>
+    <title>bluesky.plan_stubs.locate &#8212; bluesky 1.14.7.dev29+gfb2c32466 documentation</title>
   
   
   
@@ -42,7 +42,7 @@
     <script src="../_static/documentation_options.js?v=9e7f4f2c"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/bluesky.preprocessors.single_gen';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/bluesky.plan_stubs.locate';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
@@ -52,8 +52,8 @@
         </script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="bluesky.preprocessors.make_decorator" href="bluesky.preprocessors.make_decorator.html" />
-    <link rel="prev" title="bluesky.preprocessors.plan_mutator" href="bluesky.preprocessors.plan_mutator.html" />
+    <link rel="next" title="bluesky.plan_stubs.stage" href="bluesky.plan_stubs.stage.html" />
+    <link rel="prev" title="bluesky.plan_stubs.rd" href="bluesky.plan_stubs.rd.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="1.14.7.dev29+gfb2c32466" />
@@ -552,7 +552,7 @@
     
     <li class="breadcrumb-item"><a href="../plans.html" class="nav-link">Plans</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky.preprocessors.single_gen</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky.plan_stubs.locate</span></li>
   </ul>
 </nav>
 </div>
@@ -569,24 +569,26 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="bluesky-preprocessors-single-gen">
-<h1>bluesky.preprocessors.single_gen<a class="headerlink" href="#bluesky-preprocessors-single-gen" title="Link to this heading">#</a></h1>
+  <section id="bluesky-plan-stubs-locate">
+<h1>bluesky.plan_stubs.locate<a class="headerlink" href="#bluesky-plan-stubs-locate" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="bluesky.preprocessors.single_gen">
-<span class="sig-prename descclassname"><span class="pre">bluesky.preprocessors.</span></span><span class="sig-name descname"><span class="pre">single_gen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/utils.html#single_gen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.preprocessors.single_gen" title="Link to this definition">#</a></dt>
-<dd><p>Turn a single message into a plan</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">x:</span> <span class="pre">yield</span> <span class="pre">x</span></code> were valid Python, this would be equivalent.
-In Python 3.6 or 3.7 we might get lambda generators.</p>
+<dt class="sig sig-object py" id="bluesky.plan_stubs.locate">
+<span class="sig-prename descclassname"><span class="pre">bluesky.plan_stubs.</span></span><span class="sig-name descname"><span class="pre">locate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../hardware.html#bluesky.protocols.Locatable" title="bluesky.protocols.Locatable"><span class="pre">Locatable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">squeeze</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">True</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../hardware.html#bluesky.protocols.Location" title="bluesky.protocols.Location"><span class="pre">Location</span></a></span></span><a class="reference internal" href="../_modules/bluesky/plan_stubs.html#locate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.plan_stubs.locate" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">bluesky.plan_stubs.</span></span><span class="sig-name descname"><span class="pre">locate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">objs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../hardware.html#bluesky.protocols.Locatable" title="bluesky.protocols.Locatable"><span class="pre">Locatable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">squeeze</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../hardware.html#bluesky.protocols.Location" title="bluesky.protocols.Location"><span class="pre">Location</span></a><span class="p"><span class="pre">]</span></span></span></span></dt>
+<dd><p>Locate some Movables and return their locations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>msg</strong><span class="classifier">Msg</span></dt><dd><p>a single message</p>
+<dt><strong>obj</strong><span class="classifier">Device or Signal</span></dt><dd></dd>
+<dt><strong>sqeeze: bool</strong></dt><dd><p>If True, return the result as a list.
+If False, always return a list of retults even with a single object.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Yields<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>msg</strong><span class="classifier">Msg</span></dt><dd><p>the input message</p>
+<dt><strong>msg</strong><span class="classifier">Msg</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">Msg('locate',</span> <span class="pre">obj1,</span> <span class="pre">...,</span> <span class="pre">objn,</span> <span class="pre">squeeze=True)</span></code></p>
 </dd>
 </dl>
 </dd>
@@ -606,20 +608,20 @@ In Python 3.6 or 3.7 we might get lambda generators.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="bluesky.preprocessors.plan_mutator.html"
+       href="bluesky.plan_stubs.rd.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">bluesky.preprocessors.plan_mutator</p>
+        <p class="prev-next-title">bluesky.plan_stubs.rd</p>
       </div>
     </a>
     <a class="right-next"
-       href="bluesky.preprocessors.make_decorator.html"
+       href="bluesky.plan_stubs.stage.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">bluesky.preprocessors.make_decorator</p>
+        <p class="prev-next-title">bluesky.plan_stubs.stage</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -642,7 +644,7 @@ In Python 3.6 or 3.7 we might get lambda generators.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.preprocessors.single_gen"><code class="docutils literal notranslate"><span class="pre">single_gen()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.plan_stubs.locate"><code class="docutils literal notranslate"><span class="pre">locate()</span></code></a></li>
 </ul>
   </nav></div>
 
@@ -650,7 +652,7 @@ In Python 3.6 or 3.7 we might get lambda generators.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev29+gfb2c32466/docs/generated/bluesky.preprocessors.single_gen.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev29+gfb2c32466/docs/generated/bluesky.plan_stubs.locate.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -666,7 +668,7 @@ In Python 3.6 or 3.7 we might get lambda generators.</p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/generated/bluesky.preprocessors.single_gen.rst.txt"
+      <li><a href="../_sources/generated/bluesky.plan_stubs.locate.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>
