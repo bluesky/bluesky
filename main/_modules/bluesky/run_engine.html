@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.14.7.dev29+gfb2c32466 documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.14.7.dev34+gb9f2635c3 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=9e7f4f2c"></script>
+    <script src="../../_static/documentation_options.js?v=1c35c7ca"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -475,12 +475,13 @@ mermaid.initialize(
     }
 );
 
-window.addEventListener("load", load);</script>
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev29+gfb2c32466';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev34+gb9f2635c3';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -488,7 +489,7 @@ window.addEventListener("load", load);</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev29+gfb2c32466" />
+  <meta name="docsearch:version" content="1.14.7.dev34+gb9f2635c3" />
   </head>
   
   
@@ -1031,6 +1032,7 @@ window.addEventListener("load", load);</script>
     <span class="n">Subscribers</span><span class="p">,</span>
     <span class="n">ensure_generator</span><span class="p">,</span>
     <span class="n">normalize_subs_input</span><span class="p">,</span>
+    <span class="n">sanitize_np</span><span class="p">,</span>
     <span class="n">single_gen</span><span class="p">,</span>
     <span class="n">warn_if_msg_args_or_kwargs</span><span class="p">,</span>
 <span class="p">)</span>
@@ -2933,8 +2935,8 @@ window.addEventListener("load", load);</script>
         <span class="n">reason</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">_span</span><span class="p">:</span> <span class="n">Span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_tracing_spans</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-            <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="n">exit_status</span><span class="p">)</span>
-            <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+            <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">,</span> <span class="n">exit_status</span> <span class="k">if</span> <span class="n">exit_status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;None&quot;</span><span class="p">)</span>
+            <span class="n">_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="n">reason</span> <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;None&quot;</span><span class="p">)</span>
             <span class="n">_span</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No open traces left to close!&quot;</span><span class="p">)</span>
@@ -3852,7 +3854,7 @@ window.addEventListener("load", load);</script>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_set_span_msg_attributes</span><span class="p">(</span><span class="n">span</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
     <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.command&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
-    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.args&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.args&quot;</span><span class="p">,</span> <span class="n">sanitize_np</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">))</span>
     <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.kwargs&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">repr</span><span class="p">))</span>
     <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.obj&quot;</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="k">else</span> <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.no_obj_given&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
