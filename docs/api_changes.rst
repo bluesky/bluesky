@@ -2,6 +2,23 @@
  Release History
 =================
 
+v1.15.0 (2025-10-??)
+====================
+
+Added
+-----
+
+- Added support and testing for Python 3.13
+
+Fixed
+-----
+
+Changed
+-------
+
+- Dropped support and testing for Python 3.9 (EOL in 2025-10)
+
+
 v1.14.5 (2025-10-03)
 ====================
 

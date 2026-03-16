@@ -1,16 +1,6 @@
 from abc import abstractmethod
-from collections.abc import AsyncIterator, Awaitable, Iterator
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Literal,
-    Optional,
-    Protocol,
-    TypeVar,
-    Union,
-    runtime_checkable,
-)
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from typing import Any, Generic, Literal, Protocol, TypeAlias, TypeVar, runtime_checkable
 
 from event_model.documents import Datum, StreamDatum, StreamResource
 from event_model.documents.event import PartialEvent
@@ -52,20 +42,16 @@ class Reading(Generic[T], ReadingOptional):
     timestamp: float
 
 
-Asset = Union[
-    tuple[Literal["resource"], PartialResource],
-    tuple[Literal["datum"], Datum],
-]
+Asset: TypeAlias = tuple[Literal["resource"], PartialResource] | tuple[Literal["datum"], Datum]
 
 
-StreamAsset = Union[
-    tuple[Literal["stream_resource"], StreamResource],
-    tuple[Literal["stream_datum"], StreamDatum],
-]
+StreamAsset: TypeAlias = (
+    tuple[Literal["stream_resource"], StreamResource] | tuple[Literal["stream_datum"], StreamDatum]
+)
 
 
-SyncOrAsync = Union[T, Awaitable[T]]
-SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
+SyncOrAsync: TypeAlias = T | Awaitable[T]
+SyncOrAsyncIterator: TypeAlias = Iterator[T] | AsyncIterator[T]
 
 
 @runtime_checkable
@@ -82,7 +68,7 @@ class Status(Protocol):
         ...
 
     @abstractmethod
-    def exception(self, timeout: Optional[float] = 0.0) -> Optional[BaseException]: ...
+    def exception(self, timeout: float | None = 0.0) -> BaseException | None: ...
 
     @property
     @abstractmethod
@@ -104,7 +90,7 @@ class HasName(Protocol):
     def name(self) -> str:
         """Used to populate object_keys in the Event DataKey
 
-        https://blueskyproject.io/event-model/event-descriptors.html#object-keys"""
+        https://blueskyproject.io/event-model/main/explanations/event-descriptors.html#object-keys"""
         ...
 
 
@@ -112,7 +98,7 @@ class HasName(Protocol):
 class HasParent(Protocol):
     @property
     @abstractmethod
-    def parent(self) -> Optional[Any]:
+    def parent(self) -> Any | None:
         """``None``, or a reference to a parent device.
 
         Used by the RE to stop duplicate stages.
@@ -152,7 +138,7 @@ class WritesExternalAssets(Protocol):
 @runtime_checkable
 class WritesStreamAssets(Protocol):
     @abstractmethod
-    def collect_asset_docs(self, index: Optional[int] = None) -> SyncOrAsyncIterator[StreamAsset]:
+    def collect_asset_docs(self, index: int | None = None) -> SyncOrAsyncIterator[StreamAsset]:
         """Create the resource and datum documents describing data in external
             source up to a given index if provided.
 
@@ -219,7 +205,7 @@ class Triggerable(Protocol):
 @runtime_checkable
 class Preparable(Protocol):
     @abstractmethod
-    def prepare(self, value) -> Status:
+    def prepare(self, *args, **kwargs) -> Status:
         """Prepare a device for scanning.
 
         This method provides similar functionality to ``Stageable.stage`` and
@@ -304,7 +290,7 @@ class Readable(HasName, Protocol[T]):
 @runtime_checkable
 class Collectable(HasName, Protocol):
     @abstractmethod
-    def describe_collect(self) -> SyncOrAsync[Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]]:
+    def describe_collect(self) -> SyncOrAsync[dict[str, DataKey] | dict[str, dict[str, DataKey]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
         Since a flyer can potentially return more than one event stream, this is either
@@ -396,7 +382,7 @@ class Stageable(Protocol):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     @abstractmethod
-    def stage(self) -> Union[Status, list[Any]]:
+    def stage(self) -> Status | list[Any]:
         """An optional hook for "setting up" the device for acquisition.
 
         It should return a ``Status`` that is marked done when the device is
@@ -405,7 +391,7 @@ class Stageable(Protocol):
         ...
 
     @abstractmethod
-    def unstage(self) -> Union[Status, list[Any]]:
+    def unstage(self) -> Status | list[Any]:
         """A hook for "cleaning up" the device after acquisition.
 
         It should return a ``Status`` that is marked done when the device is finished
@@ -493,17 +479,26 @@ class Checkable(Protocol[T_co]):
         ...
 
 
-class Hints(TypedDict, total=False):
-    """A dictionary of optional hints for visualization"""
+class _HintsRequired(TypedDict):
+    """Required fields for hints"""
 
     #: A list of the interesting fields to plot
     fields: list[str]
+
+
+class _HintsOptional(TypedDict, total=False):
+    """Optional fields for hints"""
+
     #: Partition fields (and their stream name) into dimensions for plotting
     #:
     #: ``'dimensions': [(fields, stream_name), (fields, stream_name), ...]``
     dimensions: list[tuple[list[str], str]]
     #: Include this if scan data is sampled on a regular rectangular grid
     gridding: Literal["rectilinear", "rectilinear_nonsequential"]
+
+
+class Hints(_HintsRequired, _HintsOptional):
+    """A dictionary of hints for visualization with required fields field"""
 
 
 @runtime_checkable
@@ -521,13 +516,64 @@ class HasHints(HasName, Protocol):
 
 
 @runtime_checkable
-class NamedMovable(Movable[T_co], HasHints, Protocol):
+class NamedChild(HasParent, HasName, Protocol):
+    """A child object that has a name and a parent device."""
+
+
+# This is a convenience alias for when you need a Movable that also has a name.
+# This is required in plans.list_scan.
+@runtime_checkable
+class NamedMovable(Movable[T_co], HasName, Protocol):
+    """A movable object that has a name."""
+
+
+@runtime_checkable
+class NamedChildMovable(NamedChild, Movable[T_co], Protocol):
+    """A movable object that has a name and a parent device."""
+
+
+@runtime_checkable
+class NamedChildMovableAndStageable(NamedChild, Movable[T_co], Stageable, Protocol):
+    """A movable and stageable object that has a name and a parent device."""
+
+
+@runtime_checkable
+class HintedMovable(Movable[T_co], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
-    ...
+
+# TODO if this is too ugly, just include HasParent into all devices
+# Adding this here to make it easy to search the codebase for places where it is needed.
+@runtime_checkable
+class ChildHintedMovable(HasParent, HintedMovable[T_co], Protocol):
+    """A movable object that has a parent device and hints."""
 
 
-def check_supports(obj: T, protocol: type[Any]) -> T:
+@runtime_checkable
+class NamedChildHintedMovable(NamedChild, HintedMovable[T_co], Protocol):
+    """A movable object that has a name, a parent device and hints."""
+
+
+# This is a convenience alias for when you need a Readable that also has a parent.
+@runtime_checkable
+class ChildReadable(HasParent, Readable[T], Protocol):
+    """A readable object that has a parent device (and a name because they're readable)."""
+
+
+# The stage wrapper uses separate_devices to avoid staging parents multiple times.
+# Therefore we need to ensure the device is both stageable and has a parent.
+@runtime_checkable
+class ChildStageable(HasParent, Stageable, Protocol):
+    """A stageable object that has a parent device."""
+
+
+# Some plans use a stage decorator on detectors
+@runtime_checkable
+class ChildReadableAndStageable(ChildReadable[T], ChildStageable, Protocol):
+    """A readable and stageable object that has a parent device."""
+
+
+def check_supports(obj: Any, protocol: type[T]) -> T:
     """Check that an object supports a protocol
 
     This exists so that multiple protocol checks can be run in a mypy
@@ -537,8 +583,23 @@ def check_supports(obj: T, protocol: type[Any]) -> T:
         triggerable.trigger()
         readable = check_supports(obj, Readable)
         readable.read()
+
+    Note: Due to Python's type system limitations, chaining check_supports
+    calls loses previous protocol information:
+
+        device = check_supports(obj, Readable)
+        device = check_supports(device, Triggerable)
+        # Type checker only knows about Triggerable, not Readable
+        device.read()      # Type error - Readable info lost
+        device.trigger()   # Works
+
+    For multiple protocols, use protocol inheritance instead (see examples
+    in this file like ReadableAndTriggerable).
     """
     assert isinstance(obj, protocol), "%s does not implement all %s methods" % (obj, protocol.__name__)  # noqa: UP031
+    # The isinstance check above ensures obj implements the protocol at runtime.
+    # This cast informs the type checker that obj now has the protocol's type.
+
     return obj
 
 

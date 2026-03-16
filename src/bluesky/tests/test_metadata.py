@@ -1,3 +1,4 @@
+import event_model
 import ophyd
 
 import bluesky
@@ -10,6 +11,10 @@ def test_blueskyversion(RE):
 
 def test_ophydversion(RE):
     assert RE.md["versions"].get("ophyd") == ophyd.__version__
+
+
+def test_eventmodelversion(RE):
+    assert RE.md["versions"].get("event_model") == event_model.__version__
 
 
 def test_old_md_validator(RE):

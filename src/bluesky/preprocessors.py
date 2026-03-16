@@ -1,9 +1,11 @@
 import uuid
 from collections import ChainMap, OrderedDict, deque
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import wraps
+from typing import Any, overload
 
-from bluesky.protocols import Locatable
+from bluesky.protocols import HasParent, Locatable, Stageable, check_supports
+from bluesky.utils import MsgGenerator
 
 from .plan_stubs import (
     close_run,
@@ -16,8 +18,12 @@ from .plan_stubs import (
     unstage_all,
 )
 from .utils import (
+    P2,
     Msg,
+    MsgGeneratorSP,
+    P,
     RunEngineControlException,
+    S,
     ensure_generator,
     get_hinted_fields,
     make_decorator,
@@ -30,7 +36,10 @@ from .utils import (
 from .utils import short_uid as _short_uid
 
 
-def plan_mutator(plan, msg_proc):
+def plan_mutator(
+    plan: MsgGeneratorSP[S, P],
+    msg_proc: Callable[[Msg], tuple[MsgGeneratorSP[S, Any] | None, MsgGeneratorSP[Any, Any] | None]],
+) -> MsgGeneratorSP[S, P]:
     """
     Alter the contents of a plan on the fly by changing or inserting messages.
 
@@ -76,17 +85,18 @@ def plan_mutator(plan, msg_proc):
     """
     # internal stacks
     msgs_seen = dict()  # noqa: C408
-    plan_stack = deque()
-    result_stack = deque()
+    plan_stack = deque[MsgGeneratorSP[S, P]]()
+    result_stack = deque[S | Any]()
     tail_cache = dict()  # noqa: C408
     tail_result_cache = dict()  # noqa: C408
     exception = None
 
     parent_plan = plan
-    ret_value = None
+    ret_value: P = None  # pyright: ignore[reportAssignmentType]
     # seed initial conditions
     plan_stack.append(plan)
     result_stack.append(None)
+    ret = None
 
     while True:
         # get last result
@@ -227,7 +237,7 @@ def plan_mutator(plan, msg_proc):
             result_stack.append(inner_ret)
 
 
-def msg_mutator(plan, msg_proc):
+def msg_mutator(plan: MsgGeneratorSP[S | None, P], msg_proc: Callable[[Msg], Msg | None]) -> MsgGeneratorSP[S, P]:
     """
     A simple preprocessor that mutates or deletes single messages in a plan.
 
@@ -254,7 +264,7 @@ def msg_mutator(plan, msg_proc):
     except StopIteration as _e:
         ret = _e.value
     else:
-        while 1:
+        while True:
             try:
                 msg = msg_proc(msg)
                 # if None, just skip message
@@ -349,7 +359,7 @@ def print_summary_wrapper(plan):
     return (yield from msg_mutator(plan, spy))
 
 
-def run_wrapper(plan, *, md=None):
+def run_wrapper(plan: MsgGenerator[P], *, md=None) -> MsgGenerator[str]:
     """Enclose in 'open_run' and 'close_run' messages.
 
     Parameters
@@ -505,7 +515,7 @@ def configure_count_time_wrapper(plan, time):
         return (yield from finalize_wrapper(plan_mutator(plan, insert_set), reset()))
 
 
-def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
+def finalize_wrapper(plan: MsgGenerator[P], final_plan, *, pause_for_debug=False) -> MsgGenerator[P]:
     """try...finally helper
 
     Run the first plan and then the second.  If any of the messages
@@ -521,7 +531,7 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
         a generator, list, or similar containing `Msg` objects
     final_plan : callable, iterable or iterator
         a generator, list, or similar containing `Msg` objects or a callable
-        that reurns one; attempted to be run no matter what happens in the
+        that returns one; attempted to be run no matter what happens in the
         first plan
     pause_for_debug : bool, optional
         If the plan should pause before running the clean final_plan in
@@ -568,15 +578,39 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     return ret
 
 
+@overload
 def contingency_wrapper(
-    plan,
+    plan: MsgGenerator[P],
     *,
-    except_plan=None,
+    except_plan: None = None,
     else_plan=None,
     final_plan=None,
     pause_for_debug=False,
     auto_raise=True,
-):
+) -> MsgGenerator[P]: ...
+
+
+@overload
+def contingency_wrapper(
+    plan: MsgGenerator[P],
+    *,
+    except_plan: Callable[..., MsgGenerator[P2]],
+    else_plan=None,
+    final_plan=None,
+    pause_for_debug=False,
+    auto_raise=True,
+) -> MsgGenerator[P | P2]: ...
+
+
+def contingency_wrapper(
+    plan: MsgGenerator[P],
+    *,
+    except_plan: Callable[..., MsgGenerator[P2]] | None = None,
+    else_plan=None,
+    final_plan=None,
+    pause_for_debug=False,
+    auto_raise=True,
+) -> MsgGenerator[P | P2] | MsgGenerator[P]:
     """try...except...else...finally helper
 
     See :func:`finalize_wrapper` for a simplified but less powerful
@@ -976,7 +1010,7 @@ def lazily_stage_wrapper(plan):
     return (yield from finalize_wrapper(plan_mutator(plan, inner), inner_unstage_all()))
 
 
-def stage_wrapper(plan, devices):
+def stage_wrapper(plan: MsgGenerator[P], devices: Iterable[Stageable]):
     """
     'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.
 
@@ -998,13 +1032,17 @@ def stage_wrapper(plan, devices):
     :func:`bluesky.plans.stage`
     :func:`bluesky.plans.unstage`
     """
-    devices = separate_devices(root_ancestor(device) for device in devices)
+
+    _devices_with_parent = [device for device in devices if isinstance(device, HasParent)]
+    _devices_without_parent = [device for device in devices if not isinstance(device, HasParent)]
+    _devices = separate_devices(root_ancestor(device) for device in _devices_with_parent) + _devices_without_parent
+    _devices = [check_supports(device, Stageable) for device in _devices]
 
     def stage_devices():
-        yield from stage_all(*devices)
+        yield from stage_all(*_devices)
 
     def unstage_devices():
-        yield from unstage_all(*reversed(devices))
+        yield from unstage_all(*reversed(_devices))
 
     def inner():
         yield from stage_devices()
@@ -1043,7 +1081,7 @@ def __get_result_of_message(msg_type: str, obj):
     return result
 
 
-def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
+def __read_and_stash_a_motor(obj: HasParent, initial_positions, coupled_parents):
     """Internal plan for relative set and reset wrappers
 
 
@@ -1061,7 +1099,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
             setpoint = location["setpoint"]
     # Otherwise it might have a `position` attribution
     elif hasattr(obj, "position"):
-        setpoint = obj.position
+        setpoint = obj.position  # pyright: ignore[reportAttributeAccessIssue]
     # Otherwise fallback to read obj and grab the value of the first key
     else:
         reading = yield from __get_result_of_message("read", obj)
@@ -1086,22 +1124,23 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     initial_positions[obj] = setpoint
 
     # if we move a pseudo positioner also stash it's children
+    # TODO implement protocol for .pseudo_positioners
     if obj in coupled_parents:
-        for c, p in zip(obj.pseudo_positioners, setpoint):
+        for c, p in zip(obj.pseudo_positioners, setpoint):  # pyright: ignore[reportArgumentType, reportAttributeAccessIssue]
             initial_positions[c] = p
 
     # if we move a pseudo single, also stash it's parent and siblings
     parent = obj.parent
-    if parent in coupled_parents and obj in parent.pseudo_positioners:
-        parent_pos = parent.position
+    if parent in coupled_parents and obj in parent.pseudo_positioners:  # pyright: ignore[reportOptionalMemberAccess]
+        parent_pos = parent.position  # pyright: ignore[reportOptionalMemberAccess]
         initial_positions[parent] = parent_pos
-        for c, p in zip(parent.pseudo_positioners, parent_pos):
+        for c, p in zip(parent.pseudo_positioners, parent_pos):  # pyright: ignore[reportOptionalMemberAccess]
             initial_positions[c] = p
 
     # TODO forbid mixed pseudo / real motion
 
 
-def relative_set_wrapper(plan, devices=None):
+def relative_set_wrapper(plan: MsgGenerator[P], devices=None) -> MsgGenerator[P]:
     """
     Interpret 'set' messages on devices as relative to initial position.
 
@@ -1152,7 +1191,7 @@ def relative_set_wrapper(plan, devices=None):
     return (yield from plan)
 
 
-def reset_positions_wrapper(plan, devices=None):
+def reset_positions_wrapper(plan: MsgGenerator[P], devices=None):
     """
     Return movable devices to their initial positions at the end.
 
@@ -1174,7 +1213,7 @@ def reset_positions_wrapper(plan, devices=None):
     else:
         coupled_parents = set()
 
-    def insert_reads(msg):
+    def insert_reads(msg: Msg):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
         if (msg.command == "set") and eligible and not seen:

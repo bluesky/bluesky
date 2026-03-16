@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, TypeVar, cast
 
 from cycler import cycler
 
@@ -22,11 +22,13 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    ChildReadable,
     Configurable,
     Flyable,
     Locatable,
     Location,
     Movable,
+    NamedChild,
     PartialEvent,
     Preparable,
     Readable,
@@ -54,13 +56,15 @@ from .utils import (
     short_uid as _short_uid,
 )
 
+T = TypeVar("T")
+
 #: Any plan function that takes a reading given a list of Readables
-TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
+TakeReading = Callable[[Sequence[ChildReadable[T]]], MsgGenerator[Mapping[str, Reading[T]]]]
 
 
 @plan
 def declare_stream(
-    *objs: Readable, name: str, collect: bool = False
+    *objs: NamedChild, name: str, collect: bool = False
 ) -> MsgGenerator[tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
@@ -147,7 +151,7 @@ def drop() -> MsgGenerator:
 
 
 @plan
-def read(obj: Readable) -> MsgGenerator[Reading]:
+def read(obj: Readable[T]) -> MsgGenerator[dict[str, Reading[T]]]:
     """
     Take a reading and add it to the current bundle of readings.
 
@@ -169,20 +173,22 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
 
 
 @typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+def locate(obj: Locatable[T], /, *, squeeze: Literal[True] = True) -> MsgGenerator[Location[T]]: ...
 @typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
+def locate(
+    obj1: Locatable, obj2: Locatable, /, *objs: Locatable, squeeze: bool = True
+) -> MsgGenerator[list[Location]]: ...
 @plan
-def locate(*objs, squeeze=True):
+def locate(*objs, squeeze: bool = True) -> MsgGenerator[Location | list[Location]]:
     """
     Locate some Movables and return their locations.
 
     Parameters
     ----------
-    obj : Device or Signal
-    sqeeze: bool
-        If True, return the result as a list.
-        If False, always return a list of retults even with a single object.
+    obj or objs: one (or many) Device or Signal
+    squeeze: bool
+        If True, return the result directly when called with a single device.
+        If False, always return a list of results even with a single object.
 
     Yields
     ------
@@ -193,7 +199,7 @@ def locate(*objs, squeeze=True):
 
 
 @plan
-def monitor(obj: Readable, *, name: Optional[str] = None, **kwargs) -> MsgGenerator:
+def monitor(obj: Readable, *, name: str | None = None, **kwargs) -> MsgGenerator:
     """
     Asynchronously monitor for new values and emit Event documents.
 
@@ -257,7 +263,7 @@ def null() -> MsgGenerator:
 def abs_set(
     obj: Movable,
     *args: Any,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -305,7 +311,7 @@ def abs_set(
 def rel_set(
     obj: Movable,
     *args: Any,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -349,9 +355,9 @@ def rel_set(
 # is not currently able to be represented in python's type system
 @plan
 def mv(
-    *args: Union[Movable, Any],
-    group: Optional[Hashable] = None,
-    timeout: Optional[float] = None,
+    *args: Movable | Any,
+    group: Hashable | None = None,
+    timeout: float | None = None,
     **kwargs,
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
@@ -401,7 +407,7 @@ mov = mv  # synonym
 
 @plan
 def mvr(
-    *args: Union[Movable, Any], group: Optional[Hashable] = None, timeout: Optional[float] = None, **kwargs
+    *args: Movable | Any, group: Hashable | None = None, timeout: float | None = None, **kwargs
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -513,10 +519,11 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
     elif len(hints) == 0:
         hint = None
         if hasattr(obj, "read_attrs"):
-            if len(obj.read_attrs) != 1:
+            obj_read_attrs = cast(list, obj.read_attrs)  # type: ignore
+            if len(obj_read_attrs) != 1:
                 msg = (
                     f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
-                    f"and has {len(obj.read_attrs)} read attrs.  We do not know how to "
+                    f"and has {len(obj_read_attrs)} read attrs.  We do not know how to "
                     "pick out a single value.  Please adjust the hinting/read_attrs by "
                     "setting the kind of the components of this device or by reading one "
                     "of its components"
@@ -572,7 +579,7 @@ def stop(obj: Stoppable) -> MsgGenerator:
 def trigger(
     obj: Triggerable,
     *,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
 ) -> MsgGenerator[Status]:
     """
@@ -627,9 +634,9 @@ def sleep(time: float) -> MsgGenerator:
 
 @plan
 def wait(
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     *,
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
     error_on_timeout: bool = True,
     watch: Sequence[str] = (),
 ):
@@ -755,7 +762,7 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 
 
 @plan
-def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
+def prepare(obj: Preparable, *args, group: Hashable | None = None, wait: bool = False, **kwargs):
     """
     Prepare a device ready for trigger or kickoff.
 
@@ -792,7 +799,7 @@ def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool
 def kickoff(
     obj: Flyable,
     *,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -834,7 +841,7 @@ def kickoff(
 
 
 @plan
-def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kwargs):
+def kickoff_all(*args, group: Hashable | None = None, wait: bool = True, **kwargs):
     """
     Kickoff one or more fly-scanning devices.
 
@@ -878,7 +885,7 @@ def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kw
 def complete(
     obj: Flyable,
     *,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -927,7 +934,7 @@ def complete(
 
 
 @plan
-def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
+def complete_all(*args, group: Hashable | None = None, wait: bool = False, **kwargs):
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
@@ -975,7 +982,7 @@ def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **
 
 @plan
 def collect(
-    obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: Optional[str] = None
+    obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: str | None = None
 ) -> MsgGenerator[list[PartialEvent]]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
@@ -1081,9 +1088,9 @@ def configure(
 def stage(
     obj: Stageable,
     *,
-    group: Optional[Hashable] = None,
-    wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, list[Any]]]:
+    group: Hashable | None = None,
+    wait: bool | None = None,
+) -> MsgGenerator[Status | list[Any]]:
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
 
@@ -1129,7 +1136,7 @@ def stage(
 @plan
 def stage_all(
     *args: Stageable,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
 ) -> MsgGenerator[None]:
     """
     'Stage' one or more devices (i.e., prepare them for use, 'arm' them).
@@ -1166,9 +1173,9 @@ def stage_all(
 def unstage(
     obj: Stageable,
     *,
-    group: Optional[Hashable] = None,
-    wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, list[Any]]]:
+    group: Hashable | None = None,
+    wait: bool | None = None,
+) -> MsgGenerator[Status | list[Any]]:
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
 
@@ -1212,7 +1219,7 @@ def unstage(
 
 
 @plan
-def unstage_all(*args: Stageable, group: Optional[Hashable] = None) -> MsgGenerator[None]:
+def unstage_all(*args: Stageable, group: Hashable | None = None) -> MsgGenerator[None]:
     """
     'Unstage' one or more devices (i.e., put them in standby, 'disarm' them).
 
@@ -1340,7 +1347,7 @@ def remove_suspender(suspender: SuspenderBase) -> MsgGenerator:
 
 
 @plan
-def open_run(md: Optional[CustomPlanMetadata] = None) -> MsgGenerator[str]:
+def open_run(md: CustomPlanMetadata | None = None) -> MsgGenerator[str]:
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
 
@@ -1367,7 +1374,7 @@ def open_run(md: Optional[CustomPlanMetadata] = None) -> MsgGenerator[str]:
 
 
 @plan
-def close_run(exit_status: Optional[str] = None, reason: Optional[str] = None) -> MsgGenerator[str]:
+def close_run(exit_status: str | None = None, reason: str | None = None) -> MsgGenerator[str]:
     """
     Mark the end of the current 'run'. Emit a RunStop document.
 
@@ -1420,7 +1427,9 @@ def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs) -> MsgGe
 
 
 @plan
-def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgGenerator[Mapping[str, Reading]]:
+def trigger_and_read(
+    devices: Sequence[ChildReadable[T]], name: str = "primary"
+) -> MsgGenerator[Mapping[str, Reading[T]]]:
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -1447,6 +1456,7 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
         yield from null()
+        return {}
     devices = separate_devices(devices)  # remove redundant entries
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
 
@@ -1522,7 +1532,7 @@ def broadcast_msg(
 
 @plan
 def repeater(
-    n: Optional[int],
+    n: int | None,
     gen_func: Callable[..., MsgGenerator],
     *args,
     **kwargs,
@@ -1560,7 +1570,7 @@ def repeater(
 
 
 @plan
-def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]:
+def caching_repeater(n: int | None, plan: MsgGenerator) -> MsgGenerator[None]:
     """
     Generate n chained copies of the messages in a plan.
 
@@ -1594,7 +1604,7 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]
 
 
 @plan
-def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator[None]:
+def one_shot(detectors: Sequence[Readable[T]], take_reading: TakeReading[T] | None = None) -> MsgGenerator[None]:
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1625,11 +1635,11 @@ def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] 
 
 @plan
 def one_1d_step(
-    detectors: Sequence[Readable],
+    detectors: Sequence[Readable[T]],
     motor: Movable,
     step: Any,
-    take_reading: Optional[TakeReading] = None,
-) -> MsgGenerator[Mapping[str, Reading]]:
+    take_reading: TakeReading[T] | None = None,
+) -> MsgGenerator[Mapping[str, Reading[T]]]:
     """
     Inner loop of a 1D step scan
 
@@ -1708,7 +1718,7 @@ def one_nd_step(
     detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
     pos_cache: dict[Movable, Any],
-    take_reading: Optional[TakeReading] = None,
+    take_reading: TakeReading | None = None,
 ) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan
@@ -1746,7 +1756,7 @@ def one_nd_step(
 @plan
 def repeat(
     plan: Callable[[], MsgGenerator],
-    num: Optional[int] = 1,
+    num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
 ) -> MsgGenerator[Any]:
     """

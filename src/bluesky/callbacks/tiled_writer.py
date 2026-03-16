@@ -2,8 +2,9 @@ import copy
 import itertools
 import logging
 from collections import defaultdict, deque, namedtuple
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, cast
 from warnings import warn
 
 import pyarrow
@@ -180,8 +181,8 @@ class RunNormalizer(CallbackBase):
 
     def __init__(
         self,
-        patches: Optional[dict[str, Callable]] = None,
-        spec_to_mimetype: Optional[dict[str, str]] = None,
+        patches: dict[str, Callable] | None = None,
+        spec_to_mimetype: dict[str, str] | None = None,
     ):
         self._token_refs: dict[str, Callable] = {}
         self.dispatcher = Dispatcher()
@@ -199,7 +200,7 @@ class RunNormalizer(CallbackBase):
         self._int_keys: set[str] = set()  # Names of internal data_keys
         self._ext_keys: set[str] = set()
 
-    def _convert_resource_to_stream_resource(self, doc: Union[Resource, StreamResource]) -> StreamResource:
+    def _convert_resource_to_stream_resource(self, doc: Resource | StreamResource) -> StreamResource:
         """Make changes to and return a shallow copy of StreamRsource dictionary adhering to the new structure.
 
         Kept for back-compatibility with old StreamResource schema from event_model<1.20.0
@@ -241,7 +242,7 @@ class RunNormalizer(CallbackBase):
 
     def _convert_datum_to_stream_datum(
         self, datum_doc: Datum, data_key: str, desc_uid: str, seq_num: int
-    ) -> tuple[Optional[StreamResource], StreamDatum]:
+    ) -> tuple[StreamResource | None, StreamDatum]:
         """Convert the Datum document to the StreamDatum format
 
         This conversion requires (and is triggered when) the Event document is received. The function also returns
@@ -511,7 +512,7 @@ class _RunWriter(CallbackBase):
 
     def __init__(self, client: BaseClient, batch_size: int = BATCH_SIZE):
         self.client = client
-        self.root_node: Union[None, Container] = None
+        self.root_node: None | Container = None
         self._desc_nodes: dict[str, Container] = {}  # references to the descriptor nodes by their uid's and names
         self._sres_nodes: dict[str, BaseClient] = {}
         self._internal_tables: dict[str, DataFrameClient] = {}  # references to the internal tables by desc_names
@@ -575,7 +576,6 @@ class _RunWriter(CallbackBase):
             specs=[Spec("BlueskyRun", version="3.0")],
             access_tags=self.access_tags,
         )
-        self._streams_node = self.root_node.create_container(key="streams", access_tags=self.access_tags)
 
     def stop(self, doc: RunStop):
         if self.root_node is None:
@@ -606,18 +606,23 @@ class _RunWriter(CallbackBase):
         self.root_node.update_metadata(metadata={"stop": doc, **dict(self.root_node.metadata)}, drop_revision=True)
 
     def descriptor(self, doc: EventDescriptor):
+        if self.root_node is None:
+            raise RuntimeError("RunWriter is not properly initialized: no Start document has been recorded.")
+
         desc_name = doc["name"]  # Name of the descriptor/stream
         self.data_keys.update(doc.get("data_keys", {}))
 
         # Create a new Container with "composite" spec for the stream if it does not exist
+        # Since the data_keys are guaranteed to be unique, we don't need to perform client-side validation of the
+        # "composite" spec constraints and can use the `.base` (Container) client directly.
         if desc_name not in self._desc_nodes.keys():
             metadata = {k: v for k, v in doc.items() if k not in {"name", "object_keys", "run_start"}}
-            desc_node = self._streams_node.create_container(
+            desc_node = self.root_node.create_container(
                 key=desc_name,
                 metadata=truncate_json_overflow(metadata),
                 specs=[Spec("BlueskyEventStream", version="3.0"), Spec("composite")],
                 access_tags=self.access_tags,
-            )
+            ).base
         else:
             # Rare Case: This new descriptor likely updates stream configs mid-experiment
             # We assume tha the full descriptor has been already received, so we don't need to store everything
@@ -653,7 +658,7 @@ class _RunWriter(CallbackBase):
     def stream_resource(self, doc: StreamResource):
         self._stream_resource_cache[doc["uid"]] = doc
 
-    def get_sres_node(self, sres_uid: str, desc_uid: Optional[str] = None) -> tuple[BaseClient, ConsolidatorBase]:
+    def get_sres_node(self, sres_uid: str, desc_uid: str | None = None) -> tuple[BaseClient, ConsolidatorBase]:
         """Get the Tiled node and the associate Consolidator corresponding to the data_key in StreamResource
 
         If the node does not exist, register it from a cached StreamResource document. Keep a reference to the
@@ -767,10 +772,10 @@ class TiledWriter:
         self,
         client: BaseClient,
         *,
-        normalizer: Optional[type[CallbackBase]] = RunNormalizer,
-        patches: Optional[dict[str, Callable]] = None,
-        spec_to_mimetype: Optional[dict[str, str]] = None,
-        backup_directory: Optional[str] = None,
+        normalizer: type[CallbackBase] | None = RunNormalizer,
+        patches: dict[str, Callable] | None = None,
+        spec_to_mimetype: dict[str, str] | None = None,
+        backup_directory: str | None = None,
         batch_size: int = BATCH_SIZE,
     ):
         self.client = client.include_data_sources()
@@ -801,10 +806,10 @@ class TiledWriter:
         cls,
         uri,
         *,
-        normalizer: Optional[type[CallbackBase]] = RunNormalizer,
-        patches: Optional[dict[str, Callable]] = None,
-        spec_to_mimetype: Optional[dict[str, str]] = None,
-        backup_directory: Optional[str] = None,
+        normalizer: type[CallbackBase] | None = RunNormalizer,
+        patches: dict[str, Callable] | None = None,
+        spec_to_mimetype: dict[str, str] | None = None,
+        backup_directory: str | None = None,
         batch_size: int = BATCH_SIZE,
         **kwargs,
     ):
@@ -823,10 +828,10 @@ class TiledWriter:
         cls,
         profile,
         *,
-        normalizer: Optional[type[CallbackBase]] = RunNormalizer,
-        patches: Optional[dict[str, Callable]] = None,
-        spec_to_mimetype: Optional[dict[str, str]] = None,
-        backup_directory: Optional[str] = None,
+        normalizer: type[CallbackBase] | None = RunNormalizer,
+        patches: dict[str, Callable] | None = None,
+        spec_to_mimetype: dict[str, str] | None = None,
+        backup_directory: str | None = None,
         batch_size: int = BATCH_SIZE,
         **kwargs,
     ):

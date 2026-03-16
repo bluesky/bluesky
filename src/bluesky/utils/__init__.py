@@ -15,18 +15,11 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable, Sequence
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    TypedDict,
-    TypeVar,
-    Union,
-)
+from typing import Any, Concatenate, TypeAlias, TypedDict, TypeVar
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -36,7 +29,7 @@ from cycler import Cycler, cycler
 from event_model.documents import Document, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
-from typing_extensions import TypeIs
+from typing_extensions import ParamSpec, TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import (
@@ -83,22 +76,29 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
+T_child_contra = TypeVar("T_child_contra", contravariant=True, bound=HasParent)
+
 #: Return type of a plan, usually None. Always optional for dry-runs.
 P = TypeVar("P")
+P2 = TypeVar("P2")
+
+#: Send type of a plan
+S = TypeVar("S")
 
 #: Object usually returned from plan functions that is fed to the RunEngine
 MsgGenerator = Generator[Msg, Any, P]
+MsgGeneratorSP = Generator[Msg, S, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
 CustomPlanMetadata = dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
-ScalarOrIterableFloat = Union[float, TypingIterable[float]]
+ScalarOrIterableFloat: TypeAlias = float | TypingIterable[float]
 
 # Single function to be used as an event listener
 Subscriber = Callable[[str, P], Any]
 
-OneOrMany = Union[P, Sequence[P]]
+OneOrMany: TypeAlias = P | Sequence[P]
 
 
 # Mapping from event type to listener or list of listeners
@@ -111,11 +111,13 @@ class SubscriberMap(TypedDict, total=False):
 
 
 # Single listener, multiple listeners or mapping of listeners by event type
-Subscribers = Union[OneOrMany[Subscriber[Document]], SubscriberMap]
+Subscribers: TypeAlias = OneOrMany[Subscriber[Document]] | SubscriberMap
 
 
 class RunEngineControlException(Exception):
     """Exception for signaling within the RunEngine."""
+
+    exit_status: str
 
 
 class RequestAbort(RunEngineControlException):
@@ -715,7 +717,7 @@ def first_key_heuristic(device):
     return next(iter(device.describe()))
 
 
-def ancestry(obj):
+def ancestry(obj: HasParent) -> list[HasParent]:
     """
     List self, parent, grandparent, ... back to ultimate ancestor.
 
@@ -738,7 +740,7 @@ def ancestry(obj):
         ancestor = ancestor.parent
 
 
-def root_ancestor(obj):
+def root_ancestor(obj: HasParent) -> HasParent:
     """
     Traverse ancestry to obtain root ancestor.
 
@@ -754,7 +756,7 @@ def root_ancestor(obj):
     return ancestry(obj)[-1]
 
 
-def share_ancestor(obj1, obj2):
+def share_ancestor(obj1: HasParent, obj2: HasParent) -> bool:
     """
     Check whether obj1 and obj2 have a common ancestor.
 
@@ -772,13 +774,13 @@ def share_ancestor(obj1, obj2):
     return ancestry(obj1)[-1] is ancestry(obj2)[-1]
 
 
-def separate_devices(devices):
+def separate_devices(devices: Iterable[T_child_contra]) -> list[T_child_contra]:
     """
     Filter out elements that have other elements as their ancestors.
 
     If A is an ancestor of B, [A, B, C] -> [A, C].
 
-    Paremeters
+    Parameters
     ----------
     devices : list
         All elements must have a `parent` attribute.
@@ -790,6 +792,7 @@ def separate_devices(devices):
     """
     result = []
     for det in devices:
+        check_supports(det, HasParent)
         for existing_det in result[:]:
             if existing_det in ancestry(det):
                 # known issue: here we assume that det is in the read_attrs
@@ -1196,6 +1199,8 @@ def sanitize_np(val):
         if np.isscalar(val):
             return val.item()
         return val.tolist()
+    if type(val) in (list, tuple):
+        return type(val)(sanitize_np(v) for v in val)
     return val
 
 
@@ -1246,7 +1251,17 @@ def ts_msg_hook(msg, file=sys.stdout):
     print(f"{t} {msg_fmt}", file=file)
 
 
-def make_decorator(wrapper):
+P_Return = TypeVar("P_Return", covariant=True)
+PWrapperSpec = ParamSpec("PWrapperSpec")
+PGenFuncSpec = ParamSpec("PGenFuncSpec")
+
+
+def make_decorator(
+    wrapper: Callable[Concatenate[MsgGenerator[P], PWrapperSpec], MsgGenerator[P_Return]],
+) -> Callable[
+    PWrapperSpec,
+    Callable[[Callable[PGenFuncSpec, MsgGenerator[P]]], Callable[PGenFuncSpec, MsgGenerator[P_Return]]],
+]:
     """
     Turn a generator instance wrapper into a generator function decorator.
 
@@ -1270,13 +1285,15 @@ def make_decorator(wrapper):
     """
 
     @wraps(wrapper)
-    def dec_outer(*args, **kwargs):
-        def dec(gen_func):
+    def dec_outer(*args: PWrapperSpec.args, **kwargs: PWrapperSpec.kwargs):
+        def dec(gen_func: Callable[PGenFuncSpec, MsgGenerator[P]]):
             @wraps(gen_func)
-            def dec_inner(*inner_args, **inner_kwargs):
+            def dec_inner(
+                *inner_args: PGenFuncSpec.args, **inner_kwargs: PGenFuncSpec.kwargs
+            ) -> MsgGenerator[P_Return]:
                 plan = gen_func(*inner_args, **inner_kwargs)
-                plan = wrapper(plan, *args, **kwargs)
-                return (yield from plan)
+                wrapped_plan = wrapper(plan, *args, **kwargs)
+                return (yield from wrapped_plan)
 
             return dec_inner
 
@@ -1309,15 +1326,15 @@ class ProgressBarBase(abc.ABC):  # noqa: B024
         self,
         pos: Any,
         *,
-        name: Optional[str] = None,
+        name: str | None = None,
         current: Any = None,
         initial: Any = None,
         target: Any = None,
         unit: str = "units",
         precision: Any = None,
         fraction: Any = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
     ): ...
 
     def clear(self): ...  # noqa: B027
@@ -1464,7 +1481,7 @@ def default_progress_bar(status_objs_or_none) -> ProgressBarBase:
 
 class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
-    pbar: Optional[ProgressBarBase]
+    pbar: ProgressBarBase | None
 
     def __init__(self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
@@ -1933,8 +1950,8 @@ async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator
 
 
 async def maybe_collect_asset_docs(
-    msg, obj, index: Optional[int] = None, *args, **kwargs
-) -> AsyncIterable[Union[Asset, StreamAsset]]:
+    msg, obj, index: int | None = None, *args, **kwargs
+) -> AsyncIterable[Asset | StreamAsset]:
     # The if/elif statement must be done in this order because isinstance for protocol
     # doesn't check for exclusive signatures, and WritesExternalAssets will also
     # return true for a WritesStreamAsset as they both contain collect_asset_docs

@@ -1,13 +1,14 @@
 import argparse
 import logging
 import threading
+import warnings
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 
 logger = logging.getLogger("bluesky")
 
 
-def start_dispatcher(host, port, logfile=None):
+def start_dispatcher(out_address, logfile=None):
     """The dispatcher function
     Parameters
     ----------
@@ -15,7 +16,7 @@ def start_dispatcher(host, port, logfile=None):
         string come from user command. ex --logfile=temp.log
         logfile will be "temp.log". logfile could be empty.
     """
-    dispatcher = RemoteDispatcher((host, port))
+    dispatcher = RemoteDispatcher(out_address)
     if logfile is not None:
         raise ValueError(
             "Parameter 'logfile' is deprecated and will be removed in future releases. "
@@ -41,8 +42,15 @@ def start_dispatcher(host, port, logfile=None):
 def main():
     DESC = "Start a 0MQ proxy for publishing bluesky documents over a network."
     parser = argparse.ArgumentParser(description=DESC)
-    parser.add_argument("in_port", type=int, nargs=1, help="port that RunEngines should broadcast to")
-    parser.add_argument("out_port", type=int, nargs=1, help="port that subscribers should subscribe to")
+
+    # New optional arguments (preferred)
+    parser.add_argument("--in-address", dest="in_address_opt", help="port that RunEngines should broadcast to")
+    parser.add_argument("--out-address", dest="out_address_opt", help="port that subscribers should subscribe to")
+
+    # Old positional arguments (deprecated, for backward compatibility)
+    parser.add_argument("in_port", type=int, nargs="?", help=argparse.SUPPRESS)
+    parser.add_argument("out_port", type=int, nargs="?", help=argparse.SUPPRESS)
+
     parser.add_argument(
         "--verbose",
         "-v",
@@ -51,9 +59,52 @@ def main():
     )
     parser.add_argument("--logfile", type=str, help="Redirect logging output to a file on disk.")
     args = parser.parse_args()
-    in_port = args.in_port[0]
-    out_port = args.out_port[0]
 
+    # Handle backward compatibility
+    in_address = None
+    out_address = None
+
+    # Check if old positional arguments were used
+    if args.in_port is not None or args.out_port is not None:
+        # Validate that both are provided if using positional arguments
+        if args.in_port is None or args.out_port is None:
+            raise ValueError(
+                "Both in_port and out_port positional arguments must be provided together. "
+                "Consider using the new optional arguments instead: "
+                "--in-address and --out-address"
+            )
+
+        if args.in_address_opt is not None or args.out_address_opt is not None:
+            raise ValueError(
+                "Cannot mix positional arguments (in_port, out_port) with optional arguments "
+                "(--in-address, --out-address)."
+            )
+
+        warnings.warn(
+            "Using positional arguments for in_port and out_port is deprecated. "
+            "Use --in-address and --out-address instead.",
+            FutureWarning,
+            stacklevel=1,
+        )
+        in_address = args.in_port
+        out_address = args.out_port
+    else:
+        # Use new optional arguments
+        in_address = args.in_address_opt
+        out_address = args.out_address_opt
+
+    print("Connecting...")
+    try:
+        in_address = int(in_address)
+    except (ValueError, TypeError):
+        pass
+    try:
+        out_address = int(out_address)
+    except (ValueError, TypeError):
+        pass
+
+    proxy = Proxy(in_address, out_address)
+    print("Receiving on address %s; publishing to address %s." % (proxy.in_port, proxy.out_port))
     if args.verbose:
         from bluesky.log import config_bluesky_logging
 
@@ -64,11 +115,8 @@ def main():
         else:
             config_bluesky_logging(level=level)
         # Set daemon to kill all threads upon IPython exit
-        threading.Thread(target=start_dispatcher, args=("localhost", out_port), daemon=True).start()
+        threading.Thread(target=start_dispatcher, args=(proxy.out_port,), daemon=True).start()
 
-    print("Connecting...")
-    proxy = Proxy(in_port, out_port)
-    print("Receiving on port %d; publishing to port %d." % (in_port, out_port))
     print("Use Ctrl+C to exit.")
     try:
         proxy.start()

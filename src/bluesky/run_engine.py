@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import concurrent
 import copy
@@ -9,14 +11,17 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
+from collections.abc import Callable
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from inspect import iscoroutine
 from itertools import count
+from typing import TYPE_CHECKING, Protocol
 from warnings import warn
 
+import event_model
 from event_model import DocumentNames
 from opentelemetry import trace
 from opentelemetry.trace import Span
@@ -62,13 +67,14 @@ from .utils import (
     Subscribers,
     ensure_generator,
     normalize_subs_input,
+    sanitize_np,
     single_gen,
     warn_if_msg_args_or_kwargs,
 )
 
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
-current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
+current_task: typing.Callable[[asyncio.AbstractEventLoop | None], asyncio.Task | None]
 try:
     from asyncio import current_task
 except ImportError:
@@ -110,7 +116,7 @@ class RunEngineResult:
     exit_status: str
     interrupted: bool
     reason: str
-    exception: typing.Optional[Exception]
+    exception: Exception | None
 
 
 class RunEngineStateMachine(StateMachine):
@@ -170,6 +176,37 @@ class RunEngineStateMachine(StateMachine):
         ]
 
 
+if TYPE_CHECKING:
+
+    class StateHook(Protocol):
+        """Type stub for the state_hook variable of RunEngine."""
+
+        def __call__(self, new_state, old_state) -> None: ...
+
+    class _RunEngineState(str):
+        """Type stub for the state returned by RunEngine._state / RunEngine.state."""
+
+        is_idle: bool
+        is_running: bool
+        is_pausing: bool
+        is_paused: bool
+        is_halting: bool
+        is_stopping: bool
+        is_aborting: bool
+        is_suspending: bool
+        is_panicked: bool
+        can_pause: bool
+        can_be_idle: bool
+        can_be_running: bool
+        can_be_pausing: bool
+        can_be_paused: bool
+        can_be_halting: bool
+        can_be_stopping: bool
+        can_be_aborting: bool
+        can_be_suspending: bool
+        can_be_panicked: bool
+
+
 class LoggingPropertyMachine(PropertyMachine):
     """expects object to have a `log` attribute
     and a `state_hook` attribute that is ``None`` or a callable with signature
@@ -178,7 +215,7 @@ class LoggingPropertyMachine(PropertyMachine):
     def __init__(self, machine_type):
         super().__init__(machine_type)
 
-    def __set__(self, obj, value):
+    def __set__(self, obj: RunEngine, value):
         own = type(obj)
         old_value = self.__get__(obj, own)
         with obj._state_lock:
@@ -190,7 +227,7 @@ class LoggingPropertyMachine(PropertyMachine):
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: RunEngine | None, owner):  # pyright: ignore[reportIncompatibleMethodOverride]
         if instance is None:
             return super().__get__(instance, owner)
         with instance._state_lock:
@@ -377,12 +414,13 @@ class RunEngine:
         "remove_suspender",
         "_start_suspender",
     ]
+    state_hook: StateHook | None
 
     RunBundler = RunBundler
 
     @property
-    def state(self):
-        return self._state
+    def state(self) -> _RunEngineState:
+        return self._state  # pyright: ignore[reportReturnType]
 
     @property
     def deferred_pause_requested(self):
@@ -402,15 +440,15 @@ class RunEngine:
 
     def __init__(
         self,
-        md: typing.Optional[dict] = None,
+        md: dict | None = None,
         *,
-        loop: typing.Optional[asyncio.AbstractEventLoop] = None,
-        preprocessors: typing.Optional[list] = None,
-        context_managers: typing.Optional[list] = None,
-        md_validator: typing.Optional[typing.Callable] = None,
-        md_normalizer: typing.Optional[typing.Callable] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        preprocessors: list | None = None,
+        context_managers: list | None = None,
+        md_validator: typing.Callable | None = None,
+        md_normalizer: typing.Callable | None = None,
         scan_id_source: typing.Callable[[dict], SyncOrAsync[int]] = default_scan_id_source,
-        during_task: typing.Optional[DuringTask] = None,
+        during_task: DuringTask | None = None,
         call_returns_result: bool = False,
     ):
         if loop is None:
@@ -467,6 +505,7 @@ class RunEngine:
         from ._version import __version__
 
         self.md["versions"]["bluesky"] = __version__
+        self.md["versions"]["event_model"] = event_model.__version__
 
         if preprocessors is None:
             preprocessors = []
@@ -507,7 +546,9 @@ class RunEngine:
         self._movable_objs_touched: set[typing.Any] = set()  # objects we moved at any point
         self._run_start_uids: list[typing.Any] = list()  # run start uids generated by __call__  # noqa: C408
         self._suspenders: set[typing.Any] = set()  # set holding suspenders
-        self._groups: defaultdict[typing.Any, set[typing.Any]] = defaultdict(set)  # sets of Events to wait for
+        self._groups: defaultdict[str, set[Callable[[], asyncio.Future]]] = defaultdict(
+            set
+        )  # sets of Events to wait for
         self._status_objs: defaultdict[typing.Any, set[typing.Any]] = defaultdict(
             set
         )  # status objects to wait for
@@ -702,11 +743,13 @@ class RunEngine:
 
     @property
     def verbose(self):
-        return not self.log.disabled
+        # TODO Include test coverage for this property.
+        return not self.log.logger.disabled
 
     @verbose.setter
     def verbose(self, value):
-        self.log.disabled = not value
+        # TODO Include test coverage for this property.
+        self.log.logger.disabled = not value
 
     @property
     def call_returns_result(self):
@@ -866,10 +909,10 @@ class RunEngine:
     def __call__(
         self,
         plan: typing.Iterable[Msg],
-        subs: typing.Optional[Subscribers] = None,
+        subs: Subscribers | None = None,
         /,
         **metadata_kw: typing.Any,
-    ) -> typing.Union[RunEngineResult, tuple[str, ...]]:
+    ) -> RunEngineResult | tuple[str, ...]:
         """Execute a plan.
 
         Any keyword arguments will be interpreted as metadata and recorded with
@@ -919,7 +962,7 @@ class RunEngine:
                 raise RuntimeError(text)
 
         # If we are in the wrong state, raise.
-        if not self._state.is_idle:
+        if not self.state.is_idle:
             raise RuntimeError(f"The RunEngine is in a {self._state} state")
 
         futs = []
@@ -999,9 +1042,9 @@ class RunEngine:
             raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
 
         # The state machine does not capture the whole picture.
-        if not self._state.is_paused:
+        if not self.state.is_paused:
             raise TransitionError(
-                f"The RunEngine is the {self._state} state. You can only resume for the paused state."
+                f"The RunEngine is the {self.state} state. You can only resume for the paused state."
             )
 
         self._interrupted = False
@@ -1224,7 +1267,7 @@ class RunEngine:
                 self._interrupted = True
                 with self._state_lock:
                     self._exception = FailedPause()
-                was_paused = self._state == "paused"
+                was_paused = self.state == "paused"
                 self._state = "aborting"
                 if not was_paused:
                     self._task.cancel()
@@ -1240,7 +1283,7 @@ class RunEngine:
             # The event loop is still running. The pre_plan will be processed,
             # and then the RunEngine will be hung up on processing the
             # 'wait_for' message until `fut` is set.
-            if not self._state == "paused":
+            if not self.state == "paused":
                 self._state = "suspending"
                 # bump the _run task out of what ever it is awaiting
                 self._task.cancel()
@@ -1323,7 +1366,7 @@ class RunEngine:
         return self.__interrupter_helper(self._abort_coro(reason))
 
     async def _abort_coro(self, reason):
-        if self._state.is_idle:
+        if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Aborting: running cleanup and marking exit_status as 'abort'...")
         self._interrupted = True
@@ -1332,7 +1375,7 @@ class RunEngine:
         self._exit_status = "abort"
         self._destroy_open_run_tracing_spans()
 
-        was_paused = self._state == "paused"
+        was_paused = self.state == "paused"
         self._state = "aborting"
         if was_paused:
             with self._state_lock:
@@ -1367,12 +1410,12 @@ class RunEngine:
         return self.__interrupter_helper(self._stop_coro())
 
     async def _stop_coro(self):
-        if self._state.is_idle:
+        if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Stopping: running cleanup and marking exit_status as 'success'...")
 
         self._interrupted = True
-        was_paused = self._state == "paused"
+        was_paused = self.state == "paused"
         self._state = "stopping"
         if was_paused:
             with self._state_lock:
@@ -1422,7 +1465,7 @@ class RunEngine:
             task = self.loop.create_task(coro)
             task.add_done_callback(end_cb)
 
-        was_paused = self._state == "paused"
+        was_paused = self.state == "paused"
         self.loop.call_soon_threadsafe(start_task)
         coro_event.wait()
         if was_paused:
@@ -1431,12 +1474,12 @@ class RunEngine:
         return task.result()
 
     async def _halt_coro(self):
-        if self._state.is_idle:
+        if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Halting: skipping cleanup and marking exit_status as 'abort'...")
         self._destroy_open_run_tracing_spans()
         self._interrupted = True
-        was_paused = self._state == "paused"
+        was_paused = self.state == "paused"
         self._state = "halting"
         if was_paused:
             with self._state_lock:
@@ -1496,7 +1539,7 @@ class RunEngine:
         try:
             self._state = "running"
             while True:
-                if self._state in ("pausing", "suspending"):
+                if self.state in ("pausing", "suspending"):
                     if not self.resumable:
                         self._run_permit.set()
                         stashed_exception = FailedPause()
@@ -1506,12 +1549,12 @@ class RunEngine:
                 # currently only using 'suspending' to get us into the
                 # block above, we do not have a 'suspended' state
                 # (yet)
-                if self._state == "suspending":
+                if self.state == "suspending":
                     self._state = "running"
                 if not self._run_permit.is_set():
                     # A pause has been requested. First, put everything in a
                     # resting state.
-                    assert self._state == "pausing"
+                    assert self.state == "pausing"
                     # Remove any monitoring callbacks, but keep refs in
                     # self._monitor_params to re-instate them later.
                     for current_run in self._run_bundlers.values():
@@ -1535,7 +1578,7 @@ class RunEngine:
                     # Restore any monitors
                     for current_run in self._run_bundlers.values():
                         await current_run.restore_monitors()
-                    if self._state == "paused":
+                    if self.state == "paused":
                         # may be called by 'resume', 'stop', 'abort', 'halt'
                         self._state = "running"
 
@@ -1661,13 +1704,12 @@ class RunEngine:
                         self._msg_cache.append(msg)
 
                     # try to look up the coroutine to execute the command
-                    if (
-                        coro := self._command_registry.get(msg.command, key_absence_sentinel := object())
-                    ) is key_absence_sentinel:
+                    if msg.command not in self._command_registry:
                         # flag invalid command
                         # and return to the top of the loop
                         new_response = InvalidCommand(msg.command)
                         continue
+                    coro = self._command_registry[msg.command]
 
                     # try to finally run the command the user asked for
                     try:
@@ -1701,20 +1743,20 @@ class RunEngine:
                     )
                     await self._halt_coro()
                 except asyncio.CancelledError as e:
-                    if self._state == "pausing":
+                    if self.state == "pausing":
                         # if we got a CancelledError and we are in the
                         # 'pausing' state clear the run permit and
                         # bounce to the top
                         self._run_permit.clear()
                         continue
-                    if self._state in ("halting", "stopping", "aborting"):
+                    if self.state in ("halting", "stopping", "aborting"):
                         # if we got this while just keep going in tear-down
                         exception_map = {"halting": PlanHalt, "stopping": RequestStop, "aborting": RequestAbort}
                         # if the exception is not set bounce to the top
                         if stashed_exception is None:
                             stashed_exception = exception_map[self.state]
                         continue
-                    if self._state == "suspending":
+                    if self.state == "suspending":
                         # just bounce to the top
                         continue
                     # if we are handling this twice, raise and leave the plans
@@ -1893,11 +1935,10 @@ class RunEngine:
         """
         # TODO extract this from the Msg
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object)
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             ims_msg = "A 'close_run' message was not received before the 'open_run' message"
             raise IllegalMessageSequence(ims_msg)
+        current_run = self._run_bundlers[run_key]
         ret = await current_run.close_run(msg)
         del self._run_bundlers[run_key]
         self._close_run_trace(msg)
@@ -1908,8 +1949,8 @@ class RunEngine:
         reason = msg.kwargs.get("reason", self._reason)
         try:
             _span: Span = self._run_tracing_spans.pop()
-            _span.set_attribute("exit_status", exit_status)
-            _span.set_attribute("reason", reason)
+            _span.set_attribute("exit_status", exit_status if exit_status is not None else "None")
+            _span.set_attribute("reason", reason if reason is not None else "None")
             _span.end()
         except IndexError:
             logger.warning("No open traces left to close!")
@@ -1930,16 +1971,15 @@ class RunEngine:
         Descriptor document.
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             ims_msg = (
                 "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
             raise IllegalMessageSequence(ims_msg)
+        current_run = self._run_bundlers[run_key]
         return await current_run.create(msg)
 
-    async def _declare_stream(self, msg):
+    async def _declare_stream(self, msg: Msg):
         """Trigger the run engine to start bundling future obj.describe() calls for
          an Event document
 
@@ -1956,13 +1996,12 @@ class RunEngine:
         on declare_stream, rather than `describe`.
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             ims_msg = (
                 "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
             raise IllegalMessageSequence(ims_msg)
+        current_run = self._run_bundlers[run_key]
         return await current_run.declare_stream(msg)
 
     async def _read(self, msg):
@@ -1985,9 +2024,8 @@ class RunEngine:
                 "`read` must return a dictionary."
             )
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is not key_absence_sentinel:
+        if run_key in self._run_bundlers:
+            current_run = self._run_bundlers[run_key]
             await current_run.read(msg, ret)
 
         return ret
@@ -2031,13 +2069,11 @@ class RunEngine:
         """
 
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             ims_msg = "A 'monitor' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
-        else:
-            await current_run.monitor(msg)
+        current_run = self._run_bundlers[run_key]
+        await current_run.monitor(msg)
         await self._reset_checkpoint_state_coro()
 
     async def _unmonitor(self, msg):
@@ -2049,13 +2085,11 @@ class RunEngine:
             Msg('unmonitor', obj)
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             ims_msg = "An 'unmonitor' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
-        else:
-            await current_run.unmonitor(msg)
+        current_run = self._run_bundlers[run_key]
+        await current_run.unmonitor(msg)
         await self._reset_checkpoint_state_coro()
 
     async def _save(self, msg):
@@ -2066,15 +2100,13 @@ class RunEngine:
             Msg('save')
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             # sanity check -- this should be caught by 'create' which makes
             # this code path impossible
             ims_msg = "A 'save' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
-        else:
-            await current_run.save(msg)
+        current_run = self._run_bundlers[run_key]
+        await current_run.save(msg)
 
     async def _drop(self, msg):
         """Drop the event that is currently being bundled
@@ -2084,13 +2116,11 @@ class RunEngine:
             Msg('drop')
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             ims_msg = "A 'drop' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
-        else:
-            await current_run.drop(msg)
+        current_run = self._run_bundlers[run_key]
+        await current_run.drop(msg)
 
     async def _prepare(self, msg):
         """Prepare a flyer for a flyscan
@@ -2134,11 +2164,10 @@ class RunEngine:
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             ims_msg = "A 'kickoff' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
+        current_run = self._run_bundlers[run_key]
 
         _, obj, args, kwargs, _ = msg
         obj = check_supports(obj, Flyable)
@@ -2192,12 +2221,11 @@ class RunEngine:
         """
         _set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key not in self._run_bundlers:
             # TODO add test exercising this path
             ims_msg = "A 'collect' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
+        current_run = self._run_bundlers[run_key]
 
         return await current_run.collect(msg)
 
@@ -2261,7 +2289,7 @@ class RunEngine:
             self.waiting_hook(*args, **kwargs)
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
-    async def _wait(self, msg):
+    async def _wait(self, msg: Msg) -> bool:
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done. Returns a boolean that is
         true when all triggered objects are done. When the keyword argument
@@ -2287,7 +2315,7 @@ class RunEngine:
             trace.get_current_span().set_attribute("group", group)
         else:
             trace.get_current_span().set_attribute("no_group_given", True)
-        futs = list(self._groups.pop(group, []))
+        futs = self._groups.pop(group, set())
         if futs:
             status_objs = self._status_objs.pop(group)
             try:
@@ -2302,7 +2330,7 @@ class RunEngine:
                     # bar.
                     self._call_waiting_hook(status_objs)
 
-                async def wait_for_first_exception(futures) -> list[asyncio.Future]:
+                async def wait_for_first_exception(futures: set) -> list[asyncio.Future]:
                     return await self._wait_for(
                         Msg(
                             "wait_for",
@@ -2319,9 +2347,9 @@ class RunEngine:
                 if watch:
                     # Create a task that waits for an exception on any watch group
                     # so we know whether to stop the wait early because of a watcher failure
-                    watch_futs = []
+                    watch_futs = set()
                     for w in watch:
-                        watch_futs.extend(self._groups.get(w, []))
+                        watch_futs.update(self._groups.get(w, set()))
                     watch_task = asyncio.create_task(wait_for_first_exception(watch_futs))
 
                     def cancel_status_task_if_error(fut: asyncio.Future[list[asyncio.Future]]):
@@ -2353,7 +2381,9 @@ class RunEngine:
                     if done:
                         self._call_waiting_hook(None)
                         self._seen_wait_and_move_on_keys.remove(group)
-            return done
+        else:
+            done = True
+        return done
 
     def _status_object_completed(self, ret, fut: asyncio.Future, pardon_failures):
         """
@@ -2377,6 +2407,10 @@ class RunEngine:
                 except Exception as e:
                     self._exception = e
                     fut.set_exception(e)
+                    # We have set the exception, but we don't mind if
+                    # no-one collects it from the future, so fetch it ourselves to
+                    # squash "Future exception was never retrieved" at teardown.
+                    fut.exception()
         else:
             fut.set_result(None)
 
@@ -2496,13 +2530,13 @@ class RunEngine:
             object.configure(*args, **kwargs)
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if run_key in self._run_bundlers:
+            current_run = self._run_bundlers[run_key]
+            if current_run.bundling:
+                ims_msg = "Cannot configure after 'create' but before 'save' Aborting!"
+                raise IllegalMessageSequence(ims_msg)
+        else:
             current_run = None
-        elif current_run.bundling:
-            ims_msg = "Cannot configure after 'create' but before 'save' Aborting!"
-            raise IllegalMessageSequence(ims_msg)
         _, obj, args, kwargs, _ = msg
 
         old, new = obj.configure(*args, **kwargs)
@@ -2631,7 +2665,9 @@ class RunEngine:
         """
         self.log.debug("Removing subscription %r", msg)
         _, obj, arg, kwargs, _ = msg
-        if (token := kwargs.get("token", key_absence_sentinel := object())) is key_absence_sentinel:
+        if "token" in kwargs:
+            token = kwargs["token"]
+        else:
             (token,) = arg
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
@@ -2802,7 +2838,7 @@ http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 
 def _set_span_msg_attributes(span, msg):
     span.set_attribute("msg.command", msg.command)
-    span.set_attribute("msg.args", msg.args)
+    span.set_attribute("msg.args", sanitize_np(msg.args))
     span.set_attribute("msg.kwargs", json.dumps(msg.kwargs, default=repr))
     span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
 
@@ -2864,7 +2900,7 @@ def in_bluesky_event_loop() -> bool:
         return loop is _bluesky_event_loop
 
 
-def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Optional[float] = None) -> T:
+def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: float | None = None) -> T:
     if _bluesky_event_loop is None or not _bluesky_event_loop.is_running():
         # Quell "coroutine never awaited" warnings
         if iscoroutine(coro):

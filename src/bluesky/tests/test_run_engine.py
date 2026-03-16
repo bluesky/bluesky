@@ -1972,6 +1972,22 @@ def test_wait_with_timeout(set_finished, RE, device_pair):
             RE(plan())
 
 
+def test_wait_then_add_to_groups(RE, device_pair):
+    def plan():
+        status1 = yield Msg("stage", device_pair[0], group="test_group")
+        done = yield from wait(group="test_group", timeout=0.001, error_on_timeout=False)
+        assert done is False
+        status2 = yield Msg("stage", device_pair[1], group="test_group")
+        done = yield from wait(group="test_group", timeout=0.001, error_on_timeout=False)
+        assert done is False
+        status1.set_finished()
+        status2.set_finished()
+        done = yield from wait(group="test_group", timeout=0.001)
+        assert done is True
+
+    RE(plan())
+
+
 async def finish_status_later(status, when: float, error: bool):
     await asyncio.sleep(when)
     if error:
@@ -2261,3 +2277,20 @@ def test_descriptor_order(RE):
                 assert list(doc["data_keys"]) == key_order
 
         RE(scan(dets, i1930.charlie, -1, 1, 2), lambda name, doc, key_order=key_order: check(key_order, name, doc))
+
+
+@requires_ophyd
+@pytest.mark.parametrize("wait", [True, False])
+def test_abs_set_fails(RE, wait):
+    from ophyd import Device, StatusBase
+
+    class FailingMovable(Device):
+        def set(self, value) -> Status:
+            status = StatusBase()
+            status.set_exception(LookupError("Movement failed"))
+            return status
+
+    device = FailingMovable(name="failing_device")
+
+    with pytest.raises(FailedStatus):
+        RE(abs_set(device, 10, wait=wait))
