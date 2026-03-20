@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.bundlers &#8212; bluesky 1.14.7.dev34+gb9f2635c3 documentation</title>
+    <title>bluesky.bundlers &#8212; bluesky 1.14.7.dev61+gc5fa3a309 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=1c35c7ca"></script>
+    <script src="../../_static/documentation_options.js?v=6941f0a4"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -481,7 +481,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev34+gb9f2635c3';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev61+gc5fa3a309';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -489,7 +489,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev34+gb9f2635c3" />
+  <meta name="docsearch:version" content="1.14.7.dev61+gc5fa3a309" />
   </head>
   
   
@@ -971,6 +971,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ttime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">combinations</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoggerAdapter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">TypeGuard</span><span class="p">,</span> <span class="n">cast</span>
@@ -1039,6 +1040,64 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 
 
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_StreamCache</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper data class that holds all cached data related to devices for a partiuclar stream.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Readable</span>
+    <span class="c1"># cache of obj.read() in one Event</span>
+    <span class="n">read_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">deque</span><span class="p">)</span>
+    <span class="c1"># cache of all obj.describe() output</span>
+    <span class="n">describe_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1"># Configurable</span>
+    <span class="c1"># obj.describe_configuration()</span>
+    <span class="n">config_desc_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="c1"># obj.read_configuration() values</span>
+    <span class="n">config_values_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="c1"># obj.read_configuration() timestamps</span>
+    <span class="n">config_ts_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ensure_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cache objects Readable and Configurable methods. Cache Collectable methods if collect is True.&quot;&quot;&quot;</span>
+        <span class="n">coros</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">collect</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">:</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_desc_cache</span><span class="p">:</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe_config</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">coros</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s describe and cache it.&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_describe_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s describe_configuration and cache it.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Configurable</span><span class="p">):</span>
+            <span class="n">conf_keys</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_configuration</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conf_keys</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_desc_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">conf_keys</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cache_read_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s configuration and cache it.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Configurable</span><span class="p">):</span>
+            <span class="n">conf</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">read_configuration</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conf</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config_values</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">config_ts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">config_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+            <span class="n">config_ts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_values_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_ts_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_ts</span>
+
+
 <div class="viewcode-block" id="RunBundler">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.html#bluesky.bundlers.RunBundler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RunBundler</span><span class="p">:</span>
@@ -1061,14 +1120,15 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># name given to event descriptor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_start_uid</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># The (future) runstart uid</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">HasName</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># objects read in one Event</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.read() in one Event</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">Asset</span> <span class="o">|</span> <span class="n">StreamAsset</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.collect_asset_docs()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># cache of all obj.describe() output  # noqa: C408</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408  # cache of all obj.describe() output</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">DataKey</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.describe_configuration()  # noqa: C408</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_config_values_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.read_configuration() values  # noqa: C408</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_config_ts_cache</span><span class="p">:</span> <span class="n">ObjDict</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># &quot; obj.read_configuration() timestamps  # noqa: C408</span>
+        <span class="c1"># Collectable</span>
+        <span class="c1"># cache of all obj.describe_collect() output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_saved_stream_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_StreamCache</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="p">:</span> <span class="n">_StreamCache</span> <span class="o">=</span> <span class="n">_StreamCache</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="n">Asset</span> <span class="o">|</span> <span class="n">StreamAsset</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>  <span class="c1"># cache of obj.collect_asset_docs()</span>
+
         <span class="c1"># cache of {name: (doc, compose_event, compose_event_page)}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">ComposeDescriptorBundle</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">HasName</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
@@ -1109,6 +1169,11 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_compose_resource</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">compose_resource</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_compose_stop</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">compose_stop</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_compose_stream_resource</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">compose_stream_resource</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span> <span class="o">=</span> <span class="n">_StreamCache</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_saved_stream_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
         <span class="n">doc_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
@@ -1198,9 +1263,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">dks</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s2">&quot;object_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span>
             <span class="n">data_keys</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dks</span><span class="p">)</span>
             <span class="n">config</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_values_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
-                <span class="s2">&quot;timestamps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_ts_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
-                <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
+                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">config_values_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
+                <span class="s2">&quot;timestamps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">config_ts_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
+                <span class="s2">&quot;data_keys&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">config_desc_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">],</span>
             <span class="p">}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">desc_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compose_descriptor</span><span class="p">(</span>
@@ -1229,17 +1294,6 @@ window.runMermaid = runMermaid;</script>
             <span class="nb">list</span><span class="p">(</span><span class="n">objs_dks</span><span class="p">),</span>
         <span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="n">coros</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">collect</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">:</span>
-            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="n">collect</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span>
-            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe_collect</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">:</span>
-            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe_config</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
-            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
-        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">coros</span><span class="p">)</span>
-
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">declare_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate and emit an EventDescriptor.&quot;&quot;&quot;</span>
         <span class="n">command</span><span class="p">,</span> <span class="n">no_obj</span><span class="p">,</span> <span class="n">objs</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">msg</span>
@@ -1250,6 +1304,8 @@ window.runMermaid = runMermaid;</script>
         <span class="k">assert</span> <span class="n">no_obj</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="n">objs</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">objs</span><span class="p">)</span>
         <span class="n">objs_dks</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># {collect_object: stream_data_keys}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_current_stream_cache</span><span class="p">(</span><span class="n">stream_name</span><span class="p">)</span>
 
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="n">collect</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
@@ -1265,7 +1321,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="sa">f</span><span class="s2">&quot;not return a single Dict[str, DataKey] for the passed in </span><span class="si">{</span><span class="n">stream_name</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+                <span class="n">data_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
 
             <span class="n">objs_dks</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_keys</span>
 
@@ -1273,6 +1329,14 @@ window.runMermaid = runMermaid;</script>
         <span class="n">existing_stream_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stream_name</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">stream_name</span><span class="p">,</span> <span class="n">objs_dks</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_current_stream_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_saved_stream_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_saved_stream_cache</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">read_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span> <span class="o">=</span> <span class="n">_StreamCache</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_saved_stream_cache</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span>
 
 <div class="viewcode-block" id="RunBundler.create">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.create.html#bluesky.bundlers.RunBundler.create">[docs]</a>
@@ -1298,7 +1362,6 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">&quot;bundle is closed with a &#39;save&#39; or &quot;</span>
                 <span class="s2">&quot;&#39;drop&#39; message.&quot;</span>
             <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_asset_docs_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bundling</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1315,7 +1378,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strict_pre_declare</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;In strict mode you must pre-declare streams.&quot;</span><span class="p">)</span></div>
+                <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="s2">&quot;In strict mode you must pre-declare streams.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_current_stream_cache</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bundle_name</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RunBundler.read">
@@ -1336,14 +1401,14 @@ window.runMermaid = runMermaid;</script>
             <span class="c1"># on the same device you make obj.describe() calls multiple times.</span>
             <span class="c1"># As this is harmless and not an expected use case, we don&#39;t guard</span>
             <span class="c1"># against it. Reading multiple devices concurrently works fine.</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
             <span class="c1"># check that current read collides with nothing else in</span>
             <span class="c1"># current event</span>
-            <span class="n">cur_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">cur_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="k">for</span> <span class="n">read_obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span>
                 <span class="c1"># that is, field names</span>
-                <span class="n">known_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">read_obj</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="n">known_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">read_obj</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
                 <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">known_keys</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">cur_keys</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Data keys (field names) from </span><span class="si">{</span><span class="n">obj</span><span class="si">!r}</span><span class="s2"> &quot;</span>
@@ -1356,7 +1421,7 @@ window.runMermaid = runMermaid;</script>
 
             <span class="c1"># Stash the results, which will be emitted the next time _save is</span>
             <span class="c1"># called --- or never emitted if _drop is called instead.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reading</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">read_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reading</span><span class="p">)</span>
             <span class="c1"># Ask the object for any resource or datum documents is has cached</span>
             <span class="c1"># and cache them as well. Likewise, these will be emitted if and</span>
             <span class="c1"># when _save is called.</span>
@@ -1365,35 +1430,6 @@ window.runMermaid = runMermaid;</script>
 
         <span class="k">return</span> <span class="n">reading</span></div>
 
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
-        <span class="s2">&quot;Read the object&#39;s describe and cache it.&quot;</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_describe_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
-        <span class="s2">&quot;Read the object&#39;s describe_configuration and cache it.&quot;</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Configurable</span><span class="p">):</span>
-            <span class="n">conf_keys</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_configuration</span><span class="p">())</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">conf_keys</span> <span class="o">=</span> <span class="p">{}</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_config_desc_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">conf_keys</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_read_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
-        <span class="s2">&quot;Read the object&#39;s configuration and cache it.&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Configurable</span><span class="p">):</span>
-            <span class="n">conf</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">read_configuration</span><span class="p">())</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">conf</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">config_values</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">config_ts</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">config_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
-            <span class="n">config_ts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_config_values_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_values</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_config_ts_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_ts</span>
 
 <div class="viewcode-block" id="RunBundler.monitor">
 <a class="viewcode-back" href="../../generated/bluesky.bundlers.RunBundler.monitor.html#bluesky.bundlers.RunBundler.monitor">[docs]</a>
@@ -1421,9 +1457,9 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A &#39;monitor&#39; message was sent for </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2"> which is already monitored&quot;</span><span class="p">)</span>
 
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
-        <span class="n">stream_bundle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="n">obj</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]})</span>
+        <span class="n">stream_bundle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="n">obj</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]})</span>
         <span class="n">compose_event</span> <span class="o">=</span> <span class="n">stream_bundle</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">emit_event</span><span class="p">(</span><span class="n">readings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -1560,8 +1596,8 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">descriptor_doc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">d_objs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># use the dequeue not the set to preserve order</span>
             <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objs_read</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">))</span>
-                <span class="n">objs_dks</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">))</span>
+                <span class="n">objs_dks</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
 
             <span class="n">descriptor_doc</span><span class="p">,</span> <span class="n">compose_event</span><span class="p">,</span> <span class="n">d_objs</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">desc_key</span><span class="p">,</span> <span class="n">objs_dks</span><span class="p">)</span>
 
@@ -1579,7 +1615,7 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
 
         <span class="c1"># Merge list of readings into single dict.</span>
-        <span class="n">readings</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_cache</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">readings</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">read_cache</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="n">data</span><span class="p">,</span> <span class="n">timestamps</span> <span class="o">=</span> <span class="n">_rearrange_into_parallel_dicts</span><span class="p">(</span><span class="n">readings</span><span class="p">)</span>
         <span class="c1"># Mark all externally-stored data as not filled so that consumers</span>
         <span class="c1"># know that the corresponding data are identifiers, not dereferenced</span>
@@ -1739,12 +1775,6 @@ window.runMermaid = runMermaid;</script>
             <span class="c1"># Empty dict, could be either but we don&#39;t care</span>
             <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Collectable</span><span class="p">):</span>
-        <span class="s2">&quot;Read the object&#39;s describe and cache it.&quot;</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">)</span>
-        <span class="n">c</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_collect</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
-
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collect_object</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Read an object&#39;s describe_collect and cache it.</span>
 
@@ -1768,7 +1798,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            }</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cached</span><span class="p">(</span><span class="n">collect_object</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe_collect</span><span class="p">(</span><span class="n">collect_object</span><span class="p">)</span>
 
         <span class="n">describe_collect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">collect_object</span><span class="p">]</span>
         <span class="n">describe_collect_items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_datakeys_with_stream_name</span><span class="p">(</span><span class="n">describe_collect</span><span class="p">)</span>
@@ -1801,6 +1831,12 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">stream_data_keys</span> <span class="ow">in</span> <span class="n">describe_collect_items</span><span class="p">:</span>
+            <span class="c1"># Will this be okay left at last stream?</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_current_stream_cache</span><span class="p">(</span><span class="n">stream_name</span><span class="p">)</span>
+            <span class="c1"># Should we make the describe_cache the describe_collect_cache?</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">collect_object</span><span class="p">]</span> <span class="o">=</span> <span class="n">stream_data_keys</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">ensure_cached</span><span class="p">(</span><span class="n">collect_object</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span> <span class="ow">or</span> <span class="p">(</span>
                 <span class="n">collect_object</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor_objs</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
             <span class="p">):</span>
@@ -2202,7 +2238,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            object.configure(*args, **kwargs)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">cache_read_config</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="c1"># Invalidate any event descriptors that include this object.</span>
         <span class="c1"># New event descriptors, with this new configuration, will</span>
         <span class="c1"># be created for any future event documents.</span>
@@ -2212,7 +2248,20 @@ window.runMermaid = runMermaid;</script>
                 <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj_set</span><span class="p">)</span>
                 <span class="k">continue</span></div>
-</div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cache_describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="s2">&quot;Read the object&#39;s describe_collect and cache it.&quot;</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">)</span>
+            <span class="n">c</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">describe_collect</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_describe_collect_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="n">coros</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">ensure_cached</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collect</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">collect</span><span class="p">:</span>
+            <span class="n">coros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_describe_collect</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">coros</span><span class="p">)</span></div>
 
 </pre></div>
 
