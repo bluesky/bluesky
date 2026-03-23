@@ -530,3 +530,17 @@ def check_supports(obj: T, protocol: type[Any]) -> T:
 
 # Descriptor with previous name on imports for backwards compatibility.
 Descriptor = DataKey
+
+@runtime_checkable
+class Executable(Protocol):
+    @abstractmethod
+    def execute(self, *args, **kwargs) -> SyncOrAsync[T]:
+        """Execute a remote procedural call on a device
+
+        execute should be a method that wraps an RPC which takes any
+        number of positional and keyword arguments and returns a status.
+        When awaited, the status may return an object.
+
+        This can be a standard function or an ``async`` function.
+        """
+        ...
