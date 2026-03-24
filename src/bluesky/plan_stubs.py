@@ -23,6 +23,7 @@ from event_model.documents import EventDescriptor
 
 from .protocols import (
     Configurable,
+    Executable,
     Flyable,
     Locatable,
     Location,
@@ -599,6 +600,47 @@ def trigger(
 
     """
     ret = yield Msg("trigger", obj, group=group)
+    if wait:
+        yield Msg("wait", None, group=group)
+    return ret
+
+
+@plan
+def execute(
+        obj: Executable,
+        *args,
+        group: Hashable | None = None,
+        wait: bool = False,
+        **kwargs,
+) -> MsgGenerator[Status]:
+    """
+    Execute a command on an executable device, optionally waiting for it to complete.
+    The following keywords are reserved and will not be passed through to
+    ``obj.execute()``.
+
+    Reserved Keywords: wait, group, obj
+
+    Parameters
+    ----------
+    obj : Executable
+        Device with an ``execute`` method
+    args :
+        passed through to ``obj.execute()``
+    group : string (or any hashable object), optional
+        identifier used by ``wait``
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    kwargs :
+        passed through to ``obj.execute()``
+
+    Yields
+    ------
+    msg : Msg
+        Msg('execute', obj, *args, **kwargs)
+
+    """
+    ret = yield Msg("execute", obj, *args, **kwargs, group=group)
     if wait:
         yield Msg("wait", None, group=group)
     return ret
