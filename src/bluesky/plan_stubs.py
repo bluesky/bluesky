@@ -640,10 +640,7 @@ def execute(
         Msg('execute', obj, *args, **kwargs)
 
     """
-    ret = yield Msg("execute", obj, *args, **kwargs, group=group)
-    if wait:
-        yield Msg("wait", None, group=group)
-    return ret
+    return (yield Msg("execute", obj, *args, **kwargs, group=group, wait=wait))
 
 
 @plan

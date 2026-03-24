@@ -2258,8 +2258,15 @@ class RunEngine:
         args = msg.args
         kwargs = dict(msg.kwargs)
         warn_if_msg_args_or_kwargs(msg, obj.execute, args, kwargs)
-        ret = await maybe_await(obj.execute(*msg.args, **kwargs))
-        return ret
+        wait = kwargs.pop("wait", False)
+        group = kwargs.pop("group", None)
+        if wait:
+            ret = await maybe_await(obj.execute(*msg.args, **kwargs))
+            return ret
+        else:
+            ret = obj.execute(*msg.args, **kwargs)
+            self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
+            return ret
 
     async def _trigger(self, msg):
         """
