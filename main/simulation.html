@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Simulation and Error Checking &#8212; bluesky 1.14.7.dev63+ge787ee18f documentation</title>
+    <title>Simulation and Error Checking &#8212; bluesky 1.14.7.dev67+g3ed6ebd98 documentation</title>
   
   
   
@@ -27,44 +27,49 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
-  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
 
-    <script src="_static/documentation_options.js?v=654a6d88"></script>
+    <script src="_static/documentation_options.js?v=00b89dc6"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'simulation';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev63+ge787ee18f';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev67+g3ed6ebd98';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="bluesky.simulators.summarize_plan" href="generated/bluesky.simulators.summarize_plan.html" />
     <link rel="prev" title="bluesky.suspenders.SuspendWhenChanged" href="generated/bluesky.suspenders.SuspendWhenChanged.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev63+ge787ee18f" />
+  <meta name="docsearch:version" content="1.14.7.dev67+g3ed6ebd98" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
   </head>
-  
-  
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
-
+  <body data-default-mode="">
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
@@ -96,7 +101,7 @@
 </div>
 
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
   <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
@@ -480,7 +485,14 @@
   </div>
   
     <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
         <div class="sidebar-primary-item">
+
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
@@ -623,42 +635,42 @@ have adaptive logic because their contents are determined dynamically during
 plan executation.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="nb">list</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="p">,</span><span class="mi">3</span><span class="p">))</span>
 <span class="gh">Out[5]: </span>
-<span class="go">[Msg(&#39;stage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;d8c18f1c-8b1f-4e9c-8ea4-20e072acdb02&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;stage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;d8c18f1c-8b1f-4e9c-8ea4-20e072acdb02&#39;}, run=None),</span>
+<span class="go">[Msg(&#39;stage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;33e165be-3f8d-4001-aed5-ae6ff8973dd1&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;stage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;33e165be-3f8d-4001-aed5-ae6ff8973dd1&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;open_run&#39;, obj=None, args=(), kwargs={&#39;detectors&#39;: [&#39;det&#39;], &#39;motors&#39;: (&#39;motor&#39;,), &#39;num_points&#39;: 3, &#39;num_intervals&#39;: 2, &#39;plan_args&#39;: {&#39;detectors&#39;: [&quot;SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;])&quot;], &#39;num&#39;: 3, &#39;args&#39;: [&quot;SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;])&quot;, 1, 3], &#39;per_step&#39;: &#39;None&#39;}, &#39;plan_name&#39;: &#39;scan&#39;, &#39;hints&#39;: {&#39;dimensions&#39;: [([&#39;motor&#39;], &#39;primary&#39;)]}, &#39;plan_pattern&#39;: &#39;inner_product&#39;, &#39;plan_pattern_module&#39;: &#39;bluesky.plan_patterns&#39;, &#39;plan_pattern_args&#39;: {&#39;num&#39;: 3, &#39;args&#39;: [&quot;SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;])&quot;, 1, 3]}}, run=None),</span>
 <span class="go"> Msg(&#39;checkpoint&#39;, obj=None, args=(), kwargs={}, run=None),</span>
-<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(1.0),), kwargs={&#39;group&#39;: &#39;set-f8ffbd&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-f8ffbd&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-fa8fec&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-fa8fec&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-fa8fec&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None, &#39;watch&#39;: ()}, run=None),</span>
+<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(1.0),), kwargs={&#39;group&#39;: &#39;set-368212&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-368212&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-81a00b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-81a00b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-81a00b&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None, &#39;watch&#39;: ()}, run=None),</span>
 <span class="go"> Msg(&#39;create&#39;, obj=None, args=(), kwargs={&#39;name&#39;: &#39;primary&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;save&#39;, obj=None, args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;checkpoint&#39;, obj=None, args=(), kwargs={}, run=None),</span>
-<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(2.0),), kwargs={&#39;group&#39;: &#39;set-5e3292&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-5e3292&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-ddb4a9&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-ddb4a9&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-ddb4a9&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None, &#39;watch&#39;: ()}, run=None),</span>
+<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(2.0),), kwargs={&#39;group&#39;: &#39;set-cb0c6e&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-cb0c6e&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-0ad58b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-0ad58b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-0ad58b&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None, &#39;watch&#39;: ()}, run=None),</span>
 <span class="go"> Msg(&#39;create&#39;, obj=None, args=(), kwargs={&#39;name&#39;: &#39;primary&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;save&#39;, obj=None, args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;checkpoint&#39;, obj=None, args=(), kwargs={}, run=None),</span>
-<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(3.0),), kwargs={&#39;group&#39;: &#39;set-2e8f7e&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-2e8f7e&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-131674&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-131674&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-131674&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None, &#39;watch&#39;: ()}, run=None),</span>
+<span class="go"> Msg(&#39;set&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(np.float64(3.0),), kwargs={&#39;group&#39;: &#39;set-c9300b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;set-c9300b&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-5363ca&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;trigger&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;trigger-5363ca&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;wait&#39;, obj=None, args=(), kwargs={&#39;group&#39;: &#39;trigger-5363ca&#39;, &#39;error_on_timeout&#39;: True, &#39;timeout&#39;: None, &#39;watch&#39;: ()}, run=None),</span>
 <span class="go"> Msg(&#39;create&#39;, obj=None, args=(), kwargs={&#39;name&#39;: &#39;primary&#39;}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;read&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;save&#39;, obj=None, args=(), kwargs={}, run=None),</span>
 <span class="go"> Msg(&#39;close_run&#39;, obj=None, args=(), kwargs={&#39;exit_status&#39;: None, &#39;reason&#39;: None}, run=None),</span>
-<span class="go"> Msg(&#39;unstage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;67e03da5-765c-4fcb-a3b5-eb48e7c00568&#39;}, run=None),</span>
-<span class="go"> Msg(&#39;unstage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;67e03da5-765c-4fcb-a3b5-eb48e7c00568&#39;}, run=None)]</span>
+<span class="go"> Msg(&#39;unstage&#39;, obj=SynAxis(prefix=&#39;&#39;, name=&#39;motor&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]), args=(), kwargs={&#39;group&#39;: &#39;f2bab9dd-4e4a-4642-9f58-e7fb0737ff2d&#39;}, run=None),</span>
+<span class="go"> Msg(&#39;unstage&#39;, obj=SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;]), args=(), kwargs={&#39;group&#39;: &#39;f2bab9dd-4e4a-4642-9f58-e7fb0737ff2d&#39;}, run=None)]</span>
 </pre></div>
 </div>
 </section>
@@ -782,8 +794,8 @@ have done.</p>
     class="page-toc tocsection onthispage">
     <i class="fa-solid fa-list"></i> On this page
   </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introspection">Introspection</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#summarize">Summarize</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#check-limits">Check Limits</a></li>
@@ -798,7 +810,7 @@ have done.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev63+ge787ee18f/docs/simulation.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev67+g3ed6ebd98/docs/simulation.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -811,13 +823,13 @@ have done.</p>
 </div>
 
   <div class="sidebar-secondary-item">
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/simulation.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div></div>
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/simulation.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
 
 </div></div>
               
@@ -832,8 +844,8 @@ have done.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -867,7 +879,7 @@ have done.</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
 </p></div>
       
     </div>

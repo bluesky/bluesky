@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Release History &#8212; bluesky 1.14.7.dev63+ge787ee18f documentation</title>
+    <title>Release History &#8212; bluesky 1.14.7.dev67+g3ed6ebd98 documentation</title>
   
   
   
@@ -27,44 +27,49 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
-  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
 
-    <script src="_static/documentation_options.js?v=654a6d88"></script>
+    <script src="_static/documentation_options.js?v=00b89dc6"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api_changes';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev63+ge787ee18f';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.14.7.dev67+g3ed6ebd98';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contributing" href="contributing.html" />
     <link rel="prev" title="The RunEngine run loop" href="run_engine.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.14.7.dev63+ge787ee18f" />
+  <meta name="docsearch:version" content="1.14.7.dev67+g3ed6ebd98" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
   </head>
-  
-  
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
-
+  <body data-default-mode="">
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
@@ -96,7 +101,7 @@
 </div>
 
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
   <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
@@ -480,7 +485,14 @@
   </div>
   
     <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
         <div class="sidebar-primary-item">
+
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
@@ -691,47 +703,47 @@ not being removed, but is strongly discouraged for new use.  To get the old pinn
 <section id="id12">
 <h3>Added<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>Adopt DiamondLightSource Copier Template by &#64;callumforrester in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1664">bluesky/bluesky#1664</a></p></li>
-<li><p>Add <cite>__main__.py</cite> and entrypoint for checking version info by &#64;jwlodek in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1699">bluesky/bluesky#1699</a></p></li>
-<li><p>Include Python3.12 Classifier by &#64;callumforrester in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1719">bluesky/bluesky#1719</a></p></li>
-<li><p>Adopt pydata documentation theme by &#64;AlexanderWells-diamond in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1706">bluesky/bluesky#1706</a></p></li>
-<li><p>Vendor a copy of Super State Machine by &#64;genematx in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1708">bluesky/bluesky#1708</a></p></li>
-<li><p>Callback to write documents to Tiled by &#64;genematx in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1660">bluesky/bluesky#1660</a></p></li>
-<li><p>Add class and decorator to warn users if plan is not iterated over by &#64;vshekar in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1709">bluesky/bluesky#1709</a></p></li>
-<li><p>Add collect_while_completing plan stub and test by &#64;jsouter in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1720">bluesky/bluesky#1720</a></p></li>
-<li><p>Create a simulated run engine for unit testing by &#64;rtuck99 in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1714">bluesky/bluesky#1714</a></p></li>
-<li><p>Expand <cite>TiledWriter</cite> by &#64;genematx in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1746">bluesky/bluesky#1746</a></p></li>
+<li><p>Adopt DiamondLightSource Copier Template by &#64;callumforrester in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1664">https://github.com/bluesky/bluesky/pull/1664</a></p></li>
+<li><p>Add <cite>__main__.py</cite> and entrypoint for checking version info by &#64;jwlodek in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1699">https://github.com/bluesky/bluesky/pull/1699</a></p></li>
+<li><p>Include Python3.12 Classifier by &#64;callumforrester in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1719">https://github.com/bluesky/bluesky/pull/1719</a></p></li>
+<li><p>Adopt pydata documentation theme by &#64;AlexanderWells-diamond in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1706">https://github.com/bluesky/bluesky/pull/1706</a></p></li>
+<li><p>Vendor a copy of Super State Machine by &#64;genematx in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1708">https://github.com/bluesky/bluesky/pull/1708</a></p></li>
+<li><p>Callback to write documents to Tiled by &#64;genematx in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1660">https://github.com/bluesky/bluesky/pull/1660</a></p></li>
+<li><p>Add class and decorator to warn users if plan is not iterated over by &#64;vshekar in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1709">https://github.com/bluesky/bluesky/pull/1709</a></p></li>
+<li><p>Add collect_while_completing plan stub and test by &#64;jsouter in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1720">https://github.com/bluesky/bluesky/pull/1720</a></p></li>
+<li><p>Create a simulated run engine for unit testing by &#64;rtuck99 in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1714">https://github.com/bluesky/bluesky/pull/1714</a></p></li>
+<li><p>Expand <cite>TiledWriter</cite> by &#64;genematx in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1746">https://github.com/bluesky/bluesky/pull/1746</a></p></li>
 </ul>
 </section>
 <section id="id13">
 <h3>Changed<a class="headerlink" href="#id13" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>Alter kickoff and complete plan stubs to take multiple flyables by &#64;abbiemery in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1663">bluesky/bluesky#1663</a></p></li>
-<li><p>Remove <cite>object_plans.py</cite> and associated test by &#64;DominicOram in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1696">bluesky/bluesky#1696</a></p></li>
-<li><p>Promotes <cite>warn_if_msg</cite> to a <cite>UserWarning</cite> by &#64;CoePaul in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1705">bluesky/bluesky#1705</a></p></li>
-<li><p>Removes fuzz in toto by &#64;CoePaul in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1710">bluesky/bluesky#1710</a></p></li>
-<li><p>Dont collect interactive tests by &#64;gilesknap in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1703">bluesky/bluesky#1703</a></p></li>
-<li><p>Remove nose package from dev dependencies list by &#64;Villtord in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1704">bluesky/bluesky#1704</a></p></li>
-<li><p>Pin <cite>sphinx&lt;7.3</cite> by &#64;callumforrester in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1717">bluesky/bluesky#1717</a></p></li>
-<li><p>Expose API to set title on <cite>LiveGrid</cite> plots by &#64;GDYendell in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1702">bluesky/bluesky#1702</a></p></li>
-<li><p>Remove unused <cite>pims</cite> library &#64;stan-dot in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1722">bluesky/bluesky#1722</a></p></li>
-<li><p>Include details on wrappers in tutorial docs by &#64;stan-dot in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1729">bluesky/bluesky#1729</a></p></li>
-<li><p>Use <cite>tmp_path</cite> instead of <cite>tmpdir</cite> fixture by &#64;jwlodek in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1730">bluesky/bluesky#1730</a></p></li>
-<li><p>Replace <cite>KeyError</cite> handling logic by &#64;CoePaul in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1718">bluesky/bluesky#1718</a></p></li>
-<li><p>Update for Tiled API change. by &#64;danielballan in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1748">bluesky/bluesky#1748</a></p></li>
-<li><p>Update test for revised <cite>StreamResource</cite>. by &#64;danielballan in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1749">bluesky/bluesky#1749</a></p></li>
-<li><p>Return the results of <cite>asyncio.wait</cite> in <cite>bps.wait_for</cite> by &#64;evalott100 in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1758">bluesky/bluesky#1758</a></p></li>
+<li><p>Alter kickoff and complete plan stubs to take multiple flyables by &#64;abbiemery in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1663">https://github.com/bluesky/bluesky/pull/1663</a></p></li>
+<li><p>Remove <cite>object_plans.py</cite> and associated test by &#64;DominicOram in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1696">https://github.com/bluesky/bluesky/pull/1696</a></p></li>
+<li><p>Promotes <cite>warn_if_msg</cite> to a <cite>UserWarning</cite> by &#64;CoePaul in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1705">https://github.com/bluesky/bluesky/pull/1705</a></p></li>
+<li><p>Removes fuzz in toto by &#64;CoePaul in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1710">https://github.com/bluesky/bluesky/pull/1710</a></p></li>
+<li><p>Dont collect interactive tests by &#64;gilesknap in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1703">https://github.com/bluesky/bluesky/pull/1703</a></p></li>
+<li><p>Remove nose package from dev dependencies list by &#64;Villtord in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1704">https://github.com/bluesky/bluesky/pull/1704</a></p></li>
+<li><p>Pin <cite>sphinx&lt;7.3</cite> by &#64;callumforrester in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1717">https://github.com/bluesky/bluesky/pull/1717</a></p></li>
+<li><p>Expose API to set title on <cite>LiveGrid</cite> plots by &#64;GDYendell in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1702">https://github.com/bluesky/bluesky/pull/1702</a></p></li>
+<li><p>Remove unused <cite>pims</cite> library &#64;stan-dot in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1722">https://github.com/bluesky/bluesky/pull/1722</a></p></li>
+<li><p>Include details on wrappers in tutorial docs by &#64;stan-dot in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1729">https://github.com/bluesky/bluesky/pull/1729</a></p></li>
+<li><p>Use <cite>tmp_path</cite> instead of <cite>tmpdir</cite> fixture by &#64;jwlodek in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1730">https://github.com/bluesky/bluesky/pull/1730</a></p></li>
+<li><p>Replace <cite>KeyError</cite> handling logic by &#64;CoePaul in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1718">https://github.com/bluesky/bluesky/pull/1718</a></p></li>
+<li><p>Update for Tiled API change. by &#64;danielballan in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1748">https://github.com/bluesky/bluesky/pull/1748</a></p></li>
+<li><p>Update test for revised <cite>StreamResource</cite>. by &#64;danielballan in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1749">https://github.com/bluesky/bluesky/pull/1749</a></p></li>
+<li><p>Return the results of <cite>asyncio.wait</cite> in <cite>bps.wait_for</cite> by &#64;evalott100 in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1758">https://github.com/bluesky/bluesky/pull/1758</a></p></li>
 </ul>
 </section>
 <section id="id14">
 <h3>Fixed<a class="headerlink" href="#id14" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>Fix ruff formatting of strings by &#64;callumforrester in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1675">bluesky/bluesky#1675</a></p></li>
-<li><p><cite>numpy==2.0</cite> compatibility by &#64;tacaswell in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1672">bluesky/bluesky#1672</a> and <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1732">bluesky/bluesky#1732</a></p></li>
-<li><p>Fix tests failing in devcontainer by &#64;gilesknap in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1700">bluesky/bluesky#1700</a></p></li>
-<li><p>Relax timing as 2s is failing on CI on py311 only by &#64;tacaswell in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1707">bluesky/bluesky#1707</a></p></li>
-<li><p>MacOS fix for failing tests in the <cite>test_zmq.py</cite> by &#64;skarakuzu in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1725">bluesky/bluesky#1725</a></p></li>
-<li><p>Fixed <cite>TiledWriter</cite> bug by &#64;genematx in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1744">bluesky/bluesky#1744</a></p></li>
+<li><p>Fix ruff formatting of strings by &#64;callumforrester in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1675">https://github.com/bluesky/bluesky/pull/1675</a></p></li>
+<li><p><cite>numpy==2.0</cite> compatibility by &#64;tacaswell in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1672">https://github.com/bluesky/bluesky/pull/1672</a> and <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1732">https://github.com/bluesky/bluesky/pull/1732</a></p></li>
+<li><p>Fix tests failing in devcontainer by &#64;gilesknap in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1700">https://github.com/bluesky/bluesky/pull/1700</a></p></li>
+<li><p>Relax timing as 2s is failing on CI on py311 only by &#64;tacaswell in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1707">https://github.com/bluesky/bluesky/pull/1707</a></p></li>
+<li><p>MacOS fix for failing tests in the <cite>test_zmq.py</cite> by &#64;skarakuzu in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1725">https://github.com/bluesky/bluesky/pull/1725</a></p></li>
+<li><p>Fixed <cite>TiledWriter</cite> bug by &#64;genematx in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1744">https://github.com/bluesky/bluesky/pull/1744</a></p></li>
 </ul>
 <p><strong>Full Changelog</strong>: <a class="reference external" href="https://github.com/bluesky/bluesky/compare/v1.13.0a3...v1.13.0a4">https://github.com/bluesky/bluesky/compare/v1.13.0a3…v1.13.0a4</a></p>
 </section>
@@ -762,17 +774,17 @@ well as validate it.</p></li>
 <ul class="simple">
 <li><p>Added a new prepare command to RunEngine and bundler, as well as protocol.
 This allows a step between <code class="docutils literal notranslate"><span class="pre">stage</span></code> and <code class="docutils literal notranslate"><span class="pre">kickoff</span></code> so flyers can prepare.
-by &#64;rosesyrett in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1639">bluesky/bluesky#1639</a></p></li>
-<li><p>Add delay to plan_args of count plan by &#64;DiamondJoseph in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1655">bluesky/bluesky#1655</a></p></li>
+by &#64;rosesyrett in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1639">https://github.com/bluesky/bluesky/pull/1639</a></p></li>
+<li><p>Add delay to plan_args of count plan by &#64;DiamondJoseph in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1655">https://github.com/bluesky/bluesky/pull/1655</a></p></li>
 </ul>
 </section>
 <section id="id18">
 <h3>Fixed<a class="headerlink" href="#id18" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>typing_extensions needs NotRequired (new 4.0.0) by &#64;maffettone in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1635">bluesky/bluesky#1635</a></p></li>
-<li><p>Fixed examples in debugging docs by &#64;DominicOram in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1500">bluesky/bluesky#1500</a></p></li>
-<li><p>Remove empty complete method from RunBundler by &#64;rosesyrett in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1644">bluesky/bluesky#1644</a></p></li>
-<li><p>Handle case of rewinding to before the beginning of a stream by &#64;tacaswell in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1648">bluesky/bluesky#1648</a></p></li>
+<li><p>typing_extensions needs NotRequired (new 4.0.0) by &#64;maffettone in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1635">https://github.com/bluesky/bluesky/pull/1635</a></p></li>
+<li><p>Fixed examples in debugging docs by &#64;DominicOram in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1500">https://github.com/bluesky/bluesky/pull/1500</a></p></li>
+<li><p>Remove empty complete method from RunBundler by &#64;rosesyrett in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1644">https://github.com/bluesky/bluesky/pull/1644</a></p></li>
+<li><p>Handle case of rewinding to before the beginning of a stream by &#64;tacaswell in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1648">https://github.com/bluesky/bluesky/pull/1648</a></p></li>
 </ul>
 </section>
 </section>
@@ -827,34 +839,34 @@ required for documentation-building to 3.5.0 (Nov 2021).</p></li>
 <section id="id22">
 <h3>Fixed<a class="headerlink" href="#id22" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>LiveGrids placing x-axis tick labels on all columns by &#64;maffettone in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1548">bluesky/bluesky#1548</a></p></li>
-<li><p>Remove callable from plan signature for qserver by &#64;maffettone in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1571">bluesky/bluesky#1571</a></p></li>
-<li><p>Propagate exception through failed status by &#64;RAYemelyanova in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1570">bluesky/bluesky#1570</a></p></li>
-<li><p>Resume thresholds to suspender justification message by &#64;tacaswell in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1554">bluesky/bluesky#1554</a></p></li>
-<li><p>Use Python version check rather than import error check to import Protocol by &#64;callumforrester in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1585">bluesky/bluesky#1585</a></p></li>
+<li><p>LiveGrids placing x-axis tick labels on all columns by &#64;maffettone in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1548">https://github.com/bluesky/bluesky/pull/1548</a></p></li>
+<li><p>Remove callable from plan signature for qserver by &#64;maffettone in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1571">https://github.com/bluesky/bluesky/pull/1571</a></p></li>
+<li><p>Propagate exception through failed status by &#64;RAYemelyanova in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1570">https://github.com/bluesky/bluesky/pull/1570</a></p></li>
+<li><p>Resume thresholds to suspender justification message by &#64;tacaswell in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1554">https://github.com/bluesky/bluesky/pull/1554</a></p></li>
+<li><p>Use Python version check rather than import error check to import Protocol by &#64;callumforrester in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1585">https://github.com/bluesky/bluesky/pull/1585</a></p></li>
 </ul>
 </section>
 <section id="id23">
 <h3>Added<a class="headerlink" href="#id23" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>Locatable protocol, message and plan stub by &#64;coretl in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1536">bluesky/bluesky#1536</a></p></li>
-<li><p>Made protocol methods abstract by &#64;evalott100 in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1562">bluesky/bluesky#1562</a></p></li>
-<li><p>Allow stage and unstage to return status objects by &#64;tizayi in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1563">bluesky/bluesky#1563</a></p></li>
-<li><p>Add ability to pre-declare a stream by &#64;tacaswell in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1542">bluesky/bluesky#1542</a></p></li>
+<li><p>Locatable protocol, message and plan stub by &#64;coretl in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1536">https://github.com/bluesky/bluesky/pull/1536</a></p></li>
+<li><p>Made protocol methods abstract by &#64;evalott100 in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1562">https://github.com/bluesky/bluesky/pull/1562</a></p></li>
+<li><p>Allow stage and unstage to return status objects by &#64;tizayi in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1563">https://github.com/bluesky/bluesky/pull/1563</a></p></li>
+<li><p>Add ability to pre-declare a stream by &#64;tacaswell in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1542">https://github.com/bluesky/bluesky/pull/1542</a></p></li>
 </ul>
 </section>
 <section id="id24">
 <h3>Changed<a class="headerlink" href="#id24" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>Made changes to put back the support for remote Qt applications that required the Qt event loop top be kicked when included or meshed with a RemoteDispatcher by &#64;RussBerg in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1495">bluesky/bluesky#1495</a></p></li>
-<li><p>Move fig_factory default resolution in BestEffortCallback by &#64;tacaswell in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1569">bluesky/bluesky#1569</a></p></li>
+<li><p>Made changes to put back the support for remote Qt applications that required the Qt event loop top be kicked when included or meshed with a RemoteDispatcher by &#64;RussBerg in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1495">https://github.com/bluesky/bluesky/pull/1495</a></p></li>
+<li><p>Move fig_factory default resolution in BestEffortCallback by &#64;tacaswell in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1569">https://github.com/bluesky/bluesky/pull/1569</a></p></li>
 </ul>
 </section>
 <section id="removed">
 <h3>Removed<a class="headerlink" href="#removed" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>Remove deprecated get_event_loop() by &#64;tizayi in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1564">bluesky/bluesky#1564</a></p></li>
-<li><p>Remove loop param from AsyncInput in bluesky.utils by &#64;hyperrealist in <a class="github reference external" href="https://github.com/bluesky/bluesky/pull/1566">bluesky/bluesky#1566</a></p></li>
+<li><p>Remove deprecated get_event_loop() by &#64;tizayi in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1564">https://github.com/bluesky/bluesky/pull/1564</a></p></li>
+<li><p>Remove loop param from AsyncInput in bluesky.utils by &#64;hyperrealist in <a class="reference external" href="https://github.com/bluesky/bluesky/pull/1566">https://github.com/bluesky/bluesky/pull/1566</a></p></li>
 </ul>
 </section>
 </section>
@@ -2511,8 +2523,8 @@ not have any effect on user code.</p>
     class="page-toc tocsection onthispage">
     <i class="fa-solid fa-list"></i> On this page
   </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#v1-15-0-2025-10">v1.15.0 (2025-10-??)</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#added">Added</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fixed">Fixed</a></li>
@@ -2841,7 +2853,7 @@ not have any effect on user code.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev63+ge787ee18f/docs/api_changes.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.14.7.dev67+g3ed6ebd98/docs/api_changes.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -2854,13 +2866,13 @@ not have any effect on user code.</p>
 </div>
 
   <div class="sidebar-secondary-item">
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/api_changes.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div></div>
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/api_changes.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
 
 </div></div>
               
@@ -2875,8 +2887,8 @@ not have any effect on user code.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -2910,7 +2922,7 @@ not have any effect on user code.</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
 </p></div>
       
     </div>
