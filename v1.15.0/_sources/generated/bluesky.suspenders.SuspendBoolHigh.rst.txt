@@ -1,0 +1,31 @@
+﻿bluesky.suspenders.SuspendBoolHigh
+==================================
+
+.. currentmodule:: bluesky.suspenders
+
+.. autoclass:: SuspendBoolHigh
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SuspendBoolHigh.__init__
+      ~SuspendBoolHigh.get_futures
+      ~SuspendBoolHigh.install
+      ~SuspendBoolHigh.remove
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SuspendBoolHigh.tripped
+   
+   

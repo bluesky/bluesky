@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.stage
+=========================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: stage

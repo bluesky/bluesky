@@ -1,0 +1,33 @@
+﻿bluesky.run\_engine.RunEngineResult
+===================================
+
+.. currentmodule:: bluesky.run_engine
+
+.. autoclass:: RunEngineResult
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~RunEngineResult.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~RunEngineResult.run_start_uids
+      ~RunEngineResult.plan_result
+      ~RunEngineResult.exit_status
+      ~RunEngineResult.interrupted
+      ~RunEngineResult.reason
+      ~RunEngineResult.exception
+   
+   

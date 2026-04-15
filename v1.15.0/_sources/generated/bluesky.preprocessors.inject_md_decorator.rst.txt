@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.inject\_md\_decorator
+===========================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: inject_md_decorator

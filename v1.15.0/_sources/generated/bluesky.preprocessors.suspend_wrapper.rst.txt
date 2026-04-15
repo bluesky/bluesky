@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.suspend\_wrapper
+======================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: suspend_wrapper

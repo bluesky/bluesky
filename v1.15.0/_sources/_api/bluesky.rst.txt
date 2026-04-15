@@ -1,0 +1,6 @@
+﻿bluesky
+=======
+
+.. currentmodule:: bluesky
+
+.. automodule:: bluesky

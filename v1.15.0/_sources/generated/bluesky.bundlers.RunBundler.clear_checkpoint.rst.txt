@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.clear\_checkpoint
+=============================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.clear_checkpoint

@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.collect\_while\_completing
+==============================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: collect_while_completing

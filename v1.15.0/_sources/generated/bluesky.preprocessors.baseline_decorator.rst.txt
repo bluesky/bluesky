@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.baseline\_decorator
+=========================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: baseline_decorator

@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.restore\_monitors
+=============================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.restore_monitors

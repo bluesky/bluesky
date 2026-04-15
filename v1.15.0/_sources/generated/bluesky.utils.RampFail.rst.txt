@@ -1,0 +1,6 @@
+﻿bluesky.utils.RampFail
+======================
+
+.. currentmodule:: bluesky.utils
+
+.. autoexception:: RampFail

@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.reset\_checkpoint\_state
+====================================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.reset_checkpoint_state

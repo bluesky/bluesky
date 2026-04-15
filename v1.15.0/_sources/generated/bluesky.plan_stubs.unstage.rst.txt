@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.unstage
+===========================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: unstage

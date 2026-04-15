@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.contingency\_wrapper
+==========================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: contingency_wrapper

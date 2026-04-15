@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.one\_nd\_step
+=================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: one_nd_step

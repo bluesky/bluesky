@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.deferred\_pause
+===================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: deferred_pause

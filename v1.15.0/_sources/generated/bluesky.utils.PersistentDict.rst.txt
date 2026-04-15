@@ -1,0 +1,39 @@
+﻿bluesky.utils.PersistentDict
+============================
+
+.. currentmodule:: bluesky.utils
+
+.. autoclass:: PersistentDict
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PersistentDict.__init__
+      ~PersistentDict.clear
+      ~PersistentDict.flush
+      ~PersistentDict.get
+      ~PersistentDict.items
+      ~PersistentDict.keys
+      ~PersistentDict.pop
+      ~PersistentDict.popitem
+      ~PersistentDict.reload
+      ~PersistentDict.setdefault
+      ~PersistentDict.update
+      ~PersistentDict.values
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PersistentDict.directory
+   
+   
