@@ -1,5 +1,7 @@
 import os
+import sys
 from types import ModuleType
+from typing import Optional
 
 import pytest
 
@@ -7,6 +9,9 @@ import pytest
 ophyd: ModuleType | None
 ophyd = None
 reason = ""
+
+ophyd_async: ModuleType | None
+ophyd_async = None
 
 try:
     import ophyd  # type: ignore
@@ -17,6 +22,20 @@ except ImportError as ie:
 
 # define a skip condition based on if ophyd is available or not
 requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
+
+try:
+    if sys.version_info < (3, 11):
+        ophyd_async = None
+        reason = "ophyd-async only supports more recent python releases"
+    else:
+        import ophyd_async  # type: ignore
+except ImportError as ie:
+    # pytestmark = pytest.mark.skip
+    ophyd_async = None
+    reason = str(ie)
+
+# define a skip condition based on if ophyd-async is available or not
+requires_ophyd_async = pytest.mark.skipif(ophyd_async is None, reason=reason)
 
 uses_os_kill_sigint = pytest.mark.skipif(
     os.name == "nt", reason="os.kill on windows ignores signal argument and kills the entire process."

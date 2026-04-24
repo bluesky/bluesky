@@ -55,6 +55,7 @@ dev = [
     "numpydoc",
     "opentelemetry-sdk",
     "ophyd",
+    "ophyd-async",
     "orjson",
     "packaging",
     "pandas",
