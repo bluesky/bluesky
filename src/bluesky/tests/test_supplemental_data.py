@@ -59,19 +59,19 @@ def test_baseline(hw):
     D = SupplementalData(baseline=[hw.det2])
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
-    # should add 2X (trigger, wait, create, read, save)
+    # should add 2X (trigger, wait, create, read_all, save)
     assert len(processed) == 11 + len(original)
 
     # two baseline detectors
     D.baseline.append(hw.det3)
     processed = list(D(count([hw.det])))
-    # should add 2X (trigger, triger, wait, create, read, read, save)
-    assert len(processed) == 15 + len(original)
+    # should add 2X (trigger, triger, wait, create, read_all, save)
+    assert len(processed) == 13 + len(original)
 
     # two baseline detectors applied to a plan with two consecutive runs
     original = list(list(count([hw.det])) + list(count([hw.det])))
     processed = list(D(pchain(count([hw.det]), count([hw.det]))))
-    assert len(processed) == 30 + len(original)
+    assert len(processed) == 26 + len(original)
 
 
 def test_mixture(hw):
@@ -98,7 +98,7 @@ def test_order(hw):
         "trigger",
         "wait",
         "create",
-        "read",
+        "read_all",
         "save",
         # monitors
         "monitor",
@@ -117,7 +117,7 @@ def test_order(hw):
         "trigger",
         "wait",
         "create",
-        "read",
+        "read_all",
         "save",
         "close_run",
     ]
