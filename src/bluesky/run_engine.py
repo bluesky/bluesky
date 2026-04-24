@@ -56,6 +56,7 @@ from .utils import (
     InvalidCommand,
     Msg,
     NoReplayAllowed,
+    ObjTuple,
     PlanHalt,
     RequestAbort,
     RequestStop,
@@ -539,6 +540,7 @@ class RunEngine:
             "save": self._save,
             "drop": self._drop,
             "read": self._read,
+            "read_all": self._read_all,
             "locate": self._locate,
             "monitor": self._monitor,
             "unmonitor": self._unmonitor,
@@ -1972,6 +1974,23 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
+    async def _perform_single_reading(self, obj, *read_args, **read_kwargs):
+        """Perform a reading on a single device.
+
+        For a `_read` this is only called once.
+        For a `_read_all` this is only called in a gather of devices.
+        """
+
+        ret = await maybe_await(obj.read(*read_args, **read_kwargs))
+
+        if ret is None:
+            raise RuntimeError(
+                f"The read of {obj.name} returned None. "
+                "This is a bug in your object implementation, "
+                "`read` must return a dictionary."
+            )
+        return ret
+
     async def _read(self, msg):
         """
         Add a reading to the open event bundle.
@@ -1981,23 +2000,55 @@ class RunEngine:
             Msg('read', obj)
         """
         obj = check_supports(msg.obj, Readable)
-        # actually _read_ the object
         warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
-        ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
+        reading = await self._perform_single_reading(obj, *msg.args, **msg.kwargs)
 
-        if ret is None:
-            raise RuntimeError(
-                f"The read of {obj.name} returned None. "
-                "This is a bug in your object implementation, "
-                "`read` must return a dictionary."
-            )
         run_key = msg.run
         if (
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
         ) is not key_absence_sentinel:
-            await current_run.read(msg, ret)
+            await current_run.read(msg, reading)
 
-        return ret
+        return reading
+
+    async def _read_all(self, msg):
+        """
+        Add a reading to the open event bundle.
+
+        Where the reading is the read of multiple devices.
+
+        Here msg.obj is an `ObjTuple` containing Reabable's.
+
+        Expected message object is:
+
+            Msg('read_all', obj)
+
+        where ``obj`` is an ``ObjTuple`` of ``Device``.
+        """
+        coro_objs, non_coro_objs = [], []
+        if not isinstance(msg.obj, ObjTuple):
+            raise TypeError(f"Received a `read_all` message but the object {msg.obj} was not an `ObjTuple`.")
+
+        for obj in msg.obj:
+            check_supports(obj, Readable)
+            if inspect.iscoroutinefunction(obj.read):
+                coro_objs.append(obj)
+            else:
+                non_coro_objs.append(obj)
+
+        coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in coro_objs])
+        non_coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in non_coro_objs])
+
+        run_key = msg.run
+        if (current_run := self._run_bundlers.get(run_key)) is not None:
+            await current_run.read_all(
+                msg, list(zip(coro_objs, coro_read_rets)) + list(zip(non_coro_objs, non_coro_read_rets))
+            )
+
+        read_all_ret = {}
+        for read_ret in coro_read_rets + non_coro_read_rets:
+            read_all_ret.update(read_ret)
+        return read_all_ret
 
     async def _locate(self, msg: Msg):
         """

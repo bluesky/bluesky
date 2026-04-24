@@ -41,6 +41,7 @@ from .utils import (
     CustomPlanMetadata,
     Msg,
     MsgGenerator,
+    ObjTuple,
     ScalarOrIterableFloat,
     all_safe_rewind,
     ensure_generator,
@@ -166,6 +167,29 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
         Reading object representing information recorded
     """
     return (yield Msg("read", obj))
+
+
+@plan
+def read_all(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
+    """
+    Take a reading on every device in a sequence and add it to the current bundle of readings.
+
+    Parameters
+    ----------
+    obj : A sequence of Device or Signal
+
+    Yields
+    ------
+    msg : Msg
+        Msg('read', obj)
+
+    Returns
+    -------
+    reading :
+        Reading object representing information recorded
+    """
+    objs = separate_devices(objs)
+    return (yield Msg("read_all", ObjTuple(objs)))
 
 
 @typing.overload
@@ -576,7 +600,7 @@ def trigger(
     wait: bool = False,
 ) -> MsgGenerator[Status]:
     """
-    Trigger and acquisition. Optionally, wait for it to complete.
+    Trigger an acquisition. Optionally, wait for it to complete.
 
     Parameters
     ----------
@@ -1460,15 +1484,8 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
         # Skip 'wait' if none of the devices implemented a trigger method.
         if not no_wait:
             yield from wait(group=grp)
-        yield from create(name)
 
-        def read_plan():
-            ret = {}  # collect and return readings to give plan access to them
-            for obj in devices:
-                reading = yield from read(obj)
-                if reading is not None:
-                    ret.update(reading)
-            return ret
+        yield from create(name)
 
         def standard_path():
             yield from save()
@@ -1477,8 +1494,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
             yield from drop()
             raise exp
 
-        ret = yield from contingency_wrapper(read_plan(), except_plan=exception_path, else_plan=standard_path)
-        return ret
+        return (
+            yield from contingency_wrapper(read_all(devices), except_plan=exception_path, else_plan=standard_path)
+        )
 
     from .preprocessors import rewindable_wrapper
 
