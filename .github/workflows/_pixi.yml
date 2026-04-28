@@ -1,0 +1,29 @@
+on:
+  workflow_call:
+    inputs:
+      task:
+        type: string
+        description: Which pixi task to run
+        required: true
+      environment:
+        type: string
+        description: Which pixi environment to use (defaults to "default")
+        required: false
+        default: "default"
+
+
+jobs:
+  run:
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.9.5
+        with:
+          pixi-version: v0.66.0
+          cache: true
+
+      - name: Run ${{ inputs.task }} with pixi
+        run: pixi run --frozen -e ${{ inputs.environment }} ${{ inputs.task }}

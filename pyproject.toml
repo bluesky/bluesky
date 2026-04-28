@@ -212,3 +212,52 @@ commands =
     tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.dependencies]
+python =  "*"
+
+[tool.pixi.pypi-dependencies]
+bluesky = { path = ".", editable = true }
+
+[tool.pixi.feature.py310.dependencies]
+python = "3.10.*"
+
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.feature.py314.dependencies]
+python = "3.14.*"
+
+[tool.pixi.environments]
+default = { features = ["default", "dev"], solve-group = "default" }
+all = { features = ["all"], solve-group = "default" }
+cmd = { features = ["cmd"], solve-group = "default" }
+common = { features = ["common"], solve-group = "default" }
+ipython = { features = ["ipython"], solve-group = "default" }
+old-persistentdict = { features = ["old_persistentdict"], solve-group = "default" }
+olog = { features = ["olog"], solve-group = "default" }
+plotting = { features = ["plotting"], solve-group = "default" }
+streamz = { features = ["streamz"], solve-group = "default" }
+tools = { features = ["tools"], solve-group = "default" }
+zmq = { features = ["zmq"], solve-group = "default" }
+py310 = { features = ["py310", "all"], solve-group = "py310" }
+py311 = { features = ["py311", "all"], solve-group = "py311" }
+py312 = { features = ["py312", "all"], solve-group = "py312" }
+py313 = { features = ["py313", "all"], solve-group = "py313" }
+py314 = { features = ["py314", "all"], solve-group = "py314" }
+
+[tool.pixi.tasks]
+lint = "pre-commit run --all-files --show-diff-on-failure"
+type-checking = "mypy src"
+tests = "pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml"
+docs = "sphinx-build -EW --keep-going docs build/html"

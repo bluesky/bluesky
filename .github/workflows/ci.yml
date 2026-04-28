@@ -11,9 +11,16 @@ jobs:
   lint:
     needs: check
     if: needs.check.outputs.branch-pr == ''
-    uses: ./.github/workflows/_tox.yml
+    uses: ./.github/workflows/_pixi.yml
     with:
-      tox: pre-commit,type-checking
+      task: lint
+
+  type-checking:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_pixi.yml
+    with:
+      task: type-checking
 
   test:
     needs: check

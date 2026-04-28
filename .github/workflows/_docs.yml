@@ -19,11 +19,10 @@ jobs:
       - name: Install system packages
         run: sudo apt-get install graphviz
 
-      - name: Install python packages
-        uses: ./.github/actions/install_requirements
-
-      - name: Build docs
-        run: tox -e docs
+      - name: Setup pixi and build docs
+        uses: ./.github/workflows/_pixi.yml
+        with:
+          task: docs
 
       - name: Remove environment.pickle
         run: rm build/html/.doctrees/environment.pickle

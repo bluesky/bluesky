@@ -160,3 +160,6 @@ lockfiles/
 .vscode/tags
 
 .hypothesis/
+# pixi environments
+.pixi/*
+!.pixi/config.toml
