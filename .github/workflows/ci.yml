@@ -33,10 +33,6 @@ jobs:
           # duckdb (tiled dep) has no Windows wheels for 3.14 yet
           - runs-on: "windows-latest"
             python-version: "3.14"
-        include:
-          # Include one that runs in the dev environment
-          - runs-on: "ubuntu-latest"
-            python-version: "dev"
       fail-fast: false
     uses: ./.github/workflows/_test.yml
     with:

@@ -10636,8 +10636,8 @@ packages:
   requires_python: '>=3.10'
 - pypi: ./
   name: bluesky
-  version: 1.14.3.dev181+gb81baf2a4.d20260428
-  sha256: cc66c3303102b400e6a62377fe9d68d1e4f4e7101f9c0f4adadce22a373c52d1
+  version: 1.14.3.dev182+gb8b6dc718.d20260428
+  sha256: b8498cb38d7b32f9e44004120f9fc51d12998eb30d6b566f4dc204ee0b97ee0a
   requires_dist:
   - cycler
   - event-model>=1.23.1

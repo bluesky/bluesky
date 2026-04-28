@@ -241,15 +241,15 @@ python = "3.14.*"
 [tool.pixi.environments]
 default = { features = ["default", "dev"], solve-group = "default" }
 all = { features = ["all"], solve-group = "all" }
-cmd = { features = ["cmd"], solve-group = "default" }
-common = { features = ["common"], solve-group = "default" }
-ipython = { features = ["ipython"], solve-group = "default" }
-old-persistentdict = { features = ["old_persistentdict"], solve-group = "default" }
-olog = { features = ["olog"], solve-group = "default" }
-plotting = { features = ["plotting"], solve-group = "default" }
-streamz = { features = ["streamz"], solve-group = "default" }
-tools = { features = ["tools"], solve-group = "default" }
-zmq = { features = ["zmq"], solve-group = "default" }
+cmd = { features = ["cmd"], solve-group = "cmd" }
+common = { features = ["common"], solve-group = "common" }
+ipython = { features = ["ipython"], solve-group = "ipython" }
+old-persistentdict = { features = ["old_persistentdict"], solve-group = "old-persistentdict" }
+olog = { features = ["olog"], solve-group = "olog" }
+plotting = { features = ["plotting"], solve-group = "plotting" }
+streamz = { features = ["streamz"], solve-group = "streamz" }
+tools = { features = ["tools"], solve-group = "tools" }
+zmq = { features = ["zmq"], solve-group = "zmq" }
 py310 = { features = ["py310", "all"], solve-group = "py310" }
 py311 = { features = ["py311", "all"], solve-group = "py311" }
 py312 = { features = ["py312", "all"], solve-group = "py312" }
