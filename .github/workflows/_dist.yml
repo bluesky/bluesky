@@ -26,10 +26,14 @@ jobs:
       - name: Check for packaging errors
         run: pipx run twine check --strict dist/*
 
-      - name: Install produced wheel
-        uses: ./.github/workflows/_pixi.yml
+      - uses: prefix-dev/setup-pixi@v0.9.5
         with:
-          task: pip install dist/*.whl
+          pixi-version: v0.66.0
+          environments: >-
+            default
+
+      - name: Install built wheelwheel
+        run: pixi run pip install dist/*.whl
 
       - name: Test module is importable using the installed wheel
         # If more than one module in src/ replace with module name to test
