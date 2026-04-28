@@ -32,6 +32,10 @@ jobs:
         with:
           pixi-version: v0.66.0
           cache: true
+          environments: >-
+            py${PYTHON_VERSION//./}
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
 
       - name: Run tests for given python version
         run: pixi run --frozen -e py${PYTHON_VERSION//./} tests

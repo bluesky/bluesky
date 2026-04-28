@@ -24,6 +24,8 @@ jobs:
         with:
           pixi-version: v0.66.0
           cache: true
+          environments: >-
+            ${{ inputs.environment }}
 
       - name: Run ${{ inputs.task }} with pixi
         run: pixi run --frozen -e ${{ inputs.environment }} ${{ inputs.task }}
