@@ -29,7 +29,7 @@ jobs:
       - name: Install produced wheel
         uses: ./.github/workflows/_pixi.yml
         with:
-          task: dist/*.whl
+          task: pip install dist/*.whl
 
       - name: Test module is importable using the installed wheel
         # If more than one module in src/ replace with module name to test
