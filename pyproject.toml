@@ -240,7 +240,7 @@ python = "3.14.*"
 
 [tool.pixi.environments]
 default = { features = ["default", "dev"], solve-group = "default" }
-all = { features = ["all"], solve-group = "default" }
+all = { features = ["all"], solve-group = "all" }
 cmd = { features = ["cmd"], solve-group = "default" }
 common = { features = ["common"], solve-group = "default" }
 ipython = { features = ["ipython"], solve-group = "default" }
