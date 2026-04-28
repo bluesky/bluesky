@@ -32,7 +32,9 @@ jobs:
         uses: ./.github/workflows/_pixi.yml
         with:
           task: tests
-          environment: ${{ 'py' + inputs.python-version.replace('.', '') }}
+          environment: py${PYTHON_VERSION//./}
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
