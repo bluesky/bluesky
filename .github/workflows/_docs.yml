@@ -19,10 +19,14 @@ jobs:
       - name: Install system packages
         run: sudo apt-get install graphviz
 
-      - name: Setup pixi and build docs
-        uses: ./.github/workflows/_pixi.yml
+      - uses: prefix-dev/setup-pixi@v0.9.5
         with:
-          task: docs
+          pixi-version: v0.66.0
+          environments: >-
+            default
+      
+      - name: Build docs with pixi
+        run: pixi run --frozen -e default docs
 
       - name: Remove environment.pickle
         run: rm build/html/.doctrees/environment.pickle
