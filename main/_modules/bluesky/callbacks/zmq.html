@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.callbacks.zmq &#8212; bluesky 1.15.0 documentation</title>
+    <title>bluesky.callbacks.zmq &#8212; bluesky 1.15.1.dev16+g7ff3eb84f documentation</title>
   
   
   
@@ -26,19 +26,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../../_static/documentation_options.js?v=70d5d4a5"></script>
+    <script src="../../../_static/documentation_options.js?v=be904628"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -479,9 +479,9 @@ window.addEventListener("load", load);
 window.runMermaid = runMermaid;</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky/callbacks/zmq';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.17.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.1.dev16+g7ff3eb84f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -490,7 +490,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.0" />
+  <meta name="docsearch:version" content="1.15.1.dev16+g7ff3eb84f" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -508,7 +508,9 @@ window.runMermaid = runMermaid;</script>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -987,13 +989,40 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NamedTuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zmq.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">zmq_asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zmq.auth</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zmq.auth.thread</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadAuthenticator</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..run_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dispatcher</span><span class="p">,</span> <span class="n">DocumentNames</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_address</span><span class="p">(</span><span class="n">inp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">int</span><span class="p">):</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ServerCurve</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="c1"># path to the secret key for the server</span>
+    <span class="n">secret_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="c1"># path to folder of client&#39;s public keys.  If None, allow all clients</span>
+    <span class="n">client_public_keys</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="c1"># set of ip addresses to allow</span>
+    <span class="n">allow</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ClientCurve</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="c1"># path to the secret key for the server</span>
+    <span class="n">secret_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="c1"># path to the servers public key</span>
+    <span class="n">server_public_key</span><span class="p">:</span> <span class="n">Path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_address</span><span class="p">(</span><span class="n">inp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">inp</span><span class="p">:</span>
             <span class="n">protocol</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rest_str</span> <span class="o">=</span> <span class="n">inp</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">&quot;://&quot;</span><span class="p">)</span>
@@ -1016,9 +1045,12 @@ window.runMermaid = runMermaid;</script>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="n">protocol</span> <span class="o">=</span> <span class="s2">&quot;tcp&quot;</span>
         <span class="n">rest_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;0.0.0.0:</span><span class="si">{</span><span class="n">inp</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">elif</span> <span class="n">inp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">protocol</span> <span class="o">=</span> <span class="s2">&quot;tcp&quot;</span>
+        <span class="n">rest_str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span>
 
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input expected to be int, str, or tuple, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input expected to be int, str, or tuple, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">rest_str</span><span class="si">}</span><span class="s2">&quot;</span>
 
@@ -1043,15 +1075,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    prefix : bytes, optional</span>
 <span class="sd">        User-defined bytestring used to distinguish between multiple</span>
 <span class="sd">        Publishers. May not contain b&#39; &#39;.</span>
-<span class="sd">    RE : ``bluesky.RunEngine``, optional</span>
-<span class="sd">        DEPRECATED.</span>
-<span class="sd">        RunEngine to which the Publisher will be automatically subscribed</span>
-<span class="sd">        (and, more importantly, unsubscribed when it is closed).</span>
-<span class="sd">    zmq : object, optional</span>
-<span class="sd">        By default, the &#39;zmq&#39; module is imported and used. Anything else</span>
-<span class="sd">        mocking its interface is accepted.</span>
 <span class="sd">    serializer: function, optional</span>
 <span class="sd">        optional function to serialize data. Default is pickle.dumps</span>
+<span class="sd">    curve_config: ClientCurve, optional</span>
+<span class="sd">        CURVE security configuration for client authentication.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -1063,41 +1090,46 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; RE.subscribe(publisher)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">RE</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zmq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">RE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>  <span class="c1"># noqa: B028</span>
-                <span class="s2">&quot;The RE argument to Publisher is deprecated and &quot;</span>
-                <span class="s2">&quot;will be removed in a future release of bluesky. &quot;</span>
-                <span class="s2">&quot;Update your code to subscribe this Publisher &quot;</span>
-                <span class="s2">&quot;instance to (and, if needed, unsubscribe from) to &quot;</span>
-                <span class="s2">&quot;the RunEngine manually.&quot;</span>
-            <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">serializer</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">,</span>
+        <span class="n">curve_config</span><span class="p">:</span> <span class="n">ClientCurve</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;prefix must be bytes, not string&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot; &quot;</span> <span class="ow">in</span> <span class="n">prefix</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;prefix </span><span class="si">{</span><span class="n">prefix</span><span class="si">!r}</span><span class="s2"> may not contain b&#39; &#39;&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">zmq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">_normalize_address</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="o">=</span> <span class="n">RE</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">PUB</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">curve_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Load the client cert pair</span>
+            <span class="n">client_public</span><span class="p">,</span> <span class="n">client_secret</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">curve_config</span><span class="o">.</span><span class="n">secret_path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_PUBLICKEY</span><span class="p">,</span> <span class="n">client_public</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The client secret key could not be found.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SECRETKEY</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">)</span>
+
+            <span class="c1"># Load the server public key and register with the socket</span>
+            <span class="n">server_key</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">curve_config</span><span class="o">.</span><span class="n">server_public_key</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SERVERKEY</span><span class="p">,</span> <span class="n">server_key</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">RE</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_subscription_token</span> <span class="o">=</span> <span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span> <span class="o">=</span> <span class="n">serializer</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">doc</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
         <span class="n">doc</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
         <span class="n">message</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span><span class="p">(</span><span class="n">doc</span><span class="p">)])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subscription_token</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>  <span class="c1"># close Socket(s); terminate Context</span></div>
 
@@ -1126,17 +1158,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ----------</span>
 <span class="sd">    in_address : str or tuple or int, optional</span>
 <span class="sd">        Address that RunEngines should broadcast to.</span>
-
 <span class="sd">        If None, a random tcp port on all interfaces is used.</span>
-
 <span class="sd">    out_address : str or tuple or int, optional</span>
 <span class="sd">        Address that subscribers should subscribe to.</span>
-
 <span class="sd">        If None, a random tcp port on all interfaces is used.</span>
-
-<span class="sd">    zmq : object, optional</span>
-<span class="sd">        By default, the &#39;zmq&#39; module is imported and used. Anything else</span>
-<span class="sd">        mocking its interface is accepted.</span>
+<span class="sd">    in_curve: ServerCurve or ClientCurve or None, optional</span>
+<span class="sd">        CURVE security configuration for the incoming socket.  If None, no security is applied.</span>
+<span class="sd">    out_curve: ServerCurve or ClientCurve or None, optional</span>
+<span class="sd">        CURVE security configuration for the outgoing socket.  If None, no security is applied.</span>
+<span class="sd">    in_bind: bool, default True</span>
+<span class="sd">        If True, the incoming socket will be bound to the address.</span>
+<span class="sd">    out_bind: bool, default True</span>
+<span class="sd">        If True, the outgoing socket will be bound to the address.</span>
+<span class="sd">    in_port: str or None, optional</span>
+<span class="sd">        DEPRECATED alias for in_address.  If specified, must be used instead of in_address</span>
+<span class="sd">    out_port: str or None, optional</span>
+<span class="sd">        DEPRECATED alias for out_address.  If specified, must be used instead of out_address</span>
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
@@ -1170,14 +1207,122 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; proxy.start()  # runs until interrupted</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configure_server_socket</span><span class="p">(</span>
+        <span class="n">ctx</span><span class="p">:</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span>
+        <span class="n">sock_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">curve</span><span class="p">:</span> <span class="n">ServerCurve</span> <span class="o">|</span> <span class="n">ClientCurve</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bind</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">zmq</span><span class="o">.</span><span class="n">Socket</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper method to create and bind or connect a socket with optional CURVE security.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ctx : zmq.Context</span>
+<span class="sd">            The ZMQ context to use for creating the socket.</span>
+<span class="sd">        sock_type : int</span>
+<span class="sd">            The type of socket to create (e.g. zmq.SUB, zmq.PUB).</span>
+<span class="sd">        address : str | tuple | int | None</span>
+<span class="sd">            The address to bind or connect the socket to.</span>
+<span class="sd">        curve : ServerCurve | ClientCurve | None</span>
+<span class="sd">            CURVE security configuration. If None, no security is applied.</span>
+<span class="sd">        bind : bool, default True</span>
+<span class="sd">            If True, the socket will be bound to the address.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        socket : zmq.Socket</span>
+<span class="sd">            The configured ZMQ socket.</span>
+<span class="sd">        address : str</span>
+<span class="sd">            The addresss to which the socket is bound or connected.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">socket</span><span class="p">:</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Socket</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">sock_type</span><span class="p">)</span>
+        <span class="n">norm_address</span> <span class="o">=</span> <span class="n">_normalize_address</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating socket of type </span><span class="si">{</span><span class="n">sock_type</span><span class="si">}</span><span class="s2"> for address </span><span class="si">{</span><span class="n">norm_address</span><span class="si">}</span><span class="s2">, bind=</span><span class="si">{</span><span class="n">bind</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">random_port</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">norm_address</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;tcp&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">norm_address</span><span class="p">[</span><span class="mi">6</span><span class="p">:]:</span>
+                <span class="n">random_port</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">curve</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bind</span><span class="p">:</span>
+                <span class="c1"># Server mode - expect ServerCurve</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">curve</span><span class="p">,</span> <span class="n">ServerCurve</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;When bind=True, curve must be a ServerCurve instance&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuring CURVE server security with secret_path=</span><span class="si">{</span><span class="n">curve</span><span class="o">.</span><span class="n">secret_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># build authenticator</span>
+                <span class="n">auth</span> <span class="o">=</span> <span class="n">ThreadAuthenticator</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+                <span class="n">auth</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Started ZMQ authenticator&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">curve</span><span class="o">.</span><span class="n">allow</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">auth</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="o">*</span><span class="n">curve</span><span class="o">.</span><span class="n">allow</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configured IP address allowlist: </span><span class="si">{</span><span class="n">curve</span><span class="o">.</span><span class="n">allow</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Tell the authenticator how to handle CURVE requests</span>
+                <span class="k">if</span> <span class="n">curve</span><span class="o">.</span><span class="n">client_public_keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># accept any client that knows the public key</span>
+                    <span class="n">auth</span><span class="o">.</span><span class="n">configure_curve</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">CURVE_ALLOW_ANY</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Configured CURVE to allow any client with valid public key&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">auth</span><span class="o">.</span><span class="n">configure_curve</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">curve</span><span class="o">.</span><span class="n">client_public_keys</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configured CURVE client public keys from: </span><span class="si">{</span><span class="n">curve</span><span class="o">.</span><span class="n">client_public_keys</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># get public and private keys from the certificate</span>
+                <span class="n">server_public</span><span class="p">,</span> <span class="n">server_secret</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">curve</span><span class="o">.</span><span class="n">secret_path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">server_secret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The server secret key could not be found.&quot;</span><span class="p">)</span>
+                <span class="c1"># attach them to the socket</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_PUBLICKEY</span><span class="p">,</span> <span class="n">server_public</span><span class="p">)</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SECRETKEY</span><span class="p">,</span> <span class="n">server_secret</span><span class="p">)</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SERVER</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Applied CURVE keys and enabled CURVE server mode&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Client mode - expect ClientCurve</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">curve</span><span class="p">,</span> <span class="n">ClientCurve</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;When bind=False, curve must be a ClientCurve instance&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuring CURVE client security with secret_path=</span><span class="si">{</span><span class="n">curve</span><span class="o">.</span><span class="n">secret_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Load the client cert pair</span>
+                <span class="n">client_public</span><span class="p">,</span> <span class="n">client_secret</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">curve</span><span class="o">.</span><span class="n">secret_path</span><span class="p">)</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_PUBLICKEY</span><span class="p">,</span> <span class="n">client_public</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The client secret key could not be found.&quot;</span><span class="p">)</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SECRETKEY</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">)</span>
+
+                <span class="c1"># Load the server public key and register with the socket</span>
+                <span class="n">server_key</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">curve</span><span class="o">.</span><span class="n">server_public_key</span><span class="p">)</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SERVERKEY</span><span class="p">,</span> <span class="n">server_key</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Applied CURVE client keys and server public key&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">bind</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">random_port</span><span class="p">:</span>
+                <span class="n">port</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">bind_to_random_port</span><span class="p">(</span><span class="n">norm_address</span><span class="p">)</span>
+                <span class="n">final_address</span> <span class="o">=</span> <span class="n">norm_address</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bound to random port: </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">final_address</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">norm_address</span><span class="p">)</span><span class="o">.</span><span class="n">addr</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bound to address: </span><span class="si">{</span><span class="n">norm_address</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">final_address</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">norm_address</span><span class="p">)</span><span class="o">.</span><span class="n">addr</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connected to address: </span><span class="si">{</span><span class="n">norm_address</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Socket configured with final address: </span><span class="si">{</span><span class="n">final_address</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">socket</span><span class="p">,</span> <span class="n">final_address</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">in_address</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">out_address</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">in_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">out_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">zmq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">in_port</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">out_port</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">in_curve</span><span class="p">:</span> <span class="n">ServerCurve</span> <span class="o">|</span> <span class="n">ClientCurve</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">out_curve</span><span class="p">:</span> <span class="n">ServerCurve</span> <span class="o">|</span> <span class="n">ClientCurve</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">in_bind</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">out_bind</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">in_port</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">out_port</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="c1"># Handle backward compatibility for in_port -&gt; in_address</span>
         <span class="k">if</span> <span class="n">in_port</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">in_address</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1206,29 +1351,19 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># Delete deprecated parameter names</span>
         <span class="k">del</span> <span class="n">in_port</span><span class="p">,</span> <span class="n">out_port</span>
 
-        <span class="k">if</span> <span class="n">zmq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">zmq</span> <span class="o">=</span> <span class="n">zmq</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">context</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="c1"># Socket facing clients</span>
-            <span class="n">frontend</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">in_address</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">in_bind_result</span> <span class="o">=</span> <span class="n">frontend</span><span class="o">.</span><span class="n">bind_to_random_port</span><span class="p">(</span><span class="s2">&quot;tcp://*&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">in_address</span> <span class="o">=</span> <span class="n">_normalize_address</span><span class="p">(</span><span class="n">in_address</span><span class="p">)</span>
-                <span class="n">in_bind_result</span> <span class="o">=</span> <span class="n">frontend</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">in_address</span><span class="p">)</span>
 
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span>
+
+            <span class="n">frontend</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configure_server_socket</span><span class="p">(</span>
+                <span class="n">context</span><span class="p">,</span> <span class="n">zmq</span><span class="o">.</span><span class="n">SUB</span><span class="p">,</span> <span class="n">in_address</span><span class="p">,</span> <span class="n">in_curve</span><span class="p">,</span> <span class="n">bind</span><span class="o">=</span><span class="n">in_bind</span>
+            <span class="p">)</span>
             <span class="n">frontend</span><span class="o">.</span><span class="n">setsockopt_string</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUBSCRIBE</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-            <span class="c1"># Socket facing services</span>
-            <span class="n">backend</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">PUB</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">out_address</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">out_bind_result</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">bind_to_random_port</span><span class="p">(</span><span class="s2">&quot;tcp://*&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">out_address</span> <span class="o">=</span> <span class="n">_normalize_address</span><span class="p">(</span><span class="n">out_address</span><span class="p">)</span>
-                <span class="n">out_bind_result</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">out_address</span><span class="p">)</span>
+            <span class="n">backend</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configure_server_socket</span><span class="p">(</span>
+                <span class="n">context</span><span class="p">,</span> <span class="n">zmq</span><span class="o">.</span><span class="n">PUB</span><span class="p">,</span> <span class="n">out_address</span><span class="p">,</span> <span class="n">out_curve</span><span class="p">,</span> <span class="n">bind</span><span class="o">=</span><span class="n">out_bind</span>
+            <span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
             <span class="c1"># Clean up whichever components we have defined so far.</span>
@@ -1240,15 +1375,12 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">backend</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
                 <span class="o">...</span>
-            <span class="n">context</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+                <span class="o">...</span>
             <span class="k">raise</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">in_port</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">in_bind_result</span><span class="o">.</span><span class="n">addr</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">in_bind_result</span><span class="p">,</span> <span class="s2">&quot;addr&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">_normalize_address</span><span class="p">(</span><span class="n">in_bind_result</span><span class="p">)</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">out_port</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">out_bind_result</span><span class="o">.</span><span class="n">addr</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">out_bind_result</span><span class="p">,</span> <span class="s2">&quot;addr&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">_normalize_address</span><span class="p">(</span><span class="n">out_bind_result</span><span class="p">)</span>
-            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_frontend</span> <span class="o">=</span> <span class="n">frontend</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span> <span class="o">=</span> <span class="n">backend</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="n">context</span>
@@ -1259,7 +1391,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">&quot;This Proxy has already been started and interrupted. Create a fresh instance with </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">zmq</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zmq</span><span class="o">.</span><span class="n">FORWARDER</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frontend</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span><span class="p">)</span>
+            <span class="n">zmq</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">FORWARDER</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frontend</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_frontend</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -1287,12 +1419,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Publishers. If set, messages without this prefix will be ignored.</span>
 <span class="sd">        If unset, no mesages will be ignored.</span>
 <span class="sd">    loop : zmq.asyncio.ZMQEventLoop, optional</span>
-<span class="sd">    zmq : object, optional</span>
-<span class="sd">        By default, the &#39;zmq&#39; module is imported and used. Anything else</span>
-<span class="sd">        mocking its interface is accepted.</span>
-<span class="sd">    zmq_asyncio : object, optional</span>
-<span class="sd">        By default, the &#39;zmq.asyncio&#39; module is imported and used. Anything</span>
-<span class="sd">        else mocking its interface is accepted.</span>
+<span class="sd">        optional event loop to use.  Default is to create a new event loop.</span>
 <span class="sd">    deserializer: function, optional</span>
 <span class="sd">        optional function to deserialize data. Default is pickle.loads</span>
 
@@ -1308,24 +1435,20 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">address</span><span class="p">,</span>
+        <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">prefix</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="n">loop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">zmq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">zmq_asyncio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">deserializer</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">,</span>
-        <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">loop</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractEventLoop</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">deserializer</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">,</span>
+        <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">curve_config</span><span class="p">:</span> <span class="n">ServerCurve</span> <span class="o">|</span> <span class="n">ClientCurve</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;prefix must be bytes, not string&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot; &quot;</span> <span class="ow">in</span> <span class="n">prefix</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;prefix </span><span class="si">{</span><span class="n">prefix</span><span class="si">!r}</span><span class="s2"> may not contain b&#39; &#39;&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
-        <span class="k">if</span> <span class="n">zmq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
-        <span class="k">if</span> <span class="n">zmq_asyncio</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">import</span><span class="w"> </span><span class="nn">zmq.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">zmq_asyncio</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_deserializer</span> <span class="o">=</span> <span class="n">deserializer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">_normalize_address</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
 
@@ -1339,7 +1462,19 @@ window.runMermaid = runMermaid;</script>
             <span class="n">asyncio</span><span class="o">.</span><span class="n">set_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="n">zmq_asyncio</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span> <span class="o">=</span> <span class="n">sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">curve_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Load the client cert pair</span>
+                <span class="n">client_public</span><span class="p">,</span> <span class="n">client_secret</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">curve_config</span><span class="o">.</span><span class="n">secret_path</span><span class="p">)</span>
+                <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_PUBLICKEY</span><span class="p">,</span> <span class="n">client_public</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The client secret key could not be found.&quot;</span><span class="p">)</span>
+                <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SECRETKEY</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">)</span>
+
+                <span class="c1"># Load the server public key and register with the socket</span>
+                <span class="n">server_key</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">curve_config</span><span class="o">.</span><span class="n">server_public_key</span><span class="p">)</span>
+                <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">CURVE_SERVERKEY</span><span class="p">,</span> <span class="n">server_key</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">setsockopt_string</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUBSCRIBE</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -1456,8 +1591,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1491,7 +1626,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

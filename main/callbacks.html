@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Live Visualization and Processing &#8212; bluesky 1.15.0 documentation</title>
+    <title>Live Visualization and Processing &#8212; bluesky 1.15.1.dev16+g7ff3eb84f documentation</title>
   
   
   
@@ -27,26 +27,26 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=70d5d4a5"></script>
+    <script src="_static/documentation_options.js?v=be904628"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'callbacks';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.17.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.1.dev16+g7ff3eb84f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Recording Metadata" href="metadata.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.0" />
+  <meta name="docsearch:version" content="1.15.1.dev16+g7ff3eb84f" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -75,7 +75,9 @@
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -756,16 +758,16 @@ row is added to the table. Demo:</p>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:40:08.7 |      1.000 |      0.607 |</span>
-<span class="go">|         2 | 15:40:08.7 |      2.000 |      0.135 |</span>
-<span class="go">|         3 | 15:40:08.7 |      3.000 |      0.011 |</span>
-<span class="go">|         4 | 15:40:08.7 |      4.000 |      0.000 |</span>
-<span class="go">|         5 | 15:40:08.7 |      5.000 |      0.000 |</span>
+<span class="go">|         1 | 20:14:28.6 |      1.000 |      0.607 |</span>
+<span class="go">|         2 | 20:14:28.6 |      2.000 |      0.135 |</span>
+<span class="go">|         3 | 20:14:28.6 |      3.000 |      0.011 |</span>
+<span class="go">|         4 | 20:14:28.6 |      4.000 |      0.000 |</span>
+<span class="go">|         5 | 20:14:28.6 |      5.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;d5ba020b&#39;] (scan num: 1)</span>
+<span class="go">generator scan [&#39;cd06356c&#39;] (scan num: 1)</span>
 
 
-<span class="gh">Out[4]: </span><span class="go">(&#39;d5ba020b-0fc2-4148-a2e2-196b0921366c&#39;,)</span>
+<span class="gh">Out[4]: </span><span class="go">(&#39;cd06356c-ebb1-441b-9bd6-38505e30fa72&#39;,)</span>
 </pre></div>
 </div>
 <p>Pass an empty list of columns to show simply ‘time’ and ‘seq_num’ (sequence
@@ -1055,9 +1057,9 @@ pixel to fill in.</p>
 </dd>
 <dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x and y axis</p>
 </dd>
-<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.8)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.9)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
-<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.8)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.10.9)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
 <dt><strong>ax</strong><span class="classifier">Axes, optional</span></dt><dd><p>matplotib Axes; if none specified, new figure and axes are made.</p>
 </dd>
@@ -1432,23 +1434,23 @@ plans in <code class="xref py py-mod docutils literal notranslate"><span class="
 <span class="gp">In [9]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>  <span class="c1"># automatically prints table, shows plot</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2026-04-15 15:40:30</span>
-<span class="go">Persistent Unique Scan ID: &#39;4f252fea-5fff-43ee-9966-304c3532d036&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2026-04-30 20:14:43</span>
+<span class="go">Persistent Unique Scan ID: &#39;e08bfd73-e9f1-42e8-9b67-80d766cae6fe&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 15:40:30.1 |      1.000 |      0.000 |      0.271 |</span>
-<span class="go">|         2 | 15:40:30.3 |      2.000 |      0.000 |      0.271 |</span>
-<span class="go">|         3 | 15:40:30.5 |      3.000 |      0.000 |      0.271 |</span>
-<span class="go">|         4 | 15:40:30.7 |      4.000 |      0.000 |      0.271 |</span>
-<span class="go">|         5 | 15:40:30.8 |      5.000 |      0.000 |      0.271 |</span>
+<span class="go">|         1 | 20:14:43.2 |      1.000 |      0.000 |      0.271 |</span>
+<span class="go">|         2 | 20:14:43.4 |      2.000 |      0.000 |      0.271 |</span>
+<span class="go">|         3 | 20:14:43.5 |      3.000 |      0.000 |      0.271 |</span>
+<span class="go">|         4 | 20:14:43.7 |      4.000 |      0.000 |      0.271 |</span>
+<span class="go">|         5 | 20:14:43.8 |      5.000 |      0.000 |      0.271 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;4f252fea&#39;] (scan num: 2)</span>
+<span class="go">generator scan [&#39;e08bfd73&#39;] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">(&#39;4f252fea-5fff-43ee-9966-304c3532d036&#39;,)</span>
+<span class="gh">Out[9]: </span><span class="go">(&#39;e08bfd73-e9f1-42e8-9b67-80d766cae6fe&#39;,)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1906,20 +1908,20 @@ We are setting up a <em>subscription</em>.</p>
 <span class="gp">In [13]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="p">{</span><span class="s1">&#39;event&#39;</span><span class="p">:</span> <span class="n">print_data</span><span class="p">})</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2026-04-15 15:40:32</span>
-<span class="go">Persistent Unique Scan ID: &#39;e63a1d91-c17b-461a-9ad3-3dd53fd50519&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2026-04-30 20:14:45</span>
+<span class="go">Persistent Unique Scan ID: &#39;b53463a2-143a-4db8-9c4c-bcde5b5fa643&#39;</span>
 <span class="go">New stream: &#39;primary&#39;</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 15:40:32.1 |      0.000 |</span>
+<span class="go">|         1 | 20:14:45.1 |      0.000 |</span>
 <span class="go">Measured: {&#39;det&#39;: np.float64(3.726653172078671e-06)}</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;e63a1d91&#39;] (scan num: 3)</span>
+<span class="go">generator count [&#39;b53463a2&#39;] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[13]: </span><span class="go">(&#39;e63a1d91-c17b-461a-9ad3-3dd53fd50519&#39;,)</span>
+<span class="gh">Out[13]: </span><span class="go">(&#39;b53463a2-143a-4db8-9c4c-bcde5b5fa643&#39;,)</span>
 </pre></div>
 </div>
 <p>Each time the RunEngine generates a new Event Document (i.e., data point)
@@ -2086,7 +2088,7 @@ RemoteDispatcher should print the documents generated by this plan.</p>
 <h3>Publisher / RemoteDispatcher API<a class="headerlink" href="#publisher-remotedispatcher-api" title="Link to this heading">#</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.Proxy">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_address</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_address</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_curve</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ServerCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ClientCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_curve</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ServerCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ClientCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_bind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_bind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">#</a></dt>
 <dd><p>Start a 0MQ proxy on the local host.</p>
 <p>The addresses can be specified flexibly.  It is best to use
 a domain_socket (available on unix):</p>
@@ -2105,17 +2107,26 @@ a domain_socket (available on unix):</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">('localhost',</span> <span class="pre">6657)</span></code></p></li>
 </ul>
 </div></blockquote>
-<dl class="field-list">
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl>
-<dt><strong>in_address</strong><span class="classifier">str or tuple or int, optional</span></dt><dd><p>Address that RunEngines should broadcast to.</p>
-<p>If None, a random tcp port on all interfaces is used.</p>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>in_address</strong><span class="classifier">str or tuple or int, optional</span></dt><dd><p>Address that RunEngines should broadcast to.
+If None, a random tcp port on all interfaces is used.</p>
 </dd>
-<dt><strong>out_address</strong><span class="classifier">str or tuple or int, optional</span></dt><dd><p>Address that subscribers should subscribe to.</p>
-<p>If None, a random tcp port on all interfaces is used.</p>
+<dt><strong>out_address</strong><span class="classifier">str or tuple or int, optional</span></dt><dd><p>Address that subscribers should subscribe to.
+If None, a random tcp port on all interfaces is used.</p>
 </dd>
-<dt><strong>zmq</strong><span class="classifier">object, optional</span></dt><dd><p>By default, the ‘zmq’ module is imported and used. Anything else
-mocking its interface is accepted.</p>
+<dt><strong>in_curve: ServerCurve or ClientCurve or None, optional</strong></dt><dd><p>CURVE security configuration for the incoming socket.  If None, no security is applied.</p>
+</dd>
+<dt><strong>out_curve: ServerCurve or ClientCurve or None, optional</strong></dt><dd><p>CURVE security configuration for the outgoing socket.  If None, no security is applied.</p>
+</dd>
+<dt><strong>in_bind: bool, default True</strong></dt><dd><p>If True, the incoming socket will be bound to the address.</p>
+</dd>
+<dt><strong>out_bind: bool, default True</strong></dt><dd><p>If True, the outgoing socket will be bound to the address.</p>
+</dd>
+<dt><strong>in_port: str or None, optional</strong></dt><dd><p>DEPRECATED alias for in_address.  If specified, must be used instead of in_address</p>
+</dd>
+<dt><strong>out_port: str or None, optional</strong></dt><dd><p>DEPRECATED alias for out_address.  If specified, must be used instead of out_address</p>
 </dd>
 </dl>
 </dd>
@@ -2154,25 +2165,20 @@ interrupted and is therefore unusable.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.Publisher">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix=b''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RE=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serializer=&lt;built-in</span> <span class="pre">function</span> <span class="pre">dumps&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Publisher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Publisher" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">address:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">tuple[str,</span> <span class="pre">int],</span> <span class="pre">*,</span> <span class="pre">prefix:</span> <span class="pre">bytes</span> <span class="pre">=</span> <span class="pre">b'',</span> <span class="pre">serializer:</span> <span class="pre">~collections.abc.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">dumps&gt;,</span> <span class="pre">curve_config:</span> <span class="pre">~bluesky.callbacks.zmq.ClientCurve</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Publisher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Publisher" title="Link to this definition">#</a></dt>
 <dd><p>A callback that publishes documents to a 0MQ proxy.</p>
-<dl class="field-list">
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl>
+<dd class="field-odd"><dl class="simple">
 <dt><strong>address</strong><span class="classifier">string or tuple</span></dt><dd><p>Address of a running 0MQ proxy, given either as a string like
 <code class="docutils literal notranslate"><span class="pre">'127.0.0.1:5567'</span></code> or as a tuple like <code class="docutils literal notranslate"><span class="pre">('127.0.0.1',</span> <span class="pre">5567)</span></code></p>
 </dd>
 <dt><strong>prefix</strong><span class="classifier">bytes, optional</span></dt><dd><p>User-defined bytestring used to distinguish between multiple
 Publishers. May not contain b’ ‘.</p>
 </dd>
-<dt><strong>RE</strong><span class="classifier"><code class="docutils literal notranslate"><span class="pre">bluesky.RunEngine</span></code>, optional</span></dt><dd><p>DEPRECATED.
-RunEngine to which the Publisher will be automatically subscribed
-(and, more importantly, unsubscribed when it is closed).</p>
-</dd>
-<dt><strong>zmq</strong><span class="classifier">object, optional</span></dt><dd><p>By default, the ‘zmq’ module is imported and used. Anything else
-mocking its interface is accepted.</p>
-</dd>
 <dt><strong>serializer: function, optional</strong></dt><dd><p>optional function to serialize data. Default is pickle.dumps</p>
+</dd>
+<dt><strong>curve_config: ClientCurve, optional</strong></dt><dd><p>CURVE security configuration for client authentication.</p>
 </dd>
 </dl>
 </dd>
@@ -2188,7 +2194,7 @@ mocking its interface is accepted.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.RemoteDispatcher">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">RemoteDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix=b''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmq_asyncio=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deserializer=&lt;built-in</span> <span class="pre">function</span> <span class="pre">loads&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#RemoteDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.RemoteDispatcher" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">RemoteDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">address:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">tuple[str,</span> <span class="pre">int],</span> <span class="pre">*,</span> <span class="pre">prefix:</span> <span class="pre">bytes</span> <span class="pre">=</span> <span class="pre">b'',</span> <span class="pre">loop:</span> <span class="pre">~asyncio.events.AbstractEventLoop</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">deserializer:</span> <span class="pre">~collections.abc.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">loads&gt;,</span> <span class="pre">strict:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">curve_config:</span> <span class="pre">~bluesky.callbacks.zmq.ServerCurve</span> <span class="pre">|</span> <span class="pre">~bluesky.callbacks.zmq.ClientCurve</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#RemoteDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.RemoteDispatcher" title="Link to this definition">#</a></dt>
 <dd><p>Dispatch documents received over the network from a 0MQ proxy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2200,12 +2206,7 @@ mocking its interface is accepted.</p>
 Publishers. If set, messages without this prefix will be ignored.
 If unset, no mesages will be ignored.</p>
 </dd>
-<dt><strong>loop</strong><span class="classifier">zmq.asyncio.ZMQEventLoop, optional</span></dt><dd></dd>
-<dt><strong>zmq</strong><span class="classifier">object, optional</span></dt><dd><p>By default, the ‘zmq’ module is imported and used. Anything else
-mocking its interface is accepted.</p>
-</dd>
-<dt><strong>zmq_asyncio</strong><span class="classifier">object, optional</span></dt><dd><p>By default, the ‘zmq.asyncio’ module is imported and used. Anything
-else mocking its interface is accepted.</p>
+<dt><strong>loop</strong><span class="classifier">zmq.asyncio.ZMQEventLoop, optional</span></dt><dd><p>optional event loop to use.  Default is to create a new event loop.</p>
 </dd>
 <dt><strong>deserializer: function, optional</strong></dt><dd><p>optional function to deserialize data. Default is pickle.loads</p>
 </dd>
@@ -2569,7 +2570,7 @@ anywhere.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.0/docs/callbacks.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.1.dev16+g7ff3eb84f/docs/callbacks.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -2603,8 +2604,8 @@ anywhere.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -2638,7 +2639,7 @@ anywhere.</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>
