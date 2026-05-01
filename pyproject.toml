@@ -249,12 +249,12 @@ python = "3.13.*"
 python = "3.14.*"
 
 [tool.pixi.environments]
-default = { features = ["default", "all"], solve-group = "default" }
-py310 = { features = ["default", "py310", "all"], solve-group = "py310" }
-py311 = { features = ["default", "py311", "all"], solve-group = "py311" }
-py312 = { features = ["default", "py312", "all"], solve-group = "py312" }
-py313 = { features = ["default", "py313", "all"], solve-group = "py313" }
-py314 = { features = ["default", "py314", "all"], solve-group = "py314" }
+default = { features = ["dev"], solve-group = "default" }
+py310 = { features = ["py310", "dev"], solve-group = "py310" }
+py311 = { features = ["py311", "dev"], solve-group = "py311" }
+py312 = { features = ["py312", "dev"], solve-group = "py312" }
+py313 = { features = ["py313", "dev"], solve-group = "py313" }
+py314 = { features = ["py314", "dev"], solve-group = "py314" }
 
 [tool.pixi.tasks]
 lint = "pre-commit run --all-files --show-diff-on-failure"
