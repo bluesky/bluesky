@@ -214,23 +214,14 @@ commands =
 """
 
 [tool.pixi.workspace]
-preview = ["pixi-build"]
-channels = ["https://prefix.dev/conda-forge"]
+channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
-[tool.pixi.package]
-version = "1.15.0"
-
-[tool.pixi.package.build]
-backend = { name = "pixi-build-python", version = "0.*" }
-
-[tool.pixi.package.build.config]
-ignore-pypi-mapping = false  # Enable automatic PyPI-to-conda mapping
-
-
 [tool.pixi.dependencies]
-bluesky = { path = "." }
 python =  "*"
+
+[tool.pixi.pypi-dependencies]
+bluesky = { path = ".", editable = true }
 
 [tool.pixi.feature.py310.dependencies]
 python = "3.10.*"
