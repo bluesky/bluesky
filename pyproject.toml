@@ -219,8 +219,7 @@ channels = ["https://prefix.dev/conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.package]
-name = "bluesky"
-version = "1.15.1"
+version = "1.15.0"
 
 [tool.pixi.package.build]
 backend = { name = "pixi-build-python", version = "0.*" }
