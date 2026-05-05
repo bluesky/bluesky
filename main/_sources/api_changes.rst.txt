@@ -2,6 +2,18 @@
  Release History
 =================
 
+v1.15.1 (2026-05-05)
+====================
+
+Added
+-----
+- Support for ``CURVE`` encryption in the ZMQ callback
+- Additional unit tests for ZMQ callback, and for ZMQ callback CLI entrypoint.
+
+Changed
+-------
+- Dropped support for passing in deprecated ``RE`` and ``zmq`` parameters to the ZMQ callback.
+
 v1.15.0 (2026-04-15)
 ====================
 
