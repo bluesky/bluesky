@@ -1,0 +1,6 @@
+﻿bluesky.utils.PersistentDict.directory
+======================================
+
+.. currentmodule:: bluesky.utils
+
+.. autoproperty:: PersistentDict.directory

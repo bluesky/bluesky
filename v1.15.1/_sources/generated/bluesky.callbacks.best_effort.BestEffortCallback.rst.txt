@@ -1,0 +1,51 @@
+﻿bluesky.callbacks.best\_effort.BestEffortCallback
+=================================================
+
+.. currentmodule:: bluesky.callbacks.best_effort
+
+.. autoclass:: BestEffortCallback
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BestEffortCallback.__init__
+      ~BestEffortCallback.bulk_datum
+      ~BestEffortCallback.bulk_events
+      ~BestEffortCallback.clear
+      ~BestEffortCallback.datum
+      ~BestEffortCallback.datum_page
+      ~BestEffortCallback.descriptor
+      ~BestEffortCallback.disable_baseline
+      ~BestEffortCallback.disable_heading
+      ~BestEffortCallback.disable_plots
+      ~BestEffortCallback.disable_table
+      ~BestEffortCallback.emit
+      ~BestEffortCallback.enable_baseline
+      ~BestEffortCallback.enable_heading
+      ~BestEffortCallback.enable_plots
+      ~BestEffortCallback.enable_table
+      ~BestEffortCallback.event
+      ~BestEffortCallback.event_page
+      ~BestEffortCallback.plot_prune_fifo
+      ~BestEffortCallback.resource
+      ~BestEffortCallback.start
+      ~BestEffortCallback.stop
+      ~BestEffortCallback.stream_datum
+      ~BestEffortCallback.stream_resource
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BestEffortCallback.log
+   
+   

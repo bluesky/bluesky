@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.relative\_set\_decorator
+==============================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: relative_set_decorator

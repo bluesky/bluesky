@@ -1,0 +1,6 @@
+﻿bluesky.run\_engine.Dispatcher.unsubscribe
+==========================================
+
+.. currentmodule:: bluesky.run_engine
+
+.. automethod:: Dispatcher.unsubscribe

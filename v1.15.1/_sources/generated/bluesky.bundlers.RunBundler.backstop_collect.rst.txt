@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.backstop\_collect
+=============================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.backstop_collect

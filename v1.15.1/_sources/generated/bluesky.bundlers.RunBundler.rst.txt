@@ -1,0 +1,44 @@
+﻿bluesky.bundlers.RunBundler
+===========================
+
+.. currentmodule:: bluesky.bundlers
+
+.. autoclass:: RunBundler
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~RunBundler.__init__
+      ~RunBundler.backstop_collect
+      ~RunBundler.clear_checkpoint
+      ~RunBundler.clear_monitors
+      ~RunBundler.close_run
+      ~RunBundler.collect
+      ~RunBundler.configure
+      ~RunBundler.create
+      ~RunBundler.declare_stream
+      ~RunBundler.drop
+      ~RunBundler.get_external_data_keys
+      ~RunBundler.kickoff
+      ~RunBundler.monitor
+      ~RunBundler.open_run
+      ~RunBundler.read
+      ~RunBundler.record_interruption
+      ~RunBundler.reset_checkpoint_state
+      ~RunBundler.reset_checkpoint_state_coro
+      ~RunBundler.restore_monitors
+      ~RunBundler.rewind
+      ~RunBundler.save
+      ~RunBundler.suspend_monitors
+      ~RunBundler.unmonitor
+   
+   
+
+   
+   
+   

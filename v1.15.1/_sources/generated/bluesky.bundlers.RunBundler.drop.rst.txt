@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.drop
+================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.drop

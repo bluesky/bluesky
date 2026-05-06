@@ -1,0 +1,31 @@
+﻿bluesky.suspenders.SuspendFloor
+===============================
+
+.. currentmodule:: bluesky.suspenders
+
+.. autoclass:: SuspendFloor
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SuspendFloor.__init__
+      ~SuspendFloor.get_futures
+      ~SuspendFloor.install
+      ~SuspendFloor.remove
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SuspendFloor.tripped
+   
+   
