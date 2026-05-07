@@ -977,14 +977,14 @@ def complete_all(*args, group: Hashable | None = None, wait: bool = False, **kwa
 
 @plan
 def collect(
-    obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: str | None = None
+    obj: Collectable, *args, stream: bool = False, return_payload: bool = True, name: str | None = None
 ) -> MsgGenerator[list[PartialEvent]]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
 
     Parameters
     ----------
-    obj : A device with 'kickoff', 'complete', and 'collect' methods.
+    obj : A device with a 'collect' method.
     stream : boolean, optional
         If False (default), emit Event documents in one bulk dump. If True,
         emit events one at time.
@@ -1020,8 +1020,7 @@ def collect_all(
 
     Parameters
     ----------
-    *args : Any fly-able
-        Device with 'kickoff', 'complete', and 'collect' methods.
+    *args : Device(s) with a 'collect' method.
     stream : boolean, optional
         If False (default), emit Event documents in one bulk dump. If True,
         emit events one at time.
