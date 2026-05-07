@@ -1,11 +1,14 @@
+import asyncio
 import gc
 import itertools
 import logging
 import os
+import pickle
 import signal
 import threading
 import time
 from subprocess import run
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import multiprocess
 import numpy as np
@@ -525,7 +528,6 @@ def test_dep_warning_if_using_port_args(mock_zmq_context, in_or_out: str):
 
 @pytest.mark.parametrize("cls", [ServerCurve, ClientCurve])
 def test_cannot_bind_with_incorrect_curve(mock_zmq_context, tmp_path, cls):
-
     args = [tmp_path, tmp_path]
     if cls == ServerCurve:
         args.append(None)  # ServerCurve takes an extra argument
@@ -635,3 +637,52 @@ def test_configure_server_socket_server_curve(
         assert "Bound to random port: 12345" in caplog.text
     else:
         assert f"Bound to address: {expected_addr}" in caplog.text
+
+
+def test_remote_dispatcher_connection_timeout():
+    """Test that RemoteDispatcher times out when handshake doesn't complete."""
+
+    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.1)
+
+    with pytest.raises(asyncio.TimeoutError):
+        dispatcher.start()
+
+
+def test_remote_dispatcher_connection_success():
+    """Test that RemoteDispatcher succeeds when handshake completes. It should process 1 message and exit."""
+
+    recv_event = threading.Event()
+
+    mock_monitor = MagicMock()
+
+    async def mock_recv(*args, **kwargs):
+        if not recv_event.is_set():
+            recv_event.set()
+            return b" start " + pickle.dumps({})
+        # Block forever after first call to allow cancellation
+        await asyncio.Event().wait()
+
+    with (
+        patch("zmq.asyncio.Socket.get_monitor_socket", return_value=mock_monitor),
+        patch("zmq.asyncio.Socket.disable_monitor"),
+        patch(
+            "bluesky.callbacks.zmq.recv_monitor_message",
+            new_callable=AsyncMock,
+            return_value={"event": zmq.EVENT_HANDSHAKE_SUCCEEDED},
+        ),
+        patch("zmq.asyncio.Socket.connect"),
+        patch("zmq.asyncio.Socket.recv", side_effect=mock_recv),
+    ):
+        dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=5.0)
+
+        def run_dispatcher():
+            try:
+                dispatcher.start()
+            except asyncio.CancelledError:
+                pass
+
+        dispatcher_thread = threading.Thread(target=run_dispatcher, daemon=True)
+        dispatcher_thread.start()
+        assert recv_event.wait(timeout=2), "recv was not called within timeout"
+        dispatcher.loop.call_soon_threadsafe(dispatcher.stop)
+        dispatcher_thread.join()

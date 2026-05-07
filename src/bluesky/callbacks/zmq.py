@@ -25,6 +25,7 @@ import zmq
 import zmq.asyncio as zmq_asyncio
 import zmq.auth
 from zmq.auth.thread import ThreadAuthenticator
+from zmq.utils.monitor import recv_monitor_message
 
 from ..run_engine import Dispatcher, DocumentNames
 
@@ -439,6 +440,9 @@ class RemoteDispatcher(Dispatcher):
         optional event loop to use.  Default is to create a new event loop.
     deserializer: function, optional
         optional function to deserialize data. Default is pickle.loads
+    connection_timeout : float, optional
+        Configurable timeout to wait for connection handshake.
+        Defaults to ``None``, no wait for handshake.
 
     Examples
     --------
@@ -459,6 +463,7 @@ class RemoteDispatcher(Dispatcher):
         deserializer: Callable = pickle.loads,
         strict: bool = False,
         curve_config: ServerCurve | ClientCurve | None = None,
+        connection_timeout: float | None = None,
     ):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
@@ -474,6 +479,9 @@ class RemoteDispatcher(Dispatcher):
         self.loop = loop
         self._context = None
         self._socket = None
+        self._monitor = None
+        self._wait_task = None
+        self._connection_timeout = connection_timeout
 
         def __finish_setup():
             asyncio.set_event_loop(self.loop)
@@ -492,6 +500,12 @@ class RemoteDispatcher(Dispatcher):
                 # Load the server public key and register with the socket
                 server_key, _ = zmq.auth.load_certificate(curve_config.server_public_key)
                 sock.setsockopt(zmq.CURVE_SERVERKEY, server_key)
+
+            if self._connection_timeout is not None:
+                self._monitor = self._socket.get_monitor_socket(
+                    events=zmq.EVENT_HANDSHAKE_SUCCEEDED,
+                )
+                self._wait_task = self.loop.create_task(self._wait_for_handshake(self._connection_timeout))
 
             self._socket.connect(self.address)
             self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
@@ -552,6 +566,29 @@ class RemoteDispatcher(Dispatcher):
                         continue
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
+    async def _wait_for_handshake(self, timeout: float = 5.0) -> None:
+        if not self._monitor:
+            raise RuntimeError("Socket monitor for the connection handshake should be set at this point.")
+        await asyncio.wait_for(recv_monitor_message(self._monitor), timeout=timeout)
+
+    def _await_connection(self, timeout: float = 5.0) -> None:
+        """Wait for SUB socket event handshake"""
+
+        logger.debug(f"Waiting for connection handshake ({timeout=}s")
+        try:
+            if self._wait_task:
+                self.loop.run_until_complete(self._wait_task)
+        except asyncio.TimeoutError:
+            logger.error(f"Connection handshake timed out after {timeout}s")
+            raise
+        finally:
+            if self._wait_task is not None:
+                self._wait_task.cancel()
+            if self._socket is not None:
+                self._socket.disable_monitor()
+            if self._monitor is not None:
+                self._monitor.close(linger=0)
+
     def start(self):
         if self.closed:
             raise RuntimeError(
@@ -561,6 +598,8 @@ class RemoteDispatcher(Dispatcher):
             )
         try:
             self.__factory()
+            if self._connection_timeout is not None:
+                self._await_connection()
             self._task = self.loop.create_task(self._poll())
             self.loop.run_until_complete(self._task)
             task_exception = self._task.exception()
@@ -570,6 +609,8 @@ class RemoteDispatcher(Dispatcher):
             self.stop()
 
     def stop(self):
+        if self._wait_task is not None:
+            self._wait_task.cancel()
         if self._task is not None:
             self._task.cancel()
         if self._socket is not None:
