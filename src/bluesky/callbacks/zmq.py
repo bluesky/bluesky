@@ -16,6 +16,7 @@ import asyncio
 import copy
 import logging
 import pickle
+import threading
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -444,6 +445,13 @@ class RemoteDispatcher(Dispatcher):
         Configurable timeout to wait for connection handshake.
         Defaults to ``None``, no wait for handshake.
 
+    Attributes
+    ----------
+    connected : bool
+        ``True`` once the SUB socket handshake has completed successfully
+        (only meaningful when ``connection_timeout`` is provided). Reset to
+        ``False`` on ``stop()``. See also :meth:`wait_for_connection`.
+
     Examples
     --------
 
@@ -482,6 +490,7 @@ class RemoteDispatcher(Dispatcher):
         self._monitor = None
         self._wait_task = None
         self._connection_timeout = connection_timeout
+        self._connected = threading.Event()
 
         def __finish_setup():
             asyncio.set_event_loop(self.loop)
@@ -571,6 +580,32 @@ class RemoteDispatcher(Dispatcher):
             raise RuntimeError("Socket monitor for the connection handshake should be set at this point.")
         await asyncio.wait_for(recv_monitor_message(self._monitor), timeout=timeout)
 
+    @property
+    def connected(self) -> bool:
+        """Whether the SUB socket handshake has completed successfully."""
+        return self._connected.is_set()
+
+    def wait_for_connection(self, timeout: float | None = None) -> bool:
+        """Block until the SUB socket handshake has completed successfully.
+
+        Intended to be called from a thread other than the one running the
+        dispatcher's event loop, so that callers can know when it is safe
+        to start publishing messages that the dispatcher should receive.
+
+        Parameters
+        ----------
+        timeout : float, optional
+            Maximum time in seconds to wait. ``None`` (the default) waits
+            indefinitely.
+
+        Returns
+        -------
+        bool
+            ``True`` if the handshake completed within the timeout,
+            ``False`` otherwise.
+        """
+        return self._connected.wait(timeout=timeout)
+
     def _await_connection(self, timeout: float = 5.0) -> None:
         """Wait for SUB socket event handshake"""
 
@@ -581,6 +616,8 @@ class RemoteDispatcher(Dispatcher):
         except asyncio.TimeoutError:
             logger.error(f"Connection handshake timed out after {timeout}s")
             raise
+        else:
+            self._connected.set()
         finally:
             if self._wait_task is not None:
                 self._wait_task.cancel()
@@ -609,6 +646,7 @@ class RemoteDispatcher(Dispatcher):
             self.stop()
 
     def stop(self):
+        self._connected.clear()
         if self._wait_task is not None:
             self._wait_task.cancel()
         if self._task is not None:

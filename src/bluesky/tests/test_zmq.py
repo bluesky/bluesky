@@ -683,6 +683,37 @@ def test_remote_dispatcher_connection_success():
 
         dispatcher_thread = threading.Thread(target=run_dispatcher, daemon=True)
         dispatcher_thread.start()
+        assert dispatcher.wait_for_connection(timeout=2), "handshake was not signaled within timeout"
+        assert dispatcher.connected
         assert recv_event.wait(timeout=2), "recv was not called within timeout"
         dispatcher.loop.call_soon_threadsafe(dispatcher.stop)
         dispatcher_thread.join()
+        assert not dispatcher.connected, "connected should be False after stop()"
+
+
+def test_remote_dispatcher_connection_timeout_in_thread():
+    """Test that handshake failure is observable from another thread via wait_for_connection."""
+
+    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.01)
+
+    exceptions: list[BaseException] = []
+
+    def run_dispatcher():
+        try:
+            dispatcher.start()
+        except BaseException as e:
+            exceptions.append(e)
+
+    dispatcher_thread = threading.Thread(target=run_dispatcher, daemon=True)
+    dispatcher_thread.start()
+
+    # Caller in another thread sees the connection never succeeded.
+    assert not dispatcher.wait_for_connection(timeout=0.1), (
+        "wait_for_connection should return False on handshake timeout"
+    )
+    assert not dispatcher.connected
+
+    dispatcher_thread.join(timeout=2)
+    assert not dispatcher_thread.is_alive(), "dispatcher thread did not exit after timeout"
+    assert len(exceptions) == 1
+    assert isinstance(exceptions[0], asyncio.TimeoutError)
