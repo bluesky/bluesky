@@ -167,7 +167,7 @@ While a Datum will be yielded to specify a single frame of data in a Resource:
 .. autoclass:: bluesky.protocols.Datum
     :members:
 
-.. seealso:: https://blueskyproject.io/event-model/external.html
+.. seealso:: https://blueskyproject.io/event-model/main/explanations/external.html
 
 
 Movable (or "Settable") Device

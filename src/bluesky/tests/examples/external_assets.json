@@ -1,0 +1,346 @@
+[
+    {
+        "name": "start",
+        "doc": {
+            "uid": "{{ uuid }}-9724b2201fe7",
+            "time": 1745500521.706236,
+            "scan_id": 3,
+            "plan_type": "generator",
+            "plan_name": "count",
+            "detectors": [
+                "det-obj1",
+                "det-obj2"
+            ]
+        }
+    },
+    {
+        "name": "descriptor",
+        "doc": {
+            "configuration": {
+                "det-obj1": {
+                    "data": {},
+                    "timestamps": {},
+                    "data_keys": {}
+                }
+            },
+            "data_keys": {
+                "det-key1": {
+                    "source": "file",
+                    "dtype": "number",
+                    "dtype_numpy": "<f8",
+                    "shape": [
+                        1
+                    ],
+                    "external": "STREAM:",
+                    "object_name": "det-obj1"
+                },
+                "det-key2": {
+                    "source": "file",
+                    "dtype": "array",
+                    "dtype_numpy": "<i8",
+                    "shape": [
+                        1,
+                        13,
+                        17
+                    ],
+                    "external": "STREAM:",
+                    "object_name": "det-obj1"
+                }
+            },
+            "name": "primary",
+            "object_keys": {
+                "det-obj1": [
+                    "det-key1",
+                    "det-key2"
+                ]
+            },
+            "run_start": "{{ uuid }}-9724b2201fe7",
+            "time": 1745500521.79327,
+            "uid": "{{ uuid }}-descriptor01",
+            "hints": {}
+        }
+    },
+    {
+        "name": "stream_resource",
+        "doc": {
+            "parameters": {
+                "dataset": "/entry/data/data_1",
+                "chunk_shape": [
+                    100
+                ]
+            },
+            "data_key": "det-key1",
+            "uri": "file://localhost/{{ root_path }}/dataset.h5",
+            "mimetype": "application/x-hdf5",
+            "uid": "det-key1-uid",
+            "run_start": "{{ uuid }}-9724b2201fe7"
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key1-uid",
+            "descriptor": "{{ uuid }}-descriptor01",
+            "uid": "det-key1-uid/0",
+            "indices": {
+                "start": 0,
+                "stop": 1
+            },
+            "seq_nums": {
+                "start": 1,
+                "stop": 2
+            }
+        }
+    },
+    {
+        "name": "stream_resource",
+        "doc": {
+            "parameters": {
+                "dataset": "/entry/data/data_2",
+                "chunk_shape": [
+                    100,
+                    13,
+                    17
+                ]
+            },
+            "data_key": "det-key2",
+            "uri": "file://localhost/{{ root_path }}/dataset.h5",
+            "mimetype": "application/x-hdf5",
+            "uid": "det-key2-uid",
+            "run_start": "{{ uuid }}-9724b2201fe7"
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key2-uid",
+            "descriptor": "{{ uuid }}-descriptor01",
+            "uid": "det-key2-uid/0",
+            "indices": {
+                "start": 0,
+                "stop": 1
+            },
+            "seq_nums": {
+                "start": 1,
+                "stop": 2
+            }
+        }
+    },
+    {
+        "name": "descriptor",
+        "doc": {
+            "configuration": {
+                "det-obj2": {
+                    "data": {},
+                    "timestamps": {},
+                    "data_keys": {}
+                }
+            },
+            "data_keys": {
+                "det-key3": {
+                    "source": "file",
+                    "dtype": "array",
+                    "dtype_numpy": "|u1",
+                    "shape": [
+                        1,
+                        10,
+                        15
+                    ],
+                    "external": "STREAM:",
+                    "object_name": "det-obj2"
+                }
+            },
+            "name": "secondary",
+            "object_keys": {
+                "det-obj2": [
+                    "det-key3"
+                ]
+            },
+            "run_start": "{{ uuid }}-9724b2201fe7",
+            "time": 1745500521.79337,
+            "uid": "{{ uuid }}-descriptor02",
+            "hints": {}
+        }
+    },
+    {
+        "name": "stream_resource",
+        "doc": {
+            "parameters": {
+                "chunk_shape": [
+                    1,
+                    10,
+                    15
+                ],
+                "template": "img_{:05d}.tif",
+                "join_method": "stack"
+            },
+            "data_key": "det-key3",
+            "uri": "file://localhost/{{ root_path }}/tiff_files/",
+            "mimetype": "multipart/related;type=image/tiff",
+            "uid": "det-key3-uid",
+            "run_start": "{{ uuid }}-9724b2201fe7"
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key3-uid",
+            "descriptor": "{{ uuid }}-descriptor02",
+            "uid": "det-key3-uid/0",
+            "indices": {
+                "start": 0,
+                "stop": 1
+            },
+            "seq_nums": {
+                "start": 1,
+                "stop": 2
+            }
+        }
+    },
+    {
+        "name": "event",
+        "doc": {
+            "uid": "{{ uuid }}-fccee75c4049",
+            "time": 1745500522.3483489,
+            "data": {},
+            "timestamps": {},
+            "seq_num": 1,
+            "filled": {},
+            "descriptor": "{{ uuid }}-descriptor01"
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key1-uid",
+            "descriptor": "{{ uuid }}-descriptor01",
+            "uid": "det-key1-uid/1",
+            "indices": {
+                "start": 1,
+                "stop": 2
+            },
+            "seq_nums": {
+                "start": 2,
+                "stop": 3
+            }
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key2-uid",
+            "descriptor": "{{ uuid }}-descriptor01",
+            "uid": "det-key2-uid/1",
+            "indices": {
+                "start": 1,
+                "stop": 2
+            },
+            "seq_nums": {
+                "start": 2,
+                "stop": 3
+            }
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key3-uid",
+            "descriptor": "{{ uuid }}-descriptor02",
+            "uid": "det-key3-uid/1",
+            "indices": {
+                "start": 1,
+                "stop": 2
+            },
+            "seq_nums": {
+                "start": 2,
+                "stop": 3
+            }
+        }
+    },
+    {
+        "name": "event",
+        "doc": {
+            "uid": "{{ uuid }}-a889843f30fc",
+            "time": 1745500522.548436,
+            "data": {},
+            "timestamps": {},
+            "seq_num": 2,
+            "filled": {},
+            "descriptor": "{{ uuid }}-descriptor01"
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key1-uid",
+            "descriptor": "{{ uuid }}-descriptor01",
+            "uid": "det-key1-uid/2",
+            "indices": {
+                "start": 2,
+                "stop": 3
+            },
+            "seq_nums": {
+                "start": 3,
+                "stop": 4
+            }
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key2-uid",
+            "descriptor": "{{ uuid }}-descriptor01",
+            "uid": "det-key2-uid/2",
+            "indices": {
+                "start": 2,
+                "stop": 3
+            },
+            "seq_nums": {
+                "start": 3,
+                "stop": 4
+            }
+        }
+    },
+    {
+        "name": "stream_datum",
+        "doc": {
+            "stream_resource": "det-key3-uid",
+            "descriptor": "{{ uuid }}-descriptor02",
+            "uid": "det-key3-uid/2",
+            "indices": {
+                "start": 2,
+                "stop": 3
+            },
+            "seq_nums": {
+                "start": 3,
+                "stop": 4
+            }
+        }
+    },
+    {
+        "name": "event",
+        "doc": {
+            "uid": "{{ uuid }}-6707fc155dd0",
+            "time": 1745500522.77075,
+            "data": {},
+            "timestamps": {},
+            "seq_num": 3,
+            "filled": {},
+            "descriptor": "{{ uuid }}-descriptor01"
+        }
+    },
+    {
+        "name": "stop",
+        "doc": {
+            "uid": "{{ uuid }}-fe2748f474de",
+            "time": 1745500522.771699,
+            "run_start": "{{ uuid }}-9724b2201fe7",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {
+                "primary": 3,
+                "secondary": 0
+            }
+        }
+    }
+]

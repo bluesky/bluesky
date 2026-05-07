@@ -250,9 +250,9 @@ def test_assert_message_and_return_remaining(hw):
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "stage" and msg.obj.name == "det")
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and msg.kwargs["plan_name"] == "count"
-        and msg.kwargs["num_points"] == 3,
+        lambda msg: (
+            msg.command == "open_run" and msg.kwargs["plan_name"] == "count" and msg.kwargs["num_points"] == 3
+        ),
     )
     for _ in range(0, 3):
         msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "checkpoint")

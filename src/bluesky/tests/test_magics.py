@@ -3,11 +3,28 @@ import signal
 from types import SimpleNamespace
 
 import pytest
+from ophyd import Component as Cpt
+from ophyd import PseudoPositioner, PseudoSingle, SoftPositioner
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
-from bluesky.magics import BlueskyMagics
+from bluesky.magics import BlueskyMagics, _print_positioners
 from bluesky.tests import uses_os_kill_sigint
+
+
+class TwoAxisPseudo(PseudoPositioner):
+    """Minimal two-axis PseudoPositioner for testing."""
+
+    px = Cpt(PseudoSingle)
+    py = Cpt(PseudoSingle)
+    rx = Cpt(SoftPositioner, init_pos=0)
+    ry = Cpt(SoftPositioner, init_pos=0)
+
+    def forward(self, pp):
+        return self.RealPosition(rx=pp.px, ry=pp.py)
+
+    def inverse(self, rp):
+        return self.PseudoPosition(px=rp.rx, py=rp.ry)
 
 
 class FakeIPython:
@@ -169,3 +186,19 @@ def test_interrupted(RE, hw):
     sm.RE.loop.call_later(1, sim_kill, 2)
     sm.mov("motor 1")
     assert sm.RE.state == "idle"
+
+
+def test_print_positioners_pseudo_positioner():
+    # PseudoPositioner.position is a namedtuple; np.round returns an ndarray
+    # under numpy 2.x, which raises TypeError with string format specs.
+    dev = TwoAxisPseudo(name="dev")
+    _print_positioners([dev])  # must not raise TypeError
+
+
+def test_wa_pseudo_positioner():
+    # %wa must not raise TypeError for multi-axis PseudoPositioner objects.
+    dev = TwoAxisPseudo(name="dev", labels=["motors"])
+    ip = FakeIPython({"dev": dev})
+    sm = BlueskyMagics(ip)
+    sm.wa("")  # must not raise TypeError
+    sm.wa("motors")  # must not raise TypeError

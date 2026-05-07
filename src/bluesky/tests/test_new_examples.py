@@ -3,8 +3,10 @@ import threading
 import time as ttime
 from collections import defaultdict
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
+from event_model.documents.event_descriptor import DataKey
 
 import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
@@ -69,7 +71,8 @@ from bluesky.preprocessors import (
     subs_wrapper,
     suspend_wrapper,
 )
-from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
+from bluesky.protocols import Descriptor, Locatable, Location, Movable, Readable, Reading, Status
+from bluesky.tests.test_external_assets_and_paging import DocHolder, Named, describe_pv, read_pv
 from bluesky.utils import IllegalMessageSequence, all_safe_rewind
 
 
@@ -109,11 +112,31 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
             {"group": "A", "wait": True},
             [Msg("read", "det"), Msg("set", "det", 5, group="A"), Msg("wait", None, group="A")],
         ),
+        (
+            mv,
+            ("motor1", 1, "motor2", 2),
+            {"group": "A"},
+            [
+                Msg("set", "motor1", 1, group="A"),
+                Msg("set", "motor2", 2, group="A"),
+                Msg("wait", None, group="A", timeout=None),
+            ],
+        ),
+        (
+            mv,
+            ("motor1", 1, "motor2", 2),
+            {"group": "A", "timeout": 42},
+            [
+                Msg("set", "motor1", 1, group="A"),
+                Msg("set", "motor2", 2, group="A"),
+                Msg("wait", None, group="A", timeout=42),
+            ],
+        ),
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
         (trigger, ("det",), {"group": "A"}, [Msg("trigger", "det", group="A")]),
         (sleep, (2,), {}, [Msg("sleep", None, 2)]),
-        (wait, (), {}, [Msg("wait", None, error_on_timeout=True, group=None, timeout=None)]),
-        (wait, ("A",), {}, [Msg("wait", None, group="A", error_on_timeout=True, timeout=None)]),
+        (wait, (), {}, [Msg("wait", None, error_on_timeout=True, group=None, timeout=None, watch=())]),
+        (wait, ("A",), {}, [Msg("wait", None, group="A", error_on_timeout=True, timeout=None, watch=())]),
         (checkpoint, (), {}, [Msg("checkpoint")]),
         (clear_checkpoint, (), {}, [Msg("clear_checkpoint")]),
         (pause, (), {}, [Msg("pause", None, defer=False)]),
@@ -147,28 +170,27 @@ def test_stub_plans(plan, plan_args, plan_kwargs, msgs, hw):
     assert list(plan(*plan_args, **plan_kwargs)) == msgs
 
 
-def test_mv(hw):
-    # special-case mv because the group is not configurable
-    # move motors first to ensure that movement is absolute, not relative
-    actual = list(mv(hw.motor1, 1, hw.motor2, 2))
-    strip_group(actual)
-    for msg in actual[:2]:
-        msg.command == "set"  # noqa: B015
-    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])  # noqa: C403, C405
-    assert actual[2] == Msg("wait", None)
+@pytest.mark.parametrize(("timeout", "should_fail"), [(0, True), (1, False), (None, False)])
+def test_mv_timeout(RE, hw, timeout, should_fail):
+    sig = hw.motor
+    sig.delay = 0.01
 
+    def tester(obj):
+        try:
+            yield from mv(obj, 1, timeout=timeout)
+        except TimeoutError:
+            assert should_fail
+        else:
+            assert not should_fail
 
-def test_mv_with_timeout(hw):
-    # special-case mv because the group is not configurable
-    # move motors first to ensure that movement is absolute, not relative
-    actual = list(mv(hw.motor1, 1, hw.motor2, 2, timeout=42))
-    for msg in actual[:2]:
-        msg.command == "set"  # noqa: B015
-        msg.kwargs["timeout"] == 42  # noqa: B015
+        # This needs to happen so all Futures can be cleared inside RE.
+        yield from sleep(obj.delay)
+
+    RE(tester(sig))
 
 
 def test_mvr(RE, hw):
-    # special-case mv because the group is not configurable
+    # special-case mvr because the value cannot be pre-defined in test_stub_plans
     # move motors first to ensure that movement is relative, not absolute
     hw.motor1.set(10)
     hw.motor2.set(10)
@@ -180,7 +202,7 @@ def test_mvr(RE, hw):
     for msg in actual[:2]:
         msg.command == "set"  # noqa: B015
     assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])  # noqa: C403, C405
-    assert actual[2] == Msg("wait", None)
+    assert actual[2] == Msg("wait", None, timeout=None)
 
 
 def test_locatable_message_multiple_objects(RE, hw):
@@ -284,8 +306,9 @@ def test_mvr_with_timeout(hw):
     # move motors first to ensure that movement is absolute, not relative
     actual = list(mvr(hw.motor1, 1, hw.motor2, 2, timeout=42))
     for msg in actual[:2]:
-        msg.command == "set"  # noqa: B015
-        msg.kwargs["timeout"] == 42  # noqa: B015
+        assert msg.command == "set"  # noqa: B015
+
+    assert actual[2].kwargs["timeout"] == 42
 
 
 def strip_group(plan):
@@ -642,6 +665,7 @@ def test_configure_count_time(RE, hw):
 
     for msg in msgs:
         msg.kwargs.pop("group", None)
+        msg.kwargs.pop("timeout", None)
 
     assert msgs == expected
 
@@ -703,7 +727,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det]))
     expected = [
         Msg("trigger", det),
-        Msg("wait", error_on_timeout=True),
+        Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="primary"),
         Msg("read", det),
         Msg("save"),
@@ -716,7 +740,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det], "custom"))
     expected = [
         Msg("trigger", det),
-        Msg("wait", error_on_timeout=True),
+        Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="custom"),
         Msg("read", det),
         Msg("save"),
@@ -950,3 +974,85 @@ def test_custom_stream_name(RE, hw):
 
     with pytest.raises(IllegalMessageSequence):
         RE(count([hw.det], 3, per_shot=one_shot))
+
+
+class MultiConfiguredDevice(Named, Readable, Movable[int]):
+    """Device to test that read_configuration cache is updated for a new stream. This is done by
+    "configuring" the device and the read_configuration should show a new value."""
+
+    def __init__(self, motor, name):
+        self.motor = motor
+        self.read_value = 10
+        super().__init__(name)
+
+    def set(self, config_value: int) -> Status:
+        return self.motor.set(config_value)
+
+    def read(self) -> dict[str, Reading]:
+        return read_pv(self, self.read_value)
+
+    def read_configuration(self) -> dict[str, Reading]:
+        return read_pv(self, self.motor.position)
+
+    def describe(self) -> dict[str, DataKey]:
+        return describe_pv(self)
+
+    def describe_configuration(self) -> dict[str, DataKey]:
+        return describe_pv(self)
+
+
+def multi_stream_plan(device: MultiConfiguredDevice, value_configuration: list[int], iterations: int):
+    """Plan that configures a device by setting a value and then reading the device. This is done X number
+    of times. Each time, it saves it to a new stream so we get new device configuration each time."""
+    yield from open_run()
+    for v in value_configuration:
+        yield from abs_set(device, v, wait=True)
+        for _ in range(iterations):
+            yield from trigger_and_read([device], name=f"test{v}")
+    yield from close_run()
+
+
+def test_device_has_new_read_configuration_once_per_stream(RE, hw):
+    docs = DocHolder()
+    device = MultiConfiguredDevice(hw.motor, "device")
+    pv = f"{device.name}-pv"
+
+    config_values = [0, 1, 2, 3]
+    iterations = 2
+    RE(multi_stream_plan(device, config_values, iterations), docs.append)
+
+    docs.assert_emitted(start=1, descriptor=len(config_values), event=len(config_values) * iterations, stop=1)
+    for v in config_values:
+        assert docs["descriptor"][v]["name"] == f"test{v}"
+        assert docs["descriptor"][v]["configuration"][device.name]["data"] == {pv: v}
+        for i in range(1, iterations + 1):
+            assert docs["event"][i + v]["data"][pv] == device.read_value
+
+
+def test_cache_used_correct_number_of_times_for_object(RE, hw):
+    device = MultiConfiguredDevice(hw.motor, "device")
+    config_values = [0, 1, 2, 3]
+    iterations = 2
+
+    expected_config_calls = len(config_values)  # New config cache used once per stream.
+    expected_config_describe_calls = len(config_values)  # New config_describe cache used once per stream.
+    expected_read_calls = expected_config_calls * iterations  # New read cache used on each event.
+    expected_read_describe_calls = len(config_values)  # New read_describe used once per stream.
+
+    mock_read_config = Mock(wraps=device.read_configuration)
+    device.read_configuration = mock_read_config
+    mock_describe_config = Mock(wraps=device.describe_configuration)
+    device.describe_configuration = mock_describe_config
+
+    mock_read = Mock(wraps=device.read)
+    device.read = mock_read
+    mock_describe = Mock(wraps=device.describe)
+    device.describe = mock_describe
+
+    RE(multi_stream_plan(device, config_values, iterations))
+
+    assert mock_read_config.call_count == expected_config_calls
+    assert mock_describe_config.call_count == expected_config_describe_calls
+
+    assert mock_read.call_count == expected_read_calls
+    assert mock_describe.call_count == expected_read_describe_calls
