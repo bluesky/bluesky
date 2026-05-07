@@ -22,6 +22,7 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    Collectable,
     Configurable,
     Flyable,
     Locatable,
@@ -35,6 +36,7 @@ from .protocols import (
     Status,
     Stoppable,
     Triggerable,
+    WritesStreamAssets,
     check_supports,
 )
 from .utils import (
@@ -1010,6 +1012,47 @@ def collect(
 
 
 @plan
+def collect_all(
+    *args, stream: bool = False, return_payload: bool = True, name: str | None = None
+) -> MsgGenerator[list[list[PartialEvent]] | list[PartialEvent] | None]:
+    """
+    Collect data cached by one or more fly-scanning devices and emit documents.
+
+    Parameters
+    ----------
+    *args : Any fly-able
+        Device with 'kickoff', 'complete', and 'collect' methods.
+    stream : boolean, optional
+        If False (default), emit Event documents in one bulk dump. If True,
+        emit events one at time.
+    return_payload: boolean, optional
+        If True (default), return the collected Events. If False, return None.
+        Using ``stream=True`` and ``return_payload=False`` together avoids
+        accumulating the documents in memory: they are emitted as they are
+        collected, and they are not accumulated.
+    name: str, optional
+        If not None, will collect for the named string specifically, else collect will be performed
+        on all streams.
+    """
+
+    # Only collectable objects should be passed in
+    objs = [check_supports(arg, Collectable) for arg in args]
+
+    # If we provide a stream name, attempt to collect all objects with that stream name.
+    # This is only supported if all the objects support the WritesStreamAssets protocol,
+    # so check for that. If not all objects support the protocol, fall back to collecting from each object separately.
+    if name is not None and (all([isinstance(obj, WritesStreamAssets) for obj in objs])):
+        return (yield from collect(*objs, stream=stream, return_payload=return_payload, name=name))
+    else:
+        # Otherwise, we need to collect from each object separately and combine the results.
+        collections = []
+        for obj in objs:
+            ret = yield from collect(obj, stream=stream, return_payload=return_payload, name=name)
+            collections.append(ret)
+        return collections
+
+
+@plan
 def collect_while_completing(flyers, dets, flush_period=None, stream_name=None, watch: Sequence[str] = ()):
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
@@ -1043,7 +1086,7 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None, 
     done = False
     while not done:
         done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False, watch=watch)
-        yield from collect(*dets, name=stream_name)
+        yield from collect_all(*dets, name=stream_name)
 
 
 @plan

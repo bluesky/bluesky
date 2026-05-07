@@ -2308,6 +2308,7 @@ def fly(
     md: CustomPlanMetadata | None = None,
     collect_flush_period: float | None = None,
     stream_name: str | None = None,
+    watch: Sequence[str] | None = None,
 ) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
@@ -2349,12 +2350,12 @@ def fly(
     # If flush period given, collect while completing.
     if collect_flush_period is not None:
         yield from bps.collect_while_completing(
-            flyers, dets, flush_period=collect_flush_period, stream_name=stream_name
+            flyers, dets, flush_period=collect_flush_period, stream_name=stream_name, watch=watch
         )
     else:
         # Otherwise, wait for all flyers to complete before collecting.
         yield from bps.complete_all(*flyers, wait=True)
-        yield from bps.collect(*dets, name=stream_name)
+        yield from bps.collect_all(*dets, name=stream_name)
 
     yield from bps.close_run()
     return uid
