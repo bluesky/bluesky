@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from functools import wraps
 
 from bluesky.protocols import Locatable
+from bluesky.run_engine import ObjTuple
 
 from .plan_stubs import (
     close_run,
@@ -341,7 +342,10 @@ def print_summary_wrapper(plan):
         elif cmd == "create":
             read_cache = []
         elif cmd == "read":
-            read_cache.append(msg.obj.name)
+            if isinstance(msg.obj, ObjTuple):
+                read_cache += [obj.name for obj in msg.obj]
+            else:
+                read_cache.append(msg.obj.name)
         elif cmd == "save":
             print(f"  Read {read_cache}")
         return msg

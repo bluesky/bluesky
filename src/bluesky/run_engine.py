@@ -16,6 +16,7 @@ from datetime import datetime
 from enum import Enum
 from inspect import iscoroutine
 from itertools import count
+from typing import final
 from warnings import warn
 
 import event_model
@@ -56,7 +57,6 @@ from .utils import (
     InvalidCommand,
     Msg,
     NoReplayAllowed,
-    ObjTuple,
     PlanHalt,
     RequestAbort,
     RequestStop,
@@ -87,6 +87,15 @@ class _RunEnginePanic(Exception): ...
 
 
 class WaitForTimeoutError(TimeoutError): ...
+
+
+@final
+class ObjTuple(tuple):
+    """A tuple which structure which contains multiple objects in a message.
+
+    Where ``Msg("read", some_device)`` will read one device, ``Msg("read", ObjTuple(some_device1, some_device2))``
+    will read both together. This allows for asynchronous devices to be read together.
+    """
 
 
 @dataclass
@@ -540,7 +549,6 @@ class RunEngine:
             "save": self._save,
             "drop": self._drop,
             "read": self._read,
-            "read_all": self._read_all,
             "locate": self._locate,
             "monitor": self._monitor,
             "unmonitor": self._unmonitor,
@@ -1975,11 +1983,7 @@ class RunEngine:
         return await current_run.declare_stream(msg)
 
     async def _perform_single_reading(self, obj, *read_args, **read_kwargs):
-        """Perform a reading on a single device.
-
-        For a `_read` this is only called once.
-        For a `_read_all` this is only called in a gather of devices.
-        """
+        """Perform a reading on a single device."""
 
         ret = await maybe_await(obj.read(*read_args, **read_kwargs))
 
@@ -1995,41 +1999,43 @@ class RunEngine:
         """
         Add a reading to the open event bundle.
 
+        Where the reading is the read of one or multiple devices.
+
+        Here msg.obj is either a ``Readable`` or `ObjTuple[Reabable, ...]`.
+
+        In the latter case asynchronous read methods will be read together.
+
         Expected message object is:
 
-            Msg('read', obj)
+            Msg('read', objs)
+
         """
-        obj = check_supports(msg.obj, Readable)
-        warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
-        reading = await self._perform_single_reading(obj, *msg.args, **msg.kwargs)
 
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is not key_absence_sentinel:
-            await current_run.read(msg, reading)
 
-        return reading
+        if isinstance(msg.obj, Readable):
+            reading = await self._perform_single_reading(msg.obj)
+            if (current_run := self._run_bundlers.get(run_key)) is not None:
+                await current_run.read(msg, reading)
+            return reading
 
-    async def _read_all(self, msg):
-        """
-        Add a reading to the open event bundle.
-
-        Where the reading is the read of multiple devices.
-
-        Here msg.obj is an `ObjTuple` containing Reabable's.
-
-        Expected message object is:
-
-            Msg('read_all', obj)
-
-        where ``obj`` is an ``ObjTuple`` of ``Device``.
-        """
-        coro_objs, non_coro_objs = [], []
         if not isinstance(msg.obj, ObjTuple):
-            raise TypeError(f"Received a `read_all` message but the object {msg.obj} was not an `ObjTuple`.")
+            raise TypeError(
+                f"Run engine received a read message but the object {msg.obj} "
+                "was not a `Reabable` or `ObjTuple[Readable, ...]`"
+            )
 
-        for obj in msg.obj:
+        objs = msg.obj
+        non_readable = [obj for obj in objs if not isinstance(obj, Readable)]
+        if non_readable:
+            raise TypeError(
+                "Run engine received a read message with an `ObjTuple`, which contained "
+                f"the following devices which were not readable: {non_readable}"
+            )
+
+        coro_objs, non_coro_objs = [], []
+
+        for obj in objs:
             check_supports(obj, Readable)
             if inspect.iscoroutinefunction(obj.read):
                 coro_objs.append(obj)
@@ -2039,16 +2045,15 @@ class RunEngine:
         coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in coro_objs])
         non_coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in non_coro_objs])
 
-        run_key = msg.run
         if (current_run := self._run_bundlers.get(run_key)) is not None:
             await current_run.read_all(
                 msg, list(zip(coro_objs, coro_read_rets)) + list(zip(non_coro_objs, non_coro_read_rets))
             )
 
-        read_all_ret = {}
+        all_readings = {}
         for read_ret in coro_read_rets + non_coro_read_rets:
-            read_all_ret.update(read_ret)
-        return read_all_ret
+            all_readings.update(read_ret)
+        return all_readings
 
     async def _locate(self, msg: Msg):
         """

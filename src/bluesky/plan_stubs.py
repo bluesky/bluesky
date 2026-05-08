@@ -1,12 +1,13 @@
 import itertools
 import operator
+import os
 import time
 import typing
 import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from cycler import cycler
 
@@ -37,11 +38,11 @@ from .protocols import (
     Triggerable,
     check_supports,
 )
+from .run_engine import ObjTuple
 from .utils import (
     CustomPlanMetadata,
     Msg,
     MsgGenerator,
-    ObjTuple,
     ScalarOrIterableFloat,
     all_safe_rewind,
     ensure_generator,
@@ -169,14 +170,41 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
     return (yield Msg("read", obj))
 
 
+BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE = os.environ.get("BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE") == "1"
+
+
+def _read_all_async(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
+    objs = separate_devices(objs)
+    return (yield Msg("read", obj=ObjTuple(objs)))
+
+
+def _read_all_one_message_per_device(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
+    objs = separate_devices(objs)
+    ret = {}  # collect and return readings to give plan access to them
+    for obj in objs:
+        reading = yield from read(obj)
+        if reading is not None:
+            ret.update(reading)
+    return cast(Reading, ret)
+
+
 @plan
-def read_all(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
+def read_all(
+    objs: Sequence[Readable[Any]], one_message_per_device: bool = BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
+) -> MsgGenerator[Reading]:
     """
     Take a reading on every device in a sequence and add it to the current bundle of readings.
+
 
     Parameters
     ----------
     obj : A sequence of Device or Signal
+    one_message_per_device:
+        If ``True`` then there will be one Msg per device, which means that
+        asynchronous devices will not be gathered.
+
+        The default argument is ``False``, and true if "BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE=1"
+        is set as an environment variable when the python process starts.
 
     Yields
     ------
@@ -188,8 +216,10 @@ def read_all(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
     reading :
         Reading object representing information recorded
     """
-    objs = separate_devices(objs)
-    return (yield Msg("read_all", ObjTuple(objs)))
+    if one_message_per_device:
+        return (yield from _read_all_one_message_per_device(objs))
+    else:
+        return (yield from _read_all_async(objs))
 
 
 @typing.overload
