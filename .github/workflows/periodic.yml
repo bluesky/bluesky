@@ -8,6 +8,6 @@ on:
 
 jobs:
   linkcheck:
-    uses: ./.github/workflows/_tox.yml
+    uses: ./.github/workflows/_pixi.yml
     with:
-      tox: docs build -- -b linkcheck
+      task: docs build -- -b linkcheck

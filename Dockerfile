@@ -1,7 +1,7 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
-ARG PYTHON_VERSION=3.12
-FROM python:${PYTHON_VERSION} as developer
+ARG PYTHON_VERSION=py312
+FROM ghcr.io/prefix-dev/pixi as developer
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -9,6 +9,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libqt5gui5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up a virtual environment and put it in PATH
-RUN python -m venv /venv
-ENV PATH=/venv/bin:$PATH
+# Install the pixi environment for the specified Python version
+RUN pixi install --locked -e $PYTHON_VERSION

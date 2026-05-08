@@ -213,3 +213,42 @@ commands =
     tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+
+[tool.pixi.dependencies]
+python =  "*"
+
+[tool.pixi.pypi-dependencies]
+bluesky = { path = ".", editable = true }
+
+[tool.pixi.feature.py310.dependencies]
+python = "3.10.*"
+
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.feature.py314.dependencies]
+python = "3.14.*"
+
+[tool.pixi.environments]
+default = { features = ["dev"], solve-group = "default" }
+py310 = { features = ["py310", "dev"], solve-group = "py310" }
+py311 = { features = ["py311", "dev"], solve-group = "py311" }
+py312 = { features = ["py312", "dev"], solve-group = "py312" }
+py313 = { features = ["py313", "dev"], solve-group = "py313" }
+py314 = { features = ["py314", "dev"], solve-group = "py314" }
+
+[tool.pixi.tasks]
+lint = "pre-commit run --all-files --show-diff-on-failure"
+type-checking = "mypy src"
+tests = "pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml"
+docs = "sphinx-build -EW --keep-going docs build/html"

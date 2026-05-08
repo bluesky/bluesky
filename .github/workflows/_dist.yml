@@ -26,11 +26,15 @@ jobs:
       - name: Check for packaging errors
         run: pipx run twine check --strict dist/*
 
-      - name: Install produced wheel
-        uses: ./.github/actions/install_requirements
+      - uses: prefix-dev/setup-pixi@v0.9.5
         with:
-          pip-install: dist/*.whl
+          pixi-version: v0.66.0
+          environments: >-
+            default
+
+      - name: Install built wheelwheel
+        run: pixi run pip install dist/*.whl
 
       - name: Test module is importable using the installed wheel
         # If more than one module in src/ replace with module name to test
-        run: python -c "import $(ls --hide='*.egg-info' src | head -1)"
+        run: pixi run python -c "import $(ls --hide='*.egg-info' src | head -1)"

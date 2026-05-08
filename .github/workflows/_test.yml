@@ -28,30 +28,20 @@ jobs:
           # Need this to get version number from last tag
           fetch-depth: 0
 
-      - if: inputs.python-version == 'dev'
-        name: Install dev versions of python packages
-        uses: ./.github/actions/install_requirements
+      - name: Set Python environment variable
+        id: set-pixi-env
+        run: echo "pyenv=py${PYTHON_VERSION//./}" >> $GITHUB_OUTPUT
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
 
-      - if: inputs.python-version == 'dev'
-        name: Write the requirements as an artifact
-        run: pip freeze --exclude-editable > /tmp/dev-requirements.txt
 
-      - if: inputs.python-version == 'dev'
-        name: Upload dev-requirements.txt
-        uses: actions/upload-artifact@v4
+      - uses: prefix-dev/setup-pixi@v0.9.5
         with:
-          name: dev-requirements
-          path: /tmp/dev-requirements.txt
+          pixi-version: v0.66.0
+          environments: ${{ steps.set-pixi-env.outputs.pyenv }}
 
-      - if: inputs.python-version != 'dev'
-        name: Install latest versions of python packages
-        uses: ./.github/actions/install_requirements
-        with:
-          python-version: ${{ inputs.python-version }}
-          pip-install: ".[dev]"
-
-      - name: Run tests
-        run: tox -e tests
+      - name: Run tests for given python version
+        run: pixi run --frozen -e ${{ steps.set-pixi-env.outputs.pyenv }} tests
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
