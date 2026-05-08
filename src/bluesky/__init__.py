@@ -1,7 +1,7 @@
 from ._version import __version__
 from .log import set_handler
 from .preprocessors import SupplementalData
-from .run_engine import RunEngine
+from .run_engine import ObjTuple, RunEngine
 from .utils import FailedStatus, IllegalMessageSequence, Msg, RunEngineInterrupted
 
 __all__ = [

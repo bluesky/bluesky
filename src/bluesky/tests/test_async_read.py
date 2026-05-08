@@ -8,7 +8,9 @@ from unittest.mock import ANY
 import pytest
 
 import bluesky.plan_stubs as bps
+from bluesky.preprocessors import msg_mutator
 from bluesky.protocols import Reading
+from bluesky.run_engine import ObjTuple
 
 from . import requires_ophyd, requires_ophyd_async
 
@@ -16,9 +18,8 @@ SIM_SLEEP_TIME = 0.1
 
 
 @pytest.fixture()
-def sync_and_async_devices():
+def sync_devices():
     import ophyd
-    import ophyd_async
 
     class SlowSyncSignal(ophyd.Signal):
         def read(self, *args, **kwargs):
@@ -36,6 +37,16 @@ def sync_and_async_devices():
             time.sleep(SIM_SLEEP_TIME)
             self.trigger_time = time.time()
             return super().trigger()
+
+    return (
+        SyncReadableDevice(name="sync_device1"),
+        SyncReadableDevice(name="sync_device2"),
+    )
+
+
+@pytest.fixture()
+def async_devices():
+    import ophyd_async
 
     class SlowAsyncSoftSignalBackend(ophyd_async.core.SoftSignalBackend):
         async def get_reading(self) -> Coroutine[Any, Any, Reading]:  # type: ignore
@@ -61,8 +72,6 @@ def sync_and_async_devices():
             self.trigger_time = time.time()
 
     return (
-        SyncReadableDevice(name="sync_device1"),
-        SyncReadableDevice(name="sync_device2"),
         AsyncReadableDevice(name="async_device1"),
         AsyncReadableDevice(name="async_device2"),
     )
@@ -70,7 +79,8 @@ def sync_and_async_devices():
 
 @requires_ophyd
 @requires_ophyd_async
-def test_read_all(RE, sync_and_async_devices):
+def test_async_read(RE, sync_devices, async_devices):
+    sync_and_async_devices = sync_devices + async_devices
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
 
     def plan():
@@ -125,8 +135,8 @@ def test_read_all(RE, sync_and_async_devices):
 
 @requires_ophyd
 @requires_ophyd_async
-def test_read_all_flattened_structure(RE, sync_and_async_devices):
-    sync_device1, sync_device2, async_device1, async_device2 = sync_and_async_devices
+def test_async_read_flattened_structure(RE, sync_devices, async_devices):
+    sync_device1, sync_device2, async_device1, async_device2 = sync_devices + async_devices
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
 
@@ -154,8 +164,8 @@ TIME_DIFFERENCE_LIMIT = 0.04 if os.name == "nt" else 0.01
 
 @requires_ophyd
 @requires_ophyd_async
-def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
-    sync_device1, sync_device2, async_device1, async_device2 = sync_and_async_devices
+def test_one_shot_works_asynchronously(RE, sync_devices, async_devices):
+    sync_device1, sync_device2, async_device1, async_device2 = sync_devices + async_devices
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
 
@@ -186,3 +196,61 @@ def test_one_shot_works_asynchronously(RE, sync_and_async_devices):
             assert sync_timestamps[i + 1] - sync_timestamps[i] == pytest.approx(
                 SIM_SLEEP_TIME, abs=TIME_DIFFERENCE_LIMIT
             )
+
+
+@requires_ophyd_async
+def test_read_all_turn_off_obj_tuple(RE, async_devices):
+    device1, device2 = async_devices
+
+    output = {"start": [], "descriptor": [], "event": [], "stop": []}
+    messages = []
+
+    def add_messages_to_cache(plan):
+        def rewrite_pos(msg):
+            messages.append(msg)
+            return msg
+
+        plan = msg_mutator(plan, rewrite_pos)
+        return (yield from plan)
+
+    def plan(one_message_per_device: bool):
+        yield from bps.open_run()
+        yield from bps.create()
+        yield from bps.read_all(async_devices, one_message_per_device=one_message_per_device)
+        yield from bps.save()
+        yield from bps.create()
+        yield from bps.read_all(async_devices, one_message_per_device=one_message_per_device)
+        yield from bps.save()
+        yield from bps.close_run()
+
+    RE.preprocessors.append(add_messages_to_cache)
+
+    RE(plan(True), lambda name, doc: output[name].append(doc))
+
+    assert [(msg.command, msg.obj) for msg in messages] == [
+        ("open_run", ANY),
+        ("create", ANY),
+        ("read", device1),
+        ("read", device2),
+        ("save", ANY),
+        ("create", ANY),
+        ("read", device1),
+        ("read", device2),
+        ("save", ANY),
+        ("close_run", ANY),
+    ]
+
+    messages.clear()
+
+    RE(plan(False), lambda name, doc: output[name].append(doc))
+
+    assert [(msg.command, msg.obj) for msg in messages] == [
+        ("open_run", ANY),
+        ("create", ANY),
+        ("read", ObjTuple((device1, device2))),
+        ("save", ANY),
+        ("create", ANY),
+        ("read", ObjTuple((device1, device2))),
+        ("save", ANY),
+        ("close_run", ANY),
+    ]

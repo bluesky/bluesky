@@ -59,13 +59,13 @@ def test_baseline(hw):
     D = SupplementalData(baseline=[hw.det2])
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
-    # should add 2X (trigger, wait, create, read_all, save)
+    # should add 2X (trigger, wait, create, read with obj tuple, save)
     assert len(processed) == 11 + len(original)
 
     # two baseline detectors
     D.baseline.append(hw.det3)
     processed = list(D(count([hw.det])))
-    # should add 2X (trigger, triger, wait, create, read_all, save)
+    # should add 2X (trigger, triger, wait, create, read with obj tuple, save)
     assert len(processed) == 13 + len(original)
 
     # two baseline detectors applied to a plan with two consecutive runs
@@ -98,7 +98,7 @@ def test_order(hw):
         "trigger",
         "wait",
         "create",
-        "read_all",
+        "read",
         "save",
         # monitors
         "monitor",
@@ -117,7 +117,7 @@ def test_order(hw):
         "trigger",
         "wait",
         "create",
-        "read_all",
+        "read",
         "save",
         "close_run",
     ]
