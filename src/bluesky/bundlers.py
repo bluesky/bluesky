@@ -412,7 +412,7 @@ class RunBundler:
         """
         Add a reading to the open event bundle.
 
-        This should be used in either a `read`, or `read_all` message.
+        This should be used in a read message.
         """
 
         # if the object is not in the _describe_cache, cache it
