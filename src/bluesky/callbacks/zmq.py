@@ -16,6 +16,7 @@ import asyncio
 import copy
 import logging
 import pickle
+import sys
 import threading
 import warnings
 from collections.abc import Callable
@@ -482,7 +483,10 @@ class RemoteDispatcher(Dispatcher):
         self.address = _normalize_address(address)
 
         if loop is None:
-            loop = asyncio.new_event_loop()
+            if sys.platform == "win32":
+                loop = asyncio.SelectorEventLoop()
+            else:
+                loop = asyncio.new_event_loop()
         self.loop = loop
         self._context = None
         self._socket = None
