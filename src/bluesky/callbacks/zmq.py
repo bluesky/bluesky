@@ -446,12 +446,6 @@ class RemoteDispatcher(Dispatcher):
         Configurable timeout to wait for connection handshake.
         Defaults to ``None``, no wait for handshake.
 
-    Attributes
-    ----------
-    connected : bool
-        ``True`` once the SUB socket handshake has completed successfully.
-        Reset to ``False`` on ``stop()``. See also :meth:`wait_for_connection`.
-
     Examples
     --------
 
@@ -583,11 +577,6 @@ class RemoteDispatcher(Dispatcher):
         if not self._monitor:
             raise RuntimeError("Socket monitor for the connection handshake should be set at this point.")
         await asyncio.wait_for(recv_monitor_message(self._monitor), timeout=timeout)
-
-    @property
-    def connected(self) -> bool:
-        """Whether the SUB socket handshake has completed successfully."""
-        return self._connected.is_set()
 
     def wait_for_connection(self, timeout: float | None = None) -> bool:
         """Block until the SUB socket handshake has completed successfully.
