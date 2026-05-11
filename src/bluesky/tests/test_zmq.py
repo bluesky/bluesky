@@ -694,7 +694,7 @@ def test_remote_dispatcher_connection_timeout_in_thread():
 
     dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.01)
 
-    exceptions: list[BaseException] = []
+    exceptions = []
 
     def run_dispatcher():
         try:
