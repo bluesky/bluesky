@@ -1040,8 +1040,8 @@ def get_history():
             return historydict.HistoryDict(":memory:")
 
 
-_QT_KICKER_INSTALLED = {}
-_NB_KICKER_INSTALLED = {}
+_QT_KICKER_INSTALLED: dict = {}
+_NB_KICKER_INSTALLED: dict = {}
 
 
 def install_kicker(loop=None, update_rate=0.03):
