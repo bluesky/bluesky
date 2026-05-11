@@ -1039,8 +1039,9 @@ def collect_all(
 
     # If we provide a stream name, attempt to collect all objects with that stream name.
     # This is only supported if all the objects support the WritesStreamAssets protocol,
-    # so check for that. If not all objects support the protocol, fall back to collecting from each object separately.
-    if name is not None and (all([isinstance(obj, WritesStreamAssets) for obj in objs])):
+    # so check for that. If not all objects support the protocol, fall back to collecting
+    # from each object separately.
+    if name is not None and (all(isinstance(obj, WritesStreamAssets) for obj in objs)):
         return (yield from collect(*objs, stream=stream, return_payload=return_payload, name=name))
     else:
         # Otherwise, we need to collect from each object separately and combine the results.
