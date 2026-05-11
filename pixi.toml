@@ -1,0 +1,14 @@
+[workspace]
+authors = ["thomashopkins32 <thopkins1@bnl.gov>"]
+channels = ["conda-forge"]
+name = "bluesky"
+platforms = ["linux-64"]
+version = "1.15.1"
+
+[tasks]
+
+[dependencies]
+python = "*"
+
+[pypi-dependencies]
+bluesky = { path = ".", editable = true, extras = ["all"] }
