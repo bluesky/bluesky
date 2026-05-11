@@ -2308,7 +2308,7 @@ def fly(
     md: CustomPlanMetadata | None = None,
     collect_flush_period: float | None = None,
     stream_name: str | None = None,
-    watch: Sequence[str] | None = None,
+    watch: Sequence[str] = (),
 ) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
