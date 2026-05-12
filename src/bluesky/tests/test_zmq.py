@@ -635,3 +635,28 @@ def test_configure_server_socket_server_curve(
         assert "Bound to random port: 12345" in caplog.text
     else:
         assert f"Bound to address: {expected_addr}" in caplog.text
+
+
+def test_remote_dispatcher_stop_from_other_thread_does_not_raise():
+    """``RemoteDispatcher.stop`` must be safe to call from a different thread
+    than the one running its event loop.
+
+    Regression test for #2012: previously ``stop`` cancelled ``self._task``
+    and closed the still-running ``self.loop`` directly from the caller's
+    thread, raising ``RuntimeError: Cannot close a running event loop``.
+    """
+    dispatcher = RemoteDispatcher("127.0.0.1:60611")  # nothing listening
+    thread = threading.Thread(target=dispatcher.start, daemon=True)
+    thread.start()
+    # Allow the loop and poll task to start.
+    time.sleep(0.5)
+    try:
+        # Must not raise ``RuntimeError``.
+        dispatcher.stop()
+    finally:
+        thread.join(timeout=5)
+    assert not thread.is_alive()
+    assert dispatcher.closed
+    assert dispatcher._task is None
+    assert dispatcher._socket is None
+    assert dispatcher._context is None

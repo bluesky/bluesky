@@ -570,11 +570,30 @@ class RemoteDispatcher(Dispatcher):
             self.stop()
 
     def stop(self):
+        # ``stop`` is documented as part of the public API and is also called
+        # from the ``finally`` block of :meth:`start`.  It may therefore be
+        # invoked from the same thread that is running the event loop (the
+        # in-process / interrupt case) or from a different thread (e.g. when
+        # the dispatcher's ``start`` is driven from a worker thread and the
+        # main thread tears it down).  When called from a non-loop thread we
+        # only schedule task cancellation here — the cleanup of socket,
+        # context and the loop itself happens in :meth:`start`'s ``finally``
+        # block once the loop has actually stopped.  Calling
+        # :py:meth:`asyncio.AbstractEventLoop.close` while the loop is still
+        # running raises ``RuntimeError: Cannot close a running event loop``.
+        if self.loop.is_running():
+            if self._task is not None:
+                self.loop.call_soon_threadsafe(self._task.cancel)
+            return
         if self._task is not None:
             self._task.cancel()
+            self._task = None
         if self._socket is not None:
             self._socket.close()
+            self._socket = None
         if self._context is not None:
             self._context.destroy()
-        self.loop.close()
+            self._context = None
+        if not self.loop.is_closed():
+            self.loop.close()
         self.closed = True
