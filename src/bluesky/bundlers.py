@@ -274,6 +274,7 @@ class RunBundler:
         data_keys = {}
         config = {}
         object_keys = {}
+        object_classes = {}
         hints: dict[str, Any] = {}
 
         for obj, dks in objs_dks.items():
@@ -282,6 +283,8 @@ class RunBundler:
             object_keys[obj.name] = list(dks)
             for key in dks.keys():
                 dks[key]["object_name"] = obj.name
+            obj_t = obj.__class__
+            object_classes[obj.name] = f"{obj_t.__module__}.{obj_t.__qualname__}"
             data_keys.update(dks)
             config[obj.name] = {
                 "data": self._current_stream_cache.config_values_cache[obj],
@@ -295,6 +298,7 @@ class RunBundler:
             configuration=config,
             hints=hints,
             object_keys=object_keys,
+            object_classes=object_classes,
         )
         await self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
         doc_logger.debug(
