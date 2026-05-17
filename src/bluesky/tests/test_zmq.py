@@ -73,75 +73,78 @@ def test_proxy_script():
     assert p.returncode == 0
 
 
-def test_zmq(RE, hw):
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
+@pytest.fixture
+def proxy():
+    proxy_event = threading.Event()
+
     def start_proxy():
-        Proxy(5567, 5568).start()
+        # binding is synchronous
+        p = Proxy(5567, 5568, in_bind=True, out_bind=True)
+        proxy_event.set()
+        p.start()
 
-    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
-    proxy_proc.start()
-    time.sleep(5)  # Give this plenty of time to start up.
+    threading.Thread(target=start_proxy, daemon=True).start()
+    proxy_event.wait(timeout=5)
+    assert proxy_event.is_set()
 
-    # COMPONENT 2
-    # Run a Publisher and a RunEngine in this main process.
 
-    p = Publisher("127.0.0.1:5567")  # noqa
-    RE.subscribe(p)
+@pytest.fixture
+def publisher():
+    p = Publisher("127.0.0.1:5567")
+    # TODO: Replace sleep with handshake event wait
+    time.sleep(0.5)
+    return p
 
-    # COMPONENT 3
-    # Run a RemoteDispatcher on another separate process. Pass the documents
-    # it receives over a Queue to this process, so we can count them for our
-    # test.
 
-    def make_and_start_dispatcher(queue):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            queue.put((name, doc))
+@pytest.fixture
+def dispatcher():
+    """RemoteDispatcher fixture for tracking messages"""
 
-        d = RemoteDispatcher("127.0.0.1:5568")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        d.start()
+    docs_received = []
+    stop_event = threading.Event()
 
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
+    def store_document(name, doc):
+        docs_received.append((name, doc))
 
-    # Generate two documents. The Publisher will send them to the proxy
-    # device over 5567, and the proxy will send them to the
-    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
-    # the queue, where we can verify that they round-tripped.
+    def stop_doc_watcher(name, doc):
+        if name == "stop":
+            stop_event.set()
 
-    local_accumulator = []
+    d = RemoteDispatcher("127.0.0.1:5568")
+    d.subscribe(store_document)
+    d.subscribe(stop_doc_watcher)
+    threading.Thread(target=d.start, daemon=True).start()
+    # TODO: Replace sleep with handshake event wait
+    time.sleep(0.5)
+    return stop_event, docs_received
+
+
+def test_zmq_round_trip(RE, hw, proxy, publisher, dispatcher):
+    """
+    Generate two documents. The Publisher will send them to the proxy
+    device over 5567, and the proxy will send them to the
+    RemoteDispatcher over 5568. The RemoteDispatcher will push them into
+    the queue, where we can verify that they round-tripped.
+    """
+    RE.subscribe(publisher)
+
+    remote_stop_event = dispatcher[0]
+    remote_docs = dispatcher[1]
+    local_docs = []
 
     def local_cb(name, doc):
-        local_accumulator.append((name, doc))
+        local_docs.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
     md = {"stuff": {"nested": np.array([1, 2, 3])}, "scalar_stuff": np.float64(3), "array_stuff": np.ones((3, 3))}
 
-    # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
     RE(count([hw.det]), local_cb, **md)
-    time.sleep(1)
+    remote_stop_event.wait(timeout=5)
+    assert remote_stop_event.is_set()
 
-    # Get the two documents from the queue (or timeout --- test will fail)
-    remote_accumulator = []
-    for i in range(len(local_accumulator)):  # noqa: B007
-        remote_accumulator.append(queue.get(timeout=2))
-    p.close()
-    proxy_proc.terminate()
-    dispatcher_proc.terminate()
-    proxy_proc.join()
-    dispatcher_proc.join()
-    ra = sanitize_doc(remote_accumulator)
-    la = sanitize_doc(local_accumulator)
-    assert ra == la
-
-    gc.collect()
-    gc.collect()
+    rd = sanitize_doc(remote_docs)
+    ld = sanitize_doc(local_docs)
+    assert rd == ld
 
 
 @uses_os_kill_sigint
