@@ -637,6 +637,7 @@ def test_configure_server_socket_server_curve(
         assert f"Bound to address: {expected_addr}" in caplog.text
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_remote_dispatcher_stop_from_other_thread():
     """Regression test for #2012: stop() called from another thread must not raise RuntimeError.
 
