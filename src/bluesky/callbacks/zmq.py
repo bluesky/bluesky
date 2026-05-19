@@ -16,6 +16,7 @@ import asyncio
 import copy
 import logging
 import pickle
+import threading
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -498,6 +499,7 @@ class RemoteDispatcher(Dispatcher):
 
         self.__factory = __finish_setup
         self._task = None
+        self._stopped = threading.Event()
         self.closed = False
         self._strict = strict
         super().__init__()
@@ -567,24 +569,13 @@ class RemoteDispatcher(Dispatcher):
             if task_exception is not None:
                 raise task_exception
         finally:
-            self.stop()
+            # The loop has stopped, so tear everything down here and signal
+            # any thread blocked in ``stop`` that cleanup is complete.
+            self._cleanup()
 
-    def stop(self):
-        # ``stop`` is documented as part of the public API and is also called
-        # from the ``finally`` block of :meth:`start`.  It may therefore be
-        # invoked from the same thread that is running the event loop (the
-        # in-process / interrupt case) or from a different thread (e.g. when
-        # the dispatcher's ``start`` is driven from a worker thread and the
-        # main thread tears it down).  When called from a non-loop thread we
-        # only schedule task cancellation here — the cleanup of socket,
-        # context and the loop itself happens in :meth:`start`'s ``finally``
-        # block once the loop has actually stopped.  Calling
-        # :py:meth:`asyncio.AbstractEventLoop.close` while the loop is still
-        # running raises ``RuntimeError: Cannot close a running event loop``.
-        if self.loop.is_running():
-            if self._task is not None:
-                self.loop.call_soon_threadsafe(self._task.cancel)
-            return
+    def _cleanup(self):
+        # Release the task, socket, context and loop. Safe to call only once
+        # the loop has stopped; closing a running loop raises RuntimeError.
         if self._task is not None:
             self._task.cancel()
             self._task = None
@@ -597,3 +588,19 @@ class RemoteDispatcher(Dispatcher):
         if not self.loop.is_closed():
             self.loop.close()
         self.closed = True
+        self._stopped.set()
+
+    def stop(self, timeout=None):
+        """Stop the dispatcher and wait for it to finish.
+
+        When called from a thread other than the one running the event loop,
+        task cancellation is scheduled on the loop and this method blocks
+        until :meth:`start` has torn the dispatcher down. ``timeout`` is the
+        number of seconds to wait, or ``None`` to wait indefinitely.
+        """
+        if self.loop.is_running():
+            if self._task is not None:
+                self.loop.call_soon_threadsafe(self._task.cancel)
+            self._stopped.wait(timeout=timeout)
+        else:
+            self._cleanup()
