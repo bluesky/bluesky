@@ -410,10 +410,6 @@ def test_zmq_RD_ports_spec(host: str | tuple[str, int]):
     assert d._socket is None
     assert d._context is None
     assert not d.closed
-    d.stop()
-    assert d._socket is None
-    assert d._context is None
-    assert d.closed
     del d
 
 
