@@ -637,8 +637,7 @@ def test_configure_server_socket_server_curve(
         assert f"Bound to address: {expected_addr}" in caplog.text
 
 
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_remote_dispatcher_stop_from_other_thread_does_not_raise():
+def test_remote_dispatcher_stop_from_other_thread():
     """Regression test for #2012: stop() called from another thread must not raise RuntimeError.
 
     stop() is synchronous, so once it returns the dispatcher is fully torn down.
@@ -649,7 +648,7 @@ def test_remote_dispatcher_stop_from_other_thread_does_not_raise():
     # Allow the loop and poll task to start.
     time.sleep(0.5)
     try:
-        dispatcher.stop(timeout=5)
+        dispatcher.stop()
         assert dispatcher.closed
         assert dispatcher._task is None
         assert dispatcher._socket is None

@@ -590,17 +590,15 @@ class RemoteDispatcher(Dispatcher):
         self.closed = True
         self._stopped.set()
 
-    def stop(self, timeout=None):
+    def stop(self):
         """Stop the dispatcher and wait for it to finish.
 
         When called from a thread other than the one running the event loop,
         task cancellation is scheduled on the loop and this method blocks
-        until :meth:`start` has torn the dispatcher down. ``timeout`` is the
-        number of seconds to wait, or ``None`` to wait indefinitely.
+        until :meth:`start` has torn the dispatcher down.
         """
+
         if self.loop.is_running():
             if self._task is not None:
                 self.loop.call_soon_threadsafe(self._task.cancel)
-            self._stopped.wait(timeout=timeout)
-        else:
-            self._cleanup()
+            self._stopped.wait()
