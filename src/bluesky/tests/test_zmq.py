@@ -413,10 +413,6 @@ def test_zmq_RD_ports_spec(host: str | tuple[str, int]):
     assert d._socket is None
     assert d._context is None
     assert not d.closed
-    d.stop()
-    assert d._socket is None
-    assert d._context is None
-    assert d.closed
     del d
 
 
@@ -714,3 +710,25 @@ def test_remote_dispatcher_connection_timeout_in_thread():
     assert not dispatcher_thread.is_alive(), "dispatcher thread did not exit after timeout"
     assert len(exceptions) == 1
     assert isinstance(exceptions[0], asyncio.TimeoutError)
+
+
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+def test_remote_dispatcher_stop_from_other_thread():
+    """Regression test for #2012: stop() called from another thread must not raise RuntimeError.
+
+    stop() is synchronous, so once it returns the dispatcher is fully torn down.
+    """
+    dispatcher = RemoteDispatcher("127.0.0.1:60611")  # nothing listening
+    thread = threading.Thread(target=dispatcher.start, daemon=True)
+    thread.start()
+    # Allow the loop and poll task to start.
+    time.sleep(0.5)
+    try:
+        dispatcher.stop()
+        assert dispatcher.closed
+        assert dispatcher._task is None
+        assert dispatcher._socket is None
+        assert dispatcher._context is None
+    finally:
+        thread.join(timeout=5)
+    assert not thread.is_alive()
