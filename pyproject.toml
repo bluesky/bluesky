@@ -91,6 +91,7 @@ dev = [
     "tiled[all]",
     "vendoring",
     "zict",
+    "pytest-mock>=3.15.1",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]

@@ -385,7 +385,7 @@ def test_pause_abort(RE):
     assert RE.state == "idle"
     start = ttime.time()
     threading.Timer(0.1, sim_kill).start()
-    threading.Timer(0.2, sim_kill).start()
+    threading.Timer(0.25, sim_kill).start()
     threading.Timer(1, done).start()
 
     with pytest.raises(RunEngineInterrupted):
@@ -429,7 +429,7 @@ def test_abort(RE):
     assert RE.state == "idle"
     start = ttime.time()
     threading.Timer(0.1, sim_kill).start()
-    threading.Timer(0.2, sim_kill).start()
+    threading.Timer(0.25, sim_kill).start()
     threading.Timer(0.4, done).start()
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
