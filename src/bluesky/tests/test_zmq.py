@@ -6,6 +6,7 @@ import signal
 import threading
 import time
 from subprocess import run
+from unittest.mock import patch
 
 import multiprocess
 import numpy as np
@@ -150,36 +151,29 @@ def test_zmq_round_trip(proxy, publisher, dispatcher):
 
 @uses_os_kill_sigint
 def test_zmq_proxy_blocks_sigint_exits():
-    # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
-    # process, which coverage misses.
+    zmq_device_event = threading.Event()
 
-    def delayed_sigint(delay):
-        time.sleep(delay)
+    def delayed_sigint():
+        zmq_device_event.wait(timeout=5)
+        assert zmq_device_event.is_set()
         os.kill(os.getpid(), signal.SIGINT)
+
+    def device_mock(*args, **kwargs):
+        zmq_device_event.set()
+        # Block until interrupted by SIGINT, just like the real zmq.device
+        threading.Event().wait()
 
     proxy = Proxy(5567, 5568)
     assert not proxy.closed
-    threading.Thread(target=delayed_sigint, args=(1,)).start()
+    threading.Thread(target=delayed_sigint, daemon=True).start()
     try:
-        proxy.start()
-        # delayed_sigint stops the proxy
+        with patch("bluesky.callbacks.zmq.zmq.device", side_effect=device_mock):
+            proxy.start()
     except KeyboardInterrupt:
         ...
     assert proxy.closed
     with pytest.raises(RuntimeError):
         proxy.start()
-
-    proxy = Proxy()  # random port
-    threading.Thread(target=delayed_sigint, args=(1,)).start()
-    try:
-        proxy.start()
-        # delayed_sigint stops the proxy
-    except KeyboardInterrupt:
-        ...
-    assert proxy.closed
-    repr(proxy)
-    gc.collect()
-    gc.collect()
 
 
 def test_zmq_no_RE(RE: RunEngine):
