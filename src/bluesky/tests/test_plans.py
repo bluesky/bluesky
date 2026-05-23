@@ -475,20 +475,20 @@ def _grid_scan_position_list(args, snake_axes):
     "args, snake_axes",
     [
         # Calls using new arguments
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), None),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), False),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), True),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), []),  # Empty list will disable snaking
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor1"]),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor2"]),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor1", "motor2"]),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, "motor2", 7, 8, 2), None),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, "motor2", 7, 8, 2), False),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, "motor2", 7, 8, 2), True),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, "motor2", 7, 8, 2), []),  # Empty list will disable snaking
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, "motor2", 7, 8, 2), ["motor1"]),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, "motor2", 7, 8, 2), ["motor2"]),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, "motor2", 7, 8, 2), ["motor1", "motor2"]),
         # Deprecated calls
         (
-            ("motor", 1, 2, 3, "motor1", 4, 5, 6, True, "motor2", 7, 8, 9, True),
+            ("motor", 1, 2, 2, "motor1", 4, 5, 2, True, "motor2", 7, 8, 2, True),
             None,
         ),  # snake_axes may be only set to None
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, True, "motor2", 7, 8, 9, False), None),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, False, "motor2", 7, 8, 9, True), None),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, True, "motor2", 7, 8, 2, False), None),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 2, False, "motor2", 7, 8, 2, True), None),
     ],
 )
 @pytest.mark.parametrize("plan, is_relative", [(bp.grid_scan, False), (bp.rel_grid_scan, True)])
