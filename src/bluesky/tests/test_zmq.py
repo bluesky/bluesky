@@ -22,7 +22,7 @@ from bluesky.tests import uses_os_kill_sigint
 from .conftest import ReadableSignal
 
 # ZMQ subscription propagation is slower on Windows CI runners
-_ZMQ_CONNECTION_TIMEOUT = 2.0 if sys.platform == "win32" else 0.5
+_ZMQ_CONNECTION_TIMEOUT = 5.0 if sys.platform == "win32" else 0.5
 
 
 @pytest.fixture
