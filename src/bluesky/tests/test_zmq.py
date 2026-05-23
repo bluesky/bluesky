@@ -218,7 +218,7 @@ def test_dispatcher_custom_deserializer():
         received_event.wait(timeout=5)
         assert received_event.is_set()
 
-        d.loop.call_soon_threadsafe(d._task.cancel)
+        d.stop()
         t.join(timeout=5)
 
     custom_deserializer.assert_called_once_with(b"custom_bytes")
