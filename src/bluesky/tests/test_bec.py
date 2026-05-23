@@ -8,11 +8,14 @@ from event_model import RunRouter
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from bluesky import RunEngine
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky.plans import grid_scan, scan
 from bluesky.preprocessors import SupplementalData
 from bluesky.tests.utils import DocCollector
 from bluesky.utils import new_uid
+
+from .conftest import MovableSignal, ReadableSignal
 
 
 def test_hints(RE, hw):
@@ -319,13 +322,19 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
             stats_value == out_value  # noqa: B015
 
 
-def test_many_motors(RE, hw):
+def test_many_motors():
     """Ensure appropriate behavior for too many motors to plot. No figures with warning, and a table."""
-    dets = [hw.ab_det]
-    motors = [hw.motor, hw.motor1, hw.motor2, hw.motor3]
+    RE = RunEngine({})
+    dets = [ReadableSignal(name="ab_det")]
+    motors = [
+        MovableSignal(name="motor"),
+        MovableSignal(name="motor1"),
+        MovableSignal(name="motor2"),
+        MovableSignal(name="motor3"),
+    ]
     bec = BestEffortCallback()
     RE.subscribe(bec)
-    movement = [(motor, 1, 5, 5) for motor in motors]
+    movement = [(motor, 1, 5, 2) for motor in motors]
     with pytest.warns((RuntimeWarning, UserWarning)):
         RE(grid_scan(dets, *[item for sublist in movement for item in sublist]))
 
