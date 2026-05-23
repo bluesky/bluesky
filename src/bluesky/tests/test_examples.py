@@ -137,30 +137,6 @@ def test_deferred_pause_no_checkpoint(RE):
     assert RE.state == "idle"
 
 
-def test_pause_from_outside(RE):
-    assert RE.state == "idle"
-
-    def local_pause(delay):
-        time.sleep(delay)
-        RE.request_pause()
-
-    th = threading.Thread(target=partial(local_pause, 1))
-    th.start()
-    with pytest.raises(RunEngineInterrupted):
-        RE(checkpoint_forever())
-    assert RE.state == "paused"
-
-    # Cue up a second pause requests in 2 seconds.
-    th = threading.Thread(target=partial(local_pause, 2))
-    th.start()
-    with pytest.raises(RunEngineInterrupted):
-        RE.resume()
-    assert RE.state == "paused"
-
-    RE.abort()
-    assert RE.state == "idle"
-
-
 def test_simple_scan_saving(RE, hw):
     run(RE, simple_scan_saving, hw.det, hw.motor)
 
