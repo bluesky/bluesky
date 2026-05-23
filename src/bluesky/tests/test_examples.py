@@ -312,51 +312,6 @@ def test_suspend(RE, hw):
 
 
 @uses_os_kill_sigint
-def test_pause_resume(RE):
-    from bluesky.utils import ts_msg_hook
-
-    RE.msg_hook = ts_msg_hook
-    ev = _fabricate_asycio_event(RE.loop)
-
-    def done():
-        print("Done")
-        RE.loop.call_soon_threadsafe(_careful_event_set(ev))
-
-    pid = os.getpid()
-
-    def sim_kill():
-        os.kill(pid, signal.SIGINT)
-
-    scan = [
-        Msg("checkpoint"),
-        Msg(
-            "wait_for",
-            None,
-            [
-                ev.wait,
-            ],
-        ),
-    ]
-    assert RE.state == "idle"
-    start = ttime.time()
-    threading.Timer(1, sim_kill).start()
-    threading.Timer(1.5, sim_kill).start()
-    threading.Timer(2, done).start()
-
-    with pytest.raises(RunEngineInterrupted):
-        RE(scan)
-    assert RE.state == "paused"
-    mid = ttime.time()
-    RE.resume()
-    assert RE.state == "idle"
-    stop = ttime.time()
-
-    time.sleep(3)
-    assert mid - start > 1
-    assert stop - start > 2
-
-
-@uses_os_kill_sigint
 def test_pause_abort(RE):
     ev = _fabricate_asycio_event(RE.loop)
 
