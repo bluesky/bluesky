@@ -638,7 +638,7 @@ def test_configure_server_socket_server_curve(
 def test_remote_dispatcher_connection_timeout():
     """Test that RemoteDispatcher times out when handshake doesn't complete."""
 
-    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.1)
+    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.00001)
 
     with pytest.raises(asyncio.TimeoutError):
         dispatcher.start()
@@ -671,24 +671,17 @@ def test_remote_dispatcher_connection_success():
     ):
         dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=5.0)
 
-        def run_dispatcher():
-            try:
-                dispatcher.start()
-            except asyncio.CancelledError:
-                pass
-
-        dispatcher_thread = threading.Thread(target=run_dispatcher, daemon=True)
+        dispatcher_thread = threading.Thread(target=dispatcher.start, daemon=True)
         dispatcher_thread.start()
         assert dispatcher.wait_for_connection(timeout=2), "handshake was not signaled within timeout"
         assert recv_event.wait(timeout=2), "recv was not called within timeout"
-        dispatcher.loop.call_soon_threadsafe(dispatcher.stop)
-        dispatcher_thread.join()
+        dispatcher.stop()
 
 
 def test_remote_dispatcher_connection_timeout_in_thread():
     """Test that handshake failure is observable from another thread via wait_for_connection."""
 
-    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.01)
+    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.0001)
 
     exceptions = []
 
