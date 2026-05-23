@@ -23,7 +23,7 @@ from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.tests.utils import DocCollector, MsgCollector, _print_redirect
 
-from .conftest import ReadableSignal, MovableSignal
+from .conftest import MovableSignal, ReadableSignal
 
 
 # copied from examples.py to avoid import

@@ -1,5 +1,5 @@
-from types import SimpleNamespace
 import threading
+from types import SimpleNamespace
 
 import pytest
 from ophyd import Component as Cpt
@@ -8,8 +8,8 @@ from ophyd import PseudoPositioner, PseudoSingle, SoftPositioner
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from bluesky.magics import BlueskyMagics, _print_positioners
-from bluesky.tests import uses_os_kill_sigint
 from bluesky.protocols import Status
+from bluesky.tests import uses_os_kill_sigint
 
 from .conftest import MovableSignal
 

@@ -1,9 +1,7 @@
 import os
 import signal
 import threading
-import time
 import time as ttime
-from functools import partial
 
 import pytest
 
@@ -11,7 +9,6 @@ import bluesky.plan_stubs as bps
 from bluesky import FailedStatus, IllegalMessageSequence, Msg, RunEngineInterrupted
 from bluesky.callbacks.mpl_plotting import LivePlot
 from bluesky.examples import (
-    checkpoint_forever,
     conditional_break,
     conditional_pause,
     fly_gen,
