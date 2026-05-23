@@ -3,6 +3,7 @@ import itertools
 import logging
 import os
 import signal
+import sys
 import threading
 import time
 from subprocess import run
@@ -19,6 +20,9 @@ from bluesky.run_engine import RunEngine
 from bluesky.tests import uses_os_kill_sigint
 
 from .conftest import ReadableSignal
+
+# ZMQ subscription propagation is slower on Windows CI runners
+_ZMQ_CONNECTION_TIMEOUT = 2.0 if sys.platform == "win32" else 0.5
 
 
 @pytest.fixture
@@ -94,7 +98,7 @@ def proxy():
 def publisher():
     p = Publisher("127.0.0.1:5567")
     # TODO: Replace sleep with handshake event wait
-    time.sleep(0.5)
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)
     return p
 
 
@@ -117,7 +121,7 @@ def dispatcher():
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
     # TODO: Replace sleep with handshake event wait
-    time.sleep(0.5)
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)
     return stop_event, docs_received
 
 
@@ -251,7 +255,7 @@ def test_zmq_prefix(proxy):
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    time.sleep(0.5)  # TODO: Replace sleep with handshake event wait
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)  # TODO: Replace sleep with handshake event wait
 
     local_docs = []
 
