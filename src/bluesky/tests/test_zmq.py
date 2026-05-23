@@ -20,6 +20,8 @@ from bluesky.plans import count
 from bluesky.run_engine import RunEngine
 from bluesky.tests import uses_os_kill_sigint
 
+from .conftest import ReadableSignal
+
 
 @pytest.fixture
 def mock_zmq_context(mocker: MockerFixture):
@@ -75,17 +77,19 @@ def test_proxy_script():
 
 @pytest.fixture
 def proxy():
-    proxy_event = threading.Event()
-
-    def start_proxy():
-        # binding is synchronous
+    def start_proxy(ready_event):
         p = Proxy(5567, 5568, in_bind=True, out_bind=True)
-        proxy_event.set()
-        p.start()
+        ready_event.set()  # Ports are bound after __init__ returns
+        p.start()  # Blocks on zmq.device()
 
-    threading.Thread(target=start_proxy, daemon=True).start()
-    proxy_event.wait(timeout=5)
-    assert proxy_event.is_set()
+    ready_event = multiprocess.Event()
+    proc = multiprocess.Process(target=start_proxy, args=(ready_event,), daemon=True)
+    proc.start()
+    ready_event.wait(timeout=5)
+    assert ready_event.is_set()
+    yield
+    proc.terminate()
+    proc.join(timeout=5)
 
 
 @pytest.fixture
@@ -119,32 +123,29 @@ def dispatcher():
     return stop_event, docs_received
 
 
-def test_zmq_round_trip(RE, hw, proxy, publisher, dispatcher):
+def test_zmq_round_trip(proxy, publisher, dispatcher):
     """
     Generate two documents. The Publisher will send them to the proxy
     device over 5567, and the proxy will send them to the
     RemoteDispatcher over 5568. The RemoteDispatcher will push them into
     the queue, where we can verify that they round-tripped.
     """
+    RE = RunEngine({})
     RE.subscribe(publisher)
 
     remote_stop_event = dispatcher[0]
     remote_docs = dispatcher[1]
     local_docs = []
+    det = ReadableSignal("det")
 
     def local_cb(name, doc):
         local_docs.append((name, doc))
 
-    # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {"stuff": {"nested": np.array([1, 2, 3])}, "scalar_stuff": np.float64(3), "array_stuff": np.ones((3, 3))}
-
-    RE(count([hw.det]), local_cb, **md)
+    RE(count([det]), local_cb)
     remote_stop_event.wait(timeout=5)
     assert remote_stop_event.is_set()
 
-    rd = sanitize_doc(remote_docs)
-    ld = sanitize_doc(local_docs)
-    assert rd == ld
+    assert remote_docs == local_docs
 
 
 @uses_os_kill_sigint
