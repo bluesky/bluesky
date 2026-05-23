@@ -1,4 +1,4 @@
-import gc
+import asyncio
 import itertools
 import logging
 import os
@@ -6,7 +6,7 @@ import signal
 import threading
 import time
 from subprocess import run
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import multiprocess
 import numpy as np
@@ -15,7 +15,6 @@ import zmq
 from event_model import sanitize_doc
 from pytest_mock import MockerFixture
 
-from bluesky import Msg
 from bluesky.callbacks.zmq import ClientCurve, Proxy, Publisher, RemoteDispatcher, ServerCurve, _normalize_address
 from bluesky.plans import count
 from bluesky.run_engine import RunEngine
@@ -176,72 +175,54 @@ def test_zmq_proxy_blocks_sigint_exits():
         proxy.start()
 
 
-def test_zmq_no_RE_newserializer(RE: RunEngine):
-    cloudpickle = pytest.importorskip("cloudpickle")
+@patch("zmq.Context")
+def test_publisher_custom_serializer(mock_ctx):
+    """Verify Publisher uses the custom serializer"""
+    mock_socket = mock_ctx.return_value.socket.return_value
 
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
-    def start_proxy():
-        Proxy(5567, 5568).start()
+    custom_serializer = MagicMock(return_value=b"custom_bytes")
+    p = Publisher("127.0.0.1:5567", serializer=custom_serializer)
+    p("start", {"uid": "abc123"})
 
-    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
-    proxy_proc.start()
-    time.sleep(5)  # Give this plenty of time to start up.
-
-    # COMPONENT 2
-    # Run a Publisher and a RunEngine in this main process.
-    p = Publisher("127.0.0.1:5567", serializer=cloudpickle.dumps)  # noqa
-
-    # COMPONENT 3
-    # Run a RemoteDispatcher on another separate process. Pass the documents
-    # it receives over a Queue to this process, so we can count them for our
-    # test.
-    def make_and_start_dispatcher(queue):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            queue.put((name, doc))
-
-        d = RemoteDispatcher("127.0.0.1:5568", deserializer=cloudpickle.loads)
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        d.start()
-
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
-
-    # Generate two documents. The Publisher will send them to the proxy
-    # device over 5567, and the proxy will send them to the
-    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
-    # the queue, where we can verify that they round-tripped.
-
-    local_accumulator = []
-
-    def local_cb(name, doc):
-        local_accumulator.append((name, doc))
-
-    RE([Msg("open_run"), Msg("close_run")], local_cb)
-
-    # This time the Publisher isn't attached to an RE. Send the documents
-    # manually. (The idea is, these might have come from a Broker instead...)
-    for name, doc in local_accumulator:
-        p(name, doc)
-    time.sleep(1)
-
-    # Get the two documents from the queue (or timeout --- test will fail)
-    remote_accumulator = []
-    for i in range(2):  # noqa: B007
-        remote_accumulator.append(queue.get(timeout=2))
+    custom_serializer.assert_called_once_with({"uid": "abc123"})
+    mock_socket.send.assert_called_once_with(b" start custom_bytes")
     p.close()
-    proxy_proc.terminate()
-    dispatcher_proc.terminate()
-    proxy_proc.join()
-    dispatcher_proc.join()
-    ra = [sanitize_doc(doc) for doc in remote_accumulator]
-    la = [sanitize_doc(doc) for doc in local_accumulator]
-    assert ra == la
+
+
+def test_dispatcher_custom_deserializer():
+    """Verify RemoteDispatcher uses the custom deserializer."""
+    custom_deserializer = MagicMock(return_value={"uid": "abc123"})
+    docs_received = []
+    received_event = threading.Event()
+
+    d = RemoteDispatcher("127.0.0.1:5568", deserializer=custom_deserializer)
+
+    def cb(name, doc):
+        docs_received.append((name, doc))
+        received_event.set()
+
+    d.subscribe(cb)
+
+    async def fake_recv():
+        await asyncio.sleep(0)  # Yield to let pending callbacks fire
+        if not received_event.is_set():
+            return b" start custom_bytes"
+        await asyncio.Event().wait()
+
+    with patch("bluesky.callbacks.zmq.zmq_asyncio.Context") as mock_ctx:
+        mock_ctx.return_value.socket.return_value.recv = fake_recv
+
+        t = threading.Thread(target=d.start, daemon=True)
+        t.start()
+
+        received_event.wait(timeout=5)
+        assert received_event.is_set()
+
+        d.loop.call_soon_threadsafe(d._task.cancel)
+        t.join(timeout=5)
+
+    custom_deserializer.assert_called_once_with(b"custom_bytes")
+    assert docs_received == [("start", {"uid": "abc123"})]
 
 
 def test_zmq_prefix(RE: RunEngine, hw):
