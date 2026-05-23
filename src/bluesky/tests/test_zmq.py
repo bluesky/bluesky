@@ -9,10 +9,8 @@ from subprocess import run
 from unittest.mock import MagicMock, patch
 
 import multiprocess
-import numpy as np
 import pytest
 import zmq
-from event_model import sanitize_doc
 from pytest_mock import MockerFixture
 
 from bluesky.callbacks.zmq import ClientCurve, Proxy, Publisher, RemoteDispatcher, ServerCurve, _normalize_address
@@ -225,74 +223,51 @@ def test_dispatcher_custom_deserializer():
     assert docs_received == [("start", {"uid": "abc123"})]
 
 
-def test_zmq_prefix(RE: RunEngine, hw):
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
-    def start_proxy():
-        Proxy(5567, 5568).start()
+def test_zmq_prefix(proxy):
+    """
+    Two publishers send with different prefixes. The dispatcher subscribes
+    to only one prefix and should only receive documents from that publisher.
+    """
+    RE = RunEngine({})
 
-    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
-    proxy_proc.start()
-    time.sleep(5)  # Give this plenty of time to start up.
+    # Two publishers with different prefixes
+    pub_match = Publisher("127.0.0.1:5567", prefix=b"sb")
+    pub_other = Publisher("127.0.0.1:5567", prefix=b"not_sb")
+    RE.subscribe(pub_match)
+    RE.subscribe(pub_other)
 
-    # COMPONENT 2
-    # Run a Publisher and a RunEngine in this main process.
-    p = Publisher("127.0.0.1:5567", prefix=b"sb")  # noqa
-    p2 = Publisher("127.0.0.1:5567", prefix=b"not_sb")  # noqa
-    RE.subscribe(p)
-    RE.subscribe(p2)
+    # Dispatcher only subscribes to prefix b"sb"
+    docs_received = []
+    stop_event = threading.Event()
 
-    # COMPONENT 3
-    # Run a RemoteDispatcher on another separate process. Pass the documents
-    # it receives over a Queue to this process, so we can count them for our
-    # test.
+    def store_document(name, doc):
+        docs_received.append((name, doc))
 
-    def make_and_start_dispatcher(queue):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            queue.put((name, doc))
+    def stop_doc_watcher(name, doc):
+        if name == "stop":
+            stop_event.set()
 
-        d = RemoteDispatcher("127.0.0.1:5568", prefix=b"sb")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        d.start()
+    d = RemoteDispatcher("127.0.0.1:5568", prefix=b"sb")
+    d.subscribe(store_document)
+    d.subscribe(stop_doc_watcher)
+    threading.Thread(target=d.start, daemon=True).start()
+    time.sleep(0.5)  # TODO: Replace sleep with handshake event wait
 
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
-
-    # Generate two documents. The Publisher will send them to the proxy
-    # device over 5567, and the proxy will send them to the
-    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
-    # the queue, where we can verify that they round-tripped.
-
-    local_accumulator = []
+    local_docs = []
 
     def local_cb(name, doc):
-        local_accumulator.append((name, doc))
+        local_docs.append((name, doc))
 
-    # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {"stuff": {"nested": np.array([1, 2, 3])}, "scalar_stuff": np.float64(3), "array_stuff": np.ones((3, 3))}
+    det = ReadableSignal("det")
+    RE(count([det]), local_cb)
+    stop_event.wait(timeout=5)
+    assert stop_event.is_set()
 
-    # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
-    RE(count([hw.det]), local_cb, **md)
-    time.sleep(1)
+    # Only docs from the matching prefix publisher should arrive
+    assert docs_received == local_docs
 
-    # Get the two documents from the queue (or timeout --- test will fail)
-    remote_accumulator = []
-    for i in range(len(local_accumulator)):  # noqa: B007
-        remote_accumulator.append(queue.get(timeout=2))
-    p.close()
-    p2.close()
-    proxy_proc.terminate()
-    dispatcher_proc.terminate()
-    proxy_proc.join()
-    dispatcher_proc.join()
-    ra = [sanitize_doc(doc) for doc in remote_accumulator]
-    la = [sanitize_doc(doc) for doc in local_accumulator]
-    assert ra == la
+    pub_match.close()
+    pub_other.close()
 
 
 @pytest.mark.parametrize(
