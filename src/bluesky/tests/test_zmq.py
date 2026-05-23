@@ -116,7 +116,9 @@ def dispatcher():
         if name == "stop":
             stop_event.set()
 
-    d = RemoteDispatcher("127.0.0.1:5568")
+    # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
+    loop = asyncio.SelectorEventLoop() if sys.platform == "win32" else None
+    d = RemoteDispatcher("127.0.0.1:5568", loop=loop)
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
@@ -251,7 +253,12 @@ def test_zmq_prefix(proxy):
         if name == "stop":
             stop_event.set()
 
-    d = RemoteDispatcher("127.0.0.1:5568", prefix=b"sb")
+    d = RemoteDispatcher(
+        "127.0.0.1:5568",
+        prefix=b"sb",
+        # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
+        loop=asyncio.SelectorEventLoop() if sys.platform == "win32" else None,
+    )
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
