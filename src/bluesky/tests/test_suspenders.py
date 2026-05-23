@@ -256,17 +256,31 @@ def test_deferred_pause_from_suspend(RE, hw):
     sig = hw.bool_sig
     scan = [Msg("checkpoint"), Msg("null")]
     msg_lst = []
+    deferred_pause_event = threading.Event()
+    waiting_event = threading.Event()
     sig.put(1)
 
     def accum(msg):
-        print(msg)
+        if msg[0] == "wait_for":
+            waiting_event.set()
         msg_lst.append(msg)
+
+    def wait_then_request_pause():
+        waiting_event.wait(timeout=5)
+        assert waiting_event.is_set()
+        RE.request_pause(True)
+        deferred_pause_event.set()
+
+    def wait_then_put():
+        deferred_pause_event.wait(timeout=5)
+        assert deferred_pause_event.is_set()
+        sig.put(0)
 
     susp = SuspendBoolHigh(sig)
 
     RE.install_suspender(susp)
-    threading.Timer(1, RE.request_pause, (True,)).start()
-    threading.Timer(4, sig.put, (0,)).start()
+    threading.Thread(target=wait_then_request_pause, daemon=True).start()
+    threading.Thread(target=wait_then_put, daemon=True).start()
     RE.msg_hook = accum
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
