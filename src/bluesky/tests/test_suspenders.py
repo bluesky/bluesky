@@ -5,7 +5,7 @@ from functools import partial
 
 import pytest
 
-from bluesky import Msg
+from bluesky import Msg, RunEngine
 from bluesky.preprocessors import suspend_wrapper
 from bluesky.run_engine import RunEngineInterrupted
 from bluesky.suspenders import (
@@ -251,8 +251,9 @@ def test_suspend_when_changed_preserves_falsy_expected_value(hw):
     assert susp._should_suspend(1)
 
 
-def test_deferred_pause_from_suspend(RE, hw):
+def test_deferred_pause_from_suspend(hw):
     "Tests what happens when a soft pause is requested from a suspended state"
+    RE = RunEngine({})
     sig = hw.bool_sig
     scan = [Msg("checkpoint"), Msg("null")]
     msg_lst = []
