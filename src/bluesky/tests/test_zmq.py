@@ -137,8 +137,7 @@ def test_zmq_round_trip(proxy, publisher, dispatcher):
     RE = RunEngine({})
     RE.subscribe(publisher)
 
-    remote_stop_event = dispatcher[0]
-    remote_docs = dispatcher[1]
+    remote_stop_event, remote_docs = dispatcher
     local_docs = []
     det = ReadableSignal("det")
 
