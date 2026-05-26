@@ -119,11 +119,11 @@ def dispatcher():
 
     # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
     loop = asyncio.SelectorEventLoop() if sys.platform == "win32" else None
-    d = RemoteDispatcher("127.0.0.1:5568", loop=loop, connection_timeout=5.0)
+    d = RemoteDispatcher("127.0.0.1:5568", loop=loop, handshake_timeout=5.0)
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    assert d.wait_for_connection(5.0)
+    assert d.ready(5.0)
     return stop_event, docs_received
 
 
@@ -255,12 +255,12 @@ def test_zmq_prefix(proxy):
     d = RemoteDispatcher(
         "127.0.0.1:5568",
         prefix=b"sb",
-        connection_timeout=5.0,
+        handshake_timeout=5.0,
     )
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    assert d.wait_for_connection(5.0)
+    assert d.ready(5.0)
 
     local_docs = []
 
@@ -527,17 +527,17 @@ def test_configure_server_socket_server_curve(
         assert f"Bound to address: {expected_addr}" in caplog.text
 
 
-def test_remote_dispatcher_connection_timeout():
+def test_remote_dispatcher_handshake_timeout():
     """Test that RemoteDispatcher times out when handshake doesn't complete."""
 
-    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.00001)
+    dispatcher = RemoteDispatcher("localhost:5841", handshake_timeout=0.00001)
 
     with pytest.raises(asyncio.TimeoutError):
         dispatcher.start()
 
 
-def test_remote_dispatcher_connection_success():
-    """Test that RemoteDispatcher succeeds when handshake completes. It should process 1 message and exit."""
+def test_remote_dispatcher_ready_success():
+    """Test that RemoteDispatcher is ready. It should process 1 message and exit."""
 
     recv_event = threading.Event()
 
@@ -561,19 +561,19 @@ def test_remote_dispatcher_connection_success():
         patch("zmq.asyncio.Socket.connect"),
         patch("zmq.asyncio.Socket.recv", side_effect=mock_recv),
     ):
-        dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=5.0)
+        dispatcher = RemoteDispatcher("localhost:5841", handshake_timeout=5.0)
 
         dispatcher_thread = threading.Thread(target=dispatcher.start, daemon=True)
         dispatcher_thread.start()
-        assert dispatcher.wait_for_connection(timeout=2), "handshake was not signaled within timeout"
+        assert dispatcher.ready(timeout=2), "readiness was not signaled within timeout"
         assert recv_event.wait(timeout=2), "recv was not called within timeout"
         dispatcher.stop()
 
 
-def test_remote_dispatcher_connection_timeout_in_thread():
-    """Test that handshake failure is observable from another thread via wait_for_connection."""
+def test_remote_dispatcher_handshake_timeout_in_thread():
+    """Test that handshake failure is observable from another thread."""
 
-    dispatcher = RemoteDispatcher("localhost:5841", connection_timeout=0.0001)
+    dispatcher = RemoteDispatcher("localhost:5841", handshake_timeout=0.0001)
 
     exceptions = []
 
@@ -587,9 +587,7 @@ def test_remote_dispatcher_connection_timeout_in_thread():
     dispatcher_thread.start()
 
     # Caller in another thread sees the connection never succeeded.
-    assert not dispatcher.wait_for_connection(timeout=0.1), (
-        "wait_for_connection should return False on handshake timeout"
-    )
+    assert not dispatcher.ready(timeout=0.1), "ready should return False on handshake timeout"
 
     dispatcher_thread.join(timeout=2)
     assert not dispatcher_thread.is_alive(), "dispatcher thread did not exit after timeout"
@@ -597,12 +595,12 @@ def test_remote_dispatcher_connection_timeout_in_thread():
     assert isinstance(exceptions[0], asyncio.TimeoutError)
 
 
-def test_remote_dispatcher_handshake_wait_without_connection_timeout_configured():
-    """Test that handshake wait fails when not using handshake monitoring."""
+def test_remote_dispatcher_handshake_wait_without_handshake_timeout_configured():
+    """Test that ready wait fails when not using handshake monitoring."""
 
     dispatcher = RemoteDispatcher("localhost:5841")
     with pytest.raises(RuntimeError):
-        dispatcher.wait_for_connection(1.0)
+        dispatcher.ready(1.0)
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")

@@ -442,7 +442,7 @@ class RemoteDispatcher(Dispatcher):
         optional event loop to use.  Default is to create a new event loop.
     deserializer: function, optional
         optional function to deserialize data. Default is pickle.loads
-    connection_timeout : float, optional
+    handshake_timeout : float, optional
         Configurable timeout to wait for connection handshake.
         Defaults to ``None``, no wait for handshake.
 
@@ -465,7 +465,7 @@ class RemoteDispatcher(Dispatcher):
         deserializer: Callable = pickle.loads,
         strict: bool = False,
         curve_config: ServerCurve | ClientCurve | None = None,
-        connection_timeout: float | None = None,
+        handshake_timeout: float | None = None,
     ):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
@@ -486,8 +486,9 @@ class RemoteDispatcher(Dispatcher):
         self._socket = None
         self._monitor = None
         self._wait_task = None
-        self._connection_timeout = connection_timeout
-        self._connected = threading.Event()
+        self._handshake_timeout = handshake_timeout
+        self._ready_event = threading.Event()
+        self._poll_ready = asyncio.Event()
 
         def __finish_setup():
             asyncio.set_event_loop(self.loop)
@@ -507,11 +508,11 @@ class RemoteDispatcher(Dispatcher):
                 server_key, _ = zmq.auth.load_certificate(curve_config.server_public_key)
                 sock.setsockopt(zmq.CURVE_SERVERKEY, server_key)
 
-            if self._connection_timeout is not None:
+            if self._handshake_timeout is not None:
                 self._monitor = self._socket.get_monitor_socket(
                     events=zmq.EVENT_HANDSHAKE_SUCCEEDED,
                 )
-                self._wait_task = self.loop.create_task(self._wait_for_handshake(self._connection_timeout))
+                self._wait_task = self.loop.create_task(self._wait_for_ready(self._handshake_timeout))
 
             self._socket.connect(self.address)
             self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
@@ -525,6 +526,11 @@ class RemoteDispatcher(Dispatcher):
 
     async def _poll(self):
         our_prefix = self._prefix  # local var to save an attribute lookup
+        # Signal that we are about to enter the receive loop, synchronously.
+        # _wait_for_ready awaits this before setting _ready_event,
+        # ensuring wait_for_ready() only unblocks once _poll is genuinely
+        # ready to receive messages.
+        self._poll_ready.set()
         while True:
             message = await self._socket.recv()
             try:
@@ -573,13 +579,30 @@ class RemoteDispatcher(Dispatcher):
                         continue
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
-    async def _wait_for_handshake(self, timeout: float = 5.0) -> None:
+    async def _wait_for_ready(self, timeout: float = 5.0) -> None:
         if not self._monitor:
             raise RuntimeError("Socket monitor for the connection handshake should be set at this point.")
-        await asyncio.wait_for(recv_monitor_message(self._monitor), timeout=timeout)
+        try:
+            # Start reading from the monitor socket immediately.
+            await asyncio.wait_for(recv_monitor_message(self._monitor), timeout=timeout)
+            # Wait for _poll to signal it is at `await socket.recv()`
+            await self._poll_ready.wait()
+            # Only when handshake is successful and we are receiving are we ready
+            self._ready_event.set()
+        except asyncio.TimeoutError:
+            logger.error(f"Connection handshake timed out after {timeout}s")
+            if self._task is not None:
+                self._task.cancel()
+            raise
+        finally:
+            if self._socket is not None:
+                self._socket.disable_monitor()
+            if self._monitor is not None:
+                self._monitor.close(linger=0)
 
-    def wait_for_connection(self, timeout: float | None = None) -> bool:
-        """Block until the SUB socket handshake has completed successfully.
+    def ready(self, timeout: float | None = None) -> bool:
+        """
+        Block until the SUB socket until we are ready to receive messages.
 
         Intended to be called from a thread other than the one running the
         dispatcher's event loop, so that callers can know when it is safe
@@ -594,35 +617,15 @@ class RemoteDispatcher(Dispatcher):
         Returns
         -------
         bool
-            ``True`` if the handshake completed within the timeout,
+            ``True`` if ready signal is set within the timeout,
             ``False`` otherwise.
         """
-        if self._connection_timeout is None:
+        if self._handshake_timeout is None:
             raise RuntimeError(
-                "Handshake event monitoring is not set up. "
-                "Use the `connection_timeout` argument on `RemoteDispatcher` to do set this up."
+                "Handshake event monitoring is not set up so there is no way to guarantee readiness. "
+                "Initialize with `handshake_timeout` argument to set this up."
             )
-        return self._connected.wait(timeout=timeout)
-
-    def _await_connection(self, timeout: float = 5.0) -> None:
-        """Wait for SUB socket event handshake"""
-
-        logger.debug(f"Waiting for connection handshake ({timeout=}s")
-        try:
-            if self._wait_task:
-                self.loop.run_until_complete(self._wait_task)
-        except asyncio.TimeoutError:
-            logger.error(f"Connection handshake timed out after {timeout}s")
-            raise
-        else:
-            self._connected.set()
-        finally:
-            if self._wait_task is not None:
-                self._wait_task.cancel()
-            if self._socket is not None:
-                self._socket.disable_monitor()
-            if self._monitor is not None:
-                self._monitor.close(linger=0)
+        return self._ready_event.wait(timeout=timeout)
 
     def start(self):
         if self.closed:
@@ -633,13 +636,21 @@ class RemoteDispatcher(Dispatcher):
             )
         try:
             self.__factory()
-            if self._connection_timeout is not None:
-                self._await_connection()
             self._task = self.loop.create_task(self._poll())
-            self.loop.run_until_complete(self._task)
-            task_exception = self._task.exception()
-            if task_exception is not None:
-                raise task_exception
+            try:
+                self.loop.run_until_complete(self._task)
+            except asyncio.CancelledError as err:
+                # _poll was cancelled.  If _wait_task caused it (handshake
+                # timeout), surface that exception instead of CancelledError.
+                if self._wait_task is not None and self._wait_task.done() and not self._wait_task.cancelled():
+                    exc = self._wait_task.exception()
+                    if exc is not None:
+                        raise exc from None
+                raise err
+            if not self._task.cancelled():
+                task_exception = self._task.exception()
+                if task_exception is not None:
+                    raise task_exception
         finally:
             # The loop has stopped, so tear everything down here and signal
             # any thread blocked in ``stop`` that cleanup is complete.
@@ -648,7 +659,7 @@ class RemoteDispatcher(Dispatcher):
     def _cleanup(self):
         # Release the task, socket, context and loop. Safe to call only once
         # the loop has stopped; closing a running loop raises RuntimeError.
-        self._connected.clear()
+        self._ready_event.clear()
         if self._wait_task is not None:
             self._wait_task.cancel()
         if self._task is not None:
