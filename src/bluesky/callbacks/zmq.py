@@ -597,6 +597,11 @@ class RemoteDispatcher(Dispatcher):
             ``True`` if the handshake completed within the timeout,
             ``False`` otherwise.
         """
+        if self._connection_timeout is None:
+            raise RuntimeError(
+                "Handshake event monitoring is not set up. "
+                "Use the `connection_timeout` argument on `RemoteDispatcher` to do set this up."
+            )
         return self._connected.wait(timeout=timeout)
 
     def _await_connection(self, timeout: float = 5.0) -> None:

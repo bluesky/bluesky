@@ -597,6 +597,14 @@ def test_remote_dispatcher_connection_timeout_in_thread():
     assert isinstance(exceptions[0], asyncio.TimeoutError)
 
 
+def test_remote_dispatcher_handshake_wait_without_connection_timeout_configured():
+    """Test that handshake wait fails when not using handshake monitoring."""
+
+    dispatcher = RemoteDispatcher("localhost:5841")
+    with pytest.raises(RuntimeError):
+        dispatcher.wait_for_connection(1.0)
+
+
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_remote_dispatcher_stop_from_other_thread():
     """Regression test for #2012: stop() called from another thread must not raise RuntimeError.
