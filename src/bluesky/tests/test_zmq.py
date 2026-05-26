@@ -119,12 +119,11 @@ def dispatcher():
 
     # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
     loop = asyncio.SelectorEventLoop() if sys.platform == "win32" else None
-    d = RemoteDispatcher("127.0.0.1:5568", loop=loop)
+    d = RemoteDispatcher("127.0.0.1:5568", loop=loop, connection_timeout=5.0)
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    # TODO: Replace sleep with handshake event wait
-    time.sleep(_ZMQ_CONNECTION_TIMEOUT)
+    assert d.wait_for_connection(5.0)
     return stop_event, docs_received
 
 
@@ -256,13 +255,12 @@ def test_zmq_prefix(proxy):
     d = RemoteDispatcher(
         "127.0.0.1:5568",
         prefix=b"sb",
-        # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
-        loop=asyncio.SelectorEventLoop() if sys.platform == "win32" else None,
+        connection_timeout=5.0,
     )
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    time.sleep(_ZMQ_CONNECTION_TIMEOUT)  # TODO: Replace sleep with handshake event wait
+    assert d.wait_for_connection(5.0)
 
     local_docs = []
 
@@ -608,8 +606,6 @@ def test_remote_dispatcher_stop_from_other_thread():
     dispatcher = RemoteDispatcher("127.0.0.1:60611")  # nothing listening
     thread = threading.Thread(target=dispatcher.start, daemon=True)
     thread.start()
-    # Allow the loop and poll task to start.
-    time.sleep(0.5)
     try:
         dispatcher.stop()
         assert dispatcher.closed

@@ -527,7 +527,6 @@ class RemoteDispatcher(Dispatcher):
         our_prefix = self._prefix  # local var to save an attribute lookup
         while True:
             message = await self._socket.recv()
-            self._connected.set()
             try:
                 prefix, name, doc = message.split(b" ", 2)
             except ValueError as e:
