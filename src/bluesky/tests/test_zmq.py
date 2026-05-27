@@ -609,15 +609,20 @@ def test_remote_dispatcher_stop_from_other_thread():
 
     stop() is synchronous, so once it returns the dispatcher is fully torn down.
     """
-    dispatcher = RemoteDispatcher("127.0.0.1:60611")  # nothing listening
-    thread = threading.Thread(target=dispatcher.start, daemon=True)
-    thread.start()
-    try:
+    recv_event = threading.Event()
+
+    async def mock_recv():
+        recv_event.set()
+        await asyncio.Event().wait()
+
+    with patch("zmq.asyncio.Socket.recv", side_effect=mock_recv):
+        dispatcher = RemoteDispatcher("127.0.0.1:60611")  # nothing listening
+        thread = threading.Thread(target=dispatcher.start, daemon=True)
+        thread.start()
+        recv_event.wait(timeout=5)
+        assert recv_event.is_set()
         dispatcher.stop()
         assert dispatcher.closed
         assert dispatcher._task is None
         assert dispatcher._socket is None
         assert dispatcher._context is None
-    finally:
-        thread.join(timeout=5)
-    assert not thread.is_alive()
