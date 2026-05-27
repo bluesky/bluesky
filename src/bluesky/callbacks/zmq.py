@@ -625,7 +625,13 @@ class RemoteDispatcher(Dispatcher):
                 "Handshake event monitoring is not set up so there is no way to guarantee readiness. "
                 "Initialize with `handshake_timeout` argument to set this up."
             )
-        return self._ready_event.wait(timeout=timeout)
+        self._ready_event.wait(timeout=timeout)
+        if self.closed:
+            raise RuntimeError(
+                "RemoteDispatcher was closed before the connection handshake completed. "
+                "The dispatcher is no longer running."
+            )
+        return self._ready_event.is_set()
 
     def start(self):
         if self.closed:
@@ -657,9 +663,6 @@ class RemoteDispatcher(Dispatcher):
             self._cleanup()
 
     def _cleanup(self):
-        # Release the task, socket, context and loop. Safe to call only once
-        # the loop has stopped; closing a running loop raises RuntimeError.
-        self._ready_event.clear()
         if self._wait_task is not None:
             self._wait_task.cancel()
         if self._task is not None:
@@ -674,6 +677,7 @@ class RemoteDispatcher(Dispatcher):
         if not self.loop.is_closed():
             self.loop.close()
         self.closed = True
+        self._ready_event.set()
         self._stopped.set()
 
     def stop(self):
