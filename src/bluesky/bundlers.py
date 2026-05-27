@@ -445,31 +445,17 @@ class RunBundler:
         # Ask the object for any resource or datum documents is has cached
         # and cache them as well. Likewise, these will be emitted if and
         # when _save is called.
-        asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
+        asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj)]
         self._asset_docs_cache.extend(asset_docs_collected)
 
         return reading
 
-    async def read(self, msg, reading):
-        """
-        Add a single read to the bundle if it's open.
-
-        Expected message object is::
-
-            Msg('read', obj)
-        """
-        if self.bundling:
-            return await self._bundle_single_read(msg, msg.obj, reading)
-
-    async def read_all(self, msg, objs_with_reading: list[tuple[object, dict]]):
+    async def read(self, msg, objs_with_reading: list[tuple[object, dict]]):
         """Add a reading to the open event bundle.
 
-        return reading
         Expected message object is::
 
-            Msg('read_all', obj)
-
-        where ``obj`` is an ``ObjTuple`` of ``Readable`` objects.
+            Msg('read', obj1, obj2, obj3, ...)
         """
         if self.bundling:
             await asyncio.gather(

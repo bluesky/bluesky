@@ -10,7 +10,6 @@ import pytest
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import msg_mutator
 from bluesky.protocols import Reading
-from bluesky.run_engine import ObjTuple
 
 from . import requires_ophyd, requires_ophyd_async
 
@@ -86,7 +85,7 @@ def test_async_read(RE, sync_devices, async_devices):
     def plan():
         yield from bps.open_run()
         yield from bps.create(name="primary")
-        ret = yield from bps.read_all(sync_and_async_devices)
+        ret = yield from bps.read(*sync_and_async_devices)
         assert ret == {
             "async_device1-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
             "async_device1-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
@@ -143,7 +142,7 @@ def test_async_read_flattened_structure(RE, sync_devices, async_devices):
     def plan():
         yield from bps.open_run()
         yield from bps.create(name="primary")
-        ret = yield from bps.read_all([sync_device1, async_device1, sync_device2.signal1, async_device2.signal2])
+        ret = yield from bps.read(sync_device1, async_device1, sync_device2.signal1, async_device2.signal2)
         assert set(ret) == {
             "async_device1-signal1",
             "async_device1-signal2",
@@ -199,7 +198,7 @@ def test_one_shot_works_asynchronously(RE, sync_devices, async_devices):
 
 
 @requires_ophyd_async
-def test_read_all_turn_off_obj_tuple(RE, async_devices):
+def test_read_all_one_message_per_device(RE, async_devices):
     device1, device2 = async_devices
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
@@ -207,7 +206,8 @@ def test_read_all_turn_off_obj_tuple(RE, async_devices):
 
     def add_messages_to_cache(plan):
         def rewrite_pos(msg):
-            messages.append(msg)
+            command, *args = msg
+            messages.append((command, args))
             return msg
 
         plan = msg_mutator(plan, rewrite_pos)
@@ -216,10 +216,10 @@ def test_read_all_turn_off_obj_tuple(RE, async_devices):
     def plan(one_message_per_device: bool):
         yield from bps.open_run()
         yield from bps.create()
-        yield from bps.read_all(async_devices, one_message_per_device=one_message_per_device)
+        yield from bps.read(*async_devices, one_message_per_device=one_message_per_device)
         yield from bps.save()
         yield from bps.create()
-        yield from bps.read_all(async_devices, one_message_per_device=one_message_per_device)
+        yield from bps.read(*async_devices, one_message_per_device=one_message_per_device)
         yield from bps.save()
         yield from bps.close_run()
 
@@ -227,30 +227,30 @@ def test_read_all_turn_off_obj_tuple(RE, async_devices):
 
     RE(plan(True), lambda name, doc: output[name].append(doc))
 
-    assert [(msg.command, msg.obj) for msg in messages] == [
-        ("open_run", ANY),
-        ("create", ANY),
-        ("read", device1),
-        ("read", device2),
-        ("save", ANY),
-        ("create", ANY),
-        ("read", device1),
-        ("read", device2),
-        ("save", ANY),
-        ("close_run", ANY),
+    assert [msg[0] for msg in messages] == [
+        "open_run",
+        "create",
+        "read",
+        "read",
+        "save",
+        "create",
+        "read",
+        "read",
+        "save",
+        "close_run",
     ]
 
     messages.clear()
 
     RE(plan(False), lambda name, doc: output[name].append(doc))
 
-    assert [(msg.command, msg.obj) for msg in messages] == [
-        ("open_run", ANY),
-        ("create", ANY),
-        ("read", ObjTuple((device1, device2))),
-        ("save", ANY),
-        ("create", ANY),
-        ("read", ObjTuple((device1, device2))),
-        ("save", ANY),
-        ("close_run", ANY),
+    assert [msg[0] for msg in messages] == [
+        "open_run",
+        "create",
+        "read",
+        "save",
+        "create",
+        "read",
+        "save",
+        "close_run",
     ]

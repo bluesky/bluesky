@@ -9,7 +9,7 @@ import pytest
 from event_model.documents.event_descriptor import DataKey
 
 import bluesky.plans as bp
-from bluesky import Msg, ObjTuple, RunEngineInterrupted
+from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
     abs_set,
     caching_repeater,
@@ -729,7 +729,10 @@ def test_trigger_and_read(hw):
         Msg("trigger", det),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="primary"),
-        Msg("read", ObjTuple((det,))),
+        Msg(
+            "read",
+            det,
+        ),
         Msg("save"),
     ]
     for msg in msgs:
@@ -742,7 +745,10 @@ def test_trigger_and_read(hw):
         Msg("trigger", det),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="custom"),
-        Msg("read", ObjTuple((det,))),
+        Msg(
+            "read",
+            det,
+        ),
         Msg("save"),
     ]
     for msg in msgs:
