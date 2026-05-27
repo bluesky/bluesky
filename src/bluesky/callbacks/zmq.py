@@ -600,19 +600,13 @@ class RemoteDispatcher(Dispatcher):
             if self._monitor is not None:
                 self._monitor.close(linger=0)
 
-    def ready(self, timeout: float | None = None) -> bool:
+    def ready(self) -> bool:
         """
         Block until the SUB socket until we are ready to receive messages.
 
         Intended to be called from a thread other than the one running the
         dispatcher's event loop, so that callers can know when it is safe
         to start publishing messages that the dispatcher should receive.
-
-        Parameters
-        ----------
-        timeout : float, optional
-            Maximum time in seconds to wait. ``None`` (the default) waits
-            indefinitely.
 
         Returns
         -------
@@ -625,13 +619,10 @@ class RemoteDispatcher(Dispatcher):
                 "Handshake event monitoring is not set up so there is no way to guarantee readiness. "
                 "Initialize with `handshake_timeout` argument to set this up."
             )
-        self._ready_event.wait(timeout=timeout)
-        if self.closed:
-            raise RuntimeError(
-                "RemoteDispatcher was closed before the connection handshake completed. "
-                "The dispatcher is no longer running."
-            )
-        return self._ready_event.is_set()
+        # Not blocking forever since this event is guaranteed to be set on cleanup
+        # The ``_handshake_timeout`` already handles timing out.
+        self._ready_event.wait()
+        return not self.closed and self._ready_event.is_set()
 
     def start(self):
         if self.closed:

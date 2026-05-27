@@ -123,7 +123,7 @@ def dispatcher():
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    assert d.ready(5.0)
+    assert d.ready()
     return stop_event, docs_received
 
 
@@ -260,7 +260,7 @@ def test_zmq_prefix(proxy):
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    assert d.ready(5.0)
+    assert d.ready()
 
     local_docs = []
 
@@ -565,7 +565,7 @@ def test_remote_dispatcher_ready_success():
 
         dispatcher_thread = threading.Thread(target=dispatcher.start, daemon=True)
         dispatcher_thread.start()
-        assert dispatcher.ready(timeout=2), "readiness was not signaled within timeout"
+        assert dispatcher.ready(), "readiness was not signaled within timeout"
         assert recv_event.wait(timeout=2), "recv was not called within timeout"
         dispatcher.stop()
 
@@ -587,7 +587,7 @@ def test_remote_dispatcher_handshake_timeout_in_thread():
     dispatcher_thread.start()
 
     # Caller in another thread sees the connection never succeeded.
-    assert not dispatcher.ready(timeout=0.1), "ready should return False on handshake timeout"
+    assert not dispatcher.ready(), "ready should return False on handshake timeout"
 
     dispatcher_thread.join(timeout=2)
     assert not dispatcher_thread.is_alive(), "dispatcher thread did not exit after timeout"
@@ -600,7 +600,7 @@ def test_remote_dispatcher_handshake_wait_without_handshake_timeout_configured()
 
     dispatcher = RemoteDispatcher("localhost:5841")
     with pytest.raises(RuntimeError):
-        dispatcher.ready(1.0)
+        dispatcher.ready()
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
