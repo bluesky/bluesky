@@ -602,7 +602,7 @@ class RemoteDispatcher(Dispatcher):
 
     def ready(self, timeout: float | None = None) -> bool:
         """
-        Block until the SUB socket until we are ready to receive messages.
+        Block until the SUB socket is ready to receive messages.
 
         Intended to be called from a thread other than the one running the
         dispatcher's event loop, so that callers can know when it is safe
