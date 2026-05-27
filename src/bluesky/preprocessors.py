@@ -4,7 +4,6 @@ from collections.abc import Iterable
 from functools import wraps
 
 from bluesky.protocols import Locatable
-from bluesky.run_engine import ObjTuple
 
 from .plan_stubs import (
     close_run,
@@ -342,10 +341,8 @@ def print_summary_wrapper(plan):
         elif cmd == "create":
             read_cache = []
         elif cmd == "read":
-            if isinstance(msg.obj, ObjTuple):
-                read_cache += [obj.name for obj in msg.obj]
-            else:
-                read_cache.append(msg.obj.name)
+            devices = (msg.obj, *msg.args)
+            read_cache += [device.name for device in devices]
         elif cmd == "save":
             print(f"  Read {read_cache}")
         return msg
@@ -1139,22 +1136,21 @@ def relative_set_wrapper(plan, devices=None):
             return msg
 
     def insert_reads(msg):
+        if msg.command != "set":
+            return None, None
+
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
-        objs = msg.obj if isinstance(msg.obj, tuple) else (msg.obj,)
-        for obj in objs:
-            eligible = (devices is None) or (obj in devices)
-            seen = obj in initial_positions
-            if (msg.command == "set") and eligible and not seen:
-                return (
-                    pchain(
-                        __read_and_stash_a_motor(obj, initial_positions, coupled_parents),
-                        single_gen(msg),
-                    ),
-                    None,
-                )
-            else:
-                return None, None
+        if not eligible or seen:
+            return None, None
+
+        return (
+            pchain(
+                __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
+                single_gen(msg),
+            ),
+            None,
+        )
 
     plan = plan_mutator(plan, insert_reads)
     plan = msg_mutator(plan, rewrite_pos)

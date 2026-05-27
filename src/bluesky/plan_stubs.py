@@ -38,7 +38,6 @@ from .protocols import (
     Triggerable,
     check_supports,
 )
-from .run_engine import ObjTuple
 from .utils import (
     CustomPlanMetadata,
     Msg,
@@ -148,57 +147,19 @@ def drop() -> MsgGenerator:
     return (yield Msg("drop"))
 
 
-@plan
-def read(obj: Readable) -> MsgGenerator[Reading]:
-    """
-    Take a reading and add it to the current bundle of readings.
-
-    Parameters
-    ----------
-    obj : Device or Signal
-
-    Yields
-    ------
-    msg : Msg
-        Msg('read', obj)
-
-    Returns
-    -------
-    reading :
-        Reading object representing information recorded
-    """
-    return (yield Msg("read", obj))
-
-
 BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE = os.environ.get("BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE") == "1"
 
 
-def _read_all_async(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
-    objs = separate_devices(objs)
-    return (yield Msg("read", obj=ObjTuple(objs)))
-
-
-def _read_all_one_message_per_device(objs: Sequence[Readable]) -> MsgGenerator[Reading]:
-    objs = separate_devices(objs)
-    ret = {}  # collect and return readings to give plan access to them
-    for obj in objs:
-        reading = yield from read(obj)
-        if reading is not None:
-            ret.update(reading)
-    return cast(Reading, ret)
-
-
 @plan
-def read_all(
-    objs: Sequence[Readable[Any]], one_message_per_device: bool = BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
+def read(
+    *objs: Sequence[Readable[Any]], one_message_per_device: bool = BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
 ) -> MsgGenerator[Reading]:
     """
-    Take a reading on every device in a sequence and add it to the current bundle of readings.
-
+    Read from devices and add to the current bundle of readings.
 
     Parameters
     ----------
-    obj : A sequence of Device or Signal
+    objs : Readable objects.
     one_message_per_device:
         If ``True`` then there will be one Msg per device, which means that
         asynchronous devices will not be gathered.
@@ -209,17 +170,23 @@ def read_all(
     Yields
     ------
     msg : Msg
-        Msg('read', obj)
+        ``Msg('read', *objs)``
+
 
     Returns
     -------
-    reading :
+    reading:
         Reading object representing information recorded
     """
+
     if one_message_per_device:
-        return (yield from _read_all_one_message_per_device(objs))
+        reading = {}
+        for obj in objs:
+            partial_reading = yield Msg("read", obj)
+            reading.update(partial_reading)
+        return cast(Reading, reading)
     else:
-        return (yield from _read_all_async(objs))
+        return (yield Msg("read", *objs))
 
 
 @typing.overload
@@ -1525,7 +1492,7 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
             raise exp
 
         return (
-            yield from contingency_wrapper(read_all(devices), except_plan=exception_path, else_plan=standard_path)
+            yield from contingency_wrapper(read(*devices), except_plan=exception_path, else_plan=standard_path)
         )
 
     from .preprocessors import rewindable_wrapper

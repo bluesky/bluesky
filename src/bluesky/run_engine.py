@@ -16,7 +16,6 @@ from datetime import datetime
 from enum import Enum
 from inspect import iscoroutine
 from itertools import count
-from typing import final
 from warnings import warn
 
 import event_model
@@ -87,15 +86,6 @@ class _RunEnginePanic(Exception): ...
 
 
 class WaitForTimeoutError(TimeoutError): ...
-
-
-@final
-class ObjTuple(tuple):
-    """A tuple which structure which contains multiple objects in a message.
-
-    Where ``Msg("read", some_device)`` will read one device, ``Msg("read", ObjTuple(some_device1, some_device2))``
-    will read both together. This allows for asynchronous devices to be read together.
-    """
 
 
 @dataclass
@@ -965,7 +955,7 @@ class RunEngine:
             for func in funcs:
                 self._temp_callback_ids.add(self.subscribe(func, name))
 
-        self._plan = plan  # this ref is just used for metadata introspection
+        self._plan = plan  # type: ignore # this ref is just used for metadata introspection
         self._metadata_per_call.update(metadata_kw)
 
         gen = ensure_generator(plan)
@@ -1999,44 +1989,27 @@ class RunEngine:
         """
         Add a reading to the open event bundle.
 
-        Where the reading is the read of one or multiple devices.
-
-        Here msg.obj is either a ``Readable`` or `ObjTuple[Reabable, ...]`.
-
-        In the latter case asynchronous read methods will be read together.
+        The obj and args of the read message are all objects to be read.
+        Asynchronous reads will be performed together.
 
         Expected message object is:
 
-            Msg('read', objs)
+            Msg('read', *objs)
 
         """
 
         run_key = msg.run
-
-        if isinstance(msg.obj, Readable):
-            reading = await self._perform_single_reading(msg.obj)
-            if (current_run := self._run_bundlers.get(run_key)) is not None:
-                await current_run.read(msg, reading)
-            return reading
-
-        if not isinstance(msg.obj, ObjTuple):
-            raise TypeError(
-                f"Run engine received a read message but the object {msg.obj} "
-                "was not a `Reabable` or `ObjTuple[Readable, ...]`"
-            )
-
-        objs = msg.obj
+        objs = list((msg.obj,) + msg.args) if msg.obj is not None else []
         non_readable = [obj for obj in objs if not isinstance(obj, Readable)]
         if non_readable:
             raise TypeError(
-                "Run engine received a read message with an `ObjTuple`, which contained "
+                "Run engine received a read message with which contained "
                 f"the following devices which were not readable: {non_readable}"
             )
 
         coro_objs, non_coro_objs = [], []
 
         for obj in objs:
-            check_supports(obj, Readable)
             if inspect.iscoroutinefunction(obj.read):
                 coro_objs.append(obj)
             else:
@@ -2046,7 +2019,7 @@ class RunEngine:
         non_coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in non_coro_objs])
 
         if (current_run := self._run_bundlers.get(run_key)) is not None:
-            await current_run.read_all(
+            await current_run.read(
                 msg, list(zip(coro_objs, coro_read_rets)) + list(zip(non_coro_objs, non_coro_read_rets))
             )
 
