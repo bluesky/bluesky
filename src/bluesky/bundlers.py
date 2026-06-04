@@ -283,7 +283,10 @@ class RunBundler:
             object_keys[obj.name] = list(dks)
             for key in dks.keys():
                 dks[key]["object_name"] = obj.name
-            obj_t = obj.__class__
+            if isinstance(obj, type):
+                obj_t = obj  # To handle static readables
+            else:
+                obj_t = type(obj)  # type: ignore
             object_classes[obj.name] = f"{obj_t.__module__}.{obj_t.__qualname__}"
             data_keys.update(dks)
             config[obj.name] = {
