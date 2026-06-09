@@ -333,3 +333,17 @@ def test_many_motors(RE, hw):
     assert not bec._live_grids
     assert not bec._live_scatters
     assert bec._table is not None
+
+
+def test_empty_motors(RE, hw):
+    def simple_count(
+        readables,
+        md,
+    ):
+        yield from bps.open_run(md=md)
+        yield from bps.trigger_and_read(readables)
+
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    # should not raise
+    RE(simple_count([hw.det], md={"motors": []}))

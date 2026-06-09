@@ -2,6 +2,60 @@
  Release History
 =================
 
+v1.15.1 (2026-05-05)
+====================
+
+Added
+-----
+- Support for ``CURVE`` encryption in the ZMQ callback
+- Additional unit tests for ZMQ callback, and for ZMQ callback CLI entrypoint.
+
+Changed
+-------
+- Dropped support for passing in deprecated ``RE`` and ``zmq`` parameters to the ZMQ callback.
+
+v1.15.0 (2026-04-15)
+====================
+
+Added
+-----
+
+- Added support and testing for Python 3.13
+- ``event_model`` versions to ``RE.md``
+- More flexible addresses for ZMQ callbacks
+- Improved numpy sanitization for ``Msg`` tracing
+
+Fixed
+-----
+
+- Bug where ``SIGINT`` counting had a data race on very rapid presses, causing unreliable pausing behavior
+- Data saved from ``read_configuration()`` is now cached per stream, fixing subtle cache invalidation issues
+- ``TypeError`` on ``np.round`` in the ``%wa`` Bluesky magic with a multi-axis ``PsuedoPositioner`` coming from Numpy 2.0 change
+- Subtle bug in suspenders based on which thread the Ophyd subscription was run in
+- Handle empty motors in ``RunStart`` document in ``BestEffortCallback``
+
+Changed
+-------
+
+- Dropped support and testing for Python 3.9 (EOL in 2025-10)
+- ``SIGINT`` pause/interrupt behavior now requires 100ms between signal arrival to count toward a hard-pause or a ``KeyboardInterrupt``
+
+v1.14.6 (2025-10-08)
+====================
+
+Added
+-----
+
+Fixed
+-----
+
+- Error when using ``bps.wait`` with a timeout that actually triggered
+
+Changed
+-------
+
+- Remove the ``'streams'`` namespace (container) from the container structure created by ``TiledWriter``
+
 v1.14.5 (2025-10-03)
 ====================
 

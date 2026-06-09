@@ -3,7 +3,6 @@
 import logging
 import sys
 from types import ModuleType
-from typing import Optional
 
 try:
     import colorama
@@ -11,7 +10,7 @@ try:
     colorama.init()
 except ImportError:
     colorama = None
-curses: Optional[ModuleType]
+curses: ModuleType | None
 try:
     import curses
 except ImportError:

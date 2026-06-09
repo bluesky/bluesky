@@ -64,13 +64,14 @@ from .utils import (
     Subscribers,
     ensure_generator,
     normalize_subs_input,
+    sanitize_np,
     single_gen,
     warn_if_msg_args_or_kwargs,
 )
 
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
-current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
+current_task: typing.Callable[[asyncio.AbstractEventLoop | None], asyncio.Task | None]
 try:
     from asyncio import current_task
 except ImportError:
@@ -112,7 +113,7 @@ class RunEngineResult:
     exit_status: str
     interrupted: bool
     reason: str
-    exception: typing.Optional[Exception]
+    exception: Exception | None
 
 
 class RunEngineStateMachine(StateMachine):
@@ -404,15 +405,15 @@ class RunEngine:
 
     def __init__(
         self,
-        md: typing.Optional[dict] = None,
+        md: dict | None = None,
         *,
-        loop: typing.Optional[asyncio.AbstractEventLoop] = None,
-        preprocessors: typing.Optional[list] = None,
-        context_managers: typing.Optional[list] = None,
-        md_validator: typing.Optional[typing.Callable] = None,
-        md_normalizer: typing.Optional[typing.Callable] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        preprocessors: list | None = None,
+        context_managers: list | None = None,
+        md_validator: typing.Callable | None = None,
+        md_normalizer: typing.Callable | None = None,
         scan_id_source: typing.Callable[[dict], SyncOrAsync[int]] = default_scan_id_source,
-        during_task: typing.Optional[DuringTask] = None,
+        during_task: DuringTask | None = None,
         call_returns_result: bool = False,
     ):
         if loop is None:
@@ -871,10 +872,10 @@ class RunEngine:
     def __call__(
         self,
         plan: typing.Iterable[Msg],
-        subs: typing.Optional[Subscribers] = None,
+        subs: Subscribers | None = None,
         /,
         **metadata_kw: typing.Any,
-    ) -> typing.Union[RunEngineResult, tuple[str, ...]]:
+    ) -> RunEngineResult | tuple[str, ...]:
         """Execute a plan.
 
         Any keyword arguments will be interpreted as metadata and recorded with
@@ -1913,8 +1914,8 @@ class RunEngine:
         reason = msg.kwargs.get("reason", self._reason)
         try:
             _span: Span = self._run_tracing_spans.pop()
-            _span.set_attribute("exit_status", exit_status)
-            _span.set_attribute("reason", reason)
+            _span.set_attribute("exit_status", exit_status if exit_status is not None else "None")
+            _span.set_attribute("reason", reason if reason is not None else "None")
             _span.end()
         except IndexError:
             logger.warning("No open traces left to close!")
@@ -2813,7 +2814,7 @@ http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 
 def _set_span_msg_attributes(span, msg):
     span.set_attribute("msg.command", msg.command)
-    span.set_attribute("msg.args", msg.args)
+    span.set_attribute("msg.args", sanitize_np(msg.args))
     span.set_attribute("msg.kwargs", json.dumps(msg.kwargs, default=repr))
     span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
 
@@ -2875,7 +2876,7 @@ def in_bluesky_event_loop() -> bool:
         return loop is _bluesky_event_loop
 
 
-def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Optional[float] = None) -> T:
+def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: float | None = None) -> T:
     if _bluesky_event_loop is None or not _bluesky_event_loop.is_running():
         # Quell "coroutine never awaited" warnings
         if iscoroutine(coro):
