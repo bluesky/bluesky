@@ -10,7 +10,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.callbacks.best_effort import BestEffortCallback
-from bluesky.plans import grid_scan, scan
+from bluesky.plans import grid_scan, scan, spiral_square
 from bluesky.preprocessors import SupplementalData
 from bluesky.tests.utils import DocCollector
 from bluesky.utils import new_uid
@@ -98,6 +98,12 @@ def test_live_grid(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
+
+
+def test_live_scatter(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    RE(spiral_square([hw.det], hw.motor1, hw.motor2, 0.0, 0.0, 1.0, 1.0, 2, 2))
 
 
 def test_many_grids(RE, hw):

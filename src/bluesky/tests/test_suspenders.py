@@ -5,7 +5,7 @@ from functools import partial
 
 import pytest
 
-from bluesky import Msg, RunEngine
+from bluesky import Msg
 from bluesky.preprocessors import suspend_wrapper
 from bluesky.run_engine import RunEngineInterrupted
 from bluesky.suspenders import (
