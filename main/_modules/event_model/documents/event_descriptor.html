@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>event_model.documents.event_descriptor &#8212; bluesky 1.15.2.dev5+g8f4f530ce documentation</title>
+    <title>event_model.documents.event_descriptor &#8212; bluesky 1.15.2.dev8+gad521bf7e documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../../_static/documentation_options.js?v=3798f0a8"></script>
+    <script src="../../../_static/documentation_options.js?v=9bad869b"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -481,7 +481,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev5+g8f4f530ce';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev8+gad521bf7e';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -490,7 +490,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev5+g8f4f530ce" />
+  <meta name="docsearch:version" content="1.15.2.dev8+gad521bf7e" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -979,25 +979,34 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">TypedDict</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">NotRequired</span>
 
-<span class="n">DtypeNumpy</span> <span class="o">=</span> <span class="nb">str</span>
+<span class="n">DtypeNumpy</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">str</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A numpy dtype e.g `&lt;U9`, `&lt;f16`</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
 
-<span class="n">DtypeNumpyItem</span> <span class="o">=</span> <span class="n">List</span>
+<span class="n">DtypeNumpyItemItem</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">str</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A numpy dtype e.g `&lt;U9`, `&lt;f16`</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
 
-<span class="n">DataType</span> <span class="o">=</span> <span class="n">Any</span>
+<span class="n">DtypeNumpyItem</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DtypeNumpyItemItem</span><span class="p">]</span>
 
 
-<span class="n">Dtype</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;boolean&quot;</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">]</span>
+<span class="n">DataType</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;DataType&quot;</span><span class="p">]</span>
+
+
+<span class="n">Dtype</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;boolean&quot;</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">]</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">LimitsRange</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
-    <span class="n">high</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
-    <span class="n">low</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">high</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">low</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">PerObjectHint</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
@@ -1009,7 +1018,7 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The NeXus class definition for this device.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">fields</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The &#39;interesting&#39; data keys for this device.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1039,27 +1048,27 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    https://docs.epics-controls.org/en/latest/getting-started/EPICS_Intro.html#channel-access</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">alarm</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">]]</span>
+    <span class="n">alarm</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">LimitsRange</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Alarm limits.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">control</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">]]</span>
+    <span class="n">control</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">LimitsRange</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Control limits.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">display</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">]]</span>
+    <span class="n">display</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">LimitsRange</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Display limits.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">hysteresis</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span>
+    <span class="n">hysteresis</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Hysteresis.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">rds</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">RdsRange</span><span class="p">]]</span>
+    <span class="n">rds</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">RdsRange</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    RDS parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">warning</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">LimitsRange</span><span class="p">]]</span>
+    <span class="n">warning</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">LimitsRange</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Warning limits.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1072,11 +1081,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Describes the objects in the data property of Event documents</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">choices</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="n">choices</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Choices of enum value.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dims</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="n">dims</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The names for dimensions of the data. Null or empty list if scalar data</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1084,7 +1093,7 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The type of the data in the event, given as a broad JSON schema type.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dtype_numpy</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">DtypeNumpy</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">DtypeNumpyItem</span><span class="p">]]]</span>
+    <span class="n">dtype_numpy</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">DtypeNumpy</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">DtypeNumpyItem</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The type of the data in the event, given as a numpy dtype string (or, for structured dtypes, array).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1100,11 +1109,11 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The name of the object this key was pulled from.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">precision</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+    <span class="n">precision</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Number of digits after decimal place if a floating point number</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">shape</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The shape of the data.  Empty list indicates scalar data. None indicates a dimension with unknown or variable length.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1112,7 +1121,7 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The source (ex piece of hardware) of the data.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">units</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="n">units</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Engineering units of the value</span>
 <span class="sd">    &quot;&quot;&quot;</span></div>
@@ -1120,15 +1129,15 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Configuration</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
-    <span class="n">data</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The actual measurement data</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data_keys</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]</span>
+    <span class="n">data_keys</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This describes the data stored alongside it in this configuration object.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">timestamps</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">timestamps</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The timestamps of the individual measurement data</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1140,11 +1149,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    documents</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">configuration</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Configuration</span><span class="p">]]</span>
+    <span class="n">configuration</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Configuration</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Readings of configurational fields necessary for interpreting data in the Events.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data_keys</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span>
+    <span class="n">data_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This describes the data in the Event Documents.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1153,7 +1162,11 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A human-friendly name for this data stream, such as &#39;primary&#39; or &#39;baseline&#39;.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">object_keys</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">object_classes</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Maps a Device/Signal name to the runengine process&#39; import path with __qualname__ of that object&#39;s type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">object_keys</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Maps a Device/Signal name to the names of the entries it produces in data_keys.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
