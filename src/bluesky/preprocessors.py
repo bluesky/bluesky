@@ -952,24 +952,24 @@ def lazily_stage_wrapper(plan):
     devices_staged = []
 
     def inner(msg):
-        if msg.command in COMMANDS and msg.obj not in devices_staged:
+        if msg.command in COMMANDS:
             root = root_ancestor(msg.obj)
+            if root not in devices_staged:
 
-            def new_gen():
-                # Here we insert a 'stage' message
-                ret = yield Msg("stage", root)
-                # and cache the result
-                if ret is None:
-                    # The generator may be being list-ified.
-                    # This is a hack to make that possible.
-                    ret = [root]
-                devices_staged.extend(ret)
-                # and then proceed with our regularly scheduled programming
-                yield msg
+                def new_gen():
+                    # Here we insert a 'stage' message
+                    ret = yield Msg("stage", root)
+                    # and cache the result
+                    if ret is None:
+                        # The generator may be being list-ified.
+                        # This is a hack to make that possible.
+                        ret = [root]
+                    devices_staged.extend(ret)
+                    # and then proceed with our regularly scheduled programming
+                    yield msg
 
-            return new_gen(), None
-        else:
-            return None, None
+                return new_gen(), None
+        return None, None
 
     def inner_unstage_all():
         yield from unstage_all(*reversed(devices_staged))

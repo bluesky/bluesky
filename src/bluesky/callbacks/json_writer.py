@@ -4,9 +4,9 @@ from pathlib import Path
 
 
 class JSONWriter:
-    """Writer of Bluesky docuemnts of a single run into a JSON file as an array.
+    """Writer of Bluesky documents of a single run into a JSON file as an array.
 
-    The file is created when a Start doocument is received, each new document is
+    The file is created when a Start document is received, each new document is
     written immediately, and the JSON array is closed when the "stop" document
     is received.
     """
@@ -39,7 +39,7 @@ class JSONWriter:
 
 
 class JSONLinesWriter:
-    """Writer of Bluesky docuemnts into a JSON Lines file
+    """Writer of Bluesky documents into a JSON Lines file
 
     If the file already exists, new documents will be appended to it.
     """
