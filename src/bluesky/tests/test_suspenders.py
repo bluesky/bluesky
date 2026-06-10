@@ -251,9 +251,8 @@ def test_suspend_when_changed_preserves_falsy_expected_value(hw):
     assert susp._should_suspend(1)
 
 
-def test_deferred_pause_from_suspend(hw):
+def test_deferred_pause_from_suspend(RE, hw):
     "Tests what happens when a soft pause is requested from a suspended state"
-    RE = RunEngine({})
     sig = hw.bool_sig
     scan = [Msg("checkpoint"), Msg("null")]
     msg_lst = []
