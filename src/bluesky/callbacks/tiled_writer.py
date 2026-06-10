@@ -370,11 +370,16 @@ class RunNormalizer(CallbackBase):
             # 5. If unable to do any of the above, do not set 'dtype_numpy' at all.
             dtype_descr = data_keys_spec.pop("dtype_descr", [])  # type: ignore
             dtype_str = data_keys_spec.pop("dtype_str", None)  # type: ignore
-            if dtype_numpy := (
-                list(map(list, dtype_descr))
-                or data_keys_spec.get("dtype_numpy", dtype_str)
-                or JSON_TO_NUMPY_DTYPE.get(data_keys_spec["dtype"])
-            ):
+            dtype_numpy: str | list[tuple[str, str]] | None
+            if dtype_descr:
+                dtype_numpy = [(str(name), str(dt)) for name, dt in dtype_descr]
+            elif "dtype_numpy" in data_keys_spec:
+                dtype_numpy = data_keys_spec["dtype_numpy"]
+            elif dtype_str:
+                dtype_numpy = dtype_str
+            else:
+                dtype_numpy = JSON_TO_NUMPY_DTYPE.get(data_keys_spec["dtype"])
+            if dtype_numpy:
                 data_keys_spec["dtype_numpy"] = dtype_numpy
 
         # Ensure that all event data_keys have object_name assigned (for consistency)

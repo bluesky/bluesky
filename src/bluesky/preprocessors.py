@@ -357,7 +357,8 @@ def run_wrapper(plan, *, md=None):
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
     md : dict, optional
-        metadata to be passed into the 'open_run' message
+        metadata to be passed into the 'open_run' message. Values must be
+        JSON-serializable and compatible with the event-model RunStart schema.
     """
     rs_uid = yield from open_run(md)
 

@@ -22,7 +22,7 @@ from bluesky.tests import uses_os_kill_sigint
 from .conftest import ReadableSignal
 
 # ZMQ subscription propagation is slower on Windows CI runners
-_ZMQ_CONNECTION_TIMEOUT = 2.0 if sys.platform == "win32" else 0.5
+_ZMQ_CONNECTION_TIMEOUT = 5.0 if sys.platform == "win32" else 0.5
 
 
 @pytest.fixture
@@ -116,11 +116,12 @@ def dispatcher():
         if name == "stop":
             stop_event.set()
 
-    d = RemoteDispatcher("127.0.0.1:5568")
+    # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
+    loop = asyncio.SelectorEventLoop() if sys.platform == "win32" else None
+    d = RemoteDispatcher("127.0.0.1:5568", loop=loop)
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    # TODO: Replace sleep with handshake event wait
     time.sleep(_ZMQ_CONNECTION_TIMEOUT)
     return stop_event, docs_received
 
@@ -135,8 +136,7 @@ def test_zmq_round_trip(proxy, publisher, dispatcher):
     RE = RunEngine({})
     RE.subscribe(publisher)
 
-    remote_stop_event = dispatcher[0]
-    remote_docs = dispatcher[1]
+    remote_stop_event, remote_docs = dispatcher
     local_docs = []
     det = ReadableSignal("det")
 
@@ -251,11 +251,16 @@ def test_zmq_prefix(proxy):
         if name == "stop":
             stop_event.set()
 
-    d = RemoteDispatcher("127.0.0.1:5568", prefix=b"sb")
+    d = RemoteDispatcher(
+        "127.0.0.1:5568",
+        prefix=b"sb",
+        # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
+        loop=asyncio.SelectorEventLoop() if sys.platform == "win32" else None,
+    )
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    time.sleep(_ZMQ_CONNECTION_TIMEOUT)  # TODO: Replace sleep with handshake event wait
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)
 
     local_docs = []
 
