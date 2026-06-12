@@ -360,6 +360,7 @@ class SigintHandler:
             """
             if self._released:
                 self._original_handler(signum, frame)
+                return
             now = time.monotonic()
             time_diff = now - self._last_sigint_time
 
