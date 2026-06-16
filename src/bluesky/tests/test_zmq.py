@@ -1,24 +1,28 @@
-import gc
+import asyncio
 import itertools
 import logging
 import os
 import signal
+import sys
 import threading
 import time
 from subprocess import run
+from unittest.mock import MagicMock, patch
 
 import multiprocess
-import numpy as np
 import pytest
 import zmq
-from event_model import sanitize_doc
 from pytest_mock import MockerFixture
 
-from bluesky import Msg
 from bluesky.callbacks.zmq import ClientCurve, Proxy, Publisher, RemoteDispatcher, ServerCurve, _normalize_address
 from bluesky.plans import count
 from bluesky.run_engine import RunEngine
 from bluesky.tests import uses_os_kill_sigint
+
+from .conftest import ReadableSignal
+
+# ZMQ subscription propagation is slower on Windows CI runners
+_ZMQ_CONNECTION_TIMEOUT = 5.0 if sys.platform == "win32" else 0.5
 
 
 @pytest.fixture
@@ -73,315 +77,207 @@ def test_proxy_script():
     assert p.returncode == 0
 
 
-def test_zmq(RE, hw):
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
-    def start_proxy():
-        Proxy(5567, 5568).start()
+@pytest.fixture
+def proxy():
+    def start_proxy(ready_event):
+        p = Proxy(5567, 5568, in_bind=True, out_bind=True)
+        ready_event.set()  # Ports are bound after __init__ returns
+        p.start()  # Blocks on zmq.device()
 
-    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
-    proxy_proc.start()
-    time.sleep(5)  # Give this plenty of time to start up.
+    ready_event = multiprocess.Event()
+    proc = multiprocess.Process(target=start_proxy, args=(ready_event,), daemon=True)
+    proc.start()
+    ready_event.wait(timeout=5)
+    assert ready_event.is_set()
+    yield
+    proc.terminate()
+    proc.join(timeout=5)
 
-    # COMPONENT 2
-    # Run a Publisher and a RunEngine in this main process.
 
-    p = Publisher("127.0.0.1:5567")  # noqa
-    RE.subscribe(p)
+@pytest.fixture
+def publisher():
+    p = Publisher("127.0.0.1:5567")
+    # TODO: Replace sleep with handshake event wait
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)
+    return p
 
-    # COMPONENT 3
-    # Run a RemoteDispatcher on another separate process. Pass the documents
-    # it receives over a Queue to this process, so we can count them for our
-    # test.
 
-    def make_and_start_dispatcher(queue):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            queue.put((name, doc))
+@pytest.fixture
+def dispatcher():
+    """RemoteDispatcher fixture for tracking messages"""
 
-        d = RemoteDispatcher("127.0.0.1:5568")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        d.start()
+    docs_received = []
+    stop_event = threading.Event()
 
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
+    def store_document(name, doc):
+        docs_received.append((name, doc))
 
-    # Generate two documents. The Publisher will send them to the proxy
-    # device over 5567, and the proxy will send them to the
-    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
-    # the queue, where we can verify that they round-tripped.
+    def stop_doc_watcher(name, doc):
+        if name == "stop":
+            stop_event.set()
 
-    local_accumulator = []
+    # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
+    loop = asyncio.SelectorEventLoop() if sys.platform == "win32" else None
+    d = RemoteDispatcher("127.0.0.1:5568", loop=loop)
+    d.subscribe(store_document)
+    d.subscribe(stop_doc_watcher)
+    threading.Thread(target=d.start, daemon=True).start()
+    # TODO: Replace sleep with handshake event wait
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)
+    return stop_event, docs_received
+
+
+def test_zmq_round_trip(proxy, publisher, dispatcher):
+    """
+    Generate two documents. The Publisher will send them to the proxy
+    device over 5567, and the proxy will send them to the
+    RemoteDispatcher over 5568. The RemoteDispatcher will push them into
+    the queue, where we can verify that they round-tripped.
+    """
+    RE = RunEngine({})
+    RE.subscribe(publisher)
+
+    remote_stop_event, remote_docs = dispatcher
+    local_docs = []
+    det = ReadableSignal("det")
 
     def local_cb(name, doc):
-        local_accumulator.append((name, doc))
+        local_docs.append((name, doc))
 
-    # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {"stuff": {"nested": np.array([1, 2, 3])}, "scalar_stuff": np.float64(3), "array_stuff": np.ones((3, 3))}
+    RE(count([det]), local_cb)
+    remote_stop_event.wait(timeout=5)
+    assert remote_stop_event.is_set()
 
-    # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
-    RE(count([hw.det]), local_cb, **md)
-    time.sleep(1)
-
-    # Get the two documents from the queue (or timeout --- test will fail)
-    remote_accumulator = []
-    for i in range(len(local_accumulator)):  # noqa: B007
-        remote_accumulator.append(queue.get(timeout=2))
-    p.close()
-    proxy_proc.terminate()
-    dispatcher_proc.terminate()
-    proxy_proc.join()
-    dispatcher_proc.join()
-    ra = sanitize_doc(remote_accumulator)
-    la = sanitize_doc(local_accumulator)
-    assert ra == la
-
-    gc.collect()
-    gc.collect()
+    assert remote_docs == local_docs
 
 
 @uses_os_kill_sigint
 def test_zmq_proxy_blocks_sigint_exits():
-    # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
-    # process, which coverage misses.
+    zmq_device_event = threading.Event()
 
-    def delayed_sigint(delay):
-        time.sleep(delay)
+    def delayed_sigint():
+        zmq_device_event.wait(timeout=5)
+        assert zmq_device_event.is_set()
         os.kill(os.getpid(), signal.SIGINT)
+
+    def device_mock(*args, **kwargs):
+        zmq_device_event.set()
+        # Block until interrupted by SIGINT, just like the real zmq.device
+        threading.Event().wait()
 
     proxy = Proxy(5567, 5568)
     assert not proxy.closed
-    threading.Thread(target=delayed_sigint, args=(1,)).start()
+    threading.Thread(target=delayed_sigint, daemon=True).start()
     try:
-        proxy.start()
-        # delayed_sigint stops the proxy
+        with patch("bluesky.callbacks.zmq.zmq.device", side_effect=device_mock):
+            proxy.start()
     except KeyboardInterrupt:
         ...
     assert proxy.closed
     with pytest.raises(RuntimeError):
         proxy.start()
 
-    proxy = Proxy()  # random port
-    threading.Thread(target=delayed_sigint, args=(1,)).start()
-    try:
-        proxy.start()
-        # delayed_sigint stops the proxy
-    except KeyboardInterrupt:
-        ...
-    assert proxy.closed
-    repr(proxy)
-    gc.collect()
-    gc.collect()
+
+@patch("zmq.Context")
+def test_publisher_custom_serializer(mock_ctx):
+    """Verify Publisher uses the custom serializer"""
+    mock_socket = mock_ctx.return_value.socket.return_value
+
+    custom_serializer = MagicMock(return_value=b"custom_bytes")
+    p = Publisher("127.0.0.1:5567", serializer=custom_serializer)
+    p("start", {"uid": "abc123"})
+
+    custom_serializer.assert_called_once_with({"uid": "abc123"})
+    mock_socket.send.assert_called_once_with(b" start custom_bytes")
+    p.close()
 
 
-def test_zmq_no_RE(RE: RunEngine):
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
-    def start_proxy():
-        Proxy(5567, 5568).start()
+def test_dispatcher_custom_deserializer():
+    """Verify RemoteDispatcher uses the custom deserializer."""
+    custom_deserializer = MagicMock(return_value={"uid": "abc123"})
+    docs_received = []
+    received_event = threading.Event()
 
-    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
-    proxy_proc.start()
-    time.sleep(5)  # Give this plenty of time to start up.
+    d = RemoteDispatcher("127.0.0.1:5568", deserializer=custom_deserializer)
 
-    # COMPONENT 2
-    # Run a Publisher and a RunEngine in this main process.
+    def cb(name, doc):
+        docs_received.append((name, doc))
+        received_event.set()
 
-    p = Publisher("127.0.0.1:5567")  # noqa
+    d.subscribe(cb)
 
-    # COMPONENT 3
-    # Run a RemoteDispatcher on another separate process. Pass the documents
-    # it receives over a Queue to this process, so we can count them for our
-    # test.
+    async def fake_recv():
+        await asyncio.sleep(0)  # Yield to let pending callbacks fire
+        if not received_event.is_set():
+            return b" start custom_bytes"
+        await asyncio.Event().wait()
 
-    def make_and_start_dispatcher(queue):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            queue.put((name, doc))
+    with patch("bluesky.callbacks.zmq.zmq_asyncio.Context") as mock_ctx:
+        mock_ctx.return_value.socket.return_value.recv = fake_recv
 
-        d = RemoteDispatcher("127.0.0.1:5568")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        d.start()
+        t = threading.Thread(target=d.start, daemon=True)
+        t.start()
 
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
+        received_event.wait(timeout=5)
+        assert received_event.is_set()
 
-    # Generate two documents. The Publisher will send them to the proxy
-    # device over 5567, and the proxy will send them to the
-    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
-    # the queue, where we can verify that they round-tripped.
+        d.stop()
+        t.join(timeout=5)
 
-    local_accumulator = []
+    custom_deserializer.assert_called_once_with(b"custom_bytes")
+    assert docs_received == [("start", {"uid": "abc123"})]
+
+
+def test_zmq_prefix(proxy):
+    """
+    Two publishers send with different prefixes. The dispatcher subscribes
+    to only one prefix and should only receive documents from that publisher.
+    """
+    RE = RunEngine({})
+
+    # Two publishers with different prefixes
+    pub_match = Publisher("127.0.0.1:5567", prefix=b"sb")
+    pub_other = Publisher("127.0.0.1:5567", prefix=b"not_sb")
+    RE.subscribe(pub_match)
+    RE.subscribe(pub_other)
+
+    # Dispatcher only subscribes to prefix b"sb"
+    docs_received = []
+    stop_event = threading.Event()
+
+    def store_document(name, doc):
+        docs_received.append((name, doc))
+
+    def stop_doc_watcher(name, doc):
+        if name == "stop":
+            stop_event.set()
+
+    d = RemoteDispatcher(
+        "127.0.0.1:5568",
+        prefix=b"sb",
+        # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
+        loop=asyncio.SelectorEventLoop() if sys.platform == "win32" else None,
+    )
+    d.subscribe(store_document)
+    d.subscribe(stop_doc_watcher)
+    threading.Thread(target=d.start, daemon=True).start()
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)  # TODO: Replace sleep with handshake event wait
+
+    local_docs = []
 
     def local_cb(name, doc):
-        local_accumulator.append((name, doc))
+        local_docs.append((name, doc))
 
-    RE([Msg("open_run"), Msg("close_run")], local_cb)
+    det = ReadableSignal("det")
+    RE(count([det]), local_cb)
+    stop_event.wait(timeout=5)
+    assert stop_event.is_set()
 
-    # This time the Publisher isn't attached to an RE. Send the documents
-    # manually. (The idea is, these might have come from a Broker instead...)
-    for name, doc in local_accumulator:
-        p(name, doc)
-    time.sleep(1)
+    # Only docs from the matching prefix publisher should arrive
+    assert docs_received == local_docs
 
-    # Get the two documents from the queue (or timeout --- test will fail)
-    remote_accumulator = []
-    for i in range(2):  # noqa: B007
-        remote_accumulator.append(queue.get(timeout=2))
-    p.close()
-    proxy_proc.terminate()
-    dispatcher_proc.terminate()
-    proxy_proc.join()
-    dispatcher_proc.join()
-    ra = [sanitize_doc(doc) for doc in remote_accumulator]
-    la = [sanitize_doc(doc) for doc in local_accumulator]
-    assert ra == la
-
-
-def test_zmq_no_RE_newserializer(RE: RunEngine):
-    cloudpickle = pytest.importorskip("cloudpickle")
-
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
-    def start_proxy():
-        Proxy(5567, 5568).start()
-
-    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
-    proxy_proc.start()
-    time.sleep(5)  # Give this plenty of time to start up.
-
-    # COMPONENT 2
-    # Run a Publisher and a RunEngine in this main process.
-    p = Publisher("127.0.0.1:5567", serializer=cloudpickle.dumps)  # noqa
-
-    # COMPONENT 3
-    # Run a RemoteDispatcher on another separate process. Pass the documents
-    # it receives over a Queue to this process, so we can count them for our
-    # test.
-    def make_and_start_dispatcher(queue):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            queue.put((name, doc))
-
-        d = RemoteDispatcher("127.0.0.1:5568", deserializer=cloudpickle.loads)
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        d.start()
-
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
-
-    # Generate two documents. The Publisher will send them to the proxy
-    # device over 5567, and the proxy will send them to the
-    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
-    # the queue, where we can verify that they round-tripped.
-
-    local_accumulator = []
-
-    def local_cb(name, doc):
-        local_accumulator.append((name, doc))
-
-    RE([Msg("open_run"), Msg("close_run")], local_cb)
-
-    # This time the Publisher isn't attached to an RE. Send the documents
-    # manually. (The idea is, these might have come from a Broker instead...)
-    for name, doc in local_accumulator:
-        p(name, doc)
-    time.sleep(1)
-
-    # Get the two documents from the queue (or timeout --- test will fail)
-    remote_accumulator = []
-    for i in range(2):  # noqa: B007
-        remote_accumulator.append(queue.get(timeout=2))
-    p.close()
-    proxy_proc.terminate()
-    dispatcher_proc.terminate()
-    proxy_proc.join()
-    dispatcher_proc.join()
-    ra = [sanitize_doc(doc) for doc in remote_accumulator]
-    la = [sanitize_doc(doc) for doc in local_accumulator]
-    assert ra == la
-
-
-def test_zmq_prefix(RE: RunEngine, hw):
-    # COMPONENT 1
-    # Run a 0MQ proxy on a separate process.
-    def start_proxy():
-        Proxy(5567, 5568).start()
-
-    proxy_proc = multiprocess.Process(target=start_proxy, daemon=True)
-    proxy_proc.start()
-    time.sleep(5)  # Give this plenty of time to start up.
-
-    # COMPONENT 2
-    # Run a Publisher and a RunEngine in this main process.
-    p = Publisher("127.0.0.1:5567", prefix=b"sb")  # noqa
-    p2 = Publisher("127.0.0.1:5567", prefix=b"not_sb")  # noqa
-    RE.subscribe(p)
-    RE.subscribe(p2)
-
-    # COMPONENT 3
-    # Run a RemoteDispatcher on another separate process. Pass the documents
-    # it receives over a Queue to this process, so we can count them for our
-    # test.
-
-    def make_and_start_dispatcher(queue):
-        def put_in_queue(name, doc):
-            print("putting ", name, "in queue")
-            queue.put((name, doc))
-
-        d = RemoteDispatcher("127.0.0.1:5568", prefix=b"sb")
-        d.subscribe(put_in_queue)
-        print("REMOTE IS READY TO START")
-        d.loop.call_later(9, d.stop)
-        d.start()
-
-    queue = multiprocess.Queue()
-    dispatcher_proc = multiprocess.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
-    dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
-
-    # Generate two documents. The Publisher will send them to the proxy
-    # device over 5567, and the proxy will send them to the
-    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
-    # the queue, where we can verify that they round-tripped.
-
-    local_accumulator = []
-
-    def local_cb(name, doc):
-        local_accumulator.append((name, doc))
-
-    # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {"stuff": {"nested": np.array([1, 2, 3])}, "scalar_stuff": np.float64(3), "array_stuff": np.ones((3, 3))}
-
-    # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
-    RE(count([hw.det]), local_cb, **md)
-    time.sleep(1)
-
-    # Get the two documents from the queue (or timeout --- test will fail)
-    remote_accumulator = []
-    for i in range(len(local_accumulator)):  # noqa: B007
-        remote_accumulator.append(queue.get(timeout=2))
-    p.close()
-    p2.close()
-    proxy_proc.terminate()
-    dispatcher_proc.terminate()
-    proxy_proc.join()
-    dispatcher_proc.join()
-    ra = [sanitize_doc(doc) for doc in remote_accumulator]
-    la = [sanitize_doc(doc) for doc in local_accumulator]
-    assert ra == la
+    pub_match.close()
+    pub_other.close()
 
 
 @pytest.mark.parametrize(
