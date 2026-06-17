@@ -613,7 +613,7 @@ class RunEngine:
         --------
         >>> from bluesky import RunEngine
         >>> RE = RunEngine(during_task=CustomDuringTask())
-        >>> RE.during_task 
+        >>> RE.during_task
         """
         return self._during_task
 
