@@ -604,6 +604,32 @@ class RunEngine:
         # return as a list, not lazy loader, no surprises...
         return list(self._command_registry.keys())
 
+    @property
+    def during_task(self):
+        """
+        Property to access during_task after RunEngine initialization
+
+        Examples
+        --------
+        >>> from bluesky import RunEngine
+        >>> RE = RunEngine(during_task=CustomDuringTask())
+        >>> RE.during_task 
+        """
+        return self._during_task
+
+    @during_task.setter
+    def during_task(self, value):
+        """
+        Property to set during_task after the RunEngine has initialized
+
+        Examples
+        --------
+        >>> from bluesky import RunEngine
+        >>> RE = RunEngine()
+        >>> RE.during_task = CustomDuringTask()
+        """
+        self._during_task = value
+
     def print_command_registry(self, verbose=False):
         """
         This conveniently prints the command registry of available

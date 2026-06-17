@@ -49,7 +49,7 @@ from bluesky.run_engine import (
 from bluesky.suspenders import SuspendBoolHigh
 from bluesky.tests import requires_ophyd, uses_os_kill_sigint
 from bluesky.tests.utils import DocCollector, MsgCollector
-from bluesky.utils import SigintHandler
+from bluesky.utils import DefaultDuringTask, DuringTask, SigintHandler
 
 from .utils import _careful_event_set, _fabricate_asycio_event
 
@@ -79,6 +79,28 @@ def test_panic_trap(RE):
 def test_state_is_readonly(RE):
     with pytest.raises(AttributeError):
         RE.state = "running"
+
+
+def test_during_task_property(RE):
+    # Default during_task is a DefaultDuringTask instance
+    assert isinstance(RE.during_task, DefaultDuringTask)
+
+    # The getter returns the underlying private attribute
+    assert RE.during_task is RE._during_task
+
+    # The setter replaces it and is reflected by the getter
+    custom = DuringTask()
+    RE.during_task = custom
+    assert RE.during_task is custom
+    assert RE._during_task is custom
+
+
+def test_during_task_constructor_injection():
+    # during_task passed to the constructor is exposed via the property
+    custom = DuringTask()
+    RE = RunEngine({}, during_task=custom)
+    assert RE.during_task is custom
+    assert RE._during_task is custom
 
 
 @pytest.mark.parametrize(
