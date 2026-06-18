@@ -83,12 +83,14 @@ class Status(Protocol):
         """If done return whether the operation was successful."""
         ...
 
+
 @runtime_checkable
 class StatusWithResult(Status, Protocol[R]):
     @abstractmethod
     def result(self, timeout: float | None = 0.0) -> R:
         """Return whatever result the Status is meant to produce when it is done."""
         ...
+
 
 @runtime_checkable
 class HasName(Protocol):
