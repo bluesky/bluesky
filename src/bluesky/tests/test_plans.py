@@ -722,3 +722,21 @@ def test_input_plan(RE):
 
     with patch("bluesky.utils.sys.stdin.readline", return_value="answer\n"):
         RE(plan())
+
+
+def test_lazily_stage_decorator_with_child_signals(RE, hw):
+    det = hw.det
+
+    @bpp.lazily_stage_decorator()
+    @bpp.run_decorator(md={})
+    def lazy_stage_list_scan(*args, **kwargs):
+        return (yield from bpp.stub_wrapper(bp.list_scan(*args, **kwargs)))
+
+    with (
+        patch.object(det, "stage", wraps=det.stage) as det_stage,
+        patch.object(det, "unstage", wraps=det.unstage) as det_unstage,
+    ):
+        RE(lazy_stage_list_scan([det], det.sigma, [1, 2, 3]))
+
+        assert det_stage.call_count == 1
+        assert det_unstage.call_count == 1

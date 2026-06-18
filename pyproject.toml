@@ -86,11 +86,12 @@ dev = [
     "suitcase-mongo",
     "suitcase-msgpack",
     "tifffile",
+    "tiled[server]",
     "tox-direct",
     "types-mock",
-    "tiled[all]",
     "vendoring",
     "zict",
+    "pytest-mock>=3.15.1",
 ]
 ipython = ["ipython"]
 zmq = ["pyzmq"]

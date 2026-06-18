@@ -138,7 +138,7 @@ class SuspenderBase(metaclass=ABCMeta):
                 if self._ev is None and self.RE is not None:
                     self.__make_event()
                     if self._ev is None:
-                        raise RuntimeError("Could not create the ")
+                        raise RuntimeError("Could not create the suspender event")
                     cb = partial(
                         self.RE.request_suspend,
                         self._ev.wait,
@@ -156,15 +156,19 @@ class SuspenderBase(metaclass=ABCMeta):
         """Make or return the asyncio.Event to use as a bridge."""
         assert self._lock.locked()
         if self._ev is None and self.RE is not None:
-            th_ev = threading.Event()
-
-            def really_make_the_event():
+            if threading.get_ident() == getattr(self.RE._loop, "_thread_id", "unknown"):
                 self._ev = asyncio.Event()
-                th_ev.set()
+                return self._ev
+            else:
+                th_ev = threading.Event()
 
-            h = self.RE._loop.call_soon_threadsafe(really_make_the_event)
-            if not th_ev.wait(0.1):
-                h.cancel()
+                def really_make_the_event():
+                    self._ev = asyncio.Event()
+                    th_ev.set()
+
+                h = self.RE._loop.call_soon_threadsafe(really_make_the_event)
+                if not th_ev.wait(0.1):
+                    h.cancel()
         return self._ev
 
     def __set_event(self, loop):
@@ -663,7 +667,7 @@ class SuspendWhenChanged(SuspenderBase):
         tripped_message="",
         **kwargs,
     ):
-        self.expected_value = expected_value or signal.value
+        self.expected_value = signal.value if expected_value is None else expected_value
         self.allow_resume = allow_resume
         super().__init__(
             signal, sleep=sleep, pre_plan=pre_plan, post_plan=post_plan, tripped_message=tripped_message, **kwargs

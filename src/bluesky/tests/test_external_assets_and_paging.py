@@ -165,9 +165,9 @@ def describe_pv(self: Named) -> dict[str, DataKey]:
     return {f"{self.name}-pv": DataKey(source="pv", dtype="number", shape=[])}
 
 
-def read_pv(self: Named) -> dict[str, Reading]:
+def read_pv(self: Named, value=5.8) -> dict[str, Reading]:
     """Read a single data_key from a PV"""
-    return {f"{self.name}-pv": Reading(value=5.8, timestamp=123)}
+    return {f"{self.name}-pv": Reading(value=value, timestamp=123)}
 
 
 class PvAndDatumReadable(Named, Readable, WritesExternalAssets):

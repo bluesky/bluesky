@@ -3,8 +3,10 @@ import threading
 import time as ttime
 from collections import defaultdict
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
+from event_model.documents.event_descriptor import DataKey
 
 import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
@@ -69,7 +71,8 @@ from bluesky.preprocessors import (
     subs_wrapper,
     suspend_wrapper,
 )
-from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
+from bluesky.protocols import Descriptor, Locatable, Location, Movable, Readable, Reading, Status
+from bluesky.tests.test_external_assets_and_paging import DocHolder, Named, describe_pv, read_pv
 from bluesky.utils import IllegalMessageSequence, all_safe_rewind
 
 
@@ -971,3 +974,85 @@ def test_custom_stream_name(RE, hw):
 
     with pytest.raises(IllegalMessageSequence):
         RE(count([hw.det], 3, per_shot=one_shot))
+
+
+class MultiConfiguredDevice(Named, Readable, Movable[int]):
+    """Device to test that read_configuration cache is updated for a new stream. This is done by
+    "configuring" the device and the read_configuration should show a new value."""
+
+    def __init__(self, motor, name):
+        self.motor = motor
+        self.read_value = 10
+        super().__init__(name)
+
+    def set(self, config_value: int) -> Status:
+        return self.motor.set(config_value)
+
+    def read(self) -> dict[str, Reading]:
+        return read_pv(self, self.read_value)
+
+    def read_configuration(self) -> dict[str, Reading]:
+        return read_pv(self, self.motor.position)
+
+    def describe(self) -> dict[str, DataKey]:
+        return describe_pv(self)
+
+    def describe_configuration(self) -> dict[str, DataKey]:
+        return describe_pv(self)
+
+
+def multi_stream_plan(device: MultiConfiguredDevice, value_configuration: list[int], iterations: int):
+    """Plan that configures a device by setting a value and then reading the device. This is done X number
+    of times. Each time, it saves it to a new stream so we get new device configuration each time."""
+    yield from open_run()
+    for v in value_configuration:
+        yield from abs_set(device, v, wait=True)
+        for _ in range(iterations):
+            yield from trigger_and_read([device], name=f"test{v}")
+    yield from close_run()
+
+
+def test_device_has_new_read_configuration_once_per_stream(RE, hw):
+    docs = DocHolder()
+    device = MultiConfiguredDevice(hw.motor, "device")
+    pv = f"{device.name}-pv"
+
+    config_values = [0, 1, 2, 3]
+    iterations = 2
+    RE(multi_stream_plan(device, config_values, iterations), docs.append)
+
+    docs.assert_emitted(start=1, descriptor=len(config_values), event=len(config_values) * iterations, stop=1)
+    for v in config_values:
+        assert docs["descriptor"][v]["name"] == f"test{v}"
+        assert docs["descriptor"][v]["configuration"][device.name]["data"] == {pv: v}
+        for i in range(1, iterations + 1):
+            assert docs["event"][i + v]["data"][pv] == device.read_value
+
+
+def test_cache_used_correct_number_of_times_for_object(RE, hw):
+    device = MultiConfiguredDevice(hw.motor, "device")
+    config_values = [0, 1, 2, 3]
+    iterations = 2
+
+    expected_config_calls = len(config_values)  # New config cache used once per stream.
+    expected_config_describe_calls = len(config_values)  # New config_describe cache used once per stream.
+    expected_read_calls = expected_config_calls * iterations  # New read cache used on each event.
+    expected_read_describe_calls = len(config_values)  # New read_describe used once per stream.
+
+    mock_read_config = Mock(wraps=device.read_configuration)
+    device.read_configuration = mock_read_config
+    mock_describe_config = Mock(wraps=device.describe_configuration)
+    device.describe_configuration = mock_describe_config
+
+    mock_read = Mock(wraps=device.read)
+    device.read = mock_read
+    mock_describe = Mock(wraps=device.describe)
+    device.describe = mock_describe
+
+    RE(multi_stream_plan(device, config_values, iterations))
+
+    assert mock_read_config.call_count == expected_config_calls
+    assert mock_describe_config.call_count == expected_config_describe_calls
+
+    assert mock_read.call_count == expected_read_calls
+    assert mock_describe.call_count == expected_read_describe_calls

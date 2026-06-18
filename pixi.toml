@@ -1,0 +1,16 @@
+[workspace]
+authors = ["thomashopkins32 <thopkins1@bnl.gov>"]
+channels = ["conda-forge"]
+name = "bluesky"
+platforms = ["linux-64"]
+version = "1.15.1"
+
+[tasks]
+
+[dependencies]
+python = "*"
+pip = ">=26.1.2,<27"
+graphviz = ">=14.1.2,<15"
+
+[pypi-dependencies]
+bluesky = { path = ".", editable = true, extras = ["all"] }
