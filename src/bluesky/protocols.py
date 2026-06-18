@@ -422,7 +422,7 @@ class Pausable(Protocol):
 @runtime_checkable
 class Stoppable(Protocol):
     @abstractmethod
-    def stop(self, success=True) -> SyncOrAsync[None]:
+    def stop(self, *, success: bool = True) -> SyncOrAsync[None]:
         """Safely stop a device that may or may not be in motion.
 
         The argument ``success`` is a boolean.
