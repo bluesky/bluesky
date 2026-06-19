@@ -30,6 +30,7 @@ from bluesky._vendor.super_state_machine.machines import StateMachine
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
 from .protocols import (
+    Checkable,
     Flyable,
     Locatable,
     Movable,
@@ -569,6 +570,7 @@ class RunEngine:
             "input": self._input,
             "install_suspender": self._install_suspender,
             "remove_suspender": self._remove_suspender,
+            "check_value": self._check_value,
         }
 
         # public dispatcher for callbacks
@@ -2218,6 +2220,28 @@ class RunEngine:
         A no-op message, mainly for debugging and testing.
         """
         return type(self)
+
+    async def _check_value(self, msg: Msg) -> None:
+        """Check that a value is acceptable to a Checkable object.
+
+        Should be used before attempting a `set()` operation
+        with the given value.
+
+        Expected message object is:
+
+            Msg('check_value', obj, value)
+
+        where arguments are passed through to `obj.check_value(value)`.
+
+        If the value is not acceptable by the device,
+        it should raise a detailed exception with a rationale.
+        """
+        obj = check_supports(msg.obj, Checkable)
+
+        # TODO: for reviewer, should this be wrapped
+        # in a try-except clause or let it raise naturally
+        # inside a plan?
+        obj.check_value(*msg.args, **msg.kwargs)
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
     async def _set(self, msg):
