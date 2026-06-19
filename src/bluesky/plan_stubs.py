@@ -608,39 +608,15 @@ def trigger(
 @plan
 def execute(
         obj: Executable,
-        *args,
         group: Hashable | None = None,
         wait: bool = False,
-        **kwargs,
+        execute_args: tuple[Any, ...] | None = None,
+        execute_kwargs: dict[str, Any] | None = None,
 ) -> MsgGenerator[Status]:
-    """
-    Execute a command on an executable device, optionally waiting for it to complete.
-    The following keywords are reserved and will not be passed through to
-    ``obj.execute()``.
-
-    Reserved Keywords: wait, group, obj
-
-    Parameters
-    ----------
-    obj : Executable
-        Device with an ``execute`` method
-    args :
-        passed through to ``obj.execute()``
-    group : string (or any hashable object), optional
-        identifier used by ``wait``
-    wait : boolean, optional
-        If True, wait for completion before processing any more messages.
-        False by default.
-    kwargs :
-        passed through to ``obj.execute()``
-
-    Yields
-    ------
-    msg : Msg
-        Msg('execute', obj, *args, **kwargs)
-
-    """
-    return (yield Msg("execute", obj, *args, **kwargs, group=group, wait=wait))
+    ret = yield Msg("execute", obj, group=group, execute_args=execute_args, execute_kwargs=execute_kwargs)
+    if wait:
+        yield Msg("wait", None, group=group)
+    return ret
 
 
 @plan

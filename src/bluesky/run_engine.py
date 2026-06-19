@@ -2255,18 +2255,13 @@ class RunEngine:
             Msg('execute', obj, *args, **kwargs)
         """
         obj = check_supports(msg.obj, Executable)
-        args = msg.args
-        kwargs = dict(msg.kwargs)
-        warn_if_msg_args_or_kwargs(msg, obj.execute, args, kwargs)
-        wait = kwargs.pop("wait", False)
-        group = kwargs.pop("group", None)
-        if wait:
-            ret = await maybe_await(obj.execute(*msg.args, **kwargs))
-            return ret
-        else:
-            ret = obj.execute(*msg.args, **kwargs)
-            self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
-            return ret
+        args = msg.execute_args
+        kwargs = dict(msg.execute_kwargs)
+        group = msg.group
+
+        ret = obj.execute(*args, **kwargs)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
+        return ret
 
     async def _trigger(self, msg):
         """
