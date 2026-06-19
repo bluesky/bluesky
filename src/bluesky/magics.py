@@ -236,6 +236,19 @@ def is_positioner(dev):
     return hasattr(dev, "position")
 
 
+def _round(value, decimals):
+    """Round value; return str if np.round yields an ndarray.
+
+    PseudoPositioner positions and limits are namedtuples; np.round
+    converts them to ndarray, which rejects string format specs under
+    numpy 2.x.
+    """
+    result = np.round(value, decimals=decimals)
+    if isinstance(result, np.ndarray):
+        return str(result)
+    return result
+
+
 def _print_positioners(positioners, sort=True, precision=6, prefix=""):
     """
     This will take a list of positioners and try to print them.
@@ -272,20 +285,20 @@ def _print_positioners(positioners, sort=True, precision=6, prefix=""):
                 prec = int(p.precision)
             except Exception:
                 prec = precision
-            value = np.round(v, decimals=prec)
+            value = _round(v, decimals=prec)
             try:
                 low_limit, high_limit = p.limits
             except Exception as exc:
                 low_limit = high_limit = exc.__class__.__name__
             else:
-                low_limit = np.round(low_limit, decimals=prec)
-                high_limit = np.round(high_limit, decimals=prec)
+                low_limit = _round(low_limit, decimals=prec)
+                high_limit = _round(high_limit, decimals=prec)
             try:
                 offset = p.user_offset.get()
             except Exception as exc:
                 offset = exc.__class__.__name__
             else:
-                offset = np.round(offset, decimals=prec)
+                offset = _round(offset, decimals=prec)
         else:
             value = v.__class__.__name__  # e.g. 'DisconnectedError'
             low_limit = high_limit = offset = ""

@@ -17,6 +17,7 @@ import warnings
 from collections import namedtuple
 from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
+from enum import Enum
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
@@ -224,9 +225,21 @@ class SignalHandler:
       probably only see one of them when you unblock this signal.
 
     https://www.gnu.org/software/libc/manual/html_node/Checking-for-Pending-Signals.html
+
+    .. deprecated:
+
+        This class is deprecated and will be removed in a future version of Bluesky.
+        See :ref:`SigintHandler` for an example on how to build a custom one.
+
     """
 
     def __init__(self, sig, log=None):
+        warnings.warn(
+            f"{SignalHandler.__name__} is deprecated and will be removed in a future version of Bluesky. "
+            f"See {SigintHandler.__name__} for an example on how to build a custom one.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.sig = sig
         self.interrupted = False
         self.count = 0
@@ -267,57 +280,116 @@ class SignalHandler:
     def handle_signals(self): ...
 
 
-class SigintHandler(SignalHandler):
+class PauseRequest(Enum):
+    NONE = 0
+    SOFT = 1
+    HARD = 2
+
+
+class SigintHandler:
+    """
+    Context manager that replaces a `KeyboardInterrupt` with a mechanism to
+    pause the Bluesky RunEngine. This allows you to press `Ctrl + C` during
+    a running plan and have the RunEngine pause.
+
+    On the first SIGINT, it will request a 'deferred pause' or 'soft pause'. The RunEngine will
+    pause at the next checkpoint.
+
+    On each subsequent SIGINT within 10 seconds, it will request a 'hard pause'. The RunEngine
+    will pause immediately.
+
+    However, if more than 10 SIGINTs are processed within 10 seconds, it will restore
+    and execute the original signal handler (typically `KeyboardInterrupt`).
+
+    Each SIGINT must be spaced by at least 100ms to count (to represent intentional human input).
+
+    The count will reset after 10 seconds since the last SIGINT processed.
+    """
+
     def __init__(self, RE):
-        super().__init__(signal.SIGINT, log=RE.log)
-        self.RE = RE
-        self.last_sigint_time = None  # time most recent SIGINT was processed
+        self._RE = RE
+        self._last_sigint_time = time.monotonic()
+        self._request = PauseRequest.NONE
+        self._released = True
+        self._request_event = threading.Event()
 
-    def __enter__(self):
-        return super().__enter__()
-
-    def handle_signals(self):
-        # Check for pause requests from keyboard.
-        # TODO, there is a possible race condition between the two
-        # pauses here
-        if self.RE.state.is_running and (not self.RE._interrupted):
-            if self.last_sigint_time is None or time.time() - self.last_sigint_time > 10:
-                # reset the counter to 1
-                # It's been 10 seconds since the last SIGINT. Reset.
-                self.count = 1
-                if self.last_sigint_time is not None:
-                    self.log.debug("It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.")
-
-                # weeee push these to threads to not block the main thread
-                def maybe_defer_pause():
-                    try:
-                        self.RE.request_pause(True)
-                    except TransitionError:
-                        ...
-
-                threading.Thread(target=maybe_defer_pause).start()
+    def _watch_request(self) -> None:
+        while not self._released:
+            if self._request == PauseRequest.SOFT:
                 print(
                     "A 'deferred pause' has been requested. The "
                     "RunEngine will pause at the next checkpoint. "
                     "To pause immediately, hit Ctrl+C again in the "
                     "next 10 seconds."
                 )
+                try:
+                    self._RE.request_pause(defer=True)
+                except TransitionError:
+                    ...
+            elif self._request == PauseRequest.HARD:
+                print("A 'hard pause' has been requested.")
+                try:
+                    self._RE.request_pause(defer=False)
+                except TransitionError:
+                    ...
 
-                self.last_sigint_time = time.time()
-            elif self.count == 2:
-                print("trying a second time")
-                # - Ctrl-C twice within 10 seconds -> hard pause
-                self.log.debug("RunEngine detected two SIGINTs. A hard pause will be requested.")
+            # Block until next request
+            self._request_event.wait()
+            self._request_event.clear()
 
-                # weeee push these to threads to not block the main thread
-                def maybe_prompt_pause():
-                    try:
-                        self.RE.request_pause(False)
-                    except TransitionError:
-                        ...
+    def __enter__(self):
+        # Setup internal state tracking
+        self._count = 0
+        self._last_sigint_time = time.monotonic()
+        self._released = False
+        self._request = PauseRequest.NONE
+        self._original_handler = signal.getsignal(signal.SIGINT)
 
-                threading.Thread(target=maybe_prompt_pause).start()
-            self.last_sigint_time = time.time()
+        # Spawn request thread
+        self._request_thread = threading.Thread(target=self._watch_request, daemon=True)
+        self._request_thread.start()
+
+        def handler(signum, frame):
+            """
+            Assumptions:
+            - `self._last_sigint_time` is initialized on __enter__ with timestamp
+            - `self._count` is initialized on __enter__ with 0
+            This callback must run very fast and avoid heavy work (no threads, prints,
+            substantial I/O, etc.). Lightweight lock operations like Event.set() are
+            acceptable.
+            """
+            if self._released:
+                self._original_handler(signum, frame)
+            now = time.monotonic()
+            time_diff = now - self._last_sigint_time
+
+            if time_diff > 10 or self._count == 0:
+                # First pause request
+                self._last_sigint_time = now
+                self._count = 1
+                self._request = PauseRequest.SOFT
+                self._request_event.set()
+            elif time_diff > 0.1 and self._count > 0:
+                # Second or more pause requests
+                self._last_sigint_time = now
+                self._count += 1
+                if self._count < 11:
+                    self._request = PauseRequest.HARD
+                    self._request_event.set()
+                else:
+                    self._released = True
+                    self._request_event.set()
+                    self._original_handler(signum, frame)
+
+        # Install handler callback
+        signal.signal(signal.SIGINT, handler)
+        return self
+
+    def __exit__(self, type, value, tb) -> None:
+        signal.signal(signal.SIGINT, self._original_handler)
+        if not self._released:
+            self._released = True
+            self._request_event.set()
 
 
 class CallbackRegistry:
@@ -968,8 +1040,8 @@ def get_history():
             return historydict.HistoryDict(":memory:")
 
 
-_QT_KICKER_INSTALLED = {}
-_NB_KICKER_INSTALLED = {}
+_QT_KICKER_INSTALLED: dict = {}
+_NB_KICKER_INSTALLED: dict = {}
 
 
 def install_kicker(loop=None, update_rate=0.03):
@@ -2034,22 +2106,3 @@ def is_plan(bs_plan):
     """
 
     return inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False)
-
-
-def truncate_json_overflow(data):
-    """Truncate large numerical values to avoid overflow issues when serializing as JSON.
-
-    This preemptively truncates large integers and floats with zero fractional part to fit within
-    the JSON limits for integers, i.e. (-2^53, 2^53 - 1], in case the values are implicitly
-    converted during serialization.
-    """
-    if isinstance(data, collections.abc.Mapping):
-        return {k: truncate_json_overflow(v) for k, v in data.items()}
-    elif isinstance(data, collections.abc.Iterable) and not isinstance(data, str):
-        # Handle lists, tuples, arrays, etc., but not strings
-        return [truncate_json_overflow(item) for item in data]
-    elif isinstance(data, (int, float)) and not (data % 1) and not (1 - 2**53 <= data <= 2**53 - 1):
-        return min(max(data, 1 - 2**53), 2**53 - 1)  # Truncate integers to fit in JSON (53 bits max)
-    elif isinstance(data, float) and (data < -1.7976e308 or data > 1.7976e308):
-        return min(max(data, -1.7976e308), 1.7976e308)  # (Approx.) truncate floats to fit in JSON to avoid inf
-    return data

@@ -1217,11 +1217,13 @@ class RunBundler:
                 await self._prepare_stream(name, obj_set)
                 continue
 
-    async def _cache_describe_collect(self, obj):
+    async def _cache_describe_collect(self, obj: Flyable):
         "Read the object's describe_collect and cache it."
         if obj not in self._describe_collect_cache:
-            obj = check_supports(obj, Collectable)
-            c: dict[str, DataKey] | dict[str, dict[str, DataKey]] = await maybe_await(obj.describe_collect())
+            collectable_obj = cast(Collectable, check_supports(obj, Collectable))
+            c: dict[str, DataKey] | dict[str, dict[str, DataKey]] = await maybe_await(
+                collectable_obj.describe_collect()
+            )
             self._describe_collect_cache[obj] = c
 
     async def _ensure_cached(self, obj, collect: bool = False):
