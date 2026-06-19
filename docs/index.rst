@@ -56,7 +56,7 @@ Index
    :hidden:
    :caption: Data Access and Management
 
-   databroker <https://blueskyproject.io/databroker>
+   tiled <https://blueskyproject.io/tiled>
    amostra <https://nsls-ii.github.io/amostra>
    datamuxer <https://nsls-ii.github.io/datamuxer>
    suitcase <https://blueskyproject.io/suitcase>
