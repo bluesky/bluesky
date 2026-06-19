@@ -88,7 +88,21 @@ class Status(Protocol):
 class StatusWithResult(Status, Protocol[R]):
     @abstractmethod
     def result(self, timeout: float | None = 0.0) -> R:
-        """Return whatever result the Status is meant to produce when it is done."""
+        """Return whatever result the Status is meant to produce when it is done.
+
+        If a given timeout expires, it should raise an exception.
+
+        Parameters
+        ----------
+        timeout: float | None
+            Time to wait for the result in seconds. If None, wait indefinetely.
+            Default is 0 (return immediatly).
+
+        Returns
+        -------
+        R
+            The result of the operation when it is done.
+        """
         ...
 
 
