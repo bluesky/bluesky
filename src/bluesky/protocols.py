@@ -87,16 +87,13 @@ class Status(Protocol):
 @runtime_checkable
 class StatusWithResult(Status, Protocol[R]):
     @abstractmethod
-    def result(self, timeout: float | None = 0.0) -> R:
+    def result(self) -> R:
         """Return whatever result the Status is meant to produce when it is done.
 
-        If a given timeout expires, it should raise an exception.
+        It replicates the behavior of `asyncio.Future.result()<https://docs.python.org/3/library/asyncio-future.html#asyncio.Future.result>`_.
 
-        Parameters
-        ----------
-        timeout: float | None
-            Time to wait for the result in seconds. If None, wait indefinetely.
-            Default is 0 (return immediatly).
+        If a result is not available yet, it should raise `asyncio.InvalidStateError<https://docs.python.org/3/library/asyncio-exceptions.html#asyncio.InvalidStateError>`_
+        (or a subclass of it).
 
         Returns
         -------
