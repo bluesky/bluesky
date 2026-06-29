@@ -1972,19 +1972,6 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
-    async def _perform_single_reading(self, obj, *read_args, **read_kwargs):
-        """Perform a reading on a single device."""
-
-        ret = await maybe_await(obj.read(*read_args, **read_kwargs))
-
-        if ret is None:
-            raise RuntimeError(
-                f"The read of {obj.name} returned None. "
-                "This is a bug in your object implementation, "
-                "`read` must return a dictionary."
-            )
-        return ret
-
     async def _read(self, msg):
         """
         Add a reading to the open event bundle.
@@ -2015,8 +2002,8 @@ class RunEngine:
             else:
                 non_coro_objs.append(obj)
 
-        coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in coro_objs])
-        non_coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in non_coro_objs])
+        coro_read_rets = await asyncio.gather(*[obj.read() for obj in coro_objs])
+        non_coro_read_rets = [obj.read() for obj in non_coro_objs]
 
         if (current_run := self._run_bundlers.get(run_key)) is not None:
             await current_run.read(
