@@ -198,8 +198,9 @@ def test_one_shot_works_asynchronously(RE, sync_devices, async_devices):
 
 
 @requires_ophyd_async
-def test_read_all_one_message_per_device(RE, async_devices):
+def test_read_all_one_message_per_device(RE, async_devices, monkeypatch):
     device1, device2 = async_devices
+    monkeypatch.setenv("BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE", "1")
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
     messages = []
@@ -213,19 +214,19 @@ def test_read_all_one_message_per_device(RE, async_devices):
         plan = msg_mutator(plan, rewrite_pos)
         return (yield from plan)
 
-    def plan(one_message_per_device: bool):
+    def plan():
         yield from bps.open_run()
         yield from bps.create()
-        yield from bps.read(*async_devices, one_message_per_device=one_message_per_device)
+        yield from bps.read(*async_devices)
         yield from bps.save()
         yield from bps.create()
-        yield from bps.read(*async_devices, one_message_per_device=one_message_per_device)
+        yield from bps.read(*async_devices)
         yield from bps.save()
         yield from bps.close_run()
 
     RE.preprocessors.append(add_messages_to_cache)
 
-    RE(plan(True), lambda name, doc: output[name].append(doc))
+    RE(plan(), lambda name, doc: output[name].append(doc))
 
     assert [msg[0] for msg in messages] == [
         "open_run",
@@ -235,21 +236,6 @@ def test_read_all_one_message_per_device(RE, async_devices):
         "save",
         "create",
         "read",
-        "read",
-        "save",
-        "close_run",
-    ]
-
-    messages.clear()
-
-    RE(plan(False), lambda name, doc: output[name].append(doc))
-
-    assert [msg[0] for msg in messages] == [
-        "open_run",
-        "create",
-        "read",
-        "save",
-        "create",
         "read",
         "save",
         "close_run",

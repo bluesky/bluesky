@@ -147,25 +147,14 @@ def drop() -> MsgGenerator:
     return (yield Msg("drop"))
 
 
-BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE = os.environ.get("BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE") == "1"
-
-
 @plan
-def read(
-    *objs: Sequence[Readable[Any]], one_message_per_device: bool = BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
-) -> MsgGenerator[Reading]:
+def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
     """
     Read from devices and add to the current bundle of readings.
 
     Parameters
     ----------
     objs : Readable objects.
-    one_message_per_device:
-        If ``True`` then there will be one Msg per device, which means that
-        asynchronous devices will not be gathered.
-
-        The default argument is ``False``, and true if "BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE=1"
-        is set as an environment variable when the python process starts.
 
     Yields
     ------
@@ -179,7 +168,13 @@ def read(
         Reading object representing information recorded
     """
 
-    if one_message_per_device:
+    # If ``True`` then there will be one Msg per device, which means that
+    # asynchronous devices will not be gathered.;
+    legacy_one_message_per_device = os.environ.get("BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE", "").lower() in (
+        "1",
+        "true",
+    )
+    if legacy_one_message_per_device:
         reading = {}
         for obj in objs:
             partial_reading = yield Msg("read", obj)
