@@ -200,7 +200,7 @@ def test_one_shot_works_asynchronously(RE, sync_devices, async_devices):
 @requires_ophyd_async
 def test_read_all_one_message_per_device(RE, async_devices, monkeypatch):
     device1, device2 = async_devices
-    monkeypatch.setenv("BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE", "1")
+    monkeypatch.setattr(bps, "BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE", True)
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
     messages = []
