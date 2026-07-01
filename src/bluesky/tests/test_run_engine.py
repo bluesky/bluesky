@@ -13,6 +13,7 @@ import pytest
 from event_model import DocumentNames
 
 from bluesky import Msg, RunEngine
+from bluesky import plans as bp
 from bluesky.plan_stubs import (
     abs_set,
     checkpoint,
@@ -2107,8 +2108,7 @@ def test_double_call(RE):
 
 @pytest.mark.parametrize("predeclare", [True, False])
 def test_num_events(RE, hw, db, predeclare, monkeypatch):
-    if predeclare:
-        monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", predeclare)
     RE.subscribe(db.insert)
 
     rs1 = RE(count([]))

@@ -1,6 +1,5 @@
 import itertools
 import operator
-import os
 import time
 import typing
 import uuid
@@ -11,6 +10,7 @@ from typing import Any, Literal, cast
 
 from cycler import cycler
 
+from bluesky.env_vars import BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
 from bluesky.suspenders import SuspenderBase
 
 try:
@@ -170,11 +170,7 @@ def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
 
     # If ``True`` then there will be one Msg per device, which means that
     # asynchronous devices will not be gathered.;
-    legacy_one_message_per_device = os.environ.get("BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE", "").lower() in (
-        "1",
-        "true",
-    )
-    if legacy_one_message_per_device:
+    if BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE:
         reading = {}
         for obj in objs:
             partial_reading = yield Msg("read", obj)

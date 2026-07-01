@@ -187,7 +187,7 @@ def test_relative_pseudo(hw, RE, db):
 
 
 def test_reset_wrapper(hw, RE, monkeypatch):
-    monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", True)
     p = hw.pseudo3x3
     m_col = MsgCollector()
     RE.msg_hook = m_col
@@ -658,7 +658,7 @@ def test_describe_failure(RE):
 
 
 def test_errors_through_msg_mutator(hw, monkeypatch):
-    monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", True)
     gen = bp.rel_scan([], hw.motor, 5, -5, 10)
 
     msgs = []
@@ -697,7 +697,7 @@ def test_predeclare_env(hw, monkeypatch, predeclare):
     from cycler import cycler
 
     if predeclare:
-        monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+        monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", True)
 
     for p in [
         bp.count([hw.det]),

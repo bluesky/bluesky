@@ -38,6 +38,7 @@ from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky.env_vars import BLUESKY_HISTORY_PATH
 from bluesky.protocols import (
     Asset,
     HasHints,
@@ -987,9 +988,8 @@ class PersistentDict(collections.abc.MutableMapping):
 
 
 SEARCH_PATH = []
-ENV_VAR = "BLUESKY_HISTORY_PATH"
-if ENV_VAR in os.environ:
-    SEARCH_PATH.append(os.environ[ENV_VAR])
+if BLUESKY_HISTORY_PATH:
+    SEARCH_PATH.append(BLUESKY_HISTORY_PATH)
 SEARCH_PATH.extend(
     [
         os.path.expanduser("~/.config/bluesky/bluesky_history.db"),
