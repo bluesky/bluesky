@@ -2241,7 +2241,7 @@ class RunEngine:
         # TODO: for reviewer, should this be wrapped
         # in a try-except clause or let it raise naturally
         # inside a plan?
-        obj.check_value(*msg.args, **msg.kwargs)
+        await maybe_await(obj.check_value(*msg.args, **msg.kwargs))
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
     async def _set(self, msg):
