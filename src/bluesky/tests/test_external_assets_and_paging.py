@@ -646,9 +646,9 @@ def test_object_classes(RE):
         def read(self):
             return {f"{self.name}-sig1": Reading(value=0, timestamp=123)}
 
-    class SomeStaticReadable:
+    class SomeClassReadable:
         parent = None
-        name = "some_static_readble"
+        name = "some_class_readble"
 
         @classmethod
         def describe(cls):
@@ -658,13 +658,28 @@ def test_object_classes(RE):
         def read(cls):
             return {f"{cls.name}-sig1": Reading(value=0, timestamp=123)}
 
+    class SomeStaticReadable:
+        parent = None
+        name = "some_static_readble"
+
+        @staticmethod
+        def describe():
+            return {"some_static_readble-sig1": DataKey(source="pv", dtype="number", shape=[])}
+
+        @staticmethod
+        def read():
+            return {"some_static_readble-sig1": Reading(value=0, timestamp=123)}
+
     docs = DocHolder()
 
-    RE(bp.count([SomeReadable(), axis, SomeStaticReadable]), docs.append)
+    RE(bp.count([SomeReadable(), axis, SomeStaticReadable, SomeClassReadable]), docs.append)  # type: ignore
     assert len(docs["descriptor"]) == 1
     descriptor = docs["descriptor"][0]
     assert descriptor["object_classes"] == {
         "det1": "ophyd.sim.SynAxis",
+        "some_class_readble": (
+            "bluesky.tests.test_external_assets_and_paging.test_object_classes.<locals>.SomeClassReadable"
+        ),
         "some_readble": "bluesky.tests.test_external_assets_and_paging.test_object_classes.<locals>.SomeReadable",
         "some_static_readble": (
             "bluesky.tests.test_external_assets_and_paging.test_object_classes.<locals>.SomeStaticReadable"
