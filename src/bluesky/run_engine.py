@@ -1990,7 +1990,6 @@ class RunEngine:
         Add a reading to the open event bundle.
 
         The obj and args of the read message are all objects to be read.
-        Asynchronous reads will be performed together.
 
         Expected message object is:
 
@@ -2007,24 +2006,13 @@ class RunEngine:
                 f"the following devices which were not readable: {non_readable}"
             )
 
-        coro_objs, non_coro_objs = [], []
-
-        for obj in objs:
-            if inspect.iscoroutinefunction(obj.read):
-                coro_objs.append(obj)
-            else:
-                non_coro_objs.append(obj)
-
-        coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in coro_objs])
-        non_coro_read_rets = await asyncio.gather(*[self._perform_single_reading(obj) for obj in non_coro_objs])
+        read_returns = await asyncio.gather(*[self._perform_single_reading(obj) for obj in objs])
 
         if (current_run := self._run_bundlers.get(run_key)) is not None:
-            await current_run.read(
-                msg, list(zip(coro_objs, coro_read_rets)) + list(zip(non_coro_objs, non_coro_read_rets))
-            )
+            await current_run.read(msg, list(zip(objs, read_returns)))
 
         all_readings = {}
-        for read_ret in coro_read_rets + non_coro_read_rets:
+        for read_ret in read_returns:
             all_readings.update(read_ret)
         return all_readings
 
