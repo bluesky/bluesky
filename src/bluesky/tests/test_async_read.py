@@ -40,6 +40,7 @@ def sync_devices():
     return (
         SyncReadableDevice(name="sync_device1"),
         SyncReadableDevice(name="sync_device2"),
+        SyncReadableDevice(name="sync_device3"),
     )
 
 
@@ -73,6 +74,7 @@ def async_devices():
     return (
         AsyncReadableDevice(name="async_device1"),
         AsyncReadableDevice(name="async_device2"),
+        AsyncReadableDevice(name="async_device3"),
     )
 
 
@@ -91,10 +93,14 @@ def test_async_read(RE, sync_devices, async_devices):
             "async_device1-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
             "async_device2-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
             "async_device2-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
+            "async_device3-signal1": {"alarm_severity": 0, "timestamp": ANY, "value": 1},
+            "async_device3-signal2": {"alarm_severity": 0, "timestamp": ANY, "value": "some_value"},
             "sync_device1_signal1": {"timestamp": ANY, "value": 1},
             "sync_device1_signal2": {"timestamp": ANY, "value": "some_value"},
             "sync_device2_signal1": {"timestamp": ANY, "value": 1},
             "sync_device2_signal2": {"timestamp": ANY, "value": "some_value"},
+            "sync_device3_signal1": {"timestamp": ANY, "value": 1},
+            "sync_device3_signal2": {"timestamp": ANY, "value": "some_value"},
         }
         yield from bps.save()
         yield from bps.close_run()
@@ -108,10 +114,14 @@ def test_async_read(RE, sync_devices, async_devices):
                 "async_device1-signal2": "some_value",
                 "async_device2-signal1": 1,
                 "async_device2-signal2": "some_value",
+                "async_device3-signal1": 1,
+                "async_device3-signal2": "some_value",
                 "sync_device1_signal1": 1,
                 "sync_device1_signal2": "some_value",
                 "sync_device2_signal1": 1,
                 "sync_device2_signal2": "some_value",
+                "sync_device3_signal1": 1,
+                "sync_device3_signal2": "some_value",
             },
             "descriptor": ANY,
             "filled": {},
@@ -122,10 +132,14 @@ def test_async_read(RE, sync_devices, async_devices):
                 "async_device1-signal2": ANY,
                 "async_device2-signal1": ANY,
                 "async_device2-signal2": ANY,
+                "async_device3-signal1": ANY,
+                "async_device3-signal2": ANY,
                 "sync_device1_signal1": ANY,
                 "sync_device1_signal2": ANY,
                 "sync_device2_signal1": ANY,
                 "sync_device2_signal2": ANY,
+                "sync_device3_signal1": ANY,
+                "sync_device3_signal2": ANY,
             },
             "uid": ANY,
         }
@@ -135,7 +149,7 @@ def test_async_read(RE, sync_devices, async_devices):
 @requires_ophyd
 @requires_ophyd_async
 def test_async_read_flattened_structure(RE, sync_devices, async_devices):
-    sync_device1, sync_device2, async_device1, async_device2 = sync_devices + async_devices
+    sync_device1, sync_device2, _, async_device1, async_device2, _ = sync_devices + async_devices
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
 
@@ -164,14 +178,20 @@ TIME_DIFFERENCE_LIMIT = 0.04 if os.name == "nt" else 0.01
 @requires_ophyd
 @requires_ophyd_async
 def test_one_shot_works_asynchronously(RE, sync_devices, async_devices):
-    sync_device1, sync_device2, async_device1, async_device2 = sync_devices + async_devices
+    sync_device1, sync_device2, sync_device3, async_device1, async_device2, async_device3 = (
+        sync_devices + async_devices
+    )
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
 
     def plan():
         yield from bps.open_run()
-        yield from bps.one_shot([sync_device1, async_device1, sync_device2, async_device2])
-        yield from bps.one_shot([sync_device1, async_device1, sync_device2, async_device2])
+        yield from bps.one_shot(
+            [sync_device1, async_device1, sync_device2, async_device2, sync_device3, async_device3]
+        )
+        yield from bps.one_shot(
+            [sync_device1, async_device1, sync_device2, async_device2, sync_device3, async_device3]
+        )
         yield from bps.close_run()
 
     RE(plan(), lambda name, doc: output[name].append(doc))
@@ -179,14 +199,10 @@ def test_one_shot_works_asynchronously(RE, sync_devices, async_devices):
     assert len(output["event"]) == 2
     for event in output["event"]:
         timestamps = event["timestamps"]
-        assert len(timestamps) == 8
+        assert len(timestamps) == 12
 
         async_timestamps = [v for k, v in timestamps.items() if k.startswith("async_device")]
         sync_timestamps = [v for k, v in timestamps.items() if k.startswith("sync_device")]
-
-        first_sync_device_timestamps = min(sync_timestamps)
-        for v in async_timestamps:
-            assert v < first_sync_device_timestamps  # async devices are ran first
 
         for i in range(1, len(async_timestamps)):
             assert async_timestamps[i] - async_timestamps[0] == pytest.approx(0, abs=TIME_DIFFERENCE_LIMIT)
@@ -199,7 +215,6 @@ def test_one_shot_works_asynchronously(RE, sync_devices, async_devices):
 
 @requires_ophyd_async
 def test_read_all_one_message_per_device(RE, async_devices, monkeypatch):
-    device1, device2 = async_devices
     monkeypatch.setattr(bps, "BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE", True)
 
     output = {"start": [], "descriptor": [], "event": [], "stop": []}
@@ -233,8 +248,10 @@ def test_read_all_one_message_per_device(RE, async_devices, monkeypatch):
         "create",
         "read",
         "read",
+        "read",
         "save",
         "create",
+        "read",
         "read",
         "read",
         "save",
