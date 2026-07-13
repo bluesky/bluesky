@@ -8,11 +8,14 @@ from event_model import RunRouter
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from bluesky import RunEngine
 from bluesky.callbacks.best_effort import BestEffortCallback
-from bluesky.plans import grid_scan, scan
+from bluesky.plans import grid_scan, scan, spiral_square
 from bluesky.preprocessors import SupplementalData
 from bluesky.tests.utils import DocCollector
 from bluesky.utils import new_uid
+
+from .conftest import MovableSignal, ReadableSignal
 
 
 def test_hints(RE, hw):
@@ -95,6 +98,12 @@ def test_live_grid(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
+
+
+def test_live_scatter(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    RE(spiral_square([hw.det], hw.motor1, hw.motor2, 0.0, 0.0, 1.0, 1.0, 2, 2))
 
 
 def test_many_grids(RE, hw):
@@ -319,13 +328,19 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
             stats_value == out_value  # noqa: B015
 
 
-def test_many_motors(RE, hw):
+def test_many_motors():
     """Ensure appropriate behavior for too many motors to plot. No figures with warning, and a table."""
-    dets = [hw.ab_det]
-    motors = [hw.motor, hw.motor1, hw.motor2, hw.motor3]
+    RE = RunEngine({})
+    dets = [ReadableSignal(name="ab_det")]
+    motors = [
+        MovableSignal(name="motor"),
+        MovableSignal(name="motor1"),
+        MovableSignal(name="motor2"),
+        MovableSignal(name="motor3"),
+    ]
     bec = BestEffortCallback()
     RE.subscribe(bec)
-    movement = [(motor, 1, 5, 5) for motor in motors]
+    movement = [(motor, 1, 5, 2) for motor in motors]
     with pytest.warns((RuntimeWarning, UserWarning)):
         RE(grid_scan(dets, *[item for sublist in movement for item in sublist]))
 
@@ -333,3 +348,17 @@ def test_many_motors(RE, hw):
     assert not bec._live_grids
     assert not bec._live_scatters
     assert bec._table is not None
+
+
+def test_empty_motors(RE, hw):
+    def simple_count(
+        readables,
+        md,
+    ):
+        yield from bps.open_run(md=md)
+        yield from bps.trigger_and_read(readables)
+
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    # should not raise
+    RE(simple_count([hw.det], md={"motors": []}))

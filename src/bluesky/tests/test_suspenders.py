@@ -15,6 +15,7 @@ from bluesky.suspenders import (
     SuspendFloor,
     SuspendInBand,
     SuspendOutBand,
+    SuspendWhenChanged,
     SuspendWhenOutsideBand,
 )
 from bluesky.tests.utils import MsgCollector
@@ -68,7 +69,8 @@ def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, R
     # assert we waited at least 2 seconds + the settle time
     delta = stop - start
     print(delta)
-    assert delta > 0.5 + wait_time + 0.2
+    # The suspension time is actually 0.5 - 0.1 = 0.4 seconds as timers run in parallel
+    assert delta > 0.4 + wait_time + 0.2
 
 
 def test_pretripped(RE, hw):
@@ -90,6 +92,32 @@ def test_pretripped(RE, hw):
 
     assert len(msg_lst) == 2
     assert ["wait_for", "checkpoint"] == [m[0] for m in msg_lst]
+
+
+def test_suspender_wrapper(RE, hw):
+
+    wait_time = 0.2
+    sleep_time = 0.2
+    trigger_time = 0.5
+
+    sig = hw.bool_sig
+    scan = [Msg("checkpoint"), Msg("sleep", None, sleep_time)]
+    sig.put(0)
+
+    susp = SuspendBoolHigh(sig, sleep=wait_time)
+
+    RE(suspend_wrapper(scan, susp))
+    assert RE.state == "idle"
+
+    sig.put(1)
+    threading.Timer(trigger_time, sig.put, (0,)).start()
+
+    start = ttime.time()
+
+    RE(suspend_wrapper(scan, susp))
+    stop = ttime.time()
+    delta = stop - start
+    assert delta > trigger_time + wait_time + sleep_time
 
 
 @pytest.mark.parametrize(
@@ -212,22 +240,47 @@ def test_pause_from_suspend(RE, hw):
     assert ["wait_for", "wait_for", "checkpoint"] == [m[0] for m in msg_lst]
 
 
+def test_suspend_when_changed_preserves_falsy_expected_value(hw):
+    sig = hw.bool_sig
+    sig.put(1)
+
+    susp = SuspendWhenChanged(sig, expected_value=0)
+
+    assert susp.expected_value == 0
+    assert not susp._should_suspend(0)
+    assert susp._should_suspend(1)
+
+
 def test_deferred_pause_from_suspend(RE, hw):
     "Tests what happens when a soft pause is requested from a suspended state"
     sig = hw.bool_sig
     scan = [Msg("checkpoint"), Msg("null")]
     msg_lst = []
+    deferred_pause_event = threading.Event()
+    waiting_event = threading.Event()
     sig.put(1)
 
     def accum(msg):
-        print(msg)
+        if msg[0] == "wait_for":
+            waiting_event.set()
         msg_lst.append(msg)
+
+    def wait_then_request_pause():
+        waiting_event.wait(timeout=5)
+        assert waiting_event.is_set()
+        RE.request_pause(True)
+        deferred_pause_event.set()
+
+    def wait_then_put():
+        deferred_pause_event.wait(timeout=5)
+        assert deferred_pause_event.is_set()
+        sig.put(0)
 
     susp = SuspendBoolHigh(sig)
 
     RE.install_suspender(susp)
-    threading.Timer(1, RE.request_pause, (True,)).start()
-    threading.Timer(4, sig.put, (0,)).start()
+    threading.Thread(target=wait_then_request_pause, daemon=True).start()
+    threading.Thread(target=wait_then_put, daemon=True).start()
     RE.msg_hook = accum
     with pytest.raises(RunEngineInterrupted):
         RE(scan)

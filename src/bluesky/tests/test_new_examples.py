@@ -3,8 +3,10 @@ import threading
 import time as ttime
 from collections import defaultdict
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
+from event_model.documents.event_descriptor import DataKey
 
 import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
@@ -69,7 +71,8 @@ from bluesky.preprocessors import (
     subs_wrapper,
     suspend_wrapper,
 )
-from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
+from bluesky.protocols import Descriptor, Locatable, Location, Movable, Readable, Reading, Status
+from bluesky.tests.test_external_assets_and_paging import DocHolder, Named, describe_pv, read_pv
 from bluesky.utils import IllegalMessageSequence, all_safe_rewind
 
 
@@ -132,8 +135,8 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
         (trigger, ("det",), {"group": "A"}, [Msg("trigger", "det", group="A")]),
         (sleep, (2,), {}, [Msg("sleep", None, 2)]),
-        (wait, (), {}, [Msg("wait", None, error_on_timeout=True, group=None, timeout=None)]),
-        (wait, ("A",), {}, [Msg("wait", None, group="A", error_on_timeout=True, timeout=None)]),
+        (wait, (), {}, [Msg("wait", None, error_on_timeout=True, group=None, timeout=None, watch=())]),
+        (wait, ("A",), {}, [Msg("wait", None, group="A", error_on_timeout=True, timeout=None, watch=())]),
         (checkpoint, (), {}, [Msg("checkpoint")]),
         (clear_checkpoint, (), {}, [Msg("clear_checkpoint")]),
         (pause, (), {}, [Msg("pause", None, defer=False)]),
@@ -724,7 +727,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det]))
     expected = [
         Msg("trigger", det),
-        Msg("wait", error_on_timeout=True),
+        Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="primary"),
         Msg("read", det),
         Msg("save"),
@@ -737,7 +740,7 @@ def test_trigger_and_read(hw):
     msgs = list(trigger_and_read([det], "custom"))
     expected = [
         Msg("trigger", det),
-        Msg("wait", error_on_timeout=True),
+        Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="custom"),
         Msg("read", det),
         Msg("save"),
@@ -861,6 +864,12 @@ def test_stage_all_and_unstage_all(RE):
     staged = {}
     unstaged = {}
 
+    # Barriers prove new-style devices run concurrently: both threads must
+    # arrive at the barrier before either can proceed. If they were staged
+    # sequentially, the first would block forever (hitting the timeout).
+    stage_barrier = threading.Barrier(2, timeout=2)
+    unstage_barrier = threading.Barrier(2, timeout=2)
+
     # Test support for old and new style devices
     class OldStyleDummy:
         def __init__(self, name: str) -> None:
@@ -868,36 +877,39 @@ def test_stage_all_and_unstage_all(RE):
 
         def stage(self):
             staged[self.name] = True
-            ttime.sleep(0.5)
             return [self]
 
         def unstage(self):
             unstaged[self.name] = True
-            ttime.sleep(0.5)
             return [self]
 
     class NewStyleDummy:
-        def __init__(self, name: str) -> None:
+        def __init__(
+            self, name: str, stage_barrier: threading.Barrier, unstage_barrier: threading.Barrier
+        ) -> None:
             self.name: str = name
+            self._stage_barrier = stage_barrier
+            self._unstage_barrier = unstage_barrier
 
-        def _callback(self, d: dict, st: Status):
+        def _callback(self, d: dict, st: Status, barrier: threading.Barrier):
+            barrier.wait()
             d[self.name] = True
             st.set_finished()  # type: ignore
 
         def stage(self) -> Status:
             st = StatusBase()
-            threading.Timer(0.5, self._callback, args=[staged, st]).start()
+            threading.Thread(target=self._callback, args=[staged, st, self._stage_barrier]).start()
             return st
 
         def unstage(self) -> Status:
             st = StatusBase()
-            threading.Timer(0.5, self._callback, args=[unstaged, st]).start()
+            threading.Thread(target=self._callback, args=[unstaged, st, self._unstage_barrier]).start()
             return st
 
     olddummy1 = OldStyleDummy("o1")
     olddummy2 = OldStyleDummy("o2")
-    newdummy1 = NewStyleDummy("n1")
-    newdummy2 = NewStyleDummy("n2")
+    newdummy1 = NewStyleDummy("n1", stage_barrier, unstage_barrier)
+    newdummy2 = NewStyleDummy("n2", stage_barrier, unstage_barrier)
 
     def plan():
         yield from stage_all(olddummy1, olddummy2, newdummy1, newdummy2)
@@ -914,11 +926,7 @@ def test_stage_all_and_unstage_all(RE):
         assert "n1" in unstaged_keys[2:]
         assert "n2" in unstaged_keys[2:]
 
-    start = ttime.monotonic()
     RE(plan())
-    stop = ttime.monotonic()
-
-    assert 3 < stop - start < 4
 
 
 def test_old_style_wait(RE):
@@ -971,3 +979,85 @@ def test_custom_stream_name(RE, hw):
 
     with pytest.raises(IllegalMessageSequence):
         RE(count([hw.det], 3, per_shot=one_shot))
+
+
+class MultiConfiguredDevice(Named, Readable, Movable[int]):
+    """Device to test that read_configuration cache is updated for a new stream. This is done by
+    "configuring" the device and the read_configuration should show a new value."""
+
+    def __init__(self, motor, name):
+        self.motor = motor
+        self.read_value = 10
+        super().__init__(name)
+
+    def set(self, config_value: int) -> Status:
+        return self.motor.set(config_value)
+
+    def read(self) -> dict[str, Reading]:
+        return read_pv(self, self.read_value)
+
+    def read_configuration(self) -> dict[str, Reading]:
+        return read_pv(self, self.motor.position)
+
+    def describe(self) -> dict[str, DataKey]:
+        return describe_pv(self)
+
+    def describe_configuration(self) -> dict[str, DataKey]:
+        return describe_pv(self)
+
+
+def multi_stream_plan(device: MultiConfiguredDevice, value_configuration: list[int], iterations: int):
+    """Plan that configures a device by setting a value and then reading the device. This is done X number
+    of times. Each time, it saves it to a new stream so we get new device configuration each time."""
+    yield from open_run()
+    for v in value_configuration:
+        yield from abs_set(device, v, wait=True)
+        for _ in range(iterations):
+            yield from trigger_and_read([device], name=f"test{v}")
+    yield from close_run()
+
+
+def test_device_has_new_read_configuration_once_per_stream(RE, hw):
+    docs = DocHolder()
+    device = MultiConfiguredDevice(hw.motor, "device")
+    pv = f"{device.name}-pv"
+
+    config_values = [0, 1, 2, 3]
+    iterations = 2
+    RE(multi_stream_plan(device, config_values, iterations), docs.append)
+
+    docs.assert_emitted(start=1, descriptor=len(config_values), event=len(config_values) * iterations, stop=1)
+    for v in config_values:
+        assert docs["descriptor"][v]["name"] == f"test{v}"
+        assert docs["descriptor"][v]["configuration"][device.name]["data"] == {pv: v}
+        for i in range(1, iterations + 1):
+            assert docs["event"][i + v]["data"][pv] == device.read_value
+
+
+def test_cache_used_correct_number_of_times_for_object(RE, hw):
+    device = MultiConfiguredDevice(hw.motor, "device")
+    config_values = [0, 1, 2, 3]
+    iterations = 2
+
+    expected_config_calls = len(config_values)  # New config cache used once per stream.
+    expected_config_describe_calls = len(config_values)  # New config_describe cache used once per stream.
+    expected_read_calls = expected_config_calls * iterations  # New read cache used on each event.
+    expected_read_describe_calls = len(config_values)  # New read_describe used once per stream.
+
+    mock_read_config = Mock(wraps=device.read_configuration)
+    device.read_configuration = mock_read_config
+    mock_describe_config = Mock(wraps=device.describe_configuration)
+    device.describe_configuration = mock_describe_config
+
+    mock_read = Mock(wraps=device.read)
+    device.read = mock_read
+    mock_describe = Mock(wraps=device.describe)
+    device.describe = mock_describe
+
+    RE(multi_stream_plan(device, config_values, iterations))
+
+    assert mock_read_config.call_count == expected_config_calls
+    assert mock_describe_config.call_count == expected_config_describe_calls
+
+    assert mock_read.call_count == expected_read_calls
+    assert mock_describe.call_count == expected_read_describe_calls

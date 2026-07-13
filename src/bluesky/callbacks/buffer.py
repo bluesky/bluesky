@@ -1,8 +1,8 @@
 import atexit
 import logging
 import threading
+from collections.abc import Callable
 from queue import Empty, Full, Queue
-from typing import Callable
 
 logger = logging.getLogger(__name__)
 

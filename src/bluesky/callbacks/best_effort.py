@@ -113,7 +113,7 @@ class BestEffortCallback(QtAwareCallback):
         # Prepare a guess about the dimensions (independent variables) in case
         # we need it.
         motors = self._start_doc.get("motors")
-        if motors is not None:
+        if motors is not None and len(motors) > 0:
             GUESS = [([motor], "primary") for motor in motors]
         else:
             GUESS = [(["time"], "primary")]

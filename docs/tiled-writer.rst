@@ -12,32 +12,29 @@ The `TiledWriter` callback is designed specifically for converting Bluesky run d
 
 It implicitly distinguishes between "internal" and "external" data. The internal data are associated with the `Event` documents generated during a run; typically this represents scalar measurements from sensors, motor positions, etc, which is stored in a form of a table with columns corresponding to different data keys and each row representing a measurement at a single timestamp.
 
-On the other hand, the external data are written by detectors directly on disk and usually take the form of images or multidimensional arrays. The references to the external files are provided in `StreamRsource` (`Resource` in legacy implementations) documents, which register the corresponding array-like `DataSources` in Tiled. `StreamDatum` (or `Datum`) documents are processed via the mechanism of `Consolidators` and determine the correspondence between the indexing within these external arrays and the physically-meaningful sequence of timestamps.
+On the other hand, the external data are written by detectors directly on disk and usually take the form of images or multidimensional arrays. The references to the external files are provided in `StreamResource` (`Resource` in legacy implementations) documents, which register the corresponding array-like `DataSources` in Tiled. `StreamDatum` (or `Datum`) documents are processed via the mechanism of `Consolidators` and determine the correspondence between the indexing within these external arrays and the physically-meaningful sequence of timestamps.
 
-The time dimension (or the sequence of measurements) is typically shared between the internal and external data, which in Tiled is enforced by writing all data from the same Bluesky stream into a specialized `Composite` container (node in the Tiled catalog). The metadata on each stream node contains the specifications for the related data keys and the relevant configuration parameters supplied in the `EventDescriptor` document.
+The time dimension (that is, the sequence of measurements) is usually shared between internal and external data. Tiled handles this by writing all data from the same Bluesky stream into a container with a dedicated `"composite"` spec, which tells the Tiled client how the data are aligned. Each stream node's metadata includes the specifications for the related data keys as well as the configuration parameters provided in the `EventDescriptor` document.
 
-Finally, nodes for multiple streams are grouped together and placed into a container for the entire run; its metadata contains the `Start` and `Stop` documents. While the structure of the `streams` container is fixed, the parent Run allows for optional user-controlled namespaces within `views` and `aux` containers. The Run container created by TiledWriter is designated with the `BlueskyRun` version `3.0` spec to enable its back-compatibility with legacy code via bluesky-tiled-plugins.
+Finally, nodes for multiple streams are grouped together and placed into a container for the entire run; its metadata contains the `Start` and `Stop` documents. The Run container created by TiledWriter is designated with the `BlueskyRun` version `3.0` spec to enable its back-compatibility with legacy code via bluesky-tiled-plugins.
 
 An example of the Tiled catalog structure for a Bluesky run might look like this:
 
 .. code-block:: text
 
-    BlueskyRun_v3 <Container>
+    BlueskyRun <Container ("BlueskyRun_v3")>
     │
-    ├─ streams <Container>
-    │      ├─ baseline <Composite>
-    │      │       ├─ internal <Table>   -- written by Tiled
-    │      │       ├─ image_1 <Array>    -- external data from files
-    │      │       │      ...
-    │      │       └─ image_n <Array>
-    │      ├─ primary <Composite>
-    │      │       ├─ internal <Table>   -- written by Tiled
-    │      │       ├─ image_1 <Array>    -- external data from files
-    │      │       │      ...
-    │      │       └─ image_n <Array>
-    │      └─ third_stream <Composite>
-    ├─ views <Container>    -- optional
-    └─ aux <Container>      -- optional
+    ├─ baseline <Container ("composite")>
+    │       ├─ internal <Table>   -- written by Tiled
+    │       ├─ image_1 <Array>    -- external data from files
+    │       │      ...
+    │       └─ image_n <Array>
+    ├─ primary <Container ("composite")>
+    │       ├─ internal <Table>   -- written by Tiled
+    │       ├─ image_1 <Array>    -- external data from files
+    │       │      ...
+    │       └─ image_n <Array>
+    └─ third_stream <Container ("composite")>
 
 
 .. note::
@@ -149,8 +146,8 @@ A minimal simulated example of using TiledWriter in a Bluesky plan is shown belo
 
     # Run an experiment collecting internal data
     uid, = RE(bp.count([det], 3))
-    data = tiled_client[uid]['streams/primary/det'].read()
+    data = tiled_client[uid]['primary/det'].read()
 
     # Run an experiment collecting external data
     uid, = RE(bp.count([hw(save_path=save_path).img], 2))
-    data = tiled_client[uid]['streams/primary/img'].read()
+    data = tiled_client[uid]['primary/img'].read()

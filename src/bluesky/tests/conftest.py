@@ -1,11 +1,18 @@
 import asyncio
 import os
+import signal
+import threading
+import time
+from typing import Any
+from unittest.mock import patch
 
 import numpy as np
 import packaging
 import pytest
 
+from bluesky.protocols import HasHints, HasParent, Hints, NamedMovable, Readable, Status
 from bluesky.run_engine import RunEngine, TransitionError
+from bluesky.utils import SigintHandler
 
 
 @pytest.fixture(scope="function", params=[False, True])
@@ -39,6 +46,60 @@ def hw(tmp_path):
         return hw(str(tmp_path))
     else:
         return hw()
+
+
+class AlwaysSuccessfulStatus(Status):
+    def add_callback(self, callback) -> None:
+        callback(self)
+
+    def exception(self, timeout=0.0):
+        return None
+
+    @property
+    def done(self) -> bool:
+        return True
+
+    @property
+    def success(self) -> bool:
+        return True
+
+
+class ReadableSignal(Readable, HasHints, HasParent):
+    def __init__(self, name: str) -> None:
+        self._name = name
+        self._value = 0.0
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def hints(self) -> Hints:
+        return {
+            "fields": [self._name],
+            "dimensions": [],
+            "gridding": "rectilinear",
+        }
+
+    @property
+    def parent(self) -> Any | None:
+        return None
+
+    def read(self):
+        return {self._name: {"value": self._value, "timestamp": time.time()}}
+
+    def describe(self):
+        return {self._name: {"source": self._name, "dtype": "number", "shape": []}}
+
+
+class MovableSignal(ReadableSignal, NamedMovable):
+    def __init__(self, name: str, initial_value: float = 0.0) -> None:
+        super().__init__(name)
+        self._value: float = initial_value
+
+    def set(self, value: float) -> Status:
+        self._value = value
+        return AlwaysSuccessfulStatus()
 
 
 # vendored from ophyd.sim
@@ -76,3 +137,64 @@ def cleanup_any_figures(request):
 
     "Close any matplotlib figures that were opened during a test."
     plt.close("all")
+
+
+class DeterministicSigint:
+    """Sends SIGINT signals with a fake monotonic clock so that every signal
+    deterministically clears the 100ms debounce in SigintHandler.
+
+    The fake clock advances by 0.2s per ``send()`` call, and each call blocks
+    until the signal handler has finished, so ``_count`` increments reliably
+    regardless of real wall-clock jitter.
+    """
+
+    def __init__(self):
+        self._fake_time = 0.0
+        self._handler_done = threading.Event()
+        self._pid = os.getpid()
+        self._orig_enter = SigintHandler.__enter__
+        self._patcher = patch.object(SigintHandler, "__enter__", self._patched_enter)
+
+    def _monotonic(self):
+        return self._fake_time
+
+    def _patched_enter(self, sigint_handler):
+        with patch("bluesky.utils.time.monotonic", self._monotonic):
+            result = self._orig_enter(sigint_handler)
+        installed = signal.getsignal(signal.SIGINT)
+
+        def synced_handler(signum, frame):
+            try:
+                with patch("bluesky.utils.time.monotonic", self._monotonic):
+                    installed(signum, frame)
+            finally:
+                self._handler_done.set()
+
+        signal.signal(signal.SIGINT, synced_handler)
+        return result
+
+    def send(self):
+        """Send one SIGINT and wait for the handler to finish."""
+        self._handler_done.clear()
+        self._fake_time += 0.2
+        os.kill(self._pid, signal.SIGINT)
+        self._handler_done.wait()
+
+    def __enter__(self):
+        self._patcher.start()
+        return self
+
+    def __exit__(self, *exc):
+        self._patcher.stop()
+
+
+@pytest.fixture
+def deterministic_sigint():
+    """Fixture providing the ``DeterministicSigint`` class.  Tests should use
+    it as a context manager around the code that runs the RE::
+
+        with deterministic_sigint() as sigint:
+            ...
+            sigint.send()
+    """
+    return DeterministicSigint

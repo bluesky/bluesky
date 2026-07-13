@@ -1,6 +1,5 @@
 import re
 from collections.abc import Iterator
-from typing import Optional
 
 import pytest
 from event_model.documents import Datum
@@ -25,6 +24,7 @@ from bluesky.protocols import (
     WritesExternalAssets,
     WritesStreamAssets,
 )
+from bluesky.tests import requires_ophyd
 
 
 class DocHolder(dict):
@@ -128,7 +128,7 @@ def get_index(self) -> int:
     return 10
 
 
-def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) -> Iterator[StreamAsset]:
+def collect_asset_docs_stream_datum(self: Named, index: int | None = None) -> Iterator[StreamAsset]:
     """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
     index = index or 1
     for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
@@ -166,9 +166,9 @@ def describe_pv(self: Named) -> dict[str, DataKey]:
     return {f"{self.name}-pv": DataKey(source="pv", dtype="number", shape=[])}
 
 
-def read_pv(self: Named) -> dict[str, Reading]:
+def read_pv(self: Named, value=5.8) -> dict[str, Reading]:
     """Read a single data_key from a PV"""
-    return {f"{self.name}-pv": Reading(value=5.8, timestamp=123)}
+    return {f"{self.name}-pv": Reading(value=value, timestamp=123)}
 
 
 class PvAndDatumReadable(Named, Readable, WritesExternalAssets):
@@ -625,3 +625,63 @@ def test_multiple_declare_in_same_stream(RE):
     assert docs["descriptor"][1]["name"] == "main"
     assert frozenset(docs["descriptor"][1]["data_keys"]) == frozenset(data_keys)
     assert all(d["descriptor"] == docs["descriptor"][1]["uid"] for d in docs["stream_datum"][4:])
+
+
+@requires_ophyd
+def test_object_classes(RE):
+    from ophyd.sim import SynAxis  # type: ignore
+
+    axis = SynAxis(name="det1")
+
+    class SomeReadable:
+        parent = None
+
+        @property
+        def name(self):
+            return "some_readble"
+
+        def describe(self):
+            return {f"{self.name}-sig1": DataKey(source="pv", dtype="number", shape=[])}
+
+        def read(self):
+            return {f"{self.name}-sig1": Reading(value=0, timestamp=123)}
+
+    class SomeClassReadable:
+        parent = None
+        name = "some_class_readble"
+
+        @classmethod
+        def describe(cls):
+            return {f"{cls.name}-sig1": DataKey(source="pv", dtype="number", shape=[])}
+
+        @classmethod
+        def read(cls):
+            return {f"{cls.name}-sig1": Reading(value=0, timestamp=123)}
+
+    class SomeStaticReadable:
+        parent = None
+        name = "some_static_readble"
+
+        @staticmethod
+        def describe():
+            return {"some_static_readble-sig1": DataKey(source="pv", dtype="number", shape=[])}
+
+        @staticmethod
+        def read():
+            return {"some_static_readble-sig1": Reading(value=0, timestamp=123)}
+
+    docs = DocHolder()
+
+    RE(bp.count([SomeReadable(), axis, SomeStaticReadable, SomeClassReadable]), docs.append)  # type: ignore
+    assert len(docs["descriptor"]) == 1
+    descriptor = docs["descriptor"][0]
+    assert descriptor["object_classes"] == {
+        "det1": "ophyd.sim.SynAxis",
+        "some_class_readble": (
+            "bluesky.tests.test_external_assets_and_paging.test_object_classes.<locals>.SomeClassReadable"
+        ),
+        "some_readble": "bluesky.tests.test_external_assets_and_paging.test_object_classes.<locals>.SomeReadable",
+        "some_static_readble": (
+            "bluesky.tests.test_external_assets_and_paging.test_object_classes.<locals>.SomeStaticReadable"
+        ),
+    }
