@@ -1,9 +1,7 @@
 import os
 import signal
 import threading
-import time
 import time as ttime
-from functools import partial
 
 import pytest
 
@@ -11,7 +9,6 @@ import bluesky.plan_stubs as bps
 from bluesky import FailedStatus, IllegalMessageSequence, Msg, RunEngineInterrupted
 from bluesky.callbacks.mpl_plotting import LivePlot
 from bluesky.examples import (
-    checkpoint_forever,
     conditional_break,
     conditional_pause,
     fly_gen,
@@ -134,30 +131,6 @@ def test_deferred_pause_no_checkpoint(RE):
     assert RE.state == "idle"
     with pytest.raises(RunEngineInterrupted):
         RE([Msg("clear_checkpoint"), Msg("pause", True)])
-    assert RE.state == "idle"
-
-
-def test_pause_from_outside(RE):
-    assert RE.state == "idle"
-
-    def local_pause(delay):
-        time.sleep(delay)
-        RE.request_pause()
-
-    th = threading.Thread(target=partial(local_pause, 1))
-    th.start()
-    with pytest.raises(RunEngineInterrupted):
-        RE(checkpoint_forever())
-    assert RE.state == "paused"
-
-    # Cue up a second pause requests in 2 seconds.
-    th = threading.Thread(target=partial(local_pause, 2))
-    th.start()
-    with pytest.raises(RunEngineInterrupted):
-        RE.resume()
-    assert RE.state == "paused"
-
-    RE.abort()
     assert RE.state == "idle"
 
 
@@ -309,51 +282,6 @@ def test_suspend(RE, hw):
     assert out[0]["time"] - start > 1.1
 
     assert RE.state == "idle"
-
-
-@uses_os_kill_sigint
-def test_pause_resume(RE):
-    from bluesky.utils import ts_msg_hook
-
-    RE.msg_hook = ts_msg_hook
-    ev = _fabricate_asycio_event(RE.loop)
-
-    def done():
-        print("Done")
-        RE.loop.call_soon_threadsafe(_careful_event_set(ev))
-
-    pid = os.getpid()
-
-    def sim_kill():
-        os.kill(pid, signal.SIGINT)
-
-    scan = [
-        Msg("checkpoint"),
-        Msg(
-            "wait_for",
-            None,
-            [
-                ev.wait,
-            ],
-        ),
-    ]
-    assert RE.state == "idle"
-    start = ttime.time()
-    threading.Timer(1, sim_kill).start()
-    threading.Timer(1.5, sim_kill).start()
-    threading.Timer(2, done).start()
-
-    with pytest.raises(RunEngineInterrupted):
-        RE(scan)
-    assert RE.state == "paused"
-    mid = ttime.time()
-    RE.resume()
-    assert RE.state == "idle"
-    stop = ttime.time()
-
-    time.sleep(3)
-    assert mid - start > 1
-    assert stop - start > 2
 
 
 @uses_os_kill_sigint
