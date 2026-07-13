@@ -9,7 +9,7 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
@@ -200,7 +200,7 @@ class LoggingPropertyMachine(PropertyMachine):
             return super().__get__(instance, owner)
 
 
-def default_scan_id_source(md):
+def default_scan_id_source(md: Mapping) -> int:
     return md.get("scan_id", 0) + 1
 
 
@@ -405,14 +405,14 @@ class RunEngine:
 
     def __init__(
         self,
-        md: dict | None = None,
+        md: Mapping | None = None,
         *,
         loop: asyncio.AbstractEventLoop | None = None,
         preprocessors: list | None = None,
         context_managers: list | None = None,
         md_validator: typing.Callable | None = None,
         md_normalizer: typing.Callable | None = None,
-        scan_id_source: typing.Callable[[dict], SyncOrAsync[int]] = default_scan_id_source,
+        scan_id_source: typing.Callable[[Mapping], SyncOrAsync[int]] = default_scan_id_source,
         during_task: DuringTask | None = None,
         call_returns_result: bool = False,
     ):
