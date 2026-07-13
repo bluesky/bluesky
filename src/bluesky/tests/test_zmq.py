@@ -122,7 +122,6 @@ def dispatcher():
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    # TODO: Replace sleep with handshake event wait
     time.sleep(_ZMQ_CONNECTION_TIMEOUT)
     return stop_event, docs_received
 
@@ -261,7 +260,7 @@ def test_zmq_prefix(proxy):
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
-    time.sleep(_ZMQ_CONNECTION_TIMEOUT)  # TODO: Replace sleep with handshake event wait
+    time.sleep(_ZMQ_CONNECTION_TIMEOUT)
 
     local_docs = []
 
