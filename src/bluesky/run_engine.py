@@ -9,7 +9,7 @@ import threading
 import typing
 import weakref
 from collections import ChainMap, defaultdict, deque
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, MutableMapping
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
@@ -405,7 +405,7 @@ class RunEngine:
 
     def __init__(
         self,
-        md: Mapping | None = None,
+        md: MutableMapping | None = None,
         *,
         loop: asyncio.AbstractEventLoop | None = None,
         preprocessors: list | None = None,
