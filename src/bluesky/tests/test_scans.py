@@ -490,12 +490,21 @@ def test_tune_centroid(RE, hw):
 def test_count(RE, hw):
     det = hw.det
     motor = hw.motor
+
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     actual_intensity = []
     col = collector("det", actual_intensity)
     motor.set(0)
     plan = bp.count([det])
     RE(plan, {"event": col})
     assert actual_intensity[0] == 1.0
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
+    assert start_docs[0]["hints"]["dimensions"] == [(("time",), "primary")]
+
     # multiple counts, via updating attribute
     actual_intensity = []
     col = collector("det", actual_intensity)
@@ -552,8 +561,15 @@ def test_absolute_spiral(RE, hw):
     det = hw.det
     motor1.set(1.0)
     motor2.set(1.0)
+
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     scan = bp.spiral([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_spiral_data(0.0, 0.0), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
     scan = bp.spiral([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_spiral_data(0.5, 0.5), decimal=2)
@@ -567,11 +583,17 @@ def test_rel_spiral(RE, hw):
     start_x = 1.0
     start_y = 1.0
 
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     motor1.set(start_x)
     motor2.set(start_y)
     scan = bp.rel_spiral([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
 
     approx_multi_traj_checker(RE, scan, _get_spiral_data(start_x, start_y), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
 
 def _get_fermat_data(x_start, y_start):
@@ -618,10 +640,16 @@ def test_absolute_fermat_spiral(RE, hw):
     motor2 = hw.motor2
     det = hw.det
 
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     motor1.set(1.0)
     motor2.set(1.0)
     scan = bp.spiral_fermat([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_fermat_data(0.0, 0.0), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
     scan = bp.spiral_fermat([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_fermat_data(0.5, 0.5), decimal=2)
@@ -635,11 +663,17 @@ def test_relative_fermat_spiral(RE, hw):
     motor2 = hw.motor2
     det = hw.det
 
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     motor1.set(start_x)
     motor2.set(start_y)
     scan = bp.rel_spiral_fermat([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
 
     approx_multi_traj_checker(RE, scan, _get_fermat_data(start_x, start_y), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
 
 def test_x2x_scan(RE, hw):
