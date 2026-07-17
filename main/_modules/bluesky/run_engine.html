@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev58+gedb01a9bc documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=fb8fcf2b"></script>
+    <script src="../../_static/documentation_options.js?v=d2b12c45"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -562,7 +562,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev58+gedb01a9bc';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -571,7 +571,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev58+gedb01a9bc" />
+  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1079,7 +1079,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">weakref</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChainMap</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">MutableMapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExitStack</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
@@ -1273,7 +1273,10 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">default_scan_id_source</span><span class="p">(</span><span class="n">md</span><span class="p">):</span>
+<span class="n">RunEngineMetadata</span> <span class="o">=</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">default_scan_id_source</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">RunEngineMetadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
     <span class="k">return</span> <span class="n">md</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scan_id&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
 
 
@@ -1293,13 +1296,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    md : dict-like, optional</span>
+<span class="sd">    md : MutableMapping[str, Any], optional</span>
 <span class="sd">        The default is a standard Python dictionary, but fancier</span>
 <span class="sd">        objects can be used to store long-term history and persist</span>
-<span class="sd">        it between sessions. The standard configuration</span>
-<span class="sd">        instantiates a Run Engine with historydict.HistoryDict, a</span>
-<span class="sd">        simple interface to a sqlite file. Any object supporting</span>
-<span class="sd">        `__getitem__`, `__setitem__`, and `clear` will work.</span>
+<span class="sd">        it between sessions. Any object adhering to the MutableMapping</span>
+<span class="sd">        Protocol will work.</span>
 
 <span class="sd">    loop : asyncio event loop</span>
 <span class="sd">        e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``</span>
@@ -1323,7 +1324,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    md_validator : callable, optional</span>
 <span class="sd">        a function that raises and prevents starting a run if it deems</span>
 <span class="sd">        the metadata to be invalid or incomplete</span>
-<span class="sd">        Expected signature: f(md)</span>
+<span class="sd">        Expected signature: f(md: MutableMapping[str, Any])</span>
 <span class="sd">        Function should raise if md is invalid. What that means is</span>
 <span class="sd">        completely up to the user. The function&#39;s return value is</span>
 <span class="sd">        ignored.</span>
@@ -1333,7 +1334,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        a run if it deems the metadata to be invalid or incomplete.</span>
 <span class="sd">        If it succeeds, it returns the normalized/transformed version of</span>
 <span class="sd">        the original metadata.</span>
-<span class="sd">        Expected signature: f(md)</span>
+<span class="sd">        Expected signature: f(md: MutableMapping[str, Any]) -&gt; MutableMapping[str, Any]</span>
 <span class="sd">        Function should raise if md is invalid. What that means is</span>
 <span class="sd">        completely up to the user.</span>
 <span class="sd">        Expected return: normalized metadata</span>
@@ -1482,14 +1483,14 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../generated/bluesky.run_engine.RunEngine.html#bluesky.run_engine.RunEngine.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">md</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">md</span><span class="p">:</span> <span class="n">RunEngineMetadata</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">loop</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractEventLoop</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">preprocessors</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">context_managers</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">md_validator</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">md_normalizer</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">scan_id_source</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">default_scan_id_source</span><span class="p">,</span>
+        <span class="n">scan_id_source</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">RunEngineMetadata</span><span class="p">],</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">default_scan_id_source</span><span class="p">,</span>
         <span class="n">during_task</span><span class="p">:</span> <span class="n">DuringTask</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">call_returns_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
@@ -3961,7 +3962,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.obj&quot;</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="k">else</span> <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">&quot;msg.no_obj_given&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_default_md_validator</span><span class="p">(</span><span class="n">md</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_md_validator</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">RunEngineMetadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">if</span> <span class="s2">&quot;sample&quot;</span> <span class="ow">in</span> <span class="n">md</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;sample&quot;</span><span class="p">],</span> <span class="s2">&quot;keys&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;sample&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s2">&quot;You specified &#39;sample&#39; metadata. We give this field special &quot;</span>
@@ -3974,7 +3975,7 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_default_md_normalizer</span><span class="p">(</span><span class="n">md</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_md_normalizer</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">RunEngineMetadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RunEngineMetadata</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">md</span>
 
 

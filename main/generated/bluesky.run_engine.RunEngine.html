@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>bluesky.run_engine.RunEngine &#8212; bluesky 1.15.2.dev58+gedb01a9bc documentation</title>
+    <title>bluesky.run_engine.RunEngine &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=fb8fcf2b"></script>
+    <script src="../_static/documentation_options.js?v=d2b12c45"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/bluesky.run_engine.RunEngine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev58+gedb01a9bc';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="RunEngine API Documentation" href="../run_engine_api.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev58+gedb01a9bc" />
+  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -601,17 +601,15 @@
 <h1>bluesky.run_engine.RunEngine<a class="headerlink" href="#bluesky-run-engine-runengine" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.run_engine.RunEngine">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.run_engine.</span></span><span class="sig-name descname"><span class="pre">RunEngine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">md:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">*,</span> <span class="pre">loop:</span> <span class="pre">~asyncio.events.AbstractEventLoop</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">preprocessors:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">context_managers:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_validator:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_normalizer:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">scan_id_source:</span> <span class="pre">~typing.Callable[[dict],</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">~collections.abc.Awaitable[int]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">default_scan_id_source&gt;,</span> <span class="pre">during_task:</span> <span class="pre">~bluesky.utils.DuringTask</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">call_returns_result:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/run_engine.html#RunEngine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.run_engine.RunEngine" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.run_engine.</span></span><span class="sig-name descname"><span class="pre">RunEngine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">md:</span> <span class="pre">~collections.abc.MutableMapping[str,</span> <span class="pre">~typing.Any]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">*,</span> <span class="pre">loop:</span> <span class="pre">~asyncio.events.AbstractEventLoop</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">preprocessors:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">context_managers:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_validator:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_normalizer:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">scan_id_source:</span> <span class="pre">~typing.Callable[[~collections.abc.MutableMapping[str,</span> <span class="pre">~typing.Any]],</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">~collections.abc.Awaitable[int]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">default_scan_id_source&gt;,</span> <span class="pre">during_task:</span> <span class="pre">~bluesky.utils.DuringTask</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">call_returns_result:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/run_engine.html#RunEngine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.run_engine.RunEngine" title="Link to this definition">#</a></dt>
 <dd><p>The Run Engine execute messages and emits Documents.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
-<dt><strong>md</strong><span class="classifier">dict-like, optional</span></dt><dd><p>The default is a standard Python dictionary, but fancier
+<dt><strong>md</strong><span class="classifier">MutableMapping[str, Any], optional</span></dt><dd><p>The default is a standard Python dictionary, but fancier
 objects can be used to store long-term history and persist
-it between sessions. The standard configuration
-instantiates a Run Engine with historydict.HistoryDict, a
-simple interface to a sqlite file. Any object supporting
-<cite>__getitem__</cite>, <cite>__setitem__</cite>, and <cite>clear</cite> will work.</p>
+it between sessions. Any object adhering to the MutableMapping
+Protocol will work.</p>
 </dd>
 <dt><strong>loop</strong><span class="classifier">asyncio event loop</span></dt><dd><p>e.g., <code class="docutils literal notranslate"><span class="pre">asyncio.get_event_loop()</span></code> or <code class="docutils literal notranslate"><span class="pre">asyncio.new_event_loop()</span></code></p>
 </dd>
@@ -631,7 +629,7 @@ managers.</p>
 </dd>
 <dt><strong>md_validator</strong><span class="classifier">callable, optional</span></dt><dd><p>a function that raises and prevents starting a run if it deems
 the metadata to be invalid or incomplete
-Expected signature: f(md)
+Expected signature: f(md: MutableMapping[str, Any])
 Function should raise if md is invalid. What that means is
 completely up to the user. The function’s return value is
 ignored.</p>
@@ -640,7 +638,7 @@ ignored.</p>
 a run if it deems the metadata to be invalid or incomplete.
 If it succeeds, it returns the normalized/transformed version of
 the original metadata.
-Expected signature: f(md)
+Expected signature: f(md: MutableMapping[str, Any]) -&gt; MutableMapping[str, Any]
 Function should raise if md is invalid. What that means is
 completely up to the user.
 Expected return: normalized metadata</p>
@@ -738,7 +736,7 @@ can be modified based on needs.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.run_engine.RunEngine.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">md:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">*,</span> <span class="pre">loop:</span> <span class="pre">~asyncio.events.AbstractEventLoop</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">preprocessors:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">context_managers:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_validator:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_normalizer:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">scan_id_source:</span> <span class="pre">~typing.Callable[[dict],</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">~collections.abc.Awaitable[int]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">default_scan_id_source&gt;,</span> <span class="pre">during_task:</span> <span class="pre">~bluesky.utils.DuringTask</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">call_returns_result:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/run_engine.html#RunEngine.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.run_engine.RunEngine.__init__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">md:</span> <span class="pre">~collections.abc.MutableMapping[str,</span> <span class="pre">~typing.Any]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">*,</span> <span class="pre">loop:</span> <span class="pre">~asyncio.events.AbstractEventLoop</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">preprocessors:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">context_managers:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_validator:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">md_normalizer:</span> <span class="pre">~typing.Callable</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">scan_id_source:</span> <span class="pre">~typing.Callable[[~collections.abc.MutableMapping[str,</span> <span class="pre">~typing.Any]],</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">~collections.abc.Awaitable[int]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">default_scan_id_source&gt;,</span> <span class="pre">during_task:</span> <span class="pre">~bluesky.utils.DuringTask</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">call_returns_result:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bluesky/run_engine.html#RunEngine.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.run_engine.RunEngine.__init__" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <p class="rubric">Methods</p>
@@ -899,7 +897,7 @@ can be modified based on needs.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev58+gedb01a9bc/docs/generated/bluesky.run_engine.RunEngine.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/generated/bluesky.run_engine.RunEngine.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
