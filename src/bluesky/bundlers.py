@@ -813,24 +813,27 @@ class RunBundler:
                 f"streams: {duplicates.keys()}",
             )
 
-        for stream_name, stream_data_keys in describe_collect_items:
-            # Will this be okay left at last stream?
-            self._set_current_stream_cache(stream_name)
-            # Should we make the describe_cache the describe_collect_cache?
-            self._current_stream_cache.describe_cache[collect_object] = stream_data_keys
-            await self._current_stream_cache.ensure_cached(collect_object, collect=True)
+        current_stream_cache = self._current_stream_cache
+        try:
+            for stream_name, stream_data_keys in describe_collect_items:
+                self._set_current_stream_cache(stream_name)
+                # Should we make the describe_cache the describe_collect_cache?
+                self._current_stream_cache.describe_cache[collect_object] = stream_data_keys
+                await self._current_stream_cache.ensure_cached(collect_object, collect=True)
 
-            if stream_name not in self._descriptor_objs or (
-                collect_object not in self._descriptor_objs[stream_name]
-            ):
-                await self._prepare_stream(stream_name, {collect_object: stream_data_keys})
-            else:
-                objs_read = self._descriptor_objs[stream_name]
-                if stream_data_keys != objs_read[collect_object]:
-                    raise RuntimeError(
-                        f"Mismatched objects read, expected {stream_data_keys!s}, got {objs_read!s}"
-                    )
-            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
+                if stream_name not in self._descriptor_objs or (
+                    collect_object not in self._descriptor_objs[stream_name]
+                ):
+                    await self._prepare_stream(stream_name, {collect_object: stream_data_keys})
+                else:
+                    objs_read = self._descriptor_objs[stream_name]
+                    if stream_data_keys != objs_read[collect_object]:
+                        raise RuntimeError(
+                            f"Mismatched objects read, expected {stream_data_keys!s}, got {objs_read!s}"
+                        )
+                local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
+        finally:
+            self._current_stream_cache = current_stream_cache
 
         self._local_descriptors[collect_object] = local_descriptors
 
