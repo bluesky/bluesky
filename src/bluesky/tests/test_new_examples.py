@@ -864,6 +864,12 @@ def test_stage_all_and_unstage_all(RE):
     staged = {}
     unstaged = {}
 
+    # Barriers prove new-style devices run concurrently: both threads must
+    # arrive at the barrier before either can proceed. If they were staged
+    # sequentially, the first would block forever (hitting the timeout).
+    stage_barrier = threading.Barrier(2, timeout=2)
+    unstage_barrier = threading.Barrier(2, timeout=2)
+
     # Test support for old and new style devices
     class OldStyleDummy:
         def __init__(self, name: str) -> None:
@@ -871,36 +877,39 @@ def test_stage_all_and_unstage_all(RE):
 
         def stage(self):
             staged[self.name] = True
-            ttime.sleep(0.5)
             return [self]
 
         def unstage(self):
             unstaged[self.name] = True
-            ttime.sleep(0.5)
             return [self]
 
     class NewStyleDummy:
-        def __init__(self, name: str) -> None:
+        def __init__(
+            self, name: str, stage_barrier: threading.Barrier, unstage_barrier: threading.Barrier
+        ) -> None:
             self.name: str = name
+            self._stage_barrier = stage_barrier
+            self._unstage_barrier = unstage_barrier
 
-        def _callback(self, d: dict, st: Status):
+        def _callback(self, d: dict, st: Status, barrier: threading.Barrier):
+            barrier.wait()
             d[self.name] = True
             st.set_finished()  # type: ignore
 
         def stage(self) -> Status:
             st = StatusBase()
-            threading.Timer(0.5, self._callback, args=[staged, st]).start()
+            threading.Thread(target=self._callback, args=[staged, st, self._stage_barrier]).start()
             return st
 
         def unstage(self) -> Status:
             st = StatusBase()
-            threading.Timer(0.5, self._callback, args=[unstaged, st]).start()
+            threading.Thread(target=self._callback, args=[unstaged, st, self._unstage_barrier]).start()
             return st
 
     olddummy1 = OldStyleDummy("o1")
     olddummy2 = OldStyleDummy("o2")
-    newdummy1 = NewStyleDummy("n1")
-    newdummy2 = NewStyleDummy("n2")
+    newdummy1 = NewStyleDummy("n1", stage_barrier, unstage_barrier)
+    newdummy2 = NewStyleDummy("n2", stage_barrier, unstage_barrier)
 
     def plan():
         yield from stage_all(olddummy1, olddummy2, newdummy1, newdummy2)
@@ -917,11 +926,7 @@ def test_stage_all_and_unstage_all(RE):
         assert "n1" in unstaged_keys[2:]
         assert "n2" in unstaged_keys[2:]
 
-    start = ttime.monotonic()
     RE(plan())
-    stop = ttime.monotonic()
-
-    assert 3 < stop - start < 4
 
 
 def test_old_style_wait(RE):

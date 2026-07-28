@@ -89,7 +89,7 @@ P = TypeVar("P")
 MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
-CustomPlanMetadata = dict[str, Any]
+CustomPlanMetadata = collections.abc.MutableMapping[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat: TypeAlias = float | TypingIterable[float]
@@ -1995,12 +1995,16 @@ def maybe_update_hints(hints: dict[str, Hints], obj):
         hints[obj.name] = obj.hints
 
 
+def _isasyncgen(iterator: SyncOrAsyncIterator[T]) -> TypeIs[AsyncIterator[T]]:
+    return inspect.isasyncgen(iterator)
+
+
 async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator[T]:
-    if inspect.isasyncgen(iterator):
+    if _isasyncgen(iterator):
         async for v in iterator:
             yield v
     else:
-        for v in iterator:  # type: ignore
+        for v in iterator:
             yield v
 
 
