@@ -89,7 +89,7 @@ P = TypeVar("P")
 MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
-CustomPlanMetadata = dict[str, Any]
+CustomPlanMetadata = collections.abc.MutableMapping[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat: TypeAlias = float | TypingIterable[float]
