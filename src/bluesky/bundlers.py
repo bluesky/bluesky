@@ -25,6 +25,8 @@ from event_model import (
 )
 from event_model.documents.event import Event
 
+from bluesky.run_engine import RunEngineMetadata
+
 from .log import doc_logger
 from .protocols import (
     Asset,
@@ -92,7 +94,7 @@ class _StreamCache:
     # obj.read_configuration() timestamps
     config_ts_cache: ObjDict[Any] = field(default_factory=dict)
 
-    async def ensure_cached(self, obj, collect=False):
+    async def ensure_cached(self, obj, collect: bool=False):
         """Cache objects Readable and Configurable methods. Cache Collectable methods if collect is True."""
         coros = []
         if not collect and obj not in self.describe_cache:
@@ -103,12 +105,12 @@ class _StreamCache:
             coros.append(self.cache_read_config(obj))
         await asyncio.gather(*coros)
 
-    async def _cache_describe(self, obj):
+    async def _cache_describe(self, obj: Readable):
         "Read the object's describe and cache it."
         obj = check_supports(obj, Readable)
         self.describe_cache[obj] = await maybe_await(obj.describe())
 
-    async def _cache_describe_config(self, obj):
+    async def _cache_describe_config(self, obj: Configurable):
         "Read the object's describe_configuration and cache it."
         if isinstance(obj, Configurable):
             conf_keys = await maybe_await(obj.describe_configuration())
@@ -135,7 +137,7 @@ class _StreamCache:
 class RunBundler:
     def __init__(
         self,
-        md: dict | None,
+        md: RunEngineMetadata | None,
         record_interruptions: bool,
         emit: Callable,
         emit_sync: Callable,
@@ -326,18 +328,15 @@ class RunBundler:
 
     async def declare_stream(
         self, msg: Msg
-    ) -> tuple[EventDescriptor, ComposeEvent, list[dict[HasName, dict[str, DataKey]]]]:
+    ) -> tuple[EventDescriptor, ComposeEvent, list]:
         """Generate and emit an EventDescriptor."""
-        _, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs.get("name")
+        stream_name = msg.kwargs.get("name")
         if stream_name is None:
             raise ValueError("A stream name that is not None is required for pre-declare.")
 
-        collect = kwargs.get("collect", False)
-        if no_obj is not None:
-            raise ValueError("The 'declare_stream' Msg does not accept positional arguments.")
-        objs = frozenset(objs)
-        objs_dks = {}  # {collect_object: stream_data_keys}
+        collect = msg.kwargs.get("collect", False)
+        objs = frozenset(msg.args)
+        objs_dks = {}
 
         self._set_current_stream_cache(stream_name)
 
@@ -398,12 +397,11 @@ class RunBundler:
         self._asset_docs_cache.clear()
         self._objs_read.clear()
         self.bundling = True
-        command, obj, args, kwargs, _ = msg
         try:
-            self._bundle_name = kwargs["name"]
+            self._bundle_name = msg.kwargs["name"]
         except KeyError:
             try:
-                (self._bundle_name,) = args
+                (self._bundle_name,) = msg.args
             except ValueError:
                 raise ValueError(
                     "Msg('create') now requires a stream name, given as "
@@ -413,6 +411,7 @@ class RunBundler:
             if self._bundle_name not in self._descriptors:
                 raise IllegalMessageSequence("In strict mode you must pre-declare streams.")
 
+        assert self._bundle_name is not None, "Msg('create') must have a stream name"
         self._set_current_stream_cache(self._bundle_name)
 
     async def read(self, msg, reading):
@@ -486,8 +485,7 @@ class RunBundler:
 
         await self._current_stream_cache.ensure_cached(obj)
 
-        stream_bundle = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
-        compose_event = stream_bundle[1]
+        _, compose_event, _ = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
 
         def emit_event(readings: dict[str, Reading] | None = None, *args, **kwargs):
             if readings is not None:
@@ -1215,7 +1213,7 @@ class RunBundler:
             except Exception:
                 self.log.exception("Failed to collect %r.", obj)
 
-    async def configure(self, msg):
+    async def configure(self, msg: Msg):
         """Configure an object
 
         Expected message object is ::
@@ -1247,8 +1245,8 @@ class RunBundler:
             )
             self._describe_collect_cache[obj] = c
 
-    async def _ensure_cached(self, obj, collect: bool = False):
+    async def _ensure_cached(self, obj: Readable | Flyable | Configurable, collect: bool = False):
         coros = [self._current_stream_cache.ensure_cached(obj, collect)]
-        if collect:
+        if collect and isinstance(obj, Flyable):
             coros.append(self._cache_describe_collect(obj))
         await asyncio.gather(*coros)
