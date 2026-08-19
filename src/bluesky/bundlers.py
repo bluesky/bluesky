@@ -270,7 +270,7 @@ class RunBundler:
         self,
         desc_key: str,
         objs_dks: dict[HasName, dict[str, DataKey]],
-    ) -> tuple[EventDescriptor, ComposeEvent, list[HasName]]:
+    ) -> tuple[EventDescriptor, ComposeEvent, list[dict[HasName, dict[str, DataKey]]]]:
         # We do not have an Event Descriptor for this set
         # so one must be created.
         data_keys = {}
@@ -324,7 +324,7 @@ class RunBundler:
             list(objs_dks),
         )
 
-    async def declare_stream(self, msg: Msg) -> tuple[EventDescriptor, ComposeEvent, list[HasName]]:
+    async def declare_stream(self, msg: Msg) -> tuple[EventDescriptor, ComposeEvent, list[dict[HasName, dict[str, DataKey]]]]:
         """Generate and emit an EventDescriptor."""
         _, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs.get("name")
