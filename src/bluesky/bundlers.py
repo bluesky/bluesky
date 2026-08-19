@@ -10,9 +10,11 @@ from typing import Any, Literal, TypeAlias, TypeGuard, cast
 
 from event_model import (
     ComposeDescriptorBundle,
+    ComposeEvent,
     DataKey,
     Datum,
     DocumentNames,
+    EventDescriptor,
     EventModelValueError,
     Resource,
     StreamDatum,
@@ -268,7 +270,7 @@ class RunBundler:
         self,
         desc_key: str,
         objs_dks: dict[HasName, dict[str, DataKey]],
-    ):
+    ) -> tuple[EventDescriptor, ComposeEvent, list[HasName]]:
         # We do not have an Event Descriptor for this set
         # so one must be created.
         data_keys = {}
@@ -322,14 +324,20 @@ class RunBundler:
             list(objs_dks),
         )
 
-    async def declare_stream(self, msg):
+    async def declare_stream(self, msg: Msg) -> tuple[EventDescriptor, ComposeEvent, list[HasName]]:
         """Generate and emit an EventDescriptor."""
-        command, no_obj, objs, kwargs, _ = msg
+        _, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs.get("name")
-        assert stream_name is not None, "A stream name that is not None is required for pre-declare"
+        if stream_name is None:
+            raise ValueError(
+                "A stream name that is not None is required for pre-declare."
+            )
 
         collect = kwargs.get("collect", False)
-        assert no_obj is None
+        if no_obj is not None:
+            raise ValueError(
+                "The 'declare_stream' Msg does not accept positional arguments."
+            )
         objs = frozenset(objs)
         objs_dks = {}  # {collect_object: stream_data_keys}
 
@@ -344,10 +352,11 @@ class RunBundler:
                 )
 
                 # ensure that there is only one stream and it is the stream we have provided.
-                assert len(streams_and_data_keys) == 1 and streams_and_data_keys[0][0] == stream_name, (
-                    "`declare_stream` contained `collect=True` but  `describe_collect` did "
-                    f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
-                )
+                if len(streams_and_data_keys) != 1 or streams_and_data_keys[0][0] != stream_name:
+                    raise ValueError(
+                        "`declare_stream` contained `collect=True` but  `describe_collect` did "
+                        f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
+                    )
             else:
                 data_keys = self._current_stream_cache.describe_cache[obj]
 
@@ -366,7 +375,7 @@ class RunBundler:
             self._current_stream_cache = _StreamCache()
             self._saved_stream_cache[stream_name] = self._current_stream_cache
 
-    async def create(self, msg):
+    async def create(self, msg: Msg):
         """
         Start bundling future obj.read() calls for an Event document.
 
@@ -485,18 +494,20 @@ class RunBundler:
         def emit_event(readings: dict[str, Reading] | None = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
-                assert not args and not kwargs, (
-                    "If subscribe callback called with readings, args and kwargs are not supported."
-                )
+                if args or kwargs:
+                    raise ValueError(
+                        "If subscribe callback called with readings, args and kwargs are not supported."
+                    )
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
                 readable_obj = check_supports(obj, Readable)  # type: ignore
                 readings = readable_obj.read()  # type: ignore
-                assert not inspect.isawaitable(readings), (
-                    f"{readable_obj} has async read() method and the callback "
-                    "passed to subscribe() was not called with Dict[str, Reading]"
-                )
+                if inspect.isawaitable(readings):
+                    raise RuntimeError(
+                        f"{readable_obj} has async read() method and the callback "
+                        "passed to subscribe() was not called with Dict[str, Reading]"
+                    )
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
@@ -792,9 +803,8 @@ class RunBundler:
         def is_data_key(obj: Any) -> bool:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
-        assert all(not is_data_key(value) for value in describe_collect.values()), (
-            "Single nested data keys should be pre-declared"
-        )
+        if not all(not is_data_key(value) for value in describe_collect.values()):
+            raise RuntimeError("Single nested data keys should be pre-declared")
 
         # Make sure you can't use identical data keys in multiple streams
         # Data structure is assumed to be dict[stream_name, dictionary of key -> data_key]
@@ -978,7 +988,10 @@ class RunBundler:
                 objs_read = frozenset(partial_event["data"])
                 compose_event = local_descriptors[objs_read].compose_event
                 data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
-                assert frozenset(data_keys.keys()) == objs_read
+                if frozenset(data_keys.keys()) != objs_read:
+                    raise RuntimeError(
+                        f"Mismatched objects read, expected {frozenset(data_keys.keys())!s}, got {objs_read!s}"
+                    )
 
             if [x for x in self.get_external_data_keys(data_keys) if x in partial_event["data"]]:
                 raise RuntimeError("Received an event containing data for external data keys.")
@@ -1105,12 +1118,17 @@ class RunBundler:
         # If a stream name was provided in the message, check the stream has been declared
         # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
-            assert message_stream_name in declared_stream_names, (
-                "If a message stream name is provided declare stream needs to be called first."
-            )
+            if not message_stream_name in declared_stream_names:
+                raise RuntimeError(
+                    "If a message stream name is provided declare stream needs to be called first."
+                )
             stream_name = message_stream_name
         elif declared_stream_names:
-            assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations
+            if len(frozenset(declared_stream_names)) != 1:
+                raise RuntimeError(
+                    "If multiple streams have been declared for the collect objects, "
+                    "a message stream name must be provided to collect."
+                )
             stream_name = declared_stream_names[0]
 
         # If there is not a stream then we should be using an old-style doubly nested
