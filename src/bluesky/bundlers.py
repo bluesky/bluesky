@@ -324,20 +324,18 @@ class RunBundler:
             list(objs_dks),
         )
 
-    async def declare_stream(self, msg: Msg) -> tuple[EventDescriptor, ComposeEvent, list[dict[HasName, dict[str, DataKey]]]]:
+    async def declare_stream(
+        self, msg: Msg
+    ) -> tuple[EventDescriptor, ComposeEvent, list[dict[HasName, dict[str, DataKey]]]]:
         """Generate and emit an EventDescriptor."""
         _, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs.get("name")
         if stream_name is None:
-            raise ValueError(
-                "A stream name that is not None is required for pre-declare."
-            )
+            raise ValueError("A stream name that is not None is required for pre-declare.")
 
         collect = kwargs.get("collect", False)
         if no_obj is not None:
-            raise ValueError(
-                "The 'declare_stream' Msg does not accept positional arguments."
-            )
+            raise ValueError("The 'declare_stream' Msg does not accept positional arguments.")
         objs = frozenset(objs)
         objs_dks = {}  # {collect_object: stream_data_keys}
 
@@ -1118,10 +1116,8 @@ class RunBundler:
         # If a stream name was provided in the message, check the stream has been declared
         # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
-            if not message_stream_name in declared_stream_names:
-                raise RuntimeError(
-                    "If a message stream name is provided declare stream needs to be called first."
-                )
+            if message_stream_name not in declared_stream_names:
+                raise RuntimeError("If a message stream name is provided declare stream needs to be called first.")
             stream_name = message_stream_name
         elif declared_stream_names:
             if len(frozenset(declared_stream_names)) != 1:

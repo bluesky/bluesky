@@ -525,9 +525,7 @@ def check_supports(obj: T, protocol: type[Any]) -> T:
         readable.read()
     """
     if not isinstance(obj, protocol):
-        raise TypeError(
-            "%s does not implement all %s methods" % (obj, protocol.__name__)
-        )
+        raise TypeError("%s does not implement all %s methods" % (obj, protocol.__name__))
     return obj
 
 

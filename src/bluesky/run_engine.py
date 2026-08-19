@@ -1550,9 +1550,7 @@ class RunEngine:
                     # continue (resume) or to clean up before exiting.
 
                 if len(self._response_stack) != len(self._plan_stack):
-                    raise RuntimeError(
-                        "The response stack and plan stack are out of sync. "
-                    )
+                    raise RuntimeError("The response stack and plan stack are out of sync. ")
                 # set resp to the sentinel so that if we fail in the sleep
                 # we do not add an extra response
                 resp = sentinel
