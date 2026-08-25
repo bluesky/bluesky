@@ -1,3 +1,4 @@
+import asyncio
 import threading
 import time
 import time as ttime
@@ -5,7 +6,6 @@ from functools import partial
 
 import pytest
 
-import bluesky.plan_stubs as bps
 from bluesky import Msg
 from bluesky.preprocessors import suspend_wrapper
 from bluesky.run_engine import RunEngineInterrupted
@@ -19,20 +19,13 @@ from bluesky.suspenders import (
     SuspendWhenChanged,
     SuspendWhenOutsideBand,
 )
-from bluesky.tests import requires_ophyd_async
+from bluesky.tests import ophyd_async, requires_ophyd_async
 from bluesky.tests.utils import MsgCollector
 
 from .utils import _fabricate_asycio_event
 
-try:
-    import asyncio
-
+if ophyd_async:
     from ophyd_async.core import soft_signal_rw
-
-    ophyd_async_imported = True
-
-except ImportError:
-    ophyd_async_imported = False
 
 parametrize_suspenders = pytest.mark.parametrize(
     "klass,sc_args,start_val,fail_val,resume_val,wait_time",
@@ -48,9 +41,7 @@ parametrize_suspenders = pytest.mark.parametrize(
 )  # deprecated
 
 
-@parametrize_suspenders
-def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, RE, hw):
-    sig = hw.bool_sig
+def _check_suspender(klass, sc_args, sig, putter, start_val, fail_val, resume_val, wait_time, RE):
     try:
         klass, deprecated = klass
     except TypeError:
@@ -61,9 +52,6 @@ def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, R
     else:
         my_suspender = klass(sig, *sc_args, sleep=wait_time)
     my_suspender.install(RE)
-
-    def putter(val):
-        sig.put(val)
 
     # make sure we start at good value!
     putter(start_val)
@@ -88,47 +76,123 @@ def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, R
 
 
 @parametrize_suspenders
-@requires_ophyd_async
-@pytest.mark.asyncio
-async def test_suspender_async_signal(klass, sc_args, start_val, fail_val, resume_val, wait_time, RE):
-    fail_time = 0.1
-    resume_time = 0.5
-    sleep_time = 0.2
-    sig = soft_signal_rw(float, start_val)
-    await sig.connect()
-    try:
-        klass, deprecated = klass
-    except TypeError:
-        deprecated = False
-    if deprecated:
-        with pytest.warns(UserWarning):
-            my_suspender = klass(sig, *sc_args, sleep=wait_time)
-    else:
-        my_suspender = klass(sig, *sc_args, sleep=wait_time)
-    my_suspender.install(RE)
+def test_suspender(klass, sc_args, start_val, fail_val, resume_val, wait_time, RE, hw):
+    sig = hw.bool_sig
 
-    async def _set_after_time(delay, value):
-        await asyncio.sleep(delay)
+    def putter(val):
+        sig.put(val)
+
+    _check_suspender(klass, sc_args, sig, putter, start_val, fail_val, resume_val, wait_time, RE)
+
+
+class _RecordingSignal:
+    """A minimal Subscribable that records where it was called from."""
+
+    name = "sig"
+
+    def __init__(self):
+        self.threads = {}
+
+    def subscribe_reading(self, function):
+        self.threads["subscribe_reading"] = threading.get_ident()
+        function({self.name: {"value": 0, "timestamp": 0}})
+
+    def clear_sub(self, function):
+        self.threads["clear_sub"] = threading.get_ident()
+
+
+@pytest.mark.parametrize("via_plan", [False, True])
+def test_subscribes_on_run_engine_thread(RE, via_plan):
+    "Subscriptions belong to the event loop that made them, e.g. CA monitors"
+    sig = _RecordingSignal()
+    susp = SuspendBoolHigh(sig)
+
+    if via_plan:
+        # install/remove are reached from the event loop thread this way
+        RE([Msg("install_suspender", None, susp), Msg("remove_suspender", None, susp)])
+    else:
+        susp.install(RE)
+        susp.remove()
+
+    loop_thread = _loop_thread_ident(RE)
+    assert sig.threads == {"subscribe_reading": loop_thread, "clear_sub": loop_thread}
+
+
+def test_remove_without_install_does_not_need_a_loop():
+    sig = _RecordingSignal()
+
+    SuspendBoolHigh(sig).remove()
+
+    assert sig.threads == {}
+
+
+def _loop_thread_ident(RE):
+    """The ident of the thread the RunEngine's event loop runs in."""
+
+    async def ident():
+        return threading.get_ident()
+
+    return asyncio.run_coroutine_threadsafe(ident(), RE.loop).result()
+
+
+def _connected_soft_signal(RE, initial_value):
+    """Make a soft signal connected on the RunEngine's event loop."""
+    sig = soft_signal_rw(float, initial_value, "sig")
+    asyncio.run_coroutine_threadsafe(sig.connect(), RE.loop).result()
+    return sig
+
+
+def _set_on_loop(RE, sig, value):
+    """Set a signal from another thread.
+
+    ``set`` makes an ``AsyncStatus`` as soon as it is called, so it has to be
+    called on the event loop rather than merely awaited there.
+    """
+
+    async def set_it():
         await sig.set(value)
 
-    tasks = []
+    asyncio.run_coroutine_threadsafe(set_it(), RE.loop).result()
 
-    RE.install_suspender(my_suspender)
 
-    def _plan():
-        # set up tasks to cause suspension during sleep, then resume
-        tasks.append(asyncio.create_task(_set_after_time(fail_time, fail_val)))
-        tasks.append(asyncio.create_task(_set_after_time(resume_time, resume_val)))
-        yield from bps.checkpoint()
-        yield from bps.sleep(sleep_time)
+@parametrize_suspenders
+@requires_ophyd_async
+def test_suspender_async_signal(klass, sc_args, start_val, fail_val, resume_val, wait_time, RE):
+    sig = _connected_soft_signal(RE, start_val)
 
-    start = time.time()
-    RE(_plan())
-    stop = time.time()
-    for task in tasks:
-        await task
-    delta = stop - start
-    assert delta >= resume_time + sleep_time + wait_time
+    def putter(val):
+        _set_on_loop(RE, sig, val)
+
+    _check_suspender(klass, sc_args, sig, putter, start_val, fail_val, resume_val, wait_time, RE)
+
+
+@requires_ophyd_async
+def test_pretripped_async_signal(RE):
+    "Tests that install() sees the current value, as ophyd's subscribe(run=True) does"
+    sig = _connected_soft_signal(RE, 1)
+    susp = SuspendBoolHigh(sig)
+
+    susp.install(RE)
+
+    assert susp.tripped
+
+
+@requires_ophyd_async
+def test_suspend_when_changed_async_signal(RE):
+    "expected_value cannot be read from a Subscribable signal until it is installed"
+    sig = _connected_soft_signal(RE, 1)
+    susp = SuspendWhenChanged(sig, allow_resume=True)
+    assert susp.expected_value is None
+
+    susp.install(RE)
+
+    assert susp.expected_value == 1
+    assert not susp.tripped
+
+    _set_on_loop(RE, sig, 2)
+
+    assert susp.tripped
+    assert susp._get_justification() == 'Signal sig, got "2.0", expected "1.0"'
 
 
 def test_pretripped(RE, hw):
