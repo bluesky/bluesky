@@ -490,26 +490,25 @@ class RunBundler:
             )
             self.emit_sync(DocumentNames.event, doc)
 
+        def emit_event_for_subscribe(*args, **kwargs):
+            # Ignore the inputs. Use this call as a signal to call read on the
+            # object, a crude way to be sure we get all the info we need.
+            readable_obj = check_supports(obj, Readable)
+            readings = readable_obj.read()
+            if inspect.isawaitable(readings):
+                raise RuntimeError(
+                    f"{readable_obj} has a subscribe() method rather than a "
+                    "subscribe_readings() method and an async read() method. "
+                    "If using ophyd-async, make sure you are using at least v0.13.5."
+                )
+            emit_event_from_readings(readings)
+
         if isinstance(obj, Subscribable):
             self._monitor_params[obj] = emit_event_from_readings, kwargs
             obj.subscribe_reading(emit_event_from_readings)
         elif callable(getattr(obj, "subscribe", None)):
-
-            def read_and_emit(*args, **kwargs):
-                # Ignore the inputs. Use this call as a signal to call read on the
-                # object, a crude way to be sure we get all the info we need.
-                readable_obj = check_supports(obj, Readable)
-                readings = readable_obj.read()
-                if inspect.isawaitable(readings):
-                    raise RuntimeError(
-                        f"{readable_obj} has a subscribe() method rather than a "
-                        "subscribe_readings() method and an async read() method. "
-                        "If using ophyd-async, make sure you are using at least v0.13.5."
-                    )
-                emit_event_from_readings(readings)
-
-            self._monitor_params[obj] = read_and_emit, kwargs
-            obj.subscribe(read_and_emit, **kwargs)
+            self._monitor_params[obj] = emit_event_for_subscribe, kwargs
+            obj.subscribe(emit_event_for_subscribe, **kwargs)
         else:
             raise RuntimeError(
                 "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
