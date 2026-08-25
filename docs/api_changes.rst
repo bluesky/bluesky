@@ -2,6 +2,28 @@
  Release History
 =================
 
+Unreleased
+==========
+
+Changed
+-------
+
+- The ``bluesky.protocols.Subscribable`` protocol now requires a
+  ``subscribe_reading`` method rather than a ``subscribe`` method.  The
+  protocol did not match the implementation it was written to describe:
+  ophyd's ``subscribe`` calls back with the ``obj`` that changed, whereas
+  ``Subscribable`` documented a callback taking a mapping of
+  ``{name: Reading}``.  Renaming makes the two subscription styles
+  distinct, so an object can implement either (or both) unambiguously.
+- ophyd objects therefore no longer satisfy
+  ``isinstance(obj, Subscribable)``.  The ``monitor`` and ``unmonitor``
+  messages still support them: ``monitor`` calls ``subscribe_reading`` if
+  the object implements ``Subscribable``, and otherwise falls back to
+  calling ``subscribe`` and reading the object back in the callback.
+  Devices that implemented the old ``Subscribable`` protocol should rename
+  ``subscribe`` to ``subscribe_reading``; users of ophyd-async need at
+  least v0.13.5.
+
 v1.15.1 (2026-05-05)
 ====================
 
@@ -42,9 +64,6 @@ Changed
 
 v1.14.6 (2025-10-08)
 ====================
-
-Added
------
 
 Fixed
 -----
@@ -100,7 +119,37 @@ Fixed
 v1.14.2 (2025-06-10)
 ====================
 
-TO DO
+Added
+-----
+
+- ``bluesky.callbacks.buffer.BufferingWrapper``, which runs a wrapped
+  callback on its own thread behind a queue so that slow consumers do not
+  block the ``RunEngine``.  It raises if the queue fills up rather than
+  growing without bound.
+- ``bluesky.callbacks.json_writer.JSONWriter`` and ``JSONLinesWriter``,
+  which serialize a run's documents to JSON and JSONLines respectively.
+- ``TiledWriter`` accepts ``spec_to_mimetype`` to extend or override the
+  mapping used when converting legacy ``Resource`` documents to
+  ``StreamResource``, and ``patches`` to fix up documents before they are
+  normalized.
+- ``TiledWriter`` accepts ``backup_directory``; runs that fail to be
+  written to Tiled are written there in JSONLines format for recovery.
+- ``TiledWriter`` accepts ``batch_size``, the number of ``Event`` or
+  ``StreamDatum`` documents to collect before writing.  Larger values cut
+  down the number of write operations for bulk work such as database
+  migration; for streaming use, keep it at ``<= 1``.
+
+Changed
+-------
+
+- The document normalizer used by ``TiledWriter`` is now public as
+  ``bluesky.callbacks.tiled_writer.RunNormalizer`` (was
+  ``_RunNormalizer``), so it can be reused to feed updated documents to
+  other consumers.
+- ``MIMETYPE_LOOKUP`` moved from ``bluesky.callbacks.core`` to
+  ``bluesky.callbacks.tiled_writer``.
+- ``StreamResource`` documents are now emitted in the current
+  event-model schema.
 
 v1.14.1 (2025-05-21)
 ====================
