@@ -5,9 +5,29 @@
 Unreleased
 ==========
 
+Added
+-----
+
+- Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
+  such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
+  subscription style from the signal.  For a ``Subscribable`` it subscribes,
+  and ``remove`` unsubscribes, on the RunEngine's event loop, since a
+  subscription belongs to the loop that made it.  Passing a signal that is
+  neither now raises a ``RuntimeError`` from ``install`` rather than an
+  ``AttributeError``.
+
 Changed
 -------
 
+- Suspender justification messages report the last value the suspender was
+  called back with, rather than calling ``signal.get()`` when the message is
+  built.  As well as being readable for signals that cannot be read
+  synchronously, this reports the value that actually tripped the suspender
+  rather than whatever it has since become.
+- ``SuspendWhenChanged`` defaults ``expected_value`` to the first value it is
+  called back with for a ``Subscribable`` signal, since one cannot be read
+  synchronously when the suspender is created.  The default for ophyd signals
+  is unchanged: the value of the signal at creation.
 - The ``bluesky.protocols.Subscribable`` protocol now requires a
   ``subscribe_reading`` method rather than a ``subscribe`` method.  The
   protocol did not match the implementation it was written to describe:
