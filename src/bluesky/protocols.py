@@ -31,7 +31,7 @@ class ReadingOptional(TypedDict, total=False):
 
 T = TypeVar("T")
 P = ParamSpec("P")
-R = TypeVar("R", covariant=True)
+R_co = TypeVar("R_co", covariant=True)
 
 
 class Reading(Generic[T], ReadingOptional):
@@ -85,19 +85,19 @@ class Status(Protocol):
 
 
 @runtime_checkable
-class StatusWithResult(Status, Protocol[R]):
+class StatusWithResult(Status, Protocol[R_co]):
     @abstractmethod
-    def result(self) -> R:
+    def result(self) -> R_co:
         """Return whatever result the Status is meant to produce when it is done.
 
-        It replicates the behavior of `asyncio.Future.result()<https://docs.python.org/3/library/asyncio-future.html#asyncio.Future.result>`_.
+        It replicates the behavior of :py:meth:`asyncio.Future.result`.
 
-        If a result is not available yet, it should raise `asyncio.InvalidStateError<https://docs.python.org/3/library/asyncio-exceptions.html#asyncio.InvalidStateError>`_
-        (or a subclass of it).
+        If a result is not available yet, it should raise
+        :py:exc:`asyncio.InvalidStateError` (or a subclass of it).
 
         Returns
         -------
-        R
+        R_co
             The result of the operation when it is done.
         """
         ...
