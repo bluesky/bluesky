@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Debugging and Logging &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>Debugging and Logging &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'debugging';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Multi-Run Plans" href="multi_run_plans.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -627,7 +627,7 @@ the logging.</p>
 <p>This will display each message from the plan just before the RunEngine
 processes it, giving a clear indication of when plan execution is stuck.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">config_bluesky_logging</span>
-<span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+<span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">'DEBUG'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -636,7 +636,7 @@ processes it, giving a clear indication of when plan execution is stuck.</p>
 <p>This will direct all log messages to a file instead of the terminal (standard
 out).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">config_bluesky_logging</span>
-<span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;/tmp/bluesky.log&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+<span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">'/tmp/bluesky.log'</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">'DEBUG'</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition important">
@@ -727,12 +727,12 @@ Default is ‘WARNING’.</p>
 </dl>
 <p class="rubric">Examples</p>
 <p>Log to a file.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;/tmp/what_is_happening.txt&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">'/tmp/what_is_happening.txt'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Include the date along with the time. (The log messages will always include
 microseconds, which are configured separately, not as part of ‘datefmt’.)</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">datefmt</span><span class="o">=</span><span class="s2">"%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Turn off ANSI color codes.</p>
@@ -740,7 +740,7 @@ microseconds, which are configured separately, not as part of ‘datefmt’.)</p
 </pre></div>
 </div>
 <p>Increase verbosity: show level INFO or higher.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;INFO&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config_bluesky_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">'INFO'</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -765,7 +765,7 @@ following diagram:</p>
 logging framework directly, ignoring bluesky’s convenience function.</p>
 <p>Suppose we set up a handler aimed at a file:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="n">file_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">&#39;bluesky.log&#39;</span><span class="p">)</span>
+<span class="n">file_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">'bluesky.log'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>And another aimed at <a class="reference external" href="https://www.elastic.co/products/logstash">Logstash</a>:</p>
@@ -775,15 +775,15 @@ logging framework directly, ignoring bluesky’s convenience function.</p>
 </div>
 <p>We can attach the handlers to the bluesky logger, to which all log records
 created by bluesky propagate:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;bluesky&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">'bluesky'</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logstash_handler</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">file_filter</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>We can set the verbosity of each handler. Suppose want maximum verbosity in the
 file but only medium verbosity in logstash.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logstash_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">&#39;INFO&#39;</span><span class="p">)</span>
-<span class="n">file_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logstash_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">'INFO'</span><span class="p">)</span>
+<span class="n">file_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">'DEBUG'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Finally, ensure that “effective level” of <code class="docutils literal notranslate"><span class="pre">logger</span></code> is at least as verbose as
@@ -791,19 +791,19 @@ the most verbose handler—in this case, <code class="docutils literal notransla
 its level is not set</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="n">logging</span><span class="o">.</span><span class="n">getLevelName</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
 
-<span class="gp">In [2]: </span><span class="s1">&#39;NOTSET&#39;</span>
+<span class="gp">In [2]: </span><span class="s1">'NOTSET'</span>
 </pre></div>
 </div>
 <p>and so it inherits the level of Python’s default
 “handler of last resort,” <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.lastResort" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logging.lastResort</span></code></a>, which is <code class="docutils literal notranslate"><span class="pre">'WARNING'</span></code>.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="n">logging</span><span class="o">.</span><span class="n">getLevelName</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">())</span>
 
-<span class="gp">In [4]: </span><span class="s1">&#39;WARNING&#39;</span>
+<span class="gp">In [4]: </span><span class="s1">'WARNING'</span>
 </pre></div>
 </div>
 <p>In this case we should set it to <code class="docutils literal notranslate"><span class="pre">'DEBUG'</span></code>, to match the most verbose level
 of the handler we have added.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="s1">'DEBUG'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This makes DEBUG-level records <em>available</em> to all handlers. Our logstash
@@ -888,7 +888,7 @@ verbosity, which may be helpful for optimizing performance, Python provides
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/debugging.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/debugging.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Plans &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>Plans &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'plans';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Tutorial" href="tutorial.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -703,7 +703,7 @@ documentation.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
 
-<span class="c1"># a single reading of the detector &#39;det&#39;</span>
+<span class="c1"># a single reading of the detector 'det'</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]))</span>
 
 <span class="c1"># five consecutive readings</span>
@@ -719,7 +719,7 @@ documentation.</p>
 <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
 </pre></div>
 </div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We&#39;ll use the &#39;noisy_det&#39; example detector for a more interesting plot.</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We'll use the 'noisy_det' example detector for a more interesting plot.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">noisy_det</span>
 
 <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">noisy_det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
@@ -759,7 +759,7 @@ exposure time. This plan can encode the details that bluesky in general
 can’t know.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">count_with_time</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">exposure_time</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="c1"># Assume all detectors have one exposure time component called</span>
-    <span class="c1"># &#39;exposure_time&#39; that fully specifies its exposure.</span>
+    <span class="c1"># 'exposure_time' that fully specifies its exposure.</span>
     <span class="k">for</span> <span class="n">detector</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="n">detector</span><span class="o">.</span><span class="n">exposure_time</span><span class="p">,</span> <span class="n">exposure_time</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plans</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">md</span><span class="p">)</span>
@@ -782,7 +782,7 @@ pseudo-axis. It’s all the same to the plans. Examples:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span><span class="p">,</span> <span class="n">rel_scan</span><span class="p">,</span> <span class="n">list_scan</span>
 
-<span class="c1"># scan a motor from 1 to 5, taking 5 equally-spaced readings of &#39;det&#39;</span>
+<span class="c1"># scan a motor from 1 to 5, taking 5 equally-spaced readings of 'det'</span>
 <span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
 <span class="c1"># scan a motor from 1 to 5 *relative to its current position*</span>
@@ -824,16 +824,16 @@ parameter yourself by writing a custom plan. Here is one approach, using a
 <span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">scan_with_delay</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="s2">&quot;Accepts all the normal &#39;scan&#39; parameters, plus an optional delay.&quot;</span>
+    <span class="s2">"Accepts all the normal 'scan' parameters, plus an optional delay."</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">one_nd_step_with_delay</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
-        <span class="s2">&quot;This is a copy of bluesky.plan_stubs.one_nd_step with a sleep added.&quot;</span>
+        <span class="s2">"This is a copy of bluesky.plan_stubs.one_nd_step with a sleep added."</span>
         <span class="n">motors</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
         <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">move_per_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plan_stubs</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">motors</span><span class="p">))</span>
 
-    <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;per_step&#39;</span><span class="p">,</span> <span class="n">one_nd_step_with_delay</span><span class="p">)</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">'per_step'</span><span class="p">,</span> <span class="n">one_nd_step_with_delay</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">bluesky</span><span class="o">.</span><span class="n">plans</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -909,39 +909,39 @@ we add or multiply <code class="docutils literal notranslate"><span class="pre">
 
 <span class="gp">In [5]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span><span class="p">)</span>  <span class="c1"># a trajectory for motor1</span>
 <span class="gh">Out[5]: </span>
-<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3}]</span>
+<span class="go">[{SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3}]</span>
 
-<span class="gp">In [6]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span> <span class="o">+</span> <span class="n">traj2</span><span class="p">)</span>  <span class="c1"># an &quot;inner product&quot; trajectory</span>
+<span class="gp">In [6]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span> <span class="o">+</span> <span class="n">traj2</span><span class="p">)</span>  <span class="c1"># an "inner product" trajectory</span>
 <span class="gh">Out[6]: </span>
-<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30}]</span>
+<span class="go">[{SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 10},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 20},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 30}]</span>
 
-<span class="gp">In [7]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span> <span class="o">*</span> <span class="n">traj2</span><span class="p">)</span>  <span class="c1"># an &quot;outer product&quot; trajectory</span>
+<span class="gp">In [7]: </span><span class="nb">list</span><span class="p">(</span><span class="n">traj1</span> <span class="o">*</span> <span class="n">traj2</span><span class="p">)</span>  <span class="c1"># an "outer product" trajectory</span>
 <span class="gh">Out[7]: </span>
-<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30}]</span>
+<span class="go">[{SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 10},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 20},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 30},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 10},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 20},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 30},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 10},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 20},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 30}]</span>
 </pre></div>
 </div>
 <p>We have reproduced inner product and outer product. The real power comes in
@@ -951,33 +951,33 @@ against motor3.</p>
 
 <span class="gp">In [9]: </span><span class="nb">list</span><span class="p">((</span><span class="n">traj1</span> <span class="o">+</span> <span class="n">traj2</span><span class="p">)</span> <span class="o">*</span> <span class="n">traj3</span><span class="p">)</span>
 <span class="gh">Out[9]: </span>
-<span class="go">[{SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 100},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 200},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 1,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 10,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 300},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 100},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 200},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 2,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 20,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 300},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 100},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 200},</span>
-<span class="go"> {SynAxis(prefix=&#39;&#39;, name=&#39;motor1&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 3,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor2&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 30,</span>
-<span class="go">  SynAxis(prefix=&#39;&#39;, name=&#39;motor3&#39;, read_attrs=[&#39;readback&#39;, &#39;setpoint&#39;], configuration_attrs=[&#39;velocity&#39;, &#39;acceleration&#39;]): 300}]</span>
+<span class="go">[{SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 10,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 100},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 10,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 200},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 1,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 10,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 300},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 20,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 100},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 20,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 200},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 2,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 20,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 300},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 30,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 100},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 30,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 200},</span>
+<span class="go"> {SynAxis(prefix='', name='motor1', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 3,</span>
+<span class="go">  SynAxis(prefix='', name='motor2', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 30,</span>
+<span class="go">  SynAxis(prefix='', name='motor3', read_attrs=['readback', 'setpoint'], configuration_attrs=['velocity', 'acceleration']): 300}]</span>
 </pre></div>
 </div>
 <p>For more on cycler, we refer you to the
@@ -1030,7 +1030,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
 
 <span class="n">plan</span> <span class="o">=</span> <span class="n">spiral</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x_range</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
               <span class="n">y_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">nth</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">&#39;motor1&#39;</span><span class="p">,</span> <span class="s1">&#39;motor2&#39;</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">)</span>
+<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">'motor1'</span><span class="p">,</span> <span class="s1">'motor2'</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1043,7 +1043,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
 
 <span class="n">plan</span> <span class="o">=</span> <span class="n">spiral_fermat</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                      <span class="n">x_range</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y_range</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tilt</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
-<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">&#39;motor1&#39;</span><span class="p">,</span> <span class="s1">&#39;motor2&#39;</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">'motor1'</span><span class="p">,</span> <span class="s1">'motor2'</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1056,7 +1056,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
 
 <span class="n">plan</span> <span class="o">=</span> <span class="n">spiral_square</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="n">x_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                      <span class="n">x_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">y_range</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">x_num</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">y_num</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
-<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">&#39;motor1&#39;</span><span class="p">,</span> <span class="s1">&#39;motor2&#39;</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">)</span>
+<span class="n">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s1">'motor1'</span><span class="p">,</span> <span class="s1">'motor2'</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="mf">.01</span><span class="p">)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1096,7 +1096,7 @@ points.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">adaptive_scan</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor</span><span class="p">,</span> <span class="n">det</span>
 
-<span class="n">RE</span><span class="p">(</span><span class="n">adaptive_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="s1">&#39;det&#39;</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">adaptive_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="s1">'det'</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span>
                  <span class="n">start</span><span class="o">=-</span><span class="mi">15</span><span class="p">,</span>
                  <span class="n">stop</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
                  <span class="n">min_step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
@@ -1566,11 +1566,11 @@ variation of an existing plan without starting from scratch.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">trigger_and_read</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">one_1d_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Inner loop of a 1D step scan</span>
 
 <span class="sd">    This is the default function for ``per_step`` param in 1D plans.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">yield from</span> <span class="n">checkpoint</span><span class="p">()</span>
     <span class="k">yield from</span> <span class="n">abs_set</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">trigger_and_read</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">motor</span><span class="p">]))</span>
@@ -1592,7 +1592,7 @@ used in its place:</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="kn">import</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">abs_set</span><span class="p">,</span> <span class="n">wait</span><span class="p">,</span> <span class="n">trigger_and_read</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">one_nd_step</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pos_cache</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Inner loop of an N-dimensional step scan</span>
 
 <span class="sd">    This is the default function for ``per_step`` param in ND plans.</span>
@@ -1605,10 +1605,10 @@ used in its place:</p>
 <span class="sd">        mapping motors to positions in this step</span>
 <span class="sd">    pos_cache : dict</span>
 <span class="sd">        mapping motors to their last-set positions</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">move</span><span class="p">():</span>
         <span class="k">yield from</span> <span class="n">checkpoint</span><span class="p">()</span>
-        <span class="n">grp</span> <span class="o">=</span> <span class="n">short_uid</span><span class="p">(</span><span class="s1">&#39;set&#39;</span><span class="p">)</span>
+        <span class="n">grp</span> <span class="o">=</span> <span class="n">short_uid</span><span class="p">(</span><span class="s1">'set'</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">motor</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">pos</span> <span class="o">==</span> <span class="n">pos_cache</span><span class="p">[</span><span class="n">motor</span><span class="p">]:</span>
                 <span class="c1"># This step does not move this motor.</span>
@@ -1736,7 +1736,7 @@ end of the section, some example plans.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/plans.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/plans.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

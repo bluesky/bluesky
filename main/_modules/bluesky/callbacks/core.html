@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.callbacks.core &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>bluesky.callbacks.core &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -38,185 +38,20 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../../_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="../../../_static/documentation_options.js?v=df383aee"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
-
-
 
 
 
 const initStyles = () => {
     const defaultStyle = document.createElement('style');
-    defaultStyle.textContent = `pre.mermaid {
-    /* Same as .mermaid-container > pre */
-    display: block;
-    width: 100%;
-}
-
-pre.mermaid > svg {
-    /* Same as .mermaid-container > pre > svg */
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}`;
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
     document.head.appendChild(defaultStyle);
 
     const fullscreenStyle = document.createElement('style');
-    fullscreenStyle.textContent = `.mermaid-container {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-}
-
-.mermaid-container > pre {
-    display: block;
-    width: 100%;
-}
-
-.mermaid-container > pre > svg {
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}
-
-.mermaid-fullscreen-btn {
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    color: #333;
-}
-
-.mermaid-fullscreen-btn:hover {
-    opacity: 100% !important;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-btn.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-btn.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal {
-    display: none;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 95vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.98);
-    z-index: 9999;
-    padding: 20px;
-    overflow: auto;
-}
-
-.mermaid-fullscreen-modal.dark-theme {
-    background: rgba(0, 0, 0, 0.98);
-}
-
-.mermaid-fullscreen-modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen {
-    position: relative;
-    width: 95vw;
-    height: 90vh;
-    max-width: 95vw;
-    max-height: 90vh;
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    overflow: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen.dark-theme {
-    background: #1a1a1a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.mermaid-container-fullscreen pre.mermaid {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen .mermaid svg {
-    height: 100% !important;
-    width: 100% !important;
-    cursor: grab;
-}
-
-.mermaid-fullscreen-close {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s;
-    font-size: 24px;
-    line-height: 1;
-    color: #333;
-}
-
-.mermaid-fullscreen-close:hover {
-    background: white;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-close.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-close.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
-    display: none !important;
-}`;
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
     document.head.appendChild(fullscreenStyle);
 }
 
@@ -263,6 +98,13 @@ let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
 let _lazyObserver = null;
 let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
 
 // Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
 // so this is safe to call both for the initial batch and for diagrams that
@@ -359,8 +201,10 @@ const runMermaid = async (rerun) => {
                                     el.removeAttribute('data-mermaid-deferred');
                                     // Apply zoom to the now-rendered diagram, matching
                                     // the decoration visible diagrams receive.
-                                    if ("False" === "True") {
-                                        addZoomToSvgs(d3.selectAll(""));
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
                                     }
                                 } catch (e) {
                                     console.error("Mermaid deferred rendering failed:", e);
@@ -381,10 +225,12 @@ const runMermaid = async (rerun) => {
     const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
     const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
-    if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
         if(mermaids_to_add_zoom > 0) {
-            var svgs = d3.selectAll("");
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
             // Wait until every active (visible) diagram has rendered. Deferred
             // diagrams are excluded, so a fixed d3_node_count that counts a
             // hidden diagram no longer loops forever waiting for its SVG.
@@ -401,7 +247,7 @@ const runMermaid = async (rerun) => {
     }
 
     // Stop here if not adding fullscreen capability
-    if ("True" !== "True") return;
+    if (!true) return;
 
     if (modal !== null ) {
         // Destroy existing modal
@@ -424,7 +270,7 @@ const runMermaid = async (rerun) => {
     modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
 
-    const closeModal = () => {
+    closeModal = () => {
         modal.classList.remove('active');
         modalContent.innerHTML = '';
         document.body.style.overflow = ''
@@ -435,12 +281,6 @@ const runMermaid = async (rerun) => {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
@@ -460,8 +300,8 @@ const runMermaid = async (rerun) => {
         const fullscreenBtn = document.createElement('button');
         fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
         fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
-        fullscreenBtn.textContent = '⛶';
-        fullscreenBtn.style.opacity = '50%';
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
 
         // Calculate dynamic position based on diagram's margin and padding
         const diagramStyle = window.getComputedStyle(mermaidDiv);
@@ -473,7 +313,7 @@ const runMermaid = async (rerun) => {
         fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
 
         fullscreenBtn.addEventListener('click', () => {
-            previousScrollOffset = [window.scroll, window.scrollY];
+            previousScrollOffset = [window.scrollX, window.scrollY];
             const clone = mermaidDiv.cloneNode(true);
             modalContent.innerHTML = '';
             modalContent.appendChild(clone);
@@ -485,9 +325,9 @@ const runMermaid = async (rerun) => {
                 svg.style.width = '100%';
                 svg.style.height = 'auto';
                 svg.style.maxWidth = '100%';
-                svg.style.sdisplay = 'block';
+                svg.style.display = 'block';
 
-                if ("False" === "True") {
+                if (false) {
                     setTimeout(() => {
                         const g = svg.querySelector('g');
                         if (g) {
@@ -510,8 +350,11 @@ const runMermaid = async (rerun) => {
     });
 };
 
+
+
 const load = async () => {
     initStyles();
+
 
     await runMermaid(true);
 
@@ -521,10 +364,8 @@ const load = async () => {
             darkTheme = newDarkTheme;
             console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
             await mermaid.initialize(
-                {...JSON.parse(
-                    `{"startOnLoad": false}`
-                ),
-                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
                 }
             );
             await runMermaid(true);
@@ -549,10 +390,8 @@ const load = async () => {
 
 console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
 mermaid.initialize(
-    {...JSON.parse(
-        `{"startOnLoad": false}`
-    ),
-    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
     }
 );
 
@@ -562,7 +401,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -571,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1068,9 +907,9 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for bluesky.callbacks.core</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""</span>
 <span class="sd">Useful callbacks for the Run Engine</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -1093,7 +932,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="make_callback_safe">
 <a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.make_callback_safe">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_callback_safe</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    If the wrapped func raises any exceptions, log them but continue.</span>
 
 <span class="sd">    This is intended to ensure that any failures in non-critical callbacks do</span>
@@ -1120,7 +959,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; @make_callback_safe</span>
 <span class="sd">    ... def callback(name, doc):</span>
 <span class="sd">    ...     ...</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_partial</span><span class="p">(</span><span class="n">make_callback_safe</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
 
@@ -1129,16 +968,16 @@ window.runMermaid = runMermaid;</script>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="n">debug_mode</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BLUESKY_DEBUG_CALLBACKS&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">debug_mode</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"BLUESKY_DEBUG_CALLBACKS"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">debug_mode</span><span class="p">:</span>
-                    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Exception in </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Exception in </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">"</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;An exception raised in the callback </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2"> &quot;</span>
-                        <span class="s2">&quot;is being suppressed to not interrupt plan &quot;</span>
-                        <span class="s2">&quot;execution.  To investigate try setting the &quot;</span>
-                        <span class="s2">&quot;BLUESKY_DEBUG_CALLBACKS env to &#39;1&#39;&quot;</span>
+                        <span class="sa">f</span><span class="s2">"An exception raised in the callback </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2"> "</span>
+                        <span class="s2">"is being suppressed to not interrupt plan "</span>
+                        <span class="s2">"execution.  To investigate try setting the "</span>
+                        <span class="s2">"BLUESKY_DEBUG_CALLBACKS env to '1'"</span>
                     <span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">debug_mode</span><span class="p">:</span>
@@ -1151,7 +990,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="make_class_safe">
 <a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.make_class_safe">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_class_safe</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">to_wrap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    If the wrapped func raises any exceptions, log them but continue.</span>
 
 <span class="sd">    This is intended to ensure that any failures in non-critical callbacks do</span>
@@ -1168,7 +1007,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ----------</span>
 <span class="sd">    cls: callable</span>
 <span class="sd">    to_wrap: List[String], optional</span>
-<span class="sd">        Names of methods of cls to wrap. Default is ``[&#39;__call__&#39;]``.</span>
+<span class="sd">        Names of methods of cls to wrap. Default is ``['__call__']``.</span>
 <span class="sd">    logger: logging.Logger, optional</span>
 
 <span class="sd">    Examples</span>
@@ -1180,13 +1019,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; @make_class_safe</span>
 <span class="sd">    ... class Callback(event_model.DocumentRouter):</span>
 <span class="sd">    ...     ...</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_partial</span><span class="p">(</span><span class="n">make_class_safe</span><span class="p">,</span> <span class="n">to_wrap</span><span class="o">=</span><span class="n">to_wrap</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">to_wrap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">to_wrap</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;__call__&quot;</span><span class="p">]</span>
+        <span class="n">to_wrap</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"__call__"</span><span class="p">]</span>
 
     <span class="k">for</span> <span class="n">f_name</span> <span class="ow">in</span> <span class="n">to_wrap</span><span class="p">:</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">make_callback_safe</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">f_name</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">))</span>
@@ -1200,7 +1039,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CallbackCounter</span><span class="p">:</span>
-    <span class="s2">&quot;As simple as it sounds: count how many times a callback is called.&quot;</span>
+    <span class="s2">"As simple as it sounds: count how many times a callback is called."</span>
 
     <span class="c1"># Wrap itertools.count in something we can use as a callback.</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1212,15 +1051,15 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">print_metadata</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
-    <span class="s2">&quot;Print all fields except uid and time.&quot;</span>
+    <span class="s2">"Print all fields except uid and time."</span>
     <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
         <span class="c1"># uid is returned by the RunEngine, and time is self-evident</span>
-        <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;uid&quot;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"time"</span><span class="p">,</span> <span class="s2">"uid"</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">collector</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Build a function that appends data to a list.</span>
 
 <span class="sd">    This is useful for testing but not advised for general use. (There is</span>
@@ -1237,29 +1076,29 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    -------</span>
 <span class="sd">    func : function</span>
 <span class="sd">        expects one argument, an Event dictionary</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
-        <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="n">field</span><span class="p">])</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="n">field</span><span class="p">])</span>
 
     <span class="k">return</span> <span class="n">f</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">format_num</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">post</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="o">**</span><span class="n">pre</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="o">**-</span><span class="n">post</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;%.</span><span class="si">{</span><span class="n">post</span><span class="si">}</span><span class="s2">e&quot;</span> <span class="o">%</span> <span class="n">x</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"%.</span><span class="si">{</span><span class="n">post</span><span class="si">}</span><span class="s2">e"</span> <span class="o">%</span> <span class="n">x</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;%</span><span class="si">{</span><span class="n">pre</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">post</span><span class="si">}</span><span class="s2">f&quot;</span> <span class="o">%</span> <span class="n">x</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"%</span><span class="si">{</span><span class="n">pre</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">post</span><span class="si">}</span><span class="s2">f"</span> <span class="o">%</span> <span class="n">x</span>
 
     <span class="k">return</span> <span class="n">x</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_obj_fields</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    If fields includes any objects, get their field names using obj.describe()</span>
 
-<span class="sd">    [&#39;det1&#39;, det_obj] -&gt; [&#39;det1, &#39;det_obj_field1, &#39;det_obj_field2&#39;]&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    ['det1', det_obj] -&gt; ['det1, 'det_obj_field1, 'det_obj_field2']"</span>
+<span class="sd">    """</span>
     <span class="n">string_fields</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -1269,7 +1108,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">field_list</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>  <span class="c1"># noqa: B904</span>
-                    <span class="s2">&quot;Fields must be strings or objects with a &#39;describe&#39; method that return a dict.&quot;</span>
+                    <span class="s2">"Fields must be strings or objects with a 'describe' method that return a dict."</span>
                 <span class="p">)</span>
             <span class="n">string_fields</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">field_list</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">string_fields</span>
@@ -1306,14 +1145,14 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This method must be defined by a subclass.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"This method must be defined by a subclass."</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="LiveTable">
 <a class="viewcode-back" href="../../../callbacks.html#bluesky.callbacks.LiveTable">[docs]</a>
 <span class="nd">@make_class_safe</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">LiveTable</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Live updating table</span>
+<span class="w">    </span><span class="sd">"""Live updating table</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1345,30 +1184,30 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                pass</span>
 
 <span class="sd">    out : callable, optional</span>
-<span class="sd">        Function to call to &#39;print&#39; a line.  Defaults to `print`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        Function to call to 'print' a line.  Defaults to `print`</span>
+<span class="sd">    """</span>
 
     <span class="n">_FMTLOOKUP</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}</span><span class="s2">.</span><span class="si">{prec}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;f&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}</span><span class="s2">.</span><span class="si">{prec}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;g&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}</span><span class="s2">.</span><span class="si">{prec}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">"s"</span><span class="p">:</span> <span class="s2">"</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}</span><span class="s2">.</span><span class="si">{prec}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"f"</span><span class="p">:</span> <span class="s2">"</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}</span><span class="s2">.</span><span class="si">{prec}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"g"</span><span class="p">:</span> <span class="s2">"</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}</span><span class="s2">.</span><span class="si">{prec}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"d"</span><span class="p">:</span> <span class="s2">"</span><span class="si">{pad}</span><span class="s2">{{</span><span class="si">{k}</span><span class="s2">: &gt;</span><span class="si">{width}{dtype}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">"</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">_FMT_MAP</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;number&quot;</span><span class="p">:</span> <span class="s2">&quot;f&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;integer&quot;</span><span class="p">:</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;string&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;boolean&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span>
+        <span class="s2">"number"</span><span class="p">:</span> <span class="s2">"f"</span><span class="p">,</span>
+        <span class="s2">"integer"</span><span class="p">:</span> <span class="s2">"d"</span><span class="p">,</span>
+        <span class="s2">"string"</span><span class="p">:</span> <span class="s2">"s"</span><span class="p">,</span>
+        <span class="s2">"boolean"</span><span class="p">:</span> <span class="s2">"s"</span><span class="p">,</span>
     <span class="p">}</span>
-    <span class="n">_fm_sty</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;fm_sty&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="s2">&quot;prec&quot;</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
-    <span class="n">water_mark</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{st[plan_type]}</span><span class="s2"> </span><span class="si">{st[plan_name]}</span><span class="s2"> [&#39;</span><span class="si">{st[uid]:.8s}</span><span class="s2">&#39;] (scan num: </span><span class="si">{st[scan_id]}</span><span class="s2">)&quot;</span>
-    <span class="n">ev_time_key</span> <span class="o">=</span> <span class="s2">&quot;SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES&quot;</span>
+    <span class="n">_fm_sty</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">"fm_sty"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"width"</span><span class="p">,</span> <span class="s2">"prec"</span><span class="p">,</span> <span class="s2">"dtype"</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
+    <span class="n">water_mark</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{st[plan_type]}</span><span class="s2"> </span><span class="si">{st[plan_name]}</span><span class="s2"> ['</span><span class="si">{st[uid]:.8s}</span><span class="s2">'] (scan num: </span><span class="si">{st[scan_id]}</span><span class="s2">)"</span>
+    <span class="n">ev_time_key</span> <span class="o">=</span> <span class="s2">"SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">fields</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">stream_name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">,</span>
+        <span class="n">stream_name</span><span class="o">=</span><span class="s2">"primary"</span><span class="p">,</span>
         <span class="n">print_header_interval</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
         <span class="n">min_width</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
         <span class="n">default_prec</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
@@ -1386,14 +1225,14 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stop</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span> <span class="o">=</span> <span class="n">extra_pad</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_pad</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="n">extra_pad</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_pad</span> <span class="o">=</span> <span class="s2">" "</span> <span class="o">*</span> <span class="n">extra_pad</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_min_width</span> <span class="o">=</span> <span class="n">min_width</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_default_prec</span> <span class="o">=</span> <span class="n">default_prec</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_separator_lines</span> <span class="o">=</span> <span class="n">separator_lines</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
             <span class="p">[</span>
-                <span class="p">(</span><span class="s2">&quot;seq_num&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fm_sty</span><span class="p">(</span><span class="mi">10</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">)),</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ev_time_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fm_sty</span><span class="p">(</span><span class="mi">10</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">extra_pad</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">)),</span>
+                <span class="p">(</span><span class="s2">"seq_num"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fm_sty</span><span class="p">(</span><span class="mi">10</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">)),</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ev_time_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fm_sty</span><span class="p">(</span><span class="mi">10</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">extra_pad</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">"s"</span><span class="p">)),</span>
             <span class="p">]</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rows</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1408,12 +1247,12 @@ window.runMermaid = runMermaid;</script>
             <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_prec</span>
 
-        <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">])</span>
 
-        <span class="n">dk</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data_keys&quot;</span><span class="p">]</span>
+        <span class="n">dk</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">"data_keys"</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fields</span><span class="p">:</span>
             <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_width</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_prec</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
@@ -1422,38 +1261,38 @@ window.runMermaid = runMermaid;</script>
                 <span class="c1"># this descriptor does not know about this key</span>
                 <span class="k">continue</span>
 
-            <span class="k">if</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">&quot;dtype&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_FMT_MAP</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_FMT_MAP</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>  <span class="c1"># noqa: B028</span>
-                    <span class="s2">&quot;The key </span><span class="si">{}</span><span class="s2"> will be skipped because LiveTable &quot;</span>
-                    <span class="s2">&quot;does not know how to display the dtype </span><span class="si">{}</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">&quot;dtype&quot;</span><span class="p">])</span>
+                    <span class="s2">"The key </span><span class="si">{}</span><span class="s2"> will be skipped because LiveTable "</span>
+                    <span class="s2">"does not know how to display the dtype </span><span class="si">{}</span><span class="s2">"</span>
+                    <span class="s2">""</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">])</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="k">if</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">&quot;dtype&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;boolean&quot;</span><span class="p">:</span>
-                <span class="n">prec</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># 5 is the length of the string &quot;False&quot;</span>
-            <span class="k">elif</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">&quot;dtype&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;string&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"boolean"</span><span class="p">:</span>
+                <span class="n">prec</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># 5 is the length of the string "False"</span>
+            <span class="k">elif</span> <span class="n">dk_entry</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"string"</span><span class="p">:</span>
                 <span class="c1"># If string, set precision to length of the key minus padding</span>
                 <span class="n">prec</span> <span class="o">=</span> <span class="n">width</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">prec</span> <span class="o">=</span> <span class="n">patch_up_precision</span><span class="p">(</span><span class="n">dk_entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_prec</span><span class="p">))</span>
+                <span class="n">prec</span> <span class="o">=</span> <span class="n">patch_up_precision</span><span class="p">(</span><span class="n">dk_entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"precision"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_prec</span><span class="p">))</span>
 
-            <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fm_sty</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">prec</span><span class="o">=</span><span class="n">prec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_FMT_MAP</span><span class="p">[</span><span class="n">dk_entry</span><span class="p">[</span><span class="s2">&quot;dtype&quot;</span><span class="p">]])</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fm_sty</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">prec</span><span class="o">=</span><span class="n">prec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_FMT_MAP</span><span class="p">[</span><span class="n">dk_entry</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">]])</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">fmt</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sep_format</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span> <span class="o">+</span> <span class="s2">&quot;+&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="n">f</span><span class="o">.</span><span class="n">width</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;+&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_main_fmnt</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-            <span class="s2">&quot;{{: &gt;</span><span class="si">{w}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">w</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">width</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sep_format</span> <span class="o">=</span> <span class="s2">"+"</span> <span class="o">+</span> <span class="s2">"+"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">"-"</span> <span class="o">*</span> <span class="n">f</span><span class="o">.</span><span class="n">width</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">+</span> <span class="s2">"+"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_main_fmnt</span> <span class="o">=</span> <span class="s2">"|"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="s2">"{{: &gt;</span><span class="si">{w}</span><span class="s2">}}</span><span class="si">{pad}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">w</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">width</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="s2">" "</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
         <span class="p">)</span>
-        <span class="n">headings</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ev_time_key</span> <span class="k">else</span> <span class="s2">&quot;time&quot;</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_fmnt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">headings</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;|&quot;</span>
+        <span class="n">headings</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ev_time_key</span> <span class="k">else</span> <span class="s2">"time"</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="s2">"|"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_fmnt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">headings</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"|"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data_formats</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
             <span class="p">(</span>
                 <span class="n">k</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_FMTLOOKUP</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">dtype</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">k</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">k</span><span class="o">=</span><span class="sa">f</span><span class="s2">"h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                     <span class="n">width</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">width</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_len</span><span class="p">,</span>
                     <span class="n">prec</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">prec</span><span class="p">,</span>
                     <span class="n">dtype</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
@@ -1466,7 +1305,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_separator_lines</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sep_format</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sep_format</span><span class="p">)</span>
@@ -1474,45 +1313,45 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ensure_uid</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;descriptor&quot;</span><span class="p">])</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ensure_uid</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">"descriptor"</span><span class="p">])</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_descriptors</span><span class="p">:</span>
                 <span class="k">return</span>
             <span class="c1"># shallow copy so we can mutate</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">])</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">"data"</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header_interval</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sep_format</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sep_format</span><span class="p">)</span>
-            <span class="n">fmt_time</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+            <span class="n">fmt_time</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">"time"</span><span class="p">])</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
             <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ev_time_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">fmt_time</span>
-            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;seq_num&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;seq_num&quot;</span><span class="p">]</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">"seq_num"</span><span class="p">]</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s2">"seq_num"</span><span class="p">]</span>
             <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="c1"># If we have a bool, just `str` it.</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">&quot;h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">])})</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">"h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">])})</span>
                 <span class="k">if</span> <span class="p">((</span><span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">(</span><span class="nb">bool</span><span class="p">)))</span>
-                <span class="c1"># If we have an enum, format with it&#39;s value</span>
-                <span class="k">else</span> <span class="n">f</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">&quot;h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">})</span>
+                <span class="c1"># If we have an enum, format with it's value</span>
+                <span class="k">else</span> <span class="n">f</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">"h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">})</span>
                 <span class="k">if</span> <span class="p">((</span><span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">(</span><span class="n">Enum</span><span class="p">)))</span>
-                <span class="k">else</span> <span class="n">f</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">&quot;h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]})</span>
-                <span class="c1"># Show data[k] if k exists in this Event and is &#39;filled&#39;.</span>
+                <span class="k">else</span> <span class="n">f</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">"h</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">k</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]})</span>
+                <span class="c1"># Show data[k] if k exists in this Event and is 'filled'.</span>
                 <span class="c1"># (The latter is only applicable if the data is</span>
                 <span class="c1"># externally-stored -- hence the fallback to `True`.)</span>
-                <span class="k">if</span> <span class="p">((</span><span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span> <span class="ow">and</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filled&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+                <span class="k">if</span> <span class="p">((</span><span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span> <span class="ow">and</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"filled"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
                 <span class="c1"># Otherwise use a placeholder of whitespace.</span>
-                <span class="k">else</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
+                <span class="k">else</span> <span class="s2">" "</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_info</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
                 <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_formats</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
             <span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="s2">&quot;|&quot;</span> <span class="o">+</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;|&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="s2">"|"</span> <span class="o">+</span> <span class="s2">"|"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"|"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">k:*^</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_width</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="s2">&quot; failed to format row &quot;</span><span class="p">))</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BLUESKY_DEBUG_CALLBACKS&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">{{</span><span class="s2">k:*^</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_width</span><span class="si">}</span><span class="se">}}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="s2">" failed to format row "</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"BLUESKY_DEBUG_CALLBACKS"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">ex</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">event</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">ensure_uid</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;run_start&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">[</span><span class="s2">&quot;uid&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">ensure_uid</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">"run_start"</span><span class="p">])</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">]:</span>
             <span class="k">return</span>
 
         <span class="c1"># This sleep is just cosmetic. It improves the odds that the bottom</span>
@@ -1521,7 +1360,7 @@ window.runMermaid = runMermaid;</script>
         <span class="c1">#</span>
         <span class="c1"># |         4 | 22:08:56.7 |      0.000 |</span>
         <span class="c1"># +-----------+------------+------------+</span>
-        <span class="c1"># generator scan [&#39;6d3f71&#39;] (scan num: 1)</span>
+        <span class="c1"># generator scan ['6d3f71'] (scan num: 1)</span>
         <span class="c1"># Out[2]: |         5 | 22:08:56.8 |      0.000 |</span>
         <span class="n">ttime</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
 
@@ -1532,9 +1371,9 @@ window.runMermaid = runMermaid;</script>
         <span class="n">wm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">water_mark</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">st</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_out</span><span class="p">(</span><span class="n">wm</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logbook</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logbook</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">wm</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rows</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logbook</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">wm</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rows</span><span class="p">))</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_separator_lines</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>

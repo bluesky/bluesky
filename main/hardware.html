@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>How Bluesky Interfaces with Hardware &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>How Bluesky Interfaces with Hardware &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'hardware';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Developer Documentation" href="devindex.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -672,6 +672,34 @@ A fraction of one indicates progress has not started.</p>
 </dd></dl>
 
 </div></blockquote>
+<p>A <code class="docutils literal notranslate"><span class="pre">Status</span></code> may also carry a result produced by the operation it tracks, by
+implementing <code class="docutils literal notranslate"><span class="pre">result()</span></code> in addition to the members above.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="bluesky.protocols.StatusWithResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.protocols.</span></span><span class="sig-name descname"><span class="pre">StatusWithResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/protocols.html#StatusWithResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.protocols.StatusWithResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#bluesky.protocols.Status" title="bluesky.protocols.Status"><code class="xref py py-class docutils literal notranslate"><span class="pre">Status</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">R_co</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="bluesky.protocols.StatusWithResult.result">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">R_co</span></span></span><a class="reference internal" href="_modules/bluesky/protocols.html#StatusWithResult.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.protocols.StatusWithResult.result" title="Link to this definition">#</a></dt>
+<dd><p>Return whatever result the Status is meant to produce when it is done.</p>
+<p>It replicates the behavior of <a class="reference external" href="https://docs.python.org/3/library/asyncio-future.html#asyncio.Future.result" title="(in Python v3.14)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">asyncio.Future.result()</span></code></a>.</p>
+<p>If a result is not available yet, it should raise
+<a class="reference external" href="https://docs.python.org/3/library/asyncio-exceptions.html#asyncio.InvalidStateError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">asyncio.InvalidStateError</span></code></a> (or a subclass of it).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>R_co</dt><dd><p>The result of the operation when it is done.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>The <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> never inspects this result; it exists so that plans and
+protocols built on top of <code class="docutils literal notranslate"><span class="pre">Status</span></code> can retrieve a value once the operation is
+done.</p>
 </section>
 <section id="named-device">
 <h3>Named Device<a class="headerlink" href="#named-device" title="Link to this heading">#</a></h3>
@@ -719,14 +747,14 @@ interface:</p>
 method, here mapped to per-scan metadata about each field.</p>
 <p>This can be a standard function or an <code class="docutils literal notranslate"><span class="pre">async</span></code> function.</p>
 <p>Example return value:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OrderedDict</span><span class="p">((</span><span class="s1">&#39;channel1&#39;</span><span class="p">,</span>
-             <span class="p">{</span><span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;XF23-ID:SOME_PV_NAME&#39;</span><span class="p">,</span>
-              <span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-              <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[]}),</span>
-            <span class="p">(</span><span class="s1">&#39;channel2&#39;</span><span class="p">,</span>
-             <span class="p">{</span><span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;XF23-ID:SOME_PV_NAME&#39;</span><span class="p">,</span>
-              <span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-              <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[]}))</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OrderedDict</span><span class="p">((</span><span class="s1">'channel1'</span><span class="p">,</span>
+             <span class="p">{</span><span class="s1">'source'</span><span class="p">:</span> <span class="s1">'XF23-ID:SOME_PV_NAME'</span><span class="p">,</span>
+              <span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+              <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[]}),</span>
+            <span class="p">(</span><span class="s1">'channel2'</span><span class="p">,</span>
+             <span class="p">{</span><span class="s1">'source'</span><span class="p">:</span> <span class="s1">'XF23-ID:SOME_PV_NAME'</span><span class="p">,</span>
+              <span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+              <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[]}))</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -738,10 +766,10 @@ method, here mapped to per-scan metadata about each field.</p>
 of values and timestamps and optional per-point metadata.</p>
 <p>This can be a standard function or an <code class="docutils literal notranslate"><span class="pre">async</span></code> function.</p>
 <p>Example return value:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OrderedDict</span><span class="p">((</span><span class="s1">&#39;channel1&#39;</span><span class="p">,</span>
-             <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="mf">1472493713.271991</span><span class="p">}),</span>
-             <span class="p">(</span><span class="s1">&#39;channel2&#39;</span><span class="p">,</span>
-             <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="mf">1472493713.539238</span><span class="p">}))</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OrderedDict</span><span class="p">((</span><span class="s1">'channel1'</span><span class="p">,</span>
+             <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">'timestamp'</span><span class="p">:</span> <span class="mf">1472493713.271991</span><span class="p">}),</span>
+             <span class="p">(</span><span class="s1">'channel2'</span><span class="p">,</span>
+             <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span> <span class="s1">'timestamp'</span><span class="p">:</span> <span class="mf">1472493713.539238</span><span class="p">}))</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -924,19 +952,19 @@ highest common stream index.</p>
 </dd>
 </dl>
 <p>Example yielded values:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s1">&#39;resource&#39;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s1">&#39;path_semantics&#39;</span><span class="p">:</span> <span class="s1">&#39;posix&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;resource_kwargs&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;frame_per_point&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
-    <span class="s1">&#39;resource_path&#39;</span><span class="p">:</span> <span class="s1">&#39;det.h5&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;root&#39;</span><span class="p">:</span> <span class="s1">&#39;/tmp/tmpcvxbqctr/&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;spec&#39;</span><span class="p">:</span> <span class="s1">&#39;AD_HDF5&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s1">'resource'</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s1">'path_semantics'</span><span class="p">:</span> <span class="s1">'posix'</span><span class="p">,</span>
+    <span class="s1">'resource_kwargs'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'frame_per_point'</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+    <span class="s1">'resource_path'</span><span class="p">:</span> <span class="s1">'det.h5'</span><span class="p">,</span>
+    <span class="s1">'root'</span><span class="p">:</span> <span class="s1">'/tmp/tmpcvxbqctr/'</span><span class="p">,</span>
+    <span class="s1">'spec'</span><span class="p">:</span> <span class="s1">'AD_HDF5'</span><span class="p">,</span>
+    <span class="s1">'uid'</span><span class="p">:</span> <span class="s1">'9123df61-a09f-49ae-9d23-41d4d6c6d788'</span>
 <span class="p">})</span>
 <span class="c1"># or</span>
-<span class="p">(</span><span class="s1">&#39;datum&#39;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s1">&#39;datum_id&#39;</span><span class="p">:</span> <span class="s1">&#39;9123df61-a09f-49ae-9d23-41d4d6c6d788/0&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;datum_kwargs&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;point_number&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-    <span class="s1">&#39;resource&#39;</span><span class="p">:</span> <span class="s1">&#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span><span class="p">}</span>
+<span class="p">(</span><span class="s1">'datum'</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s1">'datum_id'</span><span class="p">:</span> <span class="s1">'9123df61-a09f-49ae-9d23-41d4d6c6d788/0'</span><span class="p">,</span>
+    <span class="s1">'datum_kwargs'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'point_number'</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+    <span class="s1">'resource'</span><span class="p">:</span> <span class="s1">'9123df61-a09f-49ae-9d23-41d4d6c6d788'</span><span class="p">}</span>
 <span class="p">})</span>
 </pre></div>
 </div>
@@ -970,19 +998,19 @@ highest common stream index.</p>
 </dd>
 </dl>
 <p>Example yielded values:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s1">&#39;resource&#39;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s1">&#39;path_semantics&#39;</span><span class="p">:</span> <span class="s1">&#39;posix&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;resource_kwargs&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;frame_per_point&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
-    <span class="s1">&#39;resource_path&#39;</span><span class="p">:</span> <span class="s1">&#39;det.h5&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;root&#39;</span><span class="p">:</span> <span class="s1">&#39;/tmp/tmpcvxbqctr/&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;spec&#39;</span><span class="p">:</span> <span class="s1">&#39;AD_HDF5&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s1">'resource'</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s1">'path_semantics'</span><span class="p">:</span> <span class="s1">'posix'</span><span class="p">,</span>
+    <span class="s1">'resource_kwargs'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'frame_per_point'</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+    <span class="s1">'resource_path'</span><span class="p">:</span> <span class="s1">'det.h5'</span><span class="p">,</span>
+    <span class="s1">'root'</span><span class="p">:</span> <span class="s1">'/tmp/tmpcvxbqctr/'</span><span class="p">,</span>
+    <span class="s1">'spec'</span><span class="p">:</span> <span class="s1">'AD_HDF5'</span><span class="p">,</span>
+    <span class="s1">'uid'</span><span class="p">:</span> <span class="s1">'9123df61-a09f-49ae-9d23-41d4d6c6d788'</span>
 <span class="p">})</span>
 <span class="c1"># or</span>
-<span class="p">(</span><span class="s1">&#39;datum&#39;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s1">&#39;datum_id&#39;</span><span class="p">:</span> <span class="s1">&#39;9123df61-a09f-49ae-9d23-41d4d6c6d788/0&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;datum_kwargs&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;point_number&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-    <span class="s1">&#39;resource&#39;</span><span class="p">:</span> <span class="s1">&#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span><span class="p">}</span>
+<span class="p">(</span><span class="s1">'datum'</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s1">'datum_id'</span><span class="p">:</span> <span class="s1">'9123df61-a09f-49ae-9d23-41d4d6c6d788/0'</span><span class="p">,</span>
+    <span class="s1">'datum_kwargs'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'point_number'</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+    <span class="s1">'resource'</span><span class="p">:</span> <span class="s1">'9123df61-a09f-49ae-9d23-41d4d6c6d788'</span><span class="p">}</span>
 <span class="p">})</span>
 </pre></div>
 </div>
@@ -1528,6 +1556,10 @@ compatible way, e.g.:</p>
 </ul>
 </li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#watch"><code class="docutils literal notranslate"><span class="pre">watch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.protocols.StatusWithResult"><code class="docutils literal notranslate"><span class="pre">StatusWithResult</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#bluesky.protocols.StatusWithResult.result"><code class="docutils literal notranslate"><span class="pre">StatusWithResult.result()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#named-device">Named Device</a><ul class="nav section-nav flex-column">
@@ -1707,7 +1739,7 @@ compatible way, e.g.:</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/hardware.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/hardware.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.protocols &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>bluesky.protocols &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -38,185 +38,20 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="../../_static/documentation_options.js?v=df383aee"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
-
-
 
 
 
 const initStyles = () => {
     const defaultStyle = document.createElement('style');
-    defaultStyle.textContent = `pre.mermaid {
-    /* Same as .mermaid-container > pre */
-    display: block;
-    width: 100%;
-}
-
-pre.mermaid > svg {
-    /* Same as .mermaid-container > pre > svg */
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}`;
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
     document.head.appendChild(defaultStyle);
 
     const fullscreenStyle = document.createElement('style');
-    fullscreenStyle.textContent = `.mermaid-container {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-}
-
-.mermaid-container > pre {
-    display: block;
-    width: 100%;
-}
-
-.mermaid-container > pre > svg {
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}
-
-.mermaid-fullscreen-btn {
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    color: #333;
-}
-
-.mermaid-fullscreen-btn:hover {
-    opacity: 100% !important;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-btn.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-btn.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal {
-    display: none;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 95vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.98);
-    z-index: 9999;
-    padding: 20px;
-    overflow: auto;
-}
-
-.mermaid-fullscreen-modal.dark-theme {
-    background: rgba(0, 0, 0, 0.98);
-}
-
-.mermaid-fullscreen-modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen {
-    position: relative;
-    width: 95vw;
-    height: 90vh;
-    max-width: 95vw;
-    max-height: 90vh;
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    overflow: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen.dark-theme {
-    background: #1a1a1a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.mermaid-container-fullscreen pre.mermaid {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen .mermaid svg {
-    height: 100% !important;
-    width: 100% !important;
-    cursor: grab;
-}
-
-.mermaid-fullscreen-close {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s;
-    font-size: 24px;
-    line-height: 1;
-    color: #333;
-}
-
-.mermaid-fullscreen-close:hover {
-    background: white;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-close.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-close.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
-    display: none !important;
-}`;
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
     document.head.appendChild(fullscreenStyle);
 }
 
@@ -263,6 +98,13 @@ let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
 let _lazyObserver = null;
 let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
 
 // Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
 // so this is safe to call both for the initial batch and for diagrams that
@@ -359,8 +201,10 @@ const runMermaid = async (rerun) => {
                                     el.removeAttribute('data-mermaid-deferred');
                                     // Apply zoom to the now-rendered diagram, matching
                                     // the decoration visible diagrams receive.
-                                    if ("False" === "True") {
-                                        addZoomToSvgs(d3.selectAll(""));
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
                                     }
                                 } catch (e) {
                                     console.error("Mermaid deferred rendering failed:", e);
@@ -381,10 +225,12 @@ const runMermaid = async (rerun) => {
     const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
     const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
-    if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
         if(mermaids_to_add_zoom > 0) {
-            var svgs = d3.selectAll("");
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
             // Wait until every active (visible) diagram has rendered. Deferred
             // diagrams are excluded, so a fixed d3_node_count that counts a
             // hidden diagram no longer loops forever waiting for its SVG.
@@ -401,7 +247,7 @@ const runMermaid = async (rerun) => {
     }
 
     // Stop here if not adding fullscreen capability
-    if ("True" !== "True") return;
+    if (!true) return;
 
     if (modal !== null ) {
         // Destroy existing modal
@@ -424,7 +270,7 @@ const runMermaid = async (rerun) => {
     modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
 
-    const closeModal = () => {
+    closeModal = () => {
         modal.classList.remove('active');
         modalContent.innerHTML = '';
         document.body.style.overflow = ''
@@ -435,12 +281,6 @@ const runMermaid = async (rerun) => {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
@@ -460,8 +300,8 @@ const runMermaid = async (rerun) => {
         const fullscreenBtn = document.createElement('button');
         fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
         fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
-        fullscreenBtn.textContent = '⛶';
-        fullscreenBtn.style.opacity = '50%';
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
 
         // Calculate dynamic position based on diagram's margin and padding
         const diagramStyle = window.getComputedStyle(mermaidDiv);
@@ -473,7 +313,7 @@ const runMermaid = async (rerun) => {
         fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
 
         fullscreenBtn.addEventListener('click', () => {
-            previousScrollOffset = [window.scroll, window.scrollY];
+            previousScrollOffset = [window.scrollX, window.scrollY];
             const clone = mermaidDiv.cloneNode(true);
             modalContent.innerHTML = '';
             modalContent.appendChild(clone);
@@ -485,9 +325,9 @@ const runMermaid = async (rerun) => {
                 svg.style.width = '100%';
                 svg.style.height = 'auto';
                 svg.style.maxWidth = '100%';
-                svg.style.sdisplay = 'block';
+                svg.style.display = 'block';
 
-                if ("False" === "True") {
+                if (false) {
                     setTimeout(() => {
                         const g = svg.querySelector('g');
                         if (g) {
@@ -510,8 +350,11 @@ const runMermaid = async (rerun) => {
     });
 };
 
+
+
 const load = async () => {
     initStyles();
+
 
     await runMermaid(true);
 
@@ -521,10 +364,8 @@ const load = async () => {
             darkTheme = newDarkTheme;
             console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
             await mermaid.initialize(
-                {...JSON.parse(
-                    `{"startOnLoad": false}`
-                ),
-                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
                 }
             );
             await runMermaid(true);
@@ -549,10 +390,8 @@ const load = async () => {
 
 console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
 mermaid.initialize(
-    {...JSON.parse(
-        `{"startOnLoad": false}`
-    ),
-    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
     }
 );
 
@@ -562,7 +401,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -571,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1089,7 +928,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ReadingOptional">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.ReadingOptional">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ReadingOptional</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary containing the optional per-reading metadata of a piece of scan data&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A dictionary containing the optional per-reading metadata of a piece of scan data"""</span>
 
     <span class="c1">#: * -ve: alarm unknown, e.g. device disconnected</span>
     <span class="c1">#: * 0: ok, no alarm</span>
@@ -1102,14 +941,15 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
-<span class="n">P</span> <span class="o">=</span> <span class="n">ParamSpec</span><span class="p">(</span><span class="s2">&quot;P&quot;</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"T"</span><span class="p">)</span>
+<span class="n">P</span> <span class="o">=</span> <span class="n">ParamSpec</span><span class="p">(</span><span class="s2">"P"</span><span class="p">)</span>
+<span class="n">R_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"R_co"</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Reading">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Reading">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Reading</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">ReadingOptional</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary containing the value and timestamp of a piece of scan data&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A dictionary containing the value and timestamp of a piece of scan data"""</span>
 
     <span class="c1">#: The current value, as a JSON encodable type or numpy array</span>
     <span class="n">value</span><span class="p">:</span> <span class="n">T</span>
@@ -1118,11 +958,11 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="n">Asset</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">],</span> <span class="n">PartialResource</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;datum&quot;</span><span class="p">],</span> <span class="n">Datum</span><span class="p">]</span>
+<span class="n">Asset</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">"resource"</span><span class="p">],</span> <span class="n">PartialResource</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">"datum"</span><span class="p">],</span> <span class="n">Datum</span><span class="p">]</span>
 
 
 <span class="n">StreamAsset</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_resource&quot;</span><span class="p">],</span> <span class="n">StreamResource</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stream_datum&quot;</span><span class="p">],</span> <span class="n">StreamDatum</span><span class="p">]</span>
+    <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">"stream_resource"</span><span class="p">],</span> <span class="n">StreamResource</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">"stream_datum"</span><span class="p">],</span> <span class="n">StreamDatum</span><span class="p">]</span>
 <span class="p">)</span>
 
 
@@ -1137,14 +977,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Status.add_callback">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Status.add_callback">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;Status&quot;</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a callback function to be called upon completion.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">"Status"</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add a callback function to be called upon completion.</span>
 
 <span class="sd">        The function must take the status as an argument.</span>
 
 <span class="sd">        If the Status object is done when the function is added, it should be</span>
 <span class="sd">        called immediately.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1157,14 +997,39 @@ window.runMermaid = runMermaid;</script>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">done</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;If done return True, otherwise return False.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""If done return True, otherwise return False."""</span>
         <span class="o">...</span>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">success</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;If done return whether the operation was successful.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""If done return whether the operation was successful."""</span>
         <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="StatusWithResult">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.StatusWithResult">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">StatusWithResult</span><span class="p">(</span><span class="n">Status</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">[</span><span class="n">R_co</span><span class="p">]):</span>
+<div class="viewcode-block" id="StatusWithResult.result">
+<a class="viewcode-back" href="../../hardware.html#bluesky.protocols.StatusWithResult.result">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R_co</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return whatever result the Status is meant to produce when it is done.</span>
+
+<span class="sd">        It replicates the behavior of :py:meth:`asyncio.Future.result`.</span>
+
+<span class="sd">        If a result is not available yet, it should raise</span>
+<span class="sd">        :py:exc:`asyncio.InvalidStateError` (or a subclass of it).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        R_co</span>
+<span class="sd">            The result of the operation when it is done.</span>
+<span class="sd">        """</span>
+        <span class="o">...</span></div>
+</div>
 
 
 
@@ -1175,9 +1040,9 @@ window.runMermaid = runMermaid;</script>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Used to populate object_keys in the Event DataKey</span>
+<span class="w">        </span><span class="sd">"""Used to populate object_keys in the Event DataKey</span>
 
-<span class="sd">        https://blueskyproject.io/event-model/main/explanations/event-descriptors.html#object-keys&quot;&quot;&quot;</span>
+<span class="sd">        https://blueskyproject.io/event-model/main/explanations/event-descriptors.html#object-keys"""</span>
         <span class="o">...</span></div>
 
 
@@ -1189,10 +1054,10 @@ window.runMermaid = runMermaid;</script>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">parent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;``None``, or a reference to a parent device.</span>
+<span class="w">        </span><span class="sd">"""``None``, or a reference to a parent device.</span>
 
 <span class="sd">        Used by the RE to stop duplicate stages.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1205,28 +1070,28 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesExternalAssets.collect_asset_docs">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">collect_asset_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">Asset</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the resource and datum documents describing data in external</span>
+<span class="w">        </span><span class="sd">"""Create the resource and datum documents describing data in external</span>
 <span class="sd">            source.</span>
 
 <span class="sd">        Example yielded values:</span>
 
 <span class="sd">        .. code-block:: python</span>
 
-<span class="sd">            (&#39;resource&#39;, {</span>
-<span class="sd">                &#39;path_semantics&#39;: &#39;posix&#39;,</span>
-<span class="sd">                &#39;resource_kwargs&#39;: {&#39;frame_per_point&#39;: 1},</span>
-<span class="sd">                &#39;resource_path&#39;: &#39;det.h5&#39;,</span>
-<span class="sd">                &#39;root&#39;: &#39;/tmp/tmpcvxbqctr/&#39;,</span>
-<span class="sd">                &#39;spec&#39;: &#39;AD_HDF5&#39;,</span>
-<span class="sd">                &#39;uid&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span>
+<span class="sd">            ('resource', {</span>
+<span class="sd">                'path_semantics': 'posix',</span>
+<span class="sd">                'resource_kwargs': {'frame_per_point': 1},</span>
+<span class="sd">                'resource_path': 'det.h5',</span>
+<span class="sd">                'root': '/tmp/tmpcvxbqctr/',</span>
+<span class="sd">                'spec': 'AD_HDF5',</span>
+<span class="sd">                'uid': '9123df61-a09f-49ae-9d23-41d4d6c6d788'</span>
 <span class="sd">            })</span>
 <span class="sd">            # or</span>
-<span class="sd">            (&#39;datum&#39;, {</span>
-<span class="sd">                &#39;datum_id&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788/0&#39;,</span>
-<span class="sd">                &#39;datum_kwargs&#39;: {&#39;point_number&#39;: 0},</span>
-<span class="sd">                &#39;resource&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;}</span>
+<span class="sd">            ('datum', {</span>
+<span class="sd">                'datum_id': '9123df61-a09f-49ae-9d23-41d4d6c6d788/0',</span>
+<span class="sd">                'datum_kwargs': {'point_number': 0},</span>
+<span class="sd">                'resource': '9123df61-a09f-49ae-9d23-41d4d6c6d788'}</span>
 <span class="sd">            })</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1240,7 +1105,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets.collect_asset_docs">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">collect_asset_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">StreamAsset</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the resource and datum documents describing data in external</span>
+<span class="w">        </span><span class="sd">"""Create the resource and datum documents describing data in external</span>
 <span class="sd">            source up to a given index if provided.</span>
 
 <span class="sd">            An index will be provided when using stream resources and datums. The asset</span>
@@ -1251,21 +1116,21 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        .. code-block:: python</span>
 
-<span class="sd">            (&#39;resource&#39;, {</span>
-<span class="sd">                &#39;path_semantics&#39;: &#39;posix&#39;,</span>
-<span class="sd">                &#39;resource_kwargs&#39;: {&#39;frame_per_point&#39;: 1},</span>
-<span class="sd">                &#39;resource_path&#39;: &#39;det.h5&#39;,</span>
-<span class="sd">                &#39;root&#39;: &#39;/tmp/tmpcvxbqctr/&#39;,</span>
-<span class="sd">                &#39;spec&#39;: &#39;AD_HDF5&#39;,</span>
-<span class="sd">                &#39;uid&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;</span>
+<span class="sd">            ('resource', {</span>
+<span class="sd">                'path_semantics': 'posix',</span>
+<span class="sd">                'resource_kwargs': {'frame_per_point': 1},</span>
+<span class="sd">                'resource_path': 'det.h5',</span>
+<span class="sd">                'root': '/tmp/tmpcvxbqctr/',</span>
+<span class="sd">                'spec': 'AD_HDF5',</span>
+<span class="sd">                'uid': '9123df61-a09f-49ae-9d23-41d4d6c6d788'</span>
 <span class="sd">            })</span>
 <span class="sd">            # or</span>
-<span class="sd">            (&#39;datum&#39;, {</span>
-<span class="sd">                &#39;datum_id&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788/0&#39;,</span>
-<span class="sd">                &#39;datum_kwargs&#39;: {&#39;point_number&#39;: 0},</span>
-<span class="sd">                &#39;resource&#39;: &#39;9123df61-a09f-49ae-9d23-41d4d6c6d788&#39;}</span>
+<span class="sd">            ('datum', {</span>
+<span class="sd">                'datum_id': '9123df61-a09f-49ae-9d23-41d4d6c6d788/0',</span>
+<span class="sd">                'datum_kwargs': {'point_number': 0},</span>
+<span class="sd">                'resource': '9123df61-a09f-49ae-9d23-41d4d6c6d788'}</span>
 <span class="sd">            })</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1273,7 +1138,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.WritesStreamAssets.get_index">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrive the current index of writer.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Retrive the current index of writer."""</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1287,11 +1152,11 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Configurable.read_configuration">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">read_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Same API as ``read`` but for slow-changing fields related to configuration.</span>
+<span class="w">        </span><span class="sd">"""Same API as ``read`` but for slow-changing fields related to configuration.</span>
 <span class="sd">        e.g., exposure time. These will typically be read only once per run.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1299,11 +1164,11 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Configurable.describe_configuration">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Same API as ``describe``, but corresponding to the keys in</span>
+<span class="w">        </span><span class="sd">"""Same API as ``describe``, but corresponding to the keys in</span>
 <span class="sd">        ``read_configuration``.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1317,7 +1182,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Triggerable.trigger">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a ``Status`` that is marked done when the device is done triggering.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return a ``Status`` that is marked done when the device is done triggering."""</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1331,16 +1196,16 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Preparable.prepare">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare a device for scanning.</span>
+<span class="w">        </span><span class="sd">"""Prepare a device for scanning.</span>
 
 <span class="sd">        This method provides similar functionality to ``Stageable.stage`` and</span>
 <span class="sd">        ``Movable.set``, with key differences:</span>
 
 <span class="sd">        ``Stageable.stage``</span>
 <span class="sd">        ^^^^^^^^^^^^^^^^^^^</span>
-<span class="sd">        Staging a device translates to, &quot;I&#39;m going to use this in a scan, but I&#39;m</span>
-<span class="sd">        not sure how&quot;. Preparing it translates to, &quot;I&#39;m about to do a step or a fly</span>
-<span class="sd">        scan with these parameters&quot;. Staging should be universal across many different</span>
+<span class="sd">        Staging a device translates to, "I'm going to use this in a scan, but I'm</span>
+<span class="sd">        not sure how". Preparing it translates to, "I'm about to do a step or a fly</span>
+<span class="sd">        scan with these parameters". Staging should be universal across many different</span>
 <span class="sd">        types of scans, however prepare is specific to an input value passed in.</span>
 
 <span class="sd">        ``Movable.set``</span>
@@ -1365,7 +1230,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            collect_asset_docs() to publish N frames</span>
 
 <span class="sd">        Returns a Status that is marked done when the device is ready for a scan.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1379,7 +1244,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Readable.read">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">[</span><span class="n">T</span><span class="p">]]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an OrderedDict mapping string field name(s) to dictionaries</span>
+<span class="w">        </span><span class="sd">"""Return an OrderedDict mapping string field name(s) to dictionaries</span>
 <span class="sd">        of values and timestamps and optional per-point metadata.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
@@ -1388,11 +1253,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        .. code-block:: python</span>
 
-<span class="sd">            OrderedDict((&#39;channel1&#39;,</span>
-<span class="sd">                         {&#39;value&#39;: 5, &#39;timestamp&#39;: 1472493713.271991}),</span>
-<span class="sd">                         (&#39;channel2&#39;,</span>
-<span class="sd">                         {&#39;value&#39;: 16, &#39;timestamp&#39;: 1472493713.539238}))</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">            OrderedDict(('channel1',</span>
+<span class="sd">                         {'value': 5, 'timestamp': 1472493713.271991}),</span>
+<span class="sd">                         ('channel2',</span>
+<span class="sd">                         {'value': 16, 'timestamp': 1472493713.539238}))</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1400,7 +1265,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Readable.describe">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an OrderedDict with exactly the same keys as the ``read``</span>
+<span class="w">        </span><span class="sd">"""Return an OrderedDict with exactly the same keys as the ``read``</span>
 <span class="sd">        method, here mapped to per-scan metadata about each field.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
@@ -1409,15 +1274,15 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        .. code-block:: python</span>
 
-<span class="sd">            OrderedDict((&#39;channel1&#39;,</span>
-<span class="sd">                         {&#39;source&#39;: &#39;XF23-ID:SOME_PV_NAME&#39;,</span>
-<span class="sd">                          &#39;dtype&#39;: &#39;number&#39;,</span>
-<span class="sd">                          &#39;shape&#39;: []}),</span>
-<span class="sd">                        (&#39;channel2&#39;,</span>
-<span class="sd">                         {&#39;source&#39;: &#39;XF23-ID:SOME_PV_NAME&#39;,</span>
-<span class="sd">                          &#39;dtype&#39;: &#39;number&#39;,</span>
-<span class="sd">                          &#39;shape&#39;: []}))</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">            OrderedDict(('channel1',</span>
+<span class="sd">                         {'source': 'XF23-ID:SOME_PV_NAME',</span>
+<span class="sd">                          'dtype': 'number',</span>
+<span class="sd">                          'shape': []}),</span>
+<span class="sd">                        ('channel2',</span>
+<span class="sd">                         {'source': 'XF23-ID:SOME_PV_NAME',</span>
+<span class="sd">                          'dtype': 'number',</span>
+<span class="sd">                          'shape': []}))</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1431,7 +1296,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Collectable.describe_collect">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKey</span><span class="p">]]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;This is like ``describe()`` on readable devices, but with an extra layer of nesting.</span>
+<span class="w">        </span><span class="sd">"""This is like ``describe()`` on readable devices, but with an extra layer of nesting.</span>
 
 <span class="sd">        Since a flyer can potentially return more than one event stream, this is either</span>
 <span class="sd">            * a dict of stream names (strings) mapped to a ``describe()``-type output for each.</span>
@@ -1439,7 +1304,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                argument of the message.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1453,11 +1318,11 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventCollectable.collect">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield dictionaries that are partial Event documents.</span>
+<span class="w">        </span><span class="sd">"""Yield dictionaries that are partial Event documents.</span>
 
-<span class="sd">        They should contain the keys &#39;time&#39;, &#39;data&#39;, and &#39;timestamps&#39;.</span>
-<span class="sd">        A &#39;uid&#39; is added by the RunEngine.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        They should contain the keys 'time', 'data', and 'timestamps'.</span>
+<span class="sd">        A 'uid' is added by the RunEngine.</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1471,17 +1336,17 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.EventPageCollectable.collect_pages">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">collect_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsyncIterator</span><span class="p">[</span><span class="n">PartialEventPage</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield dictionaries that are partial EventPage documents.</span>
+<span class="w">        </span><span class="sd">"""Yield dictionaries that are partial EventPage documents.</span>
 
-<span class="sd">        They should contain the keys &#39;time&#39;, &#39;data&#39;, and &#39;timestamps&#39;.</span>
-<span class="sd">        A &#39;uid&#39; is added by the RunEngine.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        They should contain the keys 'time', 'data', and 'timestamps'.</span>
+<span class="sd">        A 'uid' is added by the RunEngine.</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
 
 
-<span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">contravariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"T_co"</span><span class="p">,</span> <span class="n">contravariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Movable">
@@ -1492,7 +1357,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Movable.set">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Unpack</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T_co</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a ``Status`` that is marked done when the device is done moving.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return a ``Status`` that is marked done when the device is done moving."""</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1501,7 +1366,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Location">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Location">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Location</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">TypedDict</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary containing the location of a Device&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A dictionary containing the location of a Device"""</span>
 
     <span class="c1">#: Where the Device was requested to move to</span>
     <span class="n">setpoint</span><span class="p">:</span> <span class="n">T</span>
@@ -1518,13 +1383,13 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Locatable.locate">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="n">Location</span><span class="p">[</span><span class="n">T</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the current location of a Device.</span>
+<span class="w">        </span><span class="sd">"""Return the current location of a Device.</span>
 
 <span class="sd">        While a ``Readable`` reports many values, a ``Movable`` will have the</span>
 <span class="sd">        concept of location. This is where the Device currently is, and where it</span>
 <span class="sd">        was last requested to move to. This protocol formalizes how to get the</span>
 <span class="sd">        location from a ``Movable``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1538,10 +1403,10 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Flyable.kickoff">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">kickoff</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Begin acculumating data.</span>
+<span class="w">        </span><span class="sd">"""Begin acculumating data.</span>
 
 <span class="sd">        Return a ``Status`` and mark it done when acqusition has begun.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1549,7 +1414,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Flyable.complete">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a ``Status`` and mark it done when acquisition has completed.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return a ``Status`` and mark it done when acquisition has completed."""</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1565,11 +1430,11 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stageable.stage">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;An optional hook for &quot;setting up&quot; the device for acquisition.</span>
+<span class="w">        </span><span class="sd">"""An optional hook for "setting up" the device for acquisition.</span>
 
 <span class="sd">        It should return a ``Status`` that is marked done when the device is</span>
 <span class="sd">        done staging.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1577,11 +1442,11 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stageable.unstage">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">unstage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Status</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;A hook for &quot;cleaning up&quot; the device after acquisition.</span>
+<span class="w">        </span><span class="sd">"""A hook for "cleaning up" the device after acquisition.</span>
 
 <span class="sd">        It should return a ``Status`` that is marked done when the device is finished</span>
 <span class="sd">        unstaging.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1595,10 +1460,10 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Pausable.pause">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform device-specific work when the RunEngine pauses.</span>
+<span class="w">        </span><span class="sd">"""Perform device-specific work when the RunEngine pauses.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1606,10 +1471,10 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Pausable.resume">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform device-specific work when the RunEngine resumes after a pause.</span>
+<span class="w">        </span><span class="sd">"""Perform device-specific work when the RunEngine resumes after a pause.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1623,16 +1488,16 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Stoppable.stop">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Safely stop a device that may or may not be in motion.</span>
+<span class="w">        </span><span class="sd">"""Safely stop a device that may or may not be in motion.</span>
 
 <span class="sd">        The argument ``success`` is a boolean.</span>
 <span class="sd">        When ``success`` is true, bluesky is stopping the device as planned</span>
-<span class="sd">        and the device should stop &quot;normally&quot;.</span>
+<span class="sd">        and the device should stop "normally".</span>
 <span class="sd">        When ``success`` is false, something has gone wrong and the device</span>
 <span class="sd">        may wish to take defensive action to make itself safe.</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1649,13 +1514,13 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable.subscribe">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Subscribe to updates in value of a device.</span>
+<span class="w">        </span><span class="sd">"""Subscribe to updates in value of a device.</span>
 
 <span class="sd">        When the device has a new value ready, it should call ``function``</span>
 <span class="sd">        with something that looks like the output of ``read()``.</span>
 
 <span class="sd">        Needed for :doc:`monitored &lt;async&gt;`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
@@ -1663,7 +1528,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Subscribable.clear_sub">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">clear_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">Callback</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a subscription.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Remove a subscription."""</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1677,7 +1542,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Checkable.check_value">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">T_co</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOrAsync</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test for a valid setpoint without actually moving.</span>
+<span class="w">        </span><span class="sd">"""Test for a valid setpoint without actually moving.</span>
 
 <span class="sd">        This should accept the same arguments as ``set``. It should raise an</span>
 <span class="sd">        Exception if the argument represent an illegal setting --- e.g. a</span>
@@ -1690,7 +1555,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        This method may be used during a scan, so should not write to any Signals</span>
 
 <span class="sd">        This can be a standard function or an ``async`` function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 </div>
 
@@ -1699,16 +1564,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Hints">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.Hints">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Hints</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dictionary of optional hints for visualization&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A dictionary of optional hints for visualization"""</span>
 
     <span class="c1">#: A list of the interesting fields to plot</span>
     <span class="n">fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="c1">#: Partition fields (and their stream name) into dimensions for plotting</span>
     <span class="c1">#:</span>
-    <span class="c1">#: ``&#39;dimensions&#39;: [(fields, stream_name), (fields, stream_name), ...]``</span>
+    <span class="c1">#: ``'dimensions': [(fields, stream_name), (fields, stream_name), ...]``</span>
     <span class="n">dimensions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span>
     <span class="c1">#: Include this if scan data is sampled on a regular rectangular grid</span>
-    <span class="n">gridding</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;rectilinear&quot;</span><span class="p">,</span> <span class="s2">&quot;rectilinear_nonsequential&quot;</span><span class="p">]</span></div>
+    <span class="n">gridding</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"rectilinear"</span><span class="p">,</span> <span class="s2">"rectilinear_nonsequential"</span><span class="p">]</span></div>
 
 
 
@@ -1719,19 +1584,19 @@ window.runMermaid = runMermaid;</script>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">hints</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Hints</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;A dictionary of suggestions for best-effort visualization and processing.</span>
+<span class="w">        </span><span class="sd">"""A dictionary of suggestions for best-effort visualization and processing.</span>
 
 <span class="sd">        This does not affect what data is read or saved; it is only</span>
 <span class="sd">        a suggestion to enable automated tools to provide helpful information</span>
 <span class="sd">        with minimal guidance from the user. See :ref:`hints`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="o">...</span></div>
 
 
 
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">NamedMovable</span><span class="p">(</span><span class="n">Movable</span><span class="p">[</span><span class="n">T_co</span><span class="p">],</span> <span class="n">HasHints</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A movable object that has a name and hints.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A movable object that has a name and hints."""</span>
 
     <span class="o">...</span>
 
@@ -1739,7 +1604,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="check_supports">
 <a class="viewcode-back" href="../../hardware.html#bluesky.protocols.check_supports">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">protocol</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check that an object supports a protocol</span>
+<span class="w">    </span><span class="sd">"""Check that an object supports a protocol</span>
 
 <span class="sd">    This exists so that multiple protocol checks can be run in a mypy</span>
 <span class="sd">    compatible way, e.g.::</span>
@@ -1748,8 +1613,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        triggerable.trigger()</span>
 <span class="sd">        readable = check_supports(obj, Readable)</span>
 <span class="sd">        readable.read()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">protocol</span><span class="p">),</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> does not implement all </span><span class="si">%s</span><span class="s2"> methods&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">protocol</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>  <span class="c1"># noqa: UP031</span>
+<span class="sd">    """</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">protocol</span><span class="p">),</span> <span class="s2">"</span><span class="si">%s</span><span class="s2"> does not implement all </span><span class="si">%s</span><span class="s2"> methods"</span> <span class="o">%</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">protocol</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>  <span class="c1"># noqa: UP031</span>
     <span class="k">return</span> <span class="n">obj</span></div>
 
 

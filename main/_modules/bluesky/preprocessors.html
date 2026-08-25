@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.preprocessors &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>bluesky.preprocessors &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -38,185 +38,20 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="../../_static/documentation_options.js?v=df383aee"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
-
-
 
 
 
 const initStyles = () => {
     const defaultStyle = document.createElement('style');
-    defaultStyle.textContent = `pre.mermaid {
-    /* Same as .mermaid-container > pre */
-    display: block;
-    width: 100%;
-}
-
-pre.mermaid > svg {
-    /* Same as .mermaid-container > pre > svg */
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}`;
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
     document.head.appendChild(defaultStyle);
 
     const fullscreenStyle = document.createElement('style');
-    fullscreenStyle.textContent = `.mermaid-container {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-}
-
-.mermaid-container > pre {
-    display: block;
-    width: 100%;
-}
-
-.mermaid-container > pre > svg {
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}
-
-.mermaid-fullscreen-btn {
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    color: #333;
-}
-
-.mermaid-fullscreen-btn:hover {
-    opacity: 100% !important;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-btn.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-btn.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal {
-    display: none;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 95vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.98);
-    z-index: 9999;
-    padding: 20px;
-    overflow: auto;
-}
-
-.mermaid-fullscreen-modal.dark-theme {
-    background: rgba(0, 0, 0, 0.98);
-}
-
-.mermaid-fullscreen-modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen {
-    position: relative;
-    width: 95vw;
-    height: 90vh;
-    max-width: 95vw;
-    max-height: 90vh;
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    overflow: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen.dark-theme {
-    background: #1a1a1a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.mermaid-container-fullscreen pre.mermaid {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen .mermaid svg {
-    height: 100% !important;
-    width: 100% !important;
-    cursor: grab;
-}
-
-.mermaid-fullscreen-close {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s;
-    font-size: 24px;
-    line-height: 1;
-    color: #333;
-}
-
-.mermaid-fullscreen-close:hover {
-    background: white;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-close.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-close.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
-    display: none !important;
-}`;
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
     document.head.appendChild(fullscreenStyle);
 }
 
@@ -263,6 +98,13 @@ let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
 let _lazyObserver = null;
 let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
 
 // Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
 // so this is safe to call both for the initial batch and for diagrams that
@@ -359,8 +201,10 @@ const runMermaid = async (rerun) => {
                                     el.removeAttribute('data-mermaid-deferred');
                                     // Apply zoom to the now-rendered diagram, matching
                                     // the decoration visible diagrams receive.
-                                    if ("False" === "True") {
-                                        addZoomToSvgs(d3.selectAll(""));
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
                                     }
                                 } catch (e) {
                                     console.error("Mermaid deferred rendering failed:", e);
@@ -381,10 +225,12 @@ const runMermaid = async (rerun) => {
     const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
     const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
-    if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
         if(mermaids_to_add_zoom > 0) {
-            var svgs = d3.selectAll("");
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
             // Wait until every active (visible) diagram has rendered. Deferred
             // diagrams are excluded, so a fixed d3_node_count that counts a
             // hidden diagram no longer loops forever waiting for its SVG.
@@ -401,7 +247,7 @@ const runMermaid = async (rerun) => {
     }
 
     // Stop here if not adding fullscreen capability
-    if ("True" !== "True") return;
+    if (!true) return;
 
     if (modal !== null ) {
         // Destroy existing modal
@@ -424,7 +270,7 @@ const runMermaid = async (rerun) => {
     modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
 
-    const closeModal = () => {
+    closeModal = () => {
         modal.classList.remove('active');
         modalContent.innerHTML = '';
         document.body.style.overflow = ''
@@ -435,12 +281,6 @@ const runMermaid = async (rerun) => {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
@@ -460,8 +300,8 @@ const runMermaid = async (rerun) => {
         const fullscreenBtn = document.createElement('button');
         fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
         fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
-        fullscreenBtn.textContent = '⛶';
-        fullscreenBtn.style.opacity = '50%';
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
 
         // Calculate dynamic position based on diagram's margin and padding
         const diagramStyle = window.getComputedStyle(mermaidDiv);
@@ -473,7 +313,7 @@ const runMermaid = async (rerun) => {
         fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
 
         fullscreenBtn.addEventListener('click', () => {
-            previousScrollOffset = [window.scroll, window.scrollY];
+            previousScrollOffset = [window.scrollX, window.scrollY];
             const clone = mermaidDiv.cloneNode(true);
             modalContent.innerHTML = '';
             modalContent.appendChild(clone);
@@ -485,9 +325,9 @@ const runMermaid = async (rerun) => {
                 svg.style.width = '100%';
                 svg.style.height = 'auto';
                 svg.style.maxWidth = '100%';
-                svg.style.sdisplay = 'block';
+                svg.style.display = 'block';
 
-                if ("False" === "True") {
+                if (false) {
                     setTimeout(() => {
                         const g = svg.querySelector('g');
                         if (g) {
@@ -510,8 +350,11 @@ const runMermaid = async (rerun) => {
     });
 };
 
+
+
 const load = async () => {
     initStyles();
+
 
     await runMermaid(true);
 
@@ -521,10 +364,8 @@ const load = async () => {
             darkTheme = newDarkTheme;
             console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
             await mermaid.initialize(
-                {...JSON.parse(
-                    `{"startOnLoad": false}`
-                ),
-                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
                 }
             );
             await runMermaid(true);
@@ -549,10 +390,8 @@ const load = async () => {
 
 console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
 mermaid.initialize(
-    {...JSON.parse(
-        `{"startOnLoad": false}`
-    ),
-    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
     }
 );
 
@@ -562,7 +401,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -571,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1103,7 +942,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="plan_mutator">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.plan_mutator.html#bluesky.preprocessors.plan_mutator">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">msg_proc</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Alter the contents of a plan on the fly by changing or inserting messages.</span>
 
 <span class="sd">    Parameters</span>
@@ -1114,8 +953,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    msg_proc : callable</span>
 <span class="sd">        This function takes in a message and specifies messages(s) to replace</span>
 <span class="sd">        it with. The function must account for what type of response the</span>
-<span class="sd">        message would prompt. For example, an &#39;open_run&#39; message causes the</span>
-<span class="sd">        RunEngine to send a uid string back to the plan, while a &#39;set&#39; message</span>
+<span class="sd">        message would prompt. For example, an 'open_run' message causes the</span>
+<span class="sd">        RunEngine to send a uid string back to the plan, while a 'set' message</span>
 <span class="sd">        causes the RunEngine to send a status object back to the plan. The</span>
 <span class="sd">        function should return a pair of generators ``(head, tail)`` that yield</span>
 <span class="sd">        messages. The last message out of the ``head`` generator is the one</span>
@@ -1133,8 +972,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">          insert messages after.</span>
 
 <span class="sd">        The reason for returning a pair of generators instead of just one is to</span>
-<span class="sd">        provide a way to specify which message&#39;s response should be sent out to</span>
-<span class="sd">        the host plan. Again, it&#39;s the last message yielded by the first</span>
+<span class="sd">        provide a way to specify which message's response should be sent out to</span>
+<span class="sd">        the host plan. Again, it's the last message yielded by the first</span>
 <span class="sd">        generator (``head``).</span>
 
 <span class="sd">    Yields</span>
@@ -1145,7 +984,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`bluesky.plans.msg_mutator`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># internal stacks</span>
     <span class="n">msgs_seen</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># noqa: C408</span>
     <span class="n">plan_stack</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
@@ -1169,14 +1008,14 @@ window.runMermaid = runMermaid;</script>
             <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="c1"># discard the exhausted generator</span>
                 <span class="n">exhausted_gen</span> <span class="o">=</span> <span class="n">plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-                <span class="c1"># if this is the parent plan, capture it&#39;s return value</span>
+                <span class="c1"># if this is the parent plan, capture it's return value</span>
                 <span class="k">if</span> <span class="n">exhausted_gen</span> <span class="ow">is</span> <span class="n">parent_plan</span><span class="p">:</span>
                     <span class="n">ret_value</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span>
 
-                <span class="c1"># if we just came out of a &#39;tail&#39; generator,</span>
+                <span class="c1"># if we just came out of a 'tail' generator,</span>
                 <span class="c1"># discard its return value and replace it with the</span>
                 <span class="c1"># cached one (from the last message in its paired</span>
-                <span class="c1"># &#39;new_gen&#39;)</span>
+                <span class="c1"># 'new_gen')</span>
                 <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_result_cache</span><span class="p">:</span>
                     <span class="n">ret</span> <span class="o">=</span> <span class="n">tail_result_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">))</span>
 
@@ -1214,14 +1053,14 @@ window.runMermaid = runMermaid;</script>
             <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="c1"># discard the exhausted generator</span>
                 <span class="n">exhausted_gen</span> <span class="o">=</span> <span class="n">plan_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-                <span class="c1"># if this is the parent plan, capture it&#39;s return value</span>
+                <span class="c1"># if this is the parent plan, capture it's return value</span>
                 <span class="k">if</span> <span class="n">exhausted_gen</span> <span class="ow">is</span> <span class="n">parent_plan</span><span class="p">:</span>
                     <span class="n">ret_value</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span>
 
-                <span class="c1"># if we just came out of a &#39;tail&#39; generator,</span>
+                <span class="c1"># if we just came out of a 'tail' generator,</span>
                 <span class="c1"># discard its return value and replace it with the</span>
                 <span class="c1"># cached one (from the last message in its paired</span>
-                <span class="c1"># &#39;new_gen&#39;)</span>
+                <span class="c1"># 'new_gen')</span>
                 <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_result_cache</span><span class="p">:</span>
                     <span class="n">ret</span> <span class="o">=</span> <span class="n">tail_result_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">))</span>
 
@@ -1281,7 +1120,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="k">continue</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># yield out the &#39;current message&#39; and collect the return</span>
+            <span class="c1"># yield out the 'current message' and collect the return</span>
             <span class="n">inner_ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">msg</span>
         <span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
             <span class="c1"># special case GeneratorExit.  We must clean up all of our plans</span>
@@ -1303,7 +1142,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="msg_mutator">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.msg_mutator.html#bluesky.preprocessors.msg_mutator">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">msg_proc</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A simple preprocessor that mutates or deletes single messages in a plan.</span>
 
 <span class="sd">    To *insert* messages, use ``plan_mutator`` instead.</span>
@@ -1323,7 +1162,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`bluesky.plans.plan_mutator`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">_e</span><span class="p">:</span>
@@ -1333,7 +1172,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="n">msg_proc</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                 <span class="c1"># if None, just skip message</span>
-                <span class="c1"># feed &#39;None&#39; back down into the base plan,</span>
+                <span class="c1"># feed 'None' back down into the base plan,</span>
                 <span class="c1"># this may break some plans</span>
                 <span class="k">if</span> <span class="n">msg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">_s</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1362,7 +1201,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="pchain">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.pchain.html#bluesky.preprocessors.pchain">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">pchain</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Like `itertools.chain` but using `yield from`</span>
+<span class="w">    </span><span class="sd">"""Like `itertools.chain` but using `yield from`</span>
 
 <span class="sd">    This ensures than `.send` works as expected and the underlying</span>
 <span class="sd">    plans get the return values. Provides cleanup for Interruptions.</span>
@@ -1376,7 +1215,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
 <span class="sd">        The messages from each plan in turn</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">rets</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
@@ -1390,7 +1229,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">print_summary_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print summary of plan as it goes by</span>
+<span class="w">    </span><span class="sd">"""Print summary of plan as it goes by</span>
 
 <span class="sd">    Prints a minimal version of the plan, showing only moves and</span>
 <span class="sd">    where events are created.  Yields the `Msg` unchanged.</span>
@@ -1403,7 +1242,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : `Msg`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">read_cache</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -1411,18 +1250,18 @@ window.runMermaid = runMermaid;</script>
         <span class="k">nonlocal</span> <span class="n">read_cache</span>
 
         <span class="n">cmd</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span>
-        <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{:=^80}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot; Open Run &quot;</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{:=^80}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot; Close Run &quot;</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;create&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"open_run"</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="si">{:=^80}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">" Open Run "</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"close_run"</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="si">{:=^80}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">" Close Run "</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"set"</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"create"</span><span class="p">:</span>
             <span class="n">read_cache</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"read"</span><span class="p">:</span>
             <span class="n">read_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;save&quot;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Read </span><span class="si">{</span><span class="n">read_cache</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"save"</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Read </span><span class="si">{</span><span class="n">read_cache</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">msg</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">msg_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">spy</span><span class="p">))</span>
@@ -1431,23 +1270,23 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="run_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.run_wrapper.html#bluesky.preprocessors.run_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">run_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enclose in &#39;open_run&#39; and &#39;close_run&#39; messages.</span>
+<span class="w">    </span><span class="sd">"""Enclose in 'open_run' and 'close_run' messages.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    plan : iterable or iterator</span>
 <span class="sd">        a generator, list, or similar containing `Msg` objects</span>
 <span class="sd">    md : dict, optional</span>
-<span class="sd">        metadata to be passed into the &#39;open_run&#39; message. Values must be</span>
+<span class="sd">        metadata to be passed into the 'open_run' message. Values must be</span>
 <span class="sd">        JSON-serializable and compatible with the event-model RunStart schema.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">rs_uid</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">open_run</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">except_plan</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">RunEngineControlException</span><span class="p">):</span>
             <span class="k">yield from</span> <span class="n">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">exit_status</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">yield from</span> <span class="n">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="o">=</span><span class="s2">&quot;fail&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">yield from</span> <span class="n">close_run</span><span class="p">(</span><span class="n">exit_status</span><span class="o">=</span><span class="s2">"fail"</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 
     <span class="k">yield from</span> <span class="n">contingency_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">except_plan</span><span class="o">=</span><span class="n">except_plan</span><span class="p">,</span> <span class="n">else_plan</span><span class="o">=</span><span class="n">close_run</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">rs_uid</span></div>
@@ -1457,7 +1296,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="subs_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.subs_wrapper.html#bluesky.preprocessors.subs_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">subs_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">subs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Subscribe callbacks to the document stream; finally, unsubscribe.</span>
 
 <span class="sd">    Parameters</span>
@@ -1468,40 +1307,40 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">         Documents of each type are routed to a list of functions.</span>
 <span class="sd">         Input is normalized to a dict of lists of functions, like so:</span>
 
-<span class="sd">         None -&gt; {&#39;all&#39;: [], &#39;start&#39;: [], &#39;stop&#39;: [], &#39;event&#39;: [],</span>
-<span class="sd">                  &#39;descriptor&#39;: []}</span>
+<span class="sd">         None -&gt; {'all': [], 'start': [], 'stop': [], 'event': [],</span>
+<span class="sd">                  'descriptor': []}</span>
 
-<span class="sd">         func -&gt; {&#39;all&#39;: [func], &#39;start&#39;: [], &#39;stop&#39;: [], &#39;event&#39;: [],</span>
-<span class="sd">                  &#39;descriptor&#39;: []}</span>
+<span class="sd">         func -&gt; {'all': [func], 'start': [], 'stop': [], 'event': [],</span>
+<span class="sd">                  'descriptor': []}</span>
 
-<span class="sd">         [f1, f2] -&gt; {&#39;all&#39;: [f1, f2], &#39;start&#39;: [], &#39;stop&#39;: [], &#39;event&#39;: [],</span>
-<span class="sd">                      &#39;descriptor&#39;: []}</span>
+<span class="sd">         [f1, f2] -&gt; {'all': [f1, f2], 'start': [], 'stop': [], 'event': [],</span>
+<span class="sd">                      'descriptor': []}</span>
 
-<span class="sd">         {&#39;event&#39;: [func]} -&gt;  {&#39;all&#39;: [], &#39;start&#39;: [], &#39;stop&#39;: [],</span>
-<span class="sd">                                &#39;event&#39;: [func], &#39;descriptor&#39;: []}</span>
+<span class="sd">         {'event': [func]} -&gt;  {'all': [], 'start': [], 'stop': [],</span>
+<span class="sd">                                'event': [func], 'descriptor': []}</span>
 
 <span class="sd">         Signature of functions must conform to `f(name, doc)` where</span>
-<span class="sd">         name is one of {&#39;all&#39;, &#39;start&#39;, &#39;stop&#39;, &#39;event&#39;, &#39;descriptor&#39;} and</span>
+<span class="sd">         name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and</span>
 <span class="sd">         doc is a dictionary.</span>
 
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan, with &#39;subscribe&#39; and &#39;unsubscribe&#39; messages</span>
+<span class="sd">        messages from plan, with 'subscribe' and 'unsubscribe' messages</span>
 <span class="sd">        inserted and appended</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">subs</span> <span class="o">=</span> <span class="n">normalize_subs_input</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
     <span class="n">tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_subscribe</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">funcs</span> <span class="ow">in</span> <span class="n">subs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">:</span>
-                <span class="n">token</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;subscribe&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"subscribe"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
                 <span class="n">tokens</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_unsubscribe</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;unsubscribe&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"unsubscribe"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_inner_plan</span><span class="p">():</span>
         <span class="k">yield from</span> <span class="n">_subscribe</span><span class="p">()</span>
@@ -1514,7 +1353,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="suspend_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.suspend_wrapper.html#bluesky.preprocessors.suspend_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">suspend_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">suspenders</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Install suspenders to the RunEngine, and remove them at the end.</span>
 
 <span class="sd">    Parameters</span>
@@ -1527,19 +1366,19 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan, with &#39;install_suspender&#39; and &#39;remove_suspender&#39;</span>
+<span class="sd">        messages from plan, with 'install_suspender' and 'remove_suspender'</span>
 <span class="sd">        messages inserted and appended</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">suspenders</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
         <span class="n">suspenders</span> <span class="o">=</span> <span class="p">[</span><span class="n">suspenders</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_install</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">susp</span> <span class="ow">in</span> <span class="n">suspenders</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;install_suspender&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">susp</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"install_suspender"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">susp</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_remove</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">susp</span> <span class="ow">in</span> <span class="n">suspenders</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;remove_suspender&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">susp</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"remove_suspender"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">susp</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_inner_plan</span><span class="p">():</span>
         <span class="k">yield from</span> <span class="n">_install</span><span class="p">()</span>
@@ -1550,7 +1389,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">configure_count_time_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Preprocessor that sets all devices with a `count_time` to the same time.</span>
 
 <span class="sd">    The original setting is stashed and restored at the end.</span>
@@ -1565,8 +1404,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan, with &#39;set&#39; messages inserted</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        messages from plan, with 'set' messages inserted</span>
+<span class="sd">    """</span>
     <span class="n">devices_seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="n">original_times</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -1574,8 +1413,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
         <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">devices_seen</span><span class="p">:</span>
             <span class="n">devices_seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;count_time&quot;</span><span class="p">):</span>
-                <span class="c1"># TODO Do this with a &#39;read&#39; Msg once reads can be</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"count_time"</span><span class="p">):</span>
+                <span class="c1"># TODO Do this with a 'read' Msg once reads can be</span>
                 <span class="c1"># marked as belonging to a different event stream (or no</span>
                 <span class="c1"># event stream.</span>
                 <span class="n">original_times</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">count_time</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
@@ -1597,7 +1436,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="finalize_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.finalize_wrapper.html#bluesky.preprocessors.finalize_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">finalize_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">final_plan</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pause_for_debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;try...finally helper</span>
+<span class="w">    </span><span class="sd">"""try...finally helper</span>
 
 <span class="sd">    Run the first plan and then the second.  If any of the messages</span>
 <span class="sd">    raise an error in the RunEngine (or otherwise), the second plan</span>
@@ -1627,7 +1466,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`contingency_wrapper`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># If final_plan is a generator *function* (as opposed to a generator</span>
     <span class="c1"># *instance*), call it.</span>
     <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">final_plan</span><span class="p">):</span>
@@ -1671,7 +1510,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">pause_for_debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">auto_raise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;try...except...else...finally helper</span>
+<span class="w">    </span><span class="sd">"""try...except...else...finally helper</span>
 
 <span class="sd">    See :func:`finalize_wrapper` for a simplified but less powerful</span>
 <span class="sd">    error-handling preprocessor.</span>
@@ -1710,7 +1549,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`finalize_wrapper`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">cleanup</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">plan</span>
@@ -1752,7 +1591,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="finalize_decorator">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.finalize_decorator.html#bluesky.preprocessors.finalize_decorator">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">finalize_decorator</span><span class="p">(</span><span class="n">final_plan</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;try...finally helper</span>
+<span class="w">    </span><span class="sd">"""try...finally helper</span>
 
 <span class="sd">    Run the first plan and then the second.  If any of the messages</span>
 <span class="sd">    raise an error in the RunEngine (or otherwise), the second plan</span>
@@ -1773,16 +1612,16 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    msg : Msg</span>
 <span class="sd">        messages from `plan` until it terminates or an error is raised, then</span>
 <span class="sd">        messages from `final_plan`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">dec</span><span class="p">(</span><span class="n">gen_func</span><span class="p">):</span>
         <span class="nd">@wraps</span><span class="p">(</span><span class="n">gen_func</span><span class="p">)</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">dec_inner</span><span class="p">(</span><span class="o">*</span><span class="n">inner_args</span><span class="p">,</span> <span class="o">**</span><span class="n">inner_kwargs</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">final_plan</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-                    <span class="s2">&quot;final_plan must be a callable (e.g., a &quot;</span>
-                    <span class="s2">&quot;generator function) not an iterable (e.g., a &quot;</span>
-                    <span class="s2">&quot;generator instance).&quot;</span>
+                    <span class="s2">"final_plan must be a callable (e.g., a "</span>
+                    <span class="s2">"generator function) not an iterable (e.g., a "</span>
+                    <span class="s2">"generator instance)."</span>
                 <span class="p">)</span>
             <span class="n">final_plan_instance</span> <span class="o">=</span> <span class="n">final_plan</span><span class="p">()</span>
             <span class="n">plan</span> <span class="o">=</span> <span class="n">gen_func</span><span class="p">(</span><span class="o">*</span><span class="n">inner_args</span><span class="p">,</span> <span class="o">**</span><span class="n">inner_kwargs</span><span class="p">)</span>
@@ -1813,7 +1652,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">rewindable_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">rewindable</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Toggle the &#39;rewindable&#39; state of the RE</span>
+<span class="w">    </span><span class="sd">"""Toggle the 'rewindable' state of the RE</span>
 
 <span class="sd">    Allow or disallow rewinding during the processing of the wrapped messages.</span>
 <span class="sd">    Then restore the initial state (rewindable or not rewindable).</span>
@@ -1821,23 +1660,23 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    plan : generator</span>
-<span class="sd">        The plan to wrap in a &#39;rewindable&#39; or &#39;not rewindable&#39; context</span>
+<span class="sd">        The plan to wrap in a 'rewindable' or 'not rewindable' context</span>
 <span class="sd">    rewindable : bool</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">initial_rewindable</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">capture_rewindable_state</span><span class="p">():</span>
         <span class="k">nonlocal</span> <span class="n">initial_rewindable</span>
-        <span class="n">initial_rewindable</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;rewindable&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">initial_rewindable</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"rewindable"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_rewindable</span><span class="p">(</span><span class="n">rewindable</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">initial_rewindable</span> <span class="o">!=</span> <span class="n">rewindable</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;rewindable&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rewindable</span><span class="p">))</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"rewindable"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rewindable</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">restore_rewindable</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">initial_rewindable</span> <span class="o">!=</span> <span class="n">rewindable</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;rewindable&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">initial_rewindable</span><span class="p">))</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"rewindable"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">initial_rewindable</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">rewindable</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">capture_rewindable_state</span><span class="p">()</span>
@@ -1850,7 +1689,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="inject_md_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.inject_md_wrapper.html#bluesky.preprocessors.inject_md_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">inject_md_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">md</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Inject additional metadata into a run.</span>
 
 <span class="sd">    This takes precedences over the original metadata dict in the event of</span>
@@ -1863,10 +1702,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        a generator, list, or similar containing `Msg` objects</span>
 <span class="sd">    md : dict</span>
 <span class="sd">        metadata</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_inject_md</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"open_run"</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">kwargs</span><span class="o">=</span><span class="n">ChainMap</span><span class="p">(</span><span class="n">md</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">msg</span>
 
@@ -1875,7 +1714,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">stub_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Remove Msg object in order to use plan as a stub</span>
 
 <span class="sd">    This will remove any `open_run`, `close_run`, `stage` and `unstage` `Msg`</span>
@@ -1892,18 +1731,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    -------</span>
 <span class="sd">    md : dict</span>
 <span class="sd">        Metadata discovered from `open_run` Msg</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">md</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_block_run_control</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Block open and close run messages</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Capture the metadata from open_run</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"open_run"</span><span class="p">:</span>
             <span class="n">md</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;close_run&quot;</span><span class="p">,</span> <span class="s2">&quot;stage&quot;</span><span class="p">,</span> <span class="s2">&quot;unstage&quot;</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"close_run"</span><span class="p">,</span> <span class="s2">"stage"</span><span class="p">,</span> <span class="s2">"unstage"</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">msg</span>
 
@@ -1914,7 +1753,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="monitor_during_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.monitor_during_wrapper.html#bluesky.preprocessors.monitor_during_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">monitor_during_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">signals</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Monitor (asynchronously read) devices during runs.</span>
 
 <span class="sd">    This is a preprocessor that insert messages immediately after a run is</span>
@@ -1930,17 +1769,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan with &#39;monitor&#39;, and &#39;unmontior&#39; messages inserted</span>
+<span class="sd">        messages from plan with 'monitor', and 'unmontior' messages inserted</span>
 
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`bluesky.plans.fly_during_wrapper`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">monitor_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">sig</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_monitor&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">sig</span> <span class="ow">in</span> <span class="n">signals</span><span class="p">]</span>
-    <span class="n">unmonitor_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;unmonitor&quot;</span><span class="p">,</span> <span class="n">sig</span><span class="p">)</span> <span class="k">for</span> <span class="n">sig</span> <span class="ow">in</span> <span class="n">signals</span><span class="p">]</span>
+<span class="sd">    """</span>
+    <span class="n">monitor_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">"monitor"</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">sig</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">"_monitor"</span><span class="p">)</span> <span class="k">for</span> <span class="n">sig</span> <span class="ow">in</span> <span class="n">signals</span><span class="p">]</span>
+    <span class="n">unmonitor_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">"unmonitor"</span><span class="p">,</span> <span class="n">sig</span><span class="p">)</span> <span class="k">for</span> <span class="n">sig</span> <span class="ow">in</span> <span class="n">signals</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">insert_after_open</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"open_run"</span><span class="p">:</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
                 <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">monitor_msgs</span><span class="p">)</span>
@@ -1950,7 +1789,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">insert_before_close</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"close_run"</span><span class="p">:</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
                 <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">unmonitor_msgs</span><span class="p">)</span>
@@ -1970,8 +1809,8 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="fly_during_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.fly_during_wrapper.html#bluesky.preprocessors.fly_during_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">fly_during_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">flyers</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Kickoff and collect &quot;flyer&quot; (asynchronously collect) objects during runs.</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Kickoff and collect "flyer" (asynchronously collect) objects during runs.</span>
 
 <span class="sd">    This is a preprocessor that insert messages immediately after a run is</span>
 <span class="sd">    opened and before it is closed.</span>
@@ -1986,25 +1825,25 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan with &#39;kickoff&#39;, &#39;wait&#39; and &#39;collect&#39; messages</span>
+<span class="sd">        messages from plan with 'kickoff', 'wait' and 'collect' messages</span>
 <span class="sd">        inserted</span>
 
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`bluesky.plans.fly`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">grp1</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">&quot;flyers-kickoff&quot;</span><span class="p">)</span>
-    <span class="n">grp2</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">&quot;flyers-complete&quot;</span><span class="p">)</span>
-    <span class="n">kickoff_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;kickoff&quot;</span><span class="p">,</span> <span class="n">flyer</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp1</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
-    <span class="n">complete_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="n">flyer</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp2</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
-    <span class="n">collect_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;collect&quot;</span><span class="p">,</span> <span class="n">flyer</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
+<span class="sd">    """</span>
+    <span class="n">grp1</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">"flyers-kickoff"</span><span class="p">)</span>
+    <span class="n">grp2</span> <span class="o">=</span> <span class="n">_short_uid</span><span class="p">(</span><span class="s2">"flyers-complete"</span><span class="p">)</span>
+    <span class="n">kickoff_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">"kickoff"</span><span class="p">,</span> <span class="n">flyer</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp1</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
+    <span class="n">complete_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">"complete"</span><span class="p">,</span> <span class="n">flyer</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp2</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
+    <span class="n">collect_msgs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">"collect"</span><span class="p">,</span> <span class="n">flyer</span><span class="p">)</span> <span class="k">for</span> <span class="n">flyer</span> <span class="ow">in</span> <span class="n">flyers</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">flyers</span><span class="p">:</span>
-        <span class="c1"># If there are any flyers, insert a &#39;wait&#39; Msg after kickoff, complete</span>
-        <span class="n">kickoff_msgs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp1</span><span class="p">)]</span>
-        <span class="n">complete_msgs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp2</span><span class="p">)]</span>
+        <span class="c1"># If there are any flyers, insert a 'wait' Msg after kickoff, complete</span>
+        <span class="n">kickoff_msgs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">"wait"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp1</span><span class="p">)]</span>
+        <span class="n">complete_msgs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s2">"wait"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">grp2</span><span class="p">)]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">insert_after_open</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"open_run"</span><span class="p">:</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
                 <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">kickoff_msgs</span><span class="p">)</span>
@@ -2014,7 +1853,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">insert_before_close</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"close_run"</span><span class="p">:</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
                 <span class="k">yield from</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">complete_msgs</span><span class="p">)</span>
@@ -2035,14 +1874,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="lazily_stage_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.lazily_stage_wrapper.html#bluesky.preprocessors.lazily_stage_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">lazily_stage_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This is a preprocessor that inserts &#39;stage&#39; messages and appends &#39;unstage&#39;.</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This is a preprocessor that inserts 'stage' messages and appends 'unstage'.</span>
 
 <span class="sd">    The first time an object is seen in `plan`, it is staged. To avoid</span>
-<span class="sd">    redundant staging we actually stage the object&#39;s ultimate parent.</span>
+<span class="sd">    redundant staging we actually stage the object's ultimate parent.</span>
 
-<span class="sd">    At the end, in a `finally` block, an &#39;unstage&#39; Message issued for every</span>
-<span class="sd">    &#39;stage&#39; Message.</span>
+<span class="sd">    At the end, in a `finally` block, an 'unstage' Message issued for every</span>
+<span class="sd">    'stage' Message.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -2052,10 +1891,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan with &#39;stage&#39; messages inserted and &#39;unstage&#39;</span>
+<span class="sd">        messages from plan with 'stage' messages inserted and 'unstage'</span>
 <span class="sd">        messages appended</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">COMMANDS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="s2">&quot;trigger&quot;</span><span class="p">,</span> <span class="s2">&quot;kickoff&quot;</span><span class="p">])</span>  <span class="c1"># noqa: C405</span>
+<span class="sd">    """</span>
+    <span class="n">COMMANDS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"set"</span><span class="p">,</span> <span class="s2">"trigger"</span><span class="p">,</span> <span class="s2">"kickoff"</span><span class="p">])</span>  <span class="c1"># noqa: C405</span>
     <span class="c1"># Cache devices in the order they are staged; then unstage in reverse.</span>
     <span class="n">devices_staged</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -2065,8 +1904,8 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="n">root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">devices_staged</span><span class="p">:</span>
 
                 <span class="k">def</span><span class="w"> </span><span class="nf">new_gen</span><span class="p">():</span>
-                    <span class="c1"># Here we insert a &#39;stage&#39; message</span>
-                    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;stage&quot;</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
+                    <span class="c1"># Here we insert a 'stage' message</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"stage"</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
                     <span class="c1"># and cache the result</span>
                     <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="c1"># The generator may be being list-ified.</span>
@@ -2089,8 +1928,8 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="stage_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.stage_wrapper.html#bluesky.preprocessors.stage_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">stage_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    &#39;Stage&#39; devices (i.e., prepare them for use, &#39;arm&#39; them) and then unstage.</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -2102,14 +1941,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan with &#39;stage&#39; and finally &#39;unstage&#39; messages inserted</span>
+<span class="sd">        messages from plan with 'stage' and finally 'unstage' messages inserted</span>
 
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`bluesky.plans.lazily_stage_wrapper`</span>
 <span class="sd">    :func:`bluesky.plans.stage`</span>
 <span class="sd">    :func:`bluesky.plans.unstage`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">devices</span> <span class="o">=</span> <span class="n">separate_devices</span><span class="p">(</span><span class="n">root_ancestor</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">stage_devices</span><span class="p">():</span>
@@ -2142,7 +1981,7 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># only include the coupled children if at least of the children</span>
     <span class="c1"># directly included is one of the coupled ones.</span>
     <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">type_map</span> <span class="ow">in</span> <span class="n">go</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">type_map</span><span class="p">[</span><span class="s2">&quot;pseudo&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">type_map</span><span class="p">[</span><span class="s2">"pseudo"</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">devices</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">)</span>
             <span class="n">coupled_parents</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">devices</span><span class="p">,</span> <span class="n">coupled_parents</span>
@@ -2152,58 +1991,58 @@ window.runMermaid = runMermaid;</script>
     <span class="n">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="n">msg_type</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># this plan may be being list-ified</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;*** all positions for </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> are relative to current position ***&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"*** all positions for </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> are relative to current position ***"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">__read_and_stash_a_motor</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">initial_positions</span><span class="p">,</span> <span class="n">coupled_parents</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal plan for relative set and reset wrappers</span>
+<span class="w">    </span><span class="sd">"""Internal plan for relative set and reset wrappers</span>
 
 
 <span class="sd">    .. warning ::</span>
 
 <span class="sd">       Do not use this plan directly for any reason.</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># First check if it is a locatable, and use its location if it is</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Locatable</span><span class="p">):</span>
-        <span class="n">location</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">__get_result_of_message</span><span class="p">(</span><span class="s2">&quot;locate&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">__get_result_of_message</span><span class="p">(</span><span class="s2">"locate"</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">setpoint</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">setpoint</span> <span class="o">=</span> <span class="n">location</span><span class="p">[</span><span class="s2">&quot;setpoint&quot;</span><span class="p">]</span>
+            <span class="n">setpoint</span> <span class="o">=</span> <span class="n">location</span><span class="p">[</span><span class="s2">"setpoint"</span><span class="p">]</span>
     <span class="c1"># Otherwise it might have a `position` attribution</span>
-    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">):</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"position"</span><span class="p">):</span>
         <span class="n">setpoint</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">position</span>
     <span class="c1"># Otherwise fallback to read obj and grab the value of the first key</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">reading</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">__get_result_of_message</span><span class="p">(</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="n">reading</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">__get_result_of_message</span><span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">reading</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">setpoint</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="n">get_hinted_fields</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="p">(</span><span class="n">k</span><span class="p">,)</span> <span class="o">=</span> <span class="n">fields</span>
-                <span class="n">setpoint</span> <span class="o">=</span> <span class="n">reading</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+                <span class="n">setpoint</span> <span class="o">=</span> <span class="n">reading</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s2">"value"</span><span class="p">]</span>
             <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">k</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">reading</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">setpoint</span> <span class="o">=</span> <span class="n">reading</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+                <span class="n">setpoint</span> <span class="o">=</span> <span class="n">reading</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s2">"value"</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
-                    <span class="s2">&quot;do not yet know how to deal with &quot;</span>
-                    <span class="s2">&quot;non pseudopositioner multi-axis.  Please &quot;</span>
-                    <span class="s2">&quot;contact DAMA to justify why you need &quot;</span>
-                    <span class="s2">&quot;this.&quot;</span>
+                    <span class="s2">"do not yet know how to deal with "</span>
+                    <span class="s2">"non pseudopositioner multi-axis.  Please "</span>
+                    <span class="s2">"contact DAMA to justify why you need "</span>
+                    <span class="s2">"this."</span>
                 <span class="p">)</span>
 
     <span class="n">initial_positions</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">setpoint</span>
 
-    <span class="c1"># if we move a pseudo positioner also stash it&#39;s children</span>
+    <span class="c1"># if we move a pseudo positioner also stash it's children</span>
     <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">coupled_parents</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">,</span> <span class="n">setpoint</span><span class="p">):</span>
             <span class="n">initial_positions</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
 
-    <span class="c1"># if we move a pseudo single, also stash it&#39;s parent and siblings</span>
+    <span class="c1"># if we move a pseudo single, also stash it's parent and siblings</span>
     <span class="n">parent</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">parent</span>
     <span class="k">if</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">coupled_parents</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">parent</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">:</span>
         <span class="n">parent_pos</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">position</span>
@@ -2217,8 +2056,8 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="relative_set_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.relative_set_wrapper.html#bluesky.preprocessors.relative_set_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">relative_set_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Interpret &#39;set&#39; messages on devices as relative to initial position.</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Interpret 'set' messages on devices as relative to initial position.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -2230,9 +2069,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan, with &#39;read&#39; messages inserted and &#39;set&#39; messages</span>
+<span class="sd">        messages from plan, with 'read' messages inserted and 'set' messages</span>
 <span class="sd">        mutated</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">initial_positions</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">devices</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">devices</span><span class="p">,</span> <span class="n">coupled_parents</span> <span class="o">=</span> <span class="n">_normalize_devices</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>
@@ -2240,7 +2079,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">coupled_parents</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">rewrite_pos</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">initial_positions</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"set"</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">initial_positions</span><span class="p">):</span>
             <span class="p">(</span><span class="n">rel_pos</span><span class="p">,)</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span>
             <span class="n">abs_pos</span> <span class="o">=</span> <span class="n">initial_positions</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">]</span> <span class="o">+</span> <span class="n">rel_pos</span>
             <span class="n">new_msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">abs_pos</span><span class="p">,))</span>
@@ -2251,7 +2090,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">insert_reads</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
         <span class="n">eligible</span> <span class="o">=</span> <span class="p">(</span><span class="n">devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">)</span>
         <span class="n">seen</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">initial_positions</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">eligible</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">seen</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"set"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">eligible</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">seen</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">(</span>
                 <span class="n">pchain</span><span class="p">(</span>
                     <span class="n">__read_and_stash_a_motor</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">initial_positions</span><span class="p">,</span> <span class="n">coupled_parents</span><span class="p">),</span>
@@ -2271,7 +2110,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="reset_positions_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.reset_positions_wrapper.html#bluesky.preprocessors.reset_positions_wrapper">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">reset_positions_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Return movable devices to their initial positions at the end.</span>
 
 <span class="sd">    Parameters</span>
@@ -2284,8 +2123,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan with &#39;read&#39; and finally &#39;set&#39; messages inserted</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        messages from plan with 'read' and finally 'set' messages inserted</span>
+<span class="sd">    """</span>
     <span class="n">initial_positions</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">devices</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">devices</span><span class="p">,</span> <span class="n">coupled_parents</span> <span class="o">=</span> <span class="n">_normalize_devices</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>
@@ -2295,7 +2134,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">insert_reads</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
         <span class="n">eligible</span> <span class="o">=</span> <span class="n">devices</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">devices</span>
         <span class="n">seen</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">initial_positions</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">eligible</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">seen</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"set"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">eligible</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">seen</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">(</span>
                 <span class="n">pchain</span><span class="p">(</span>
                     <span class="n">__read_and_stash_a_motor</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">initial_positions</span><span class="p">,</span> <span class="n">coupled_parents</span><span class="p">),</span>
@@ -2307,12 +2146,12 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">():</span>
-        <span class="n">blk_grp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;reset-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())[:</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">blk_grp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"reset-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())[:</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">initial_positions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">parent</span> <span class="ow">in</span> <span class="n">coupled_parents</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">blk_grp</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">blk_grp</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"set"</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">blk_grp</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"wait"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">blk_grp</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">finalize_wrapper</span><span class="p">(</span><span class="n">plan_mutator</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">insert_reads</span><span class="p">),</span> <span class="n">reset</span><span class="p">()))</span></div>
 
@@ -2320,11 +2159,11 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="baseline_wrapper">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.baseline_wrapper.html#bluesky.preprocessors.baseline_wrapper">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">baseline_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;baseline&quot;</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">baseline_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"baseline"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Preprocessor that records a baseline of all `devices` after `open_run`</span>
 
-<span class="sd">    The readings are designated for a separate event stream named &#39;baseline&#39; by</span>
+<span class="sd">    The readings are designated for a separate event stream named 'baseline' by</span>
 <span class="sd">    default.</span>
 
 <span class="sd">    Parameters</span>
@@ -2335,25 +2174,25 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        collection of Devices to read</span>
 <span class="sd">        If None, the plan passes through unchanged.</span>
 <span class="sd">    name : string, optional</span>
-<span class="sd">        name for event stream; by default, &#39;baseline&#39;</span>
+<span class="sd">        name for event stream; by default, 'baseline'</span>
 
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
 <span class="sd">    msg : Msg</span>
-<span class="sd">        messages from plan, with &#39;set&#39; messages inserted</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        messages from plan, with 'set' messages inserted</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">head</span><span class="p">():</span>
         <span class="k">yield from</span> <span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">trigger_and_read</span><span class="p">(</span><span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">insert_baseline</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;open_run&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"open_run"</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">set_run_key_wrapper</span><span class="p">(</span><span class="n">head</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">head</span><span class="p">()</span>
-        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;close_run&quot;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"close_run"</span><span class="p">:</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">post_baseline</span><span class="p">():</span>
                 <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -2396,16 +2235,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SupplementalData">
 <a class="viewcode-back" href="../../plans.html#bluesky.preprocessors.SupplementalData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SupplementalData</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A configurable preprocessor for supplemental measurements</span>
 
 <span class="sd">    This is a plan preprocessor. It inserts messages into plans to:</span>
 
-<span class="sd">    * take &quot;baseline&quot; readings at the beginning and end of each run for the</span>
+<span class="sd">    * take "baseline" readings at the beginning and end of each run for the</span>
 <span class="sd">      devices listed in its ``baseline`` atrribute</span>
 <span class="sd">    * monitor signals in its ``monitors`` attribute for asynchronous</span>
 <span class="sd">      updates during each run.</span>
-<span class="sd">    * kick off &quot;flyable&quot; devices listed in its ``flyers`` attribute at the</span>
+<span class="sd">    * kick off "flyable" devices listed in its ``flyers`` attribute at the</span>
 <span class="sd">      beginning of each run and collect their data at the end</span>
 
 <span class="sd">    Internally, it uses the plan preprocessors:</span>
@@ -2422,7 +2261,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Signals (not multi-signal Devices) to be monitored during each run,</span>
 <span class="sd">        generating readings asynchronously</span>
 <span class="sd">    flyers : list</span>
-<span class="sd">        &quot;Flyable&quot; Devices to be kicked off before each run and collected</span>
+<span class="sd">        "Flyable" Devices to be kicked off before each run and collected</span>
 <span class="sd">        at the end of each run</span>
 
 <span class="sd">    Examples</span>
@@ -2467,7 +2306,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; RE = RunEngine({})</span>
 <span class="sd">    &gt;&gt;&gt; RE.preprocessors.append(sd)</span>
 <span class="sd">    &gt;&gt;&gt; sd.baseline.append(some_detector)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">monitors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flyers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">baseline</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2481,12 +2320,12 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">flyers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">flyers</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{cls}</span><span class="s2">(baseline=</span><span class="si">{baseline}</span><span class="s2">, monitors=</span><span class="si">{monitors}</span><span class="s2">, flyers=</span><span class="si">{flyers}</span><span class="s2">)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">"</span><span class="si">{cls}</span><span class="s2">(baseline=</span><span class="si">{baseline}</span><span class="s2">, monitors=</span><span class="si">{monitors}</span><span class="s2">, flyers=</span><span class="si">{flyers}</span><span class="s2">)"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="bp">cls</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
             <span class="o">**</span><span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
         <span class="p">)</span>
 
-    <span class="c1"># I&#39;m not sure why anyone would want to pickle this but it&#39;s good manners</span>
+    <span class="c1"># I'm not sure why anyone would want to pickle this but it's good manners</span>
     <span class="c1"># to avoid breaking pickling.</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
@@ -2499,14 +2338,14 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitors</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flyers</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Insert messages into a plan.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        plan : iterable or iterator</span>
 <span class="sd">            a generator, list, or similar containing `Msg` objects</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Read this as going from the inside out: first we wrap the plan in the</span>
         <span class="c1"># flying instructions, then monitoring, then baseline, so that the</span>
         <span class="c1"># order of operations is:</span>
@@ -2525,7 +2364,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">set_run_key_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Add a run key to each message in wrapped plan</span>
 
 <span class="sd">    Parameters</span>
@@ -2536,9 +2375,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        The run key to set on each Msg. It is recommended that run key represents</span>
 <span class="sd">        informative string for better readability of plans. But value of any other</span>
 <span class="sd">        type can be used if needed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;run ID can not be None&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"run ID can not be None"</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_set_run_key</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
         <span class="c1"># Replace only the default value None</span>

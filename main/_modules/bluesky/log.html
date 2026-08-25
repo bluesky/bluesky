@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.log &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>bluesky.log &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -38,185 +38,20 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="../../_static/documentation_options.js?v=df383aee"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
-
-
 
 
 
 const initStyles = () => {
     const defaultStyle = document.createElement('style');
-    defaultStyle.textContent = `pre.mermaid {
-    /* Same as .mermaid-container > pre */
-    display: block;
-    width: 100%;
-}
-
-pre.mermaid > svg {
-    /* Same as .mermaid-container > pre > svg */
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}`;
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
     document.head.appendChild(defaultStyle);
 
     const fullscreenStyle = document.createElement('style');
-    fullscreenStyle.textContent = `.mermaid-container {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-}
-
-.mermaid-container > pre {
-    display: block;
-    width: 100%;
-}
-
-.mermaid-container > pre > svg {
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}
-
-.mermaid-fullscreen-btn {
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    color: #333;
-}
-
-.mermaid-fullscreen-btn:hover {
-    opacity: 100% !important;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-btn.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-btn.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal {
-    display: none;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 95vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.98);
-    z-index: 9999;
-    padding: 20px;
-    overflow: auto;
-}
-
-.mermaid-fullscreen-modal.dark-theme {
-    background: rgba(0, 0, 0, 0.98);
-}
-
-.mermaid-fullscreen-modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen {
-    position: relative;
-    width: 95vw;
-    height: 90vh;
-    max-width: 95vw;
-    max-height: 90vh;
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    overflow: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen.dark-theme {
-    background: #1a1a1a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.mermaid-container-fullscreen pre.mermaid {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen .mermaid svg {
-    height: 100% !important;
-    width: 100% !important;
-    cursor: grab;
-}
-
-.mermaid-fullscreen-close {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s;
-    font-size: 24px;
-    line-height: 1;
-    color: #333;
-}
-
-.mermaid-fullscreen-close:hover {
-    background: white;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-close.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-close.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
-    display: none !important;
-}`;
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
     document.head.appendChild(fullscreenStyle);
 }
 
@@ -263,6 +98,13 @@ let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
 let _lazyObserver = null;
 let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
 
 // Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
 // so this is safe to call both for the initial batch and for diagrams that
@@ -359,8 +201,10 @@ const runMermaid = async (rerun) => {
                                     el.removeAttribute('data-mermaid-deferred');
                                     // Apply zoom to the now-rendered diagram, matching
                                     // the decoration visible diagrams receive.
-                                    if ("False" === "True") {
-                                        addZoomToSvgs(d3.selectAll(""));
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
                                     }
                                 } catch (e) {
                                     console.error("Mermaid deferred rendering failed:", e);
@@ -381,10 +225,12 @@ const runMermaid = async (rerun) => {
     const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
     const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
-    if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
         if(mermaids_to_add_zoom > 0) {
-            var svgs = d3.selectAll("");
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
             // Wait until every active (visible) diagram has rendered. Deferred
             // diagrams are excluded, so a fixed d3_node_count that counts a
             // hidden diagram no longer loops forever waiting for its SVG.
@@ -401,7 +247,7 @@ const runMermaid = async (rerun) => {
     }
 
     // Stop here if not adding fullscreen capability
-    if ("True" !== "True") return;
+    if (!true) return;
 
     if (modal !== null ) {
         // Destroy existing modal
@@ -424,7 +270,7 @@ const runMermaid = async (rerun) => {
     modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
 
-    const closeModal = () => {
+    closeModal = () => {
         modal.classList.remove('active');
         modalContent.innerHTML = '';
         document.body.style.overflow = ''
@@ -435,12 +281,6 @@ const runMermaid = async (rerun) => {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
@@ -460,8 +300,8 @@ const runMermaid = async (rerun) => {
         const fullscreenBtn = document.createElement('button');
         fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
         fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
-        fullscreenBtn.textContent = '⛶';
-        fullscreenBtn.style.opacity = '50%';
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
 
         // Calculate dynamic position based on diagram's margin and padding
         const diagramStyle = window.getComputedStyle(mermaidDiv);
@@ -473,7 +313,7 @@ const runMermaid = async (rerun) => {
         fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
 
         fullscreenBtn.addEventListener('click', () => {
-            previousScrollOffset = [window.scroll, window.scrollY];
+            previousScrollOffset = [window.scrollX, window.scrollY];
             const clone = mermaidDiv.cloneNode(true);
             modalContent.innerHTML = '';
             modalContent.appendChild(clone);
@@ -485,9 +325,9 @@ const runMermaid = async (rerun) => {
                 svg.style.width = '100%';
                 svg.style.height = 'auto';
                 svg.style.maxWidth = '100%';
-                svg.style.sdisplay = 'block';
+                svg.style.display = 'block';
 
-                if ("False" === "True") {
+                if (false) {
                     setTimeout(() => {
                         const g = svg.querySelector('g');
                         if (g) {
@@ -510,8 +350,11 @@ const runMermaid = async (rerun) => {
     });
 };
 
+
+
 const load = async () => {
     initStyles();
+
 
     await runMermaid(true);
 
@@ -521,10 +364,8 @@ const load = async () => {
             darkTheme = newDarkTheme;
             console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
             await mermaid.initialize(
-                {...JSON.parse(
-                    `{"startOnLoad": false}`
-                ),
-                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
                 }
             );
             await runMermaid(true);
@@ -549,10 +390,8 @@ const load = async () => {
 
 console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
 mermaid.initialize(
-    {...JSON.parse(
-        `{"startOnLoad": false}`
-    ),
-    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
     }
 );
 
@@ -562,7 +401,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -571,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1086,21 +925,21 @@ window.runMermaid = runMermaid;</script>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="n">curses</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;config_bluesky_logging&quot;</span><span class="p">,</span> <span class="s2">&quot;get_handler&quot;</span><span class="p">,</span> <span class="s2">&quot;LogFormatter&quot;</span><span class="p">,</span> <span class="s2">&quot;set_handler&quot;</span><span class="p">)</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"config_bluesky_logging"</span><span class="p">,</span> <span class="s2">"get_handler"</span><span class="p">,</span> <span class="s2">"LogFormatter"</span><span class="p">,</span> <span class="s2">"set_handler"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_stderr_supports_color</span><span class="p">():</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;isatty&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">"isatty"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">curses</span><span class="p">:</span>
                 <span class="n">curses</span><span class="o">.</span><span class="n">setupterm</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetnum</span><span class="p">(</span><span class="s2">&quot;colors&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetnum</span><span class="p">(</span><span class="s2">"colors"</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">return</span> <span class="kc">True</span>
             <span class="k">elif</span> <span class="n">colorama</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">is</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">colorama</span><span class="o">.</span><span class="n">initialise</span><span class="p">,</span> <span class="s2">&quot;wrapped_stderr&quot;</span><span class="p">,</span> <span class="nb">object</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">is</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">colorama</span><span class="o">.</span><span class="n">initialise</span><span class="p">,</span> <span class="s2">"wrapped_stderr"</span><span class="p">,</span> <span class="nb">object</span><span class="p">()):</span>
                     <span class="k">return</span> <span class="kc">True</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="c1"># Very broad exception handling because it&#39;s always better to</span>
+        <span class="c1"># Very broad exception handling because it's always better to</span>
         <span class="c1"># fall back to non-colored logs than to break at startup.</span>
         <span class="k">pass</span>
     <span class="k">return</span> <span class="kc">False</span>
@@ -1113,14 +952,14 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># and passes through log_adapater.extra instead. This subclass merges</span>
         <span class="c1"># the extra passed via keyword argument with the extra in the</span>
         <span class="c1"># attribute, giving precedence to the keyword argument.</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;extra&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">extra</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extra&quot;</span><span class="p">,</span> <span class="p">{})}</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">"extra"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">extra</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"extra"</span><span class="p">,</span> <span class="p">{})}</span>
         <span class="k">return</span> <span class="n">msg</span><span class="p">,</span> <span class="n">kwargs</span>
 
 
 <div class="viewcode-block" id="LogFormatter">
 <a class="viewcode-back" href="../../debugging.html#bluesky.log.LogFormatter">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LogFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log formatter for bluesky records.</span>
+<span class="w">    </span><span class="sd">"""Log formatter for bluesky records.</span>
 
 <span class="sd">    Adapted from the log formatter used in Tornado.</span>
 <span class="sd">    Key features of this formatter are:</span>
@@ -1130,10 +969,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    * Includes extra record attributes (old_state, new_state, msg_command,</span>
 <span class="sd">      doc_name, doc_uid) when present.</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(color)s</span><span class="s2">[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
-    <span class="n">DEFAULT_DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%y%m</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
+    <span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">"</span><span class="si">%(color)s</span><span class="s2">[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">"</span>
+    <span class="n">DEFAULT_DATE_FORMAT</span> <span class="o">=</span> <span class="s2">"%y%m</span><span class="si">%d</span><span class="s2"> %H:%M:%S"</span>
     <span class="n">DEFAULT_COLORS</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>  <span class="c1"># Blue</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># Green</span>
@@ -1142,9 +981,9 @@ window.runMermaid = runMermaid;</script>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">DEFAULT_FORMAT</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="n">DEFAULT_DATE_FORMAT</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;%&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">DEFAULT_COLORS</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">DEFAULT_FORMAT</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="n">DEFAULT_DATE_FORMAT</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"%"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">DEFAULT_COLORS</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">        :arg bool color: Enables color support.</span>
 <span class="sd">        :arg str fmt: Log message format.</span>
 <span class="sd">          It will be applied to the attributes dict of log records. The</span>
@@ -1156,7 +995,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">          Used for formatting ``(asctime)`` placeholder in ``prefix_fmt``.</span>
 <span class="sd">        .. versionchanged:: 3.2</span>
 <span class="sd">           Added ``fmt`` and ``datefmt`` arguments.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">datefmt</span><span class="o">=</span><span class="n">datefmt</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
 
@@ -1170,61 +1009,61 @@ window.runMermaid = runMermaid;</script>
                 <span class="c1"># works with unicode strings.  The explicit calls to</span>
                 <span class="c1"># unicode() below are harmless in python2 but will do the</span>
                 <span class="c1"># right conversion in python 3.</span>
-                <span class="n">fg_color</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">&quot;setaf&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">&quot;setf&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">fg_color</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">"setaf"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">"setf"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
 
                 <span class="k">for</span> <span class="n">levelno</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">colors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">levelno</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">tparm</span><span class="p">(</span><span class="n">fg_color</span><span class="p">,</span> <span class="n">code</span><span class="p">),</span> <span class="s2">&quot;ascii&quot;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">&quot;sgr0&quot;</span><span class="p">),</span> <span class="s2">&quot;ascii&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">levelno</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">tparm</span><span class="p">(</span><span class="n">fg_color</span><span class="p">,</span> <span class="n">code</span><span class="p">),</span> <span class="s2">"ascii"</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">tigetstr</span><span class="p">(</span><span class="s2">"sgr0"</span><span class="p">),</span> <span class="s2">"ascii"</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># If curses is not present (currently we&#39;ll only get here for</span>
+                <span class="c1"># If curses is not present (currently we'll only get here for</span>
                 <span class="c1"># colorama on windows), assume hard-coded ANSI color codes.</span>
                 <span class="k">for</span> <span class="n">levelno</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">colors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">levelno</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[2;3</span><span class="si">%d</span><span class="s2">m&quot;</span> <span class="o">%</span> <span class="n">code</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">levelno</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\033</span><span class="s2">[2;3</span><span class="si">%d</span><span class="s2">m"</span> <span class="o">%</span> <span class="n">code</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\033</span><span class="s2">[0m"</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="s2">""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
         <span class="n">message</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">message</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">())</span>
-        <span class="n">record</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">record</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
         <span class="n">record</span><span class="o">.</span><span class="n">asctime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatTime</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">datefmt</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">record</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">]</span>
             <span class="n">record</span><span class="o">.</span><span class="n">end_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="n">record</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-            <span class="n">record</span><span class="o">.</span><span class="n">end_color</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="s2">""</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">end_color</span> <span class="o">=</span> <span class="s2">""</span>
 
         <span class="n">formatted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fmt</span> <span class="o">%</span> <span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span>
 
         <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="p">:</span>
             <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="p">:</span>
-            <span class="n">formatted</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">formatted</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">return</span> <span class="n">formatted</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    &quot;</span><span class="p">)</span></div>
+            <span class="n">formatted</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">formatted</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="n">formatted</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">    "</span><span class="p">)</span></div>
 
 
 
-<span class="n">plain_log_format</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2">.</span><span class="si">%(msecs)03d</span><span class="s2"> </span><span class="si">%(module)15s</span><span class="s2">:</span><span class="si">%(lineno)5d</span><span class="s2">] </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+<span class="n">plain_log_format</span> <span class="o">=</span> <span class="s2">"[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2">.</span><span class="si">%(msecs)03d</span><span class="s2"> </span><span class="si">%(module)15s</span><span class="s2">:</span><span class="si">%(lineno)5d</span><span class="s2">] </span><span class="si">%(message)s</span><span class="s2">"</span>
 <span class="n">color_log_format</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="s2">&quot;</span><span class="si">%(color)s</span><span class="s2">[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2">.</span><span class="si">%(msecs)03d</span><span class="s2"> </span><span class="si">%(module)15s</span><span class="s2">:</span><span class="si">%(lineno)5d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+    <span class="s2">"</span><span class="si">%(color)s</span><span class="s2">[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2">.</span><span class="si">%(msecs)03d</span><span class="s2"> </span><span class="si">%(module)15s</span><span class="s2">:</span><span class="si">%(lineno)5d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">"</span>
 <span class="p">)</span>
 
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky&quot;</span><span class="p">)</span>
-<span class="n">doc_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky.emit_document&quot;</span><span class="p">)</span>
-<span class="n">msg_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky.RE.msg&quot;</span><span class="p">)</span>
-<span class="n">state_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bluesky.RE.state&quot;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"bluesky"</span><span class="p">)</span>
+<span class="n">doc_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"bluesky.emit_document"</span><span class="p">)</span>
+<span class="n">msg_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"bluesky.RE.msg"</span><span class="p">)</span>
+<span class="n">state_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"bluesky.RE.state"</span><span class="p">)</span>
 <span class="n">current_handler</span> <span class="o">=</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">validate_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Return a int for level comparison</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="n">levelno</span> <span class="o">=</span> <span class="n">level</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -1233,11 +1072,11 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">levelno</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">levelno</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Your level is illegal, please use one of python logging string&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Your level is illegal, please use one of python logging string"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_set_handler_with_logger</span><span class="p">(</span>
-    <span class="n">logger_name</span><span class="o">=</span><span class="s2">&quot;bluesky&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;WARNING&quot;</span>
+    <span class="n">logger_name</span><span class="o">=</span><span class="s2">"bluesky"</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s2">"%H:%M:%S"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"WARNING"</span>
 <span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
@@ -1257,9 +1096,9 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="config_bluesky_logging">
 <a class="viewcode-back" href="../../debugging.html#bluesky.log.config_bluesky_logging">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;WARNING&quot;</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Set a new handler on the ``logging.getLogger(&#39;bluesky&#39;)`` logger.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">config_bluesky_logging</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s2">"%H:%M:%S"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"WARNING"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Set a new handler on the ``logging.getLogger('bluesky')`` logger.</span>
 
 <span class="sd">    If this is called more than once, the handler from the previous invocation</span>
 <span class="sd">    is removed (if still present) and replaced.</span>
@@ -1269,28 +1108,28 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    file : object with ``write`` method or filename string</span>
 <span class="sd">        Default is ``sys.stdout``.</span>
 <span class="sd">    datefmt : string</span>
-<span class="sd">        Date format. Default is ``&#39;%H:%M:%S&#39;``.</span>
+<span class="sd">        Date format. Default is ``'%H:%M:%S'``.</span>
 <span class="sd">    color : boolean</span>
 <span class="sd">        Use ANSI color codes. True by default.</span>
 <span class="sd">    level : str or int</span>
 <span class="sd">        Python logging level, given as string or corresponding integer.</span>
-<span class="sd">        Default is &#39;WARNING&#39;.</span>
+<span class="sd">        Default is 'WARNING'.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    handler : logging.Handler</span>
-<span class="sd">        The handler, which has already been added to the &#39;bluesky&#39; logger.</span>
+<span class="sd">        The handler, which has already been added to the 'bluesky' logger.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    Log to a file.</span>
 
-<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(file=&#39;/tmp/what_is_happening.txt&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(file='/tmp/what_is_happening.txt')</span>
 
 <span class="sd">    Include the date along with the time. (The log messages will always include</span>
-<span class="sd">    microseconds, which are configured separately, not as part of &#39;datefmt&#39;.)</span>
+<span class="sd">    microseconds, which are configured separately, not as part of 'datefmt'.)</span>
 
-<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(datefmt=&quot;%Y-%m-%d %H:%M:%S&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(datefmt="%Y-%m-%d %H:%M:%S")</span>
 
 <span class="sd">    Turn off ANSI color codes.</span>
 
@@ -1298,8 +1137,8 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Increase verbosity: show level INFO or higher.</span>
 
-<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(level=&#39;INFO&#39;)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    &gt;&gt;&gt; config_bluesky_logging(level='INFO')</span>
+<span class="sd">    """</span>
     <span class="k">global</span> <span class="n">current_handler</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
@@ -1328,11 +1167,11 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="get_handler">
 <a class="viewcode-back" href="../../debugging.html#bluesky.log.get_handler">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_handler</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Return the handler configured by the most recent call to :func:`config_bluesky_logging`.</span>
 
 <span class="sd">    If :func:`config_bluesky_logging` has not yet been called, this returns ``None``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">current_handler</span></div>
 
 </pre></div>

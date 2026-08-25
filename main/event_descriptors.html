@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Event Descriptors &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>Event Descriptors &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'event_descriptors';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Progress Bar" href="progress-bar.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -600,19 +600,19 @@
 document. We presented an example Run Start, Event, and Run Stop, but we
 deferred detailed discussion of the Event Descriptor.</p>
 <p>Recall our example ‘event’ document.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;event&#39; document (same as above, shown again for reference)</span>
-<span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
-      <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
-      <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span> <span class="mf">3.05</span><span class="p">},</span>
- <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="mf">1442521007.9258342</span><span class="p">,</span>
-     <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">,</span>
-     <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">},</span>
- <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521007.3438923</span><span class="p">,</span>
- <span class="s1">&#39;seq_num&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
- <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
- <span class="s1">&#39;descriptor&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;reference to a descriptor document&gt;&#39;</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 'event' document (same as above, shown again for reference)</span>
+<span class="p">{</span><span class="s1">'data'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'temperature'</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
+      <span class="s1">'x_setpoint'</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
+      <span class="s1">'x_readback'</span><span class="p">:</span> <span class="mf">3.05</span><span class="p">},</span>
+ <span class="s1">'timestamps'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'temperature'</span><span class="p">:</span> <span class="mf">1442521007.9258342</span><span class="p">,</span>
+     <span class="s1">'x_setpoint'</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">,</span>
+     <span class="s1">'x_readback'</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">},</span>
+ <span class="s1">'time'</span><span class="p">:</span> <span class="mf">1442521007.3438923</span><span class="p">,</span>
+ <span class="s1">'seq_num'</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+ <span class="s1">'uid'</span><span class="p">:</span> <span class="s1">'&lt;randomly-generated unique ID&gt;'</span><span class="p">,</span>
+ <span class="s1">'descriptor'</span><span class="p">:</span> <span class="s1">'&lt;reference to a descriptor document&gt;'</span><span class="p">}</span>
 </pre></div>
 </div>
 <p>Typically, an experiment generates multiple event documents with the same data
@@ -639,26 +639,26 @@ large image array, is stored</p></li>
 <p>Arbitrary additional fields are allowed, such as precision or units.
 The RunEngine obtains this information from each device it sees by calling
 <code class="docutils literal notranslate"><span class="pre">device.describe()</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a &#39;descriptor&#39; document</span>
-<span class="p">{</span><span class="s1">&#39;data_keys&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-         <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;K&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
-     <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-         <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;mm&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
-     <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-         <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;mm&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}},</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a 'descriptor' document</span>
+<span class="p">{</span><span class="s1">'data_keys'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'temperature'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+         <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+         <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+         <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'K'</span><span class="p">,</span>
+         <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+     <span class="s1">'x_setpoint'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+         <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+         <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+         <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'mm'</span><span class="p">,</span>
+         <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+     <span class="s1">'x_readback'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+         <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+         <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+         <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'mm'</span><span class="p">,</span>
+         <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">2</span><span class="p">}},</span>
  <span class="o">...</span><span class="p">}</span>
 </pre></div>
 </div>
@@ -669,10 +669,10 @@ The RunEngine obtains this information from each device it sees by calling
 <p>This is needed because a given device can produce multiple data keys. For
 example, suppose the <code class="docutils literal notranslate"><span class="pre">x_readback</span></code> and <code class="docutils literal notranslate"><span class="pre">x_setpoint</span></code> data keys in our example
 came from the same device, a motor named <code class="docutils literal notranslate"><span class="pre">'x'</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a &#39;descriptor&#39; document</span>
-<span class="p">{</span><span class="s1">&#39;object_keys&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;x_setpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;x_readback&#39;</span><span class="p">],</span>
-     <span class="s1">&#39;temp_ctrl&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">]},</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a 'descriptor' document</span>
+<span class="p">{</span><span class="s1">'object_keys'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'x'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'x_setpoint'</span><span class="p">,</span> <span class="s1">'x_readback'</span><span class="p">],</span>
+     <span class="s1">'temp_ctrl'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'temperature'</span><span class="p">]},</span>
  <span class="o">...</span><span class="p">}</span>
 </pre></div>
 </div>
@@ -697,22 +697,22 @@ reads the device’s configuration also. The return value of
 <code class="docutils literal notranslate"><span class="pre">configuration[device.name]['timestamps']</span></code>.</p>
 <p>In this example, <code class="docutils literal notranslate"><span class="pre">x</span></code> has one configuration data key, and <code class="docutils literal notranslate"><span class="pre">temp_ctrl</span></code>
 happens to provide no configuration information.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a &#39;descriptor&#39; document</span>
-<span class="p">{</span><span class="s1">&#39;configuration&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span>
-       <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
-        <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mf">1442521007.534918</span><span class="p">},</span>
-        <span class="s1">&#39;data_keys&#39;</span><span class="p">:</span>
-           <span class="p">{</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span>
-               <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-                <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;mm&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}}},</span>
-     <span class="s1">&#39;temp_ctrl&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">{},</span>
-         <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span> <span class="p">{}</span>
-         <span class="s1">&#39;data_keys&#39;</span><span class="p">:</span> <span class="p">{}}}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a 'descriptor' document</span>
+<span class="p">{</span><span class="s1">'configuration'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'x'</span><span class="p">:</span>
+       <span class="p">{</span><span class="s1">'data'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'offset'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
+        <span class="s1">'timestamps'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'offset'</span><span class="p">:</span> <span class="mf">1442521007.534918</span><span class="p">},</span>
+        <span class="s1">'data_keys'</span><span class="p">:</span>
+           <span class="p">{</span><span class="s1">'offset'</span><span class="p">:</span>
+               <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+                <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+                <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'mm'</span><span class="p">,</span>
+                <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">2</span><span class="p">}}},</span>
+     <span class="s1">'temp_ctrl'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'data'</span><span class="p">:</span> <span class="p">{},</span>
+         <span class="s1">'timestamps'</span><span class="p">:</span> <span class="p">{}</span>
+         <span class="s1">'data_keys'</span><span class="p">:</span> <span class="p">{}}}</span>
  <span class="o">...</span><span class="p">}</span>
 </pre></div>
 </div>
@@ -721,10 +721,10 @@ happens to provide no configuration information.</p>
 <h2>Hints<a class="headerlink" href="#hints" title="Link to this heading">#</a></h2>
 <p>This is an experimental feature. Devices can provide information via a
 <code class="docutils literal notranslate"><span class="pre">hints</span></code> attribute that is stored here. See <a class="reference internal" href="callbacks.html#hints"><span class="std std-ref">Hints</span></a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a &#39;descriptor&#39; document</span>
- <span class="p">{</span><span class="s1">&#39;hints&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;x&#39;</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;x_readback&#39;</span><span class="p">]},</span>
-     <span class="s1">&#39;temp_ctrl&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">]}}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># excerpt of a 'descriptor' document</span>
+ <span class="p">{</span><span class="s1">'hints'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'x'</span> <span class="p">{</span><span class="s1">'fields'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'x_readback'</span><span class="p">]},</span>
+     <span class="s1">'temp_ctrl'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'fields'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'temperature'</span><span class="p">]}}</span>
   <span class="o">...</span><span class="p">}</span>
 </pre></div>
 </div>
@@ -732,55 +732,55 @@ happens to provide no configuration information.</p>
 <section id="complete-sample">
 <h2>Complete Sample<a class="headerlink" href="#complete-sample" title="Link to this heading">#</a></h2>
 <p>Taken together, our example ‘descriptor’ document looks like this.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># complete &#39;descriptor&#39; document</span>
-<span class="p">{</span><span class="s1">&#39;data_keys&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-         <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;K&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
-     <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-         <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;mm&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}},</span>
-     <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-         <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;mm&#39;</span><span class="p">,</span>
-         <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}},</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># complete 'descriptor' document</span>
+<span class="p">{</span><span class="s1">'data_keys'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'temperature'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+         <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+         <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+         <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'K'</span><span class="p">,</span>
+         <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+     <span class="s1">'x_setpoint'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+         <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+         <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+         <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'mm'</span><span class="p">,</span>
+         <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">2</span><span class="p">}},</span>
+     <span class="s1">'x_readback'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+         <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+         <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+         <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'mm'</span><span class="p">,</span>
+         <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">2</span><span class="p">}},</span>
 
- <span class="s1">&#39;object_keys&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;x_setpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;x_readback&#39;</span><span class="p">],</span>
-     <span class="s1">&#39;temp_ctrl&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">]},</span>
+ <span class="s1">'object_keys'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'x'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'x_setpoint'</span><span class="p">,</span> <span class="s1">'x_readback'</span><span class="p">],</span>
+     <span class="s1">'temp_ctrl'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'temperature'</span><span class="p">]},</span>
 
- <span class="s1">&#39;configuration&#39;</span><span class="p">:</span>
-     <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
-         <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mf">1442521007.534918</span><span class="p">},</span>
-         <span class="s1">&#39;data_keys&#39;</span><span class="p">:</span>
-            <span class="p">{</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span>
-                <span class="p">{</span><span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
-                 <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;descriptive string&gt;&#39;</span><span class="p">,</span>
-                 <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[],</span>
-                 <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;mm&#39;</span><span class="p">,</span>
-                 <span class="s1">&#39;precision&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-      <span class="s1">&#39;temp_ctrl&#39;</span><span class="p">:</span>
-        <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">{},</span>
-         <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span> <span class="p">{}</span>
-         <span class="s1">&#39;data_keys&#39;</span><span class="p">:</span> <span class="p">{}}}</span>
+ <span class="s1">'configuration'</span><span class="p">:</span>
+     <span class="p">{</span><span class="s1">'x'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'data'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'offset'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
+         <span class="s1">'timestamps'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'offset'</span><span class="p">:</span> <span class="mf">1442521007.534918</span><span class="p">},</span>
+         <span class="s1">'data_keys'</span><span class="p">:</span>
+            <span class="p">{</span><span class="s1">'offset'</span><span class="p">:</span>
+                <span class="p">{</span><span class="s1">'dtype'</span><span class="p">:</span> <span class="s1">'number'</span><span class="p">,</span>
+                 <span class="s1">'source'</span><span class="p">:</span> <span class="s1">'&lt;descriptive string&gt;'</span><span class="p">,</span>
+                 <span class="s1">'shape'</span><span class="p">:</span> <span class="p">[],</span>
+                 <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'mm'</span><span class="p">,</span>
+                 <span class="s1">'precision'</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+      <span class="s1">'temp_ctrl'</span><span class="p">:</span>
+        <span class="p">{</span><span class="s1">'data'</span><span class="p">:</span> <span class="p">{},</span>
+         <span class="s1">'timestamps'</span><span class="p">:</span> <span class="p">{}</span>
+         <span class="s1">'data_keys'</span><span class="p">:</span> <span class="p">{}}}</span>
      <span class="p">}</span>
 
- <span class="s1">&#39;hints&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;x&#39;</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;x_readback&#39;</span><span class="p">]},</span>
-     <span class="s1">&#39;temp_ctrl&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">]}}</span>
+ <span class="s1">'hints'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'x'</span> <span class="p">{</span><span class="s1">'fields'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'x_readback'</span><span class="p">]},</span>
+     <span class="s1">'temp_ctrl'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'fields'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'temperature'</span><span class="p">]}}</span>
 
- <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521007.3438923</span><span class="p">,</span>
- <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
- <span class="s1">&#39;run_start&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;reference to the start document&gt;&#39;</span><span class="p">}</span>
+ <span class="s1">'time'</span><span class="p">:</span> <span class="mf">1442521007.3438923</span><span class="p">,</span>
+ <span class="s1">'uid'</span><span class="p">:</span> <span class="s1">'&lt;randomly-generated unique ID&gt;'</span><span class="p">,</span>
+ <span class="s1">'run_start'</span><span class="p">:</span> <span class="s1">'&lt;reference to the start document&gt;'</span><span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -845,7 +845,7 @@ happens to provide no configuration information.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/event_descriptors.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/event_descriptors.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

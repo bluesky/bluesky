@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.simulators &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>bluesky.simulators &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -38,185 +38,20 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="../../_static/documentation_options.js?v=df383aee"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
-
-
 
 
 
 const initStyles = () => {
     const defaultStyle = document.createElement('style');
-    defaultStyle.textContent = `pre.mermaid {
-    /* Same as .mermaid-container > pre */
-    display: block;
-    width: 100%;
-}
-
-pre.mermaid > svg {
-    /* Same as .mermaid-container > pre > svg */
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}`;
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
     document.head.appendChild(defaultStyle);
 
     const fullscreenStyle = document.createElement('style');
-    fullscreenStyle.textContent = `.mermaid-container {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-}
-
-.mermaid-container > pre {
-    display: block;
-    width: 100%;
-}
-
-.mermaid-container > pre > svg {
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}
-
-.mermaid-fullscreen-btn {
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    color: #333;
-}
-
-.mermaid-fullscreen-btn:hover {
-    opacity: 100% !important;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-btn.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-btn.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal {
-    display: none;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 95vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.98);
-    z-index: 9999;
-    padding: 20px;
-    overflow: auto;
-}
-
-.mermaid-fullscreen-modal.dark-theme {
-    background: rgba(0, 0, 0, 0.98);
-}
-
-.mermaid-fullscreen-modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen {
-    position: relative;
-    width: 95vw;
-    height: 90vh;
-    max-width: 95vw;
-    max-height: 90vh;
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    overflow: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen.dark-theme {
-    background: #1a1a1a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.mermaid-container-fullscreen pre.mermaid {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen .mermaid svg {
-    height: 100% !important;
-    width: 100% !important;
-    cursor: grab;
-}
-
-.mermaid-fullscreen-close {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s;
-    font-size: 24px;
-    line-height: 1;
-    color: #333;
-}
-
-.mermaid-fullscreen-close:hover {
-    background: white;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-close.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-close.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
-    display: none !important;
-}`;
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
     document.head.appendChild(fullscreenStyle);
 }
 
@@ -263,6 +98,13 @@ let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
 let _lazyObserver = null;
 let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
 
 // Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
 // so this is safe to call both for the initial batch and for diagrams that
@@ -359,8 +201,10 @@ const runMermaid = async (rerun) => {
                                     el.removeAttribute('data-mermaid-deferred');
                                     // Apply zoom to the now-rendered diagram, matching
                                     // the decoration visible diagrams receive.
-                                    if ("False" === "True") {
-                                        addZoomToSvgs(d3.selectAll(""));
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
                                     }
                                 } catch (e) {
                                     console.error("Mermaid deferred rendering failed:", e);
@@ -381,10 +225,12 @@ const runMermaid = async (rerun) => {
     const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
     const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
-    if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
         if(mermaids_to_add_zoom > 0) {
-            var svgs = d3.selectAll("");
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
             // Wait until every active (visible) diagram has rendered. Deferred
             // diagrams are excluded, so a fixed d3_node_count that counts a
             // hidden diagram no longer loops forever waiting for its SVG.
@@ -401,7 +247,7 @@ const runMermaid = async (rerun) => {
     }
 
     // Stop here if not adding fullscreen capability
-    if ("True" !== "True") return;
+    if (!true) return;
 
     if (modal !== null ) {
         // Destroy existing modal
@@ -424,7 +270,7 @@ const runMermaid = async (rerun) => {
     modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
 
-    const closeModal = () => {
+    closeModal = () => {
         modal.classList.remove('active');
         modalContent.innerHTML = '';
         document.body.style.overflow = ''
@@ -435,12 +281,6 @@ const runMermaid = async (rerun) => {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
@@ -460,8 +300,8 @@ const runMermaid = async (rerun) => {
         const fullscreenBtn = document.createElement('button');
         fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
         fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
-        fullscreenBtn.textContent = '⛶';
-        fullscreenBtn.style.opacity = '50%';
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
 
         // Calculate dynamic position based on diagram's margin and padding
         const diagramStyle = window.getComputedStyle(mermaidDiv);
@@ -473,7 +313,7 @@ const runMermaid = async (rerun) => {
         fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
 
         fullscreenBtn.addEventListener('click', () => {
-            previousScrollOffset = [window.scroll, window.scrollY];
+            previousScrollOffset = [window.scrollX, window.scrollY];
             const clone = mermaidDiv.cloneNode(true);
             modalContent.innerHTML = '';
             modalContent.appendChild(clone);
@@ -485,9 +325,9 @@ const runMermaid = async (rerun) => {
                 svg.style.width = '100%';
                 svg.style.height = 'auto';
                 svg.style.maxWidth = '100%';
-                svg.style.sdisplay = 'block';
+                svg.style.display = 'block';
 
-                if ("False" === "True") {
+                if (false) {
                     setTimeout(() => {
                         const g = svg.querySelector('g');
                         if (g) {
@@ -510,8 +350,11 @@ const runMermaid = async (rerun) => {
     });
 };
 
+
+
 const load = async () => {
     initStyles();
+
 
     await runMermaid(true);
 
@@ -521,10 +364,8 @@ const load = async () => {
             darkTheme = newDarkTheme;
             console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
             await mermaid.initialize(
-                {...JSON.parse(
-                    `{"startOnLoad": false}`
-                ),
-                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
                 }
             );
             await runMermaid(true);
@@ -549,10 +390,8 @@ const load = async () => {
 
 console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
 mermaid.initialize(
-    {...JSON.parse(
-        `{"startOnLoad": false}`
-    ),
-    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
     }
 );
 
@@ -562,7 +401,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -571,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1085,13 +924,13 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Checkable</span><span class="p">,</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">Reading</span>
 
-<span class="n">END</span> <span class="o">=</span> <span class="s2">&quot;end&quot;</span>
+<span class="n">END</span> <span class="o">=</span> <span class="s2">"end"</span>
 
 
 <div class="viewcode-block" id="plot_raster_path">
 <a class="viewcode-back" href="../../generated/bluesky.simulators.plot_raster_path.html#bluesky.simulators.plot_raster_path">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">plot_raster_path</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">x_motor</span><span class="p">,</span> <span class="n">y_motor</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">probe_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot the raster path for this plan</span>
+<span class="w">    </span><span class="sd">"""Plot the raster path for this plan</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1109,46 +948,46 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    lw : float, optional</span>
 <span class="sd">        Width of lines drawn between points</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">collections</span> <span class="k">as</span> <span class="n">mcollections</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">patches</span> <span class="k">as</span> <span class="n">mpatches</span>
 
     <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
 
     <span class="n">cur_x</span> <span class="o">=</span> <span class="n">cur_y</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">traj</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span>
-        <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"set"</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">x_motor</span><span class="p">:</span>
                 <span class="n">cur_x</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">y_motor</span><span class="p">:</span>
                 <span class="n">cur_y</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;save&quot;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">"save"</span><span class="p">:</span>
             <span class="n">traj</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">cur_x</span><span class="p">,</span> <span class="n">cur_y</span><span class="p">))</span>
 
     <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">traj</span><span class="p">)</span>
-    <span class="p">(</span><span class="n">path</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">path</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"-"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">x_motor</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_motor</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">probe_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">read_points</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
+        <span class="n">read_points</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">circles</span> <span class="o">=</span> <span class="p">[</span><span class="n">mpatches</span><span class="o">.</span><span class="n">Circle</span><span class="p">((</span><span class="n">_x</span><span class="p">,</span> <span class="n">_y</span><span class="p">),</span> <span class="n">probe_size</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="k">for</span> <span class="n">_x</span><span class="p">,</span> <span class="n">_y</span> <span class="ow">in</span> <span class="n">traj</span><span class="p">]</span>
+        <span class="n">circles</span> <span class="o">=</span> <span class="p">[</span><span class="n">mpatches</span><span class="o">.</span><span class="n">Circle</span><span class="p">((</span><span class="n">_x</span><span class="p">,</span> <span class="n">_y</span><span class="p">),</span> <span class="n">probe_size</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="k">for</span> <span class="n">_x</span><span class="p">,</span> <span class="n">_y</span> <span class="ow">in</span> <span class="n">traj</span><span class="p">]</span>
 
         <span class="n">read_points</span> <span class="o">=</span> <span class="n">mcollections</span><span class="o">.</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">circles</span><span class="p">,</span> <span class="n">match_original</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">read_points</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span> <span class="s2">&quot;events&quot;</span><span class="p">:</span> <span class="n">read_points</span><span class="p">}</span></div>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span> <span class="s2">"events"</span><span class="p">:</span> <span class="n">read_points</span><span class="p">}</span></div>
 
 
 
 <div class="viewcode-block" id="summarize_plan">
 <a class="viewcode-back" href="../../generated/bluesky.simulators.summarize_plan.html#bluesky.simulators.summarize_plan">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">summarize_plan</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print summary of plan</span>
+<span class="w">    </span><span class="sd">"""Print summary of plan</span>
 
 <span class="sd">    Prints a minimal version of the plan, showing only moves and</span>
 <span class="sd">    where events are created.</span>
@@ -1157,7 +996,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ----------</span>
 <span class="sd">    plan : iterable</span>
 <span class="sd">        Must yield `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">print_summary_wrapper</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>  <span class="c1"># noqa: B007</span>
         <span class="o">...</span></div>
 
@@ -1169,37 +1008,37 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="check_limits">
 <a class="viewcode-back" href="../../generated/bluesky.simulators.check_limits.html#bluesky.simulators.check_limits">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_limits</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run check_limits_async in the RE&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Run check_limits_async in the RE"""</span>
     <span class="k">if</span> <span class="n">in_bluesky_event_loop</span><span class="p">():</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Can&#39;t call check_limits() from within RE, use await check_limits_async() instead&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Can't call check_limits() from within RE, use await check_limits_async() instead"</span><span class="p">)</span>
     <span class="n">call_in_bluesky_event_loop</span><span class="p">(</span><span class="n">check_limits_async</span><span class="p">(</span><span class="n">plan</span><span class="p">))</span></div>
 
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_limits_async</span><span class="p">(</span><span class="n">plan</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Check that a plan will not move devices outside of their limits.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    plan : iterable</span>
 <span class="sd">        Must yield `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ignore</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;set&quot;</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"set"</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Checkable</span><span class="p">):</span>
                 <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">check_value</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">warn</span><span class="p">(</span>  <span class="c1"># noqa: B028</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> has no check_value() method to check if </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> is within its limits.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> has no check_value() method to check if </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> is within its limits."</span>
                 <span class="p">)</span>
                 <span class="n">ignore</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">RunEngineSimulator</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helps test a Bluesky plan by recording bluesky messages and</span>
+<span class="w">    </span><span class="sd">"""Helps test a Bluesky plan by recording bluesky messages and</span>
 <span class="sd">     injecting responses according to the bluesky Message Protocol.</span>
 
 <span class="sd">    See bluesky docs for details of the message protocol.</span>
@@ -1224,9 +1063,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; sim = RunEngineSimulator()</span>
 <span class="sd">    &gt;&gt;&gt; messages = sim.simulate_plan(my_plan())</span>
 <span class="sd">    &gt;&gt;&gt;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">GROUP_ANY</span> <span class="o">=</span> <span class="s2">&quot;any&quot;</span>
+    <span class="n">GROUP_ANY</span> <span class="o">=</span> <span class="s2">"any"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">message_handlers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_MessageHandler</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1235,13 +1074,13 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">return_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_handler_for_callback_subscribes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a handler that registers all the callbacks from subscribe messages so we can call them later.</span>
+<span class="w">        </span><span class="sd">"""Add a handler that registers all the callbacks from subscribe messages so we can call them later.</span>
 
 <span class="sd">        You will need to call this as one of the first things if you wish to fire callbacks from the simulator.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">message_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="n">_MessageHandler</span><span class="p">(</span>
-                <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">&quot;subscribe&quot;</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="o">==</span> <span class="s2">"subscribe"</span><span class="p">,</span>
                 <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_callback</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="p">)</span>
@@ -1251,9 +1090,9 @@ window.runMermaid = runMermaid;</script>
         <span class="n">commands</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Msg</span><span class="p">],</span> <span class="nb">object</span><span class="p">],</span>
         <span class="n">msg_filter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Msg</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"end"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the specified handler for a particular message.</span>
+<span class="w">        </span><span class="sd">"""Add the specified handler for a particular message.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1272,7 +1111,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            An optional integer indicating where to insert the handler, the default is 0 which</span>
 <span class="sd">            prepends it so that newer handlers override older ones. Specify END to append the handler.</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">commands</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">commands</span> <span class="o">=</span> <span class="p">[</span><span class="n">commands</span><span class="p">]</span>
 
@@ -1292,9 +1131,9 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_read_handler_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Convenience method to register a handler to return a result from a</span>
-<span class="sd">        single-valued &#39;read&#39; command.</span>
+<span class="sd">        single-valued 'read' command.</span>
 <span class="sd">        The behaviour is equivalent to</span>
 <span class="sd">        add_read_handler_for_multiple(obj, **{obj.name: value})</span>
 
@@ -1308,16 +1147,16 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ...     return tip_pos</span>
 
 <span class="sd">        &gt;&gt;&gt; sim = RunEngineSimulator()</span>
-<span class="sd">        &gt;&gt;&gt; sim.add_read_handler(&quot;pin_tip_detection-triggered_tip&quot;, (8, 5))</span>
+<span class="sd">        &gt;&gt;&gt; sim.add_read_handler("pin_tip_detection-triggered_tip", (8, 5))</span>
 <span class="sd">        &gt;&gt;&gt; msgs = sim.simulate_plan(trigger_and_return_pin_tip())</span>
 <span class="sd">        &gt;&gt;&gt; assert sim.return_value == (8, 5)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_read_handler_for_multiple</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_read_handler_for_multiple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Convenience method to register a handler to return a result from a multi-valued</span>
-<span class="sd">        &#39;read&#39; command.</span>
+<span class="sd">        'read' command.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1339,24 +1178,24 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        &gt;&gt;&gt; sim = RunEngineSimulator()</span>
 <span class="sd">        &gt;&gt;&gt; sim.add_read_handler_for_multiple(hw.ab_det, a=11, b=12)</span>
 <span class="sd">        &gt;&gt;&gt; sim.simulate_plan(read_all_values())</span>
-<span class="sd">        &gt;&gt;&gt; assert sim.return_value[&quot;a&quot;][&quot;value&quot;] == 11</span>
-<span class="sd">        &gt;&gt;&gt; assert sim.return_value[&quot;b&quot;][&quot;value&quot;] == 12</span>
-<span class="sd">        &gt;&gt;&gt; assert isclose(sim.return_value[&quot;a&quot;][&quot;timestamp&quot;], time(), abs_tol=1)</span>
-<span class="sd">        &gt;&gt;&gt; assert sim.return_value[&quot;b&quot;][&quot;timestamp&quot;] == 1717071719</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        &gt;&gt;&gt; assert sim.return_value["a"]["value"] == 11</span>
+<span class="sd">        &gt;&gt;&gt; assert sim.return_value["b"]["value"] == 12</span>
+<span class="sd">        &gt;&gt;&gt; assert isclose(sim.return_value["a"]["timestamp"], time(), abs_tol=1)</span>
+<span class="sd">        &gt;&gt;&gt; assert sim.return_value["b"]["timestamp"] == 1717071719</span>
+<span class="sd">        """</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">handle_read</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">Reading</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">v</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">time</span><span class="p">())</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="n">handle_read</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="n">handle_read</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_wait_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Msg</span><span class="p">],</span> <span class="kc">None</span><span class="p">],</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">GROUP_ANY</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a wait handler for a particular message.</span>
+<span class="w">        </span><span class="sd">"""Add a wait handler for a particular message.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        handler</span>
-<span class="sd">            a lambda that accepts a Msg, use this to execute any code that simulates something that&#39;s</span>
+<span class="sd">            a lambda that accepts a Msg, use this to execute any code that simulates something that's</span>
 <span class="sd">            supposed to complete when a group finishes</span>
 <span class="sd">        group</span>
 <span class="sd">            name of the group to wait for, default is GROUP_ANY which matches them all</span>
@@ -1365,22 +1204,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        --------</span>
 <span class="sd">        In order to exercise the following plan:</span>
 <span class="sd">        &gt;&gt;&gt; def close_shutter():</span>
-<span class="sd">        ...     yield from bps.abs_set(detector_motion.shutter, 1, group=&quot;my_group&quot;)</span>
-<span class="sd">        ...     yield from bps.wait(&quot;my_group&quot;)</span>
-<span class="sd">        ...     done = yield from bps.rd(&quot;detector_motion_shutter&quot;)</span>
+<span class="sd">        ...     yield from bps.abs_set(detector_motion.shutter, 1, group="my_group")</span>
+<span class="sd">        ...     yield from bps.wait("my_group")</span>
+<span class="sd">        ...     done = yield from bps.rd("detector_motion_shutter")</span>
 <span class="sd">        ...     assert done == 1</span>
 
 <span class="sd">        &gt;&gt;&gt; sim = RunEngineSimulator()</span>
 <span class="sd">        ... def simulate_detector_motion():</span>
-<span class="sd">        ...     sim.add_read_handler(&quot;detector_motion_shutter&quot;, 1)</span>
+<span class="sd">        ...     sim.add_read_handler("detector_motion_shutter", 1)</span>
 <span class="sd">        ...</span>
-<span class="sd">        ... sim.add_wait_handler(simulate_detector_motion, &quot;my_group&quot;)</span>
+<span class="sd">        ... sim.add_wait_handler(simulate_detector_motion, "my_group")</span>
 <span class="sd">        ... sim.simulate_plan(close_shutter())</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span>
-            <span class="s2">&quot;wait&quot;</span><span class="p">,</span>
+            <span class="s2">"wait"</span><span class="p">,</span>
             <span class="n">handler</span><span class="p">,</span>
-            <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="n">group</span> <span class="o">==</span> <span class="n">RunEngineSimulator</span><span class="o">.</span><span class="n">GROUP_ANY</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;group&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">group</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="n">group</span> <span class="o">==</span> <span class="n">RunEngineSimulator</span><span class="o">.</span><span class="n">GROUP_ANY</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">"group"</span><span class="p">]</span> <span class="o">==</span> <span class="n">group</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_callback_handler_for</span><span class="p">(</span>
@@ -1390,7 +1229,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">document</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="n">msg_filter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Msg</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a handler to fire a callback when a matching command is encountered.</span>
+<span class="w">        </span><span class="sd">"""Add a handler to fire a callback when a matching command is encountered.</span>
 <span class="sd">        Equivalent to add_callback_for_multiple(command, [[(document_name, document)]], msg_filter)</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1402,7 +1241,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            The document to fire in single shot mode.</span>
 <span class="sd">        msg_filter</span>
 <span class="sd">            Optional predicate on the message which triggers the callback</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_callback_handler_for_multiple</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="p">[[(</span><span class="n">document_name</span><span class="p">,</span> <span class="n">document</span><span class="p">)]],</span> <span class="n">msg_filter</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_callback_handler_for_multiple</span><span class="p">(</span>
@@ -1411,7 +1250,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">docs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]],</span>
         <span class="n">msg_filter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Msg</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a handler to fire callbacks in sequence when a matching command is encountered.</span>
+<span class="w">        </span><span class="sd">"""Add a handler to fire callbacks in sequence when a matching command is encountered.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1424,7 +1263,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            in order.</span>
 <span class="sd">        msg_filter</span>
 <span class="sd">            Optional predicate on the message which triggers the callback</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">it</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">docs</span><span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">handle_command</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
@@ -1434,22 +1273,22 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">handle_command</span><span class="p">,</span> <span class="n">msg_filter</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">fire_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">document_name</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fire all the callbacks registered for this document type in order to simulate something happening.</span>
+<span class="w">        </span><span class="sd">"""Fire all the callbacks registered for this document type in order to simulate something happening.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        document_name</span>
-<span class="sd">            document name as defined in the Bluesky Message Protocol &#39;subscribe&#39; call,</span>
+<span class="sd">            document name as defined in the Bluesky Message Protocol 'subscribe' call,</span>
 <span class="sd">            all subscribers filtering on this document name will be called</span>
 <span class="sd">        document</span>
 <span class="sd">            the document to send</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">for</span> <span class="n">callback_func</span><span class="p">,</span> <span class="n">callback_docname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">callback_docname</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span> <span class="ow">or</span> <span class="n">callback_docname</span> <span class="o">==</span> <span class="n">document_name</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">callback_docname</span> <span class="o">==</span> <span class="s2">"all"</span> <span class="ow">or</span> <span class="n">callback_docname</span> <span class="o">==</span> <span class="n">document_name</span><span class="p">:</span>
                 <span class="n">callback_func</span><span class="p">(</span><span class="n">document_name</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">simulate_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gen</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Msg</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Msg</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Simulate the RunEngine executing the plan.</span>
+<span class="w">        </span><span class="sd">"""Simulate the RunEngine executing the plan.</span>
 
 <span class="sd">        After executing the plan return_value is populated with the return value of the plan.</span>
 
@@ -1462,19 +1301,19 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        list[Msg]</span>
 <span class="sd">            list of the messages generated by the plan</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">send_value</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">while</span> <span class="n">msg</span> <span class="o">:=</span> <span class="n">gen</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">send_value</span><span class="p">):</span>
                 <span class="n">send_value</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;&lt;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"&lt;</span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">handler</span> <span class="o">:=</span> <span class="nb">next</span><span class="p">((</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_handlers</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">predicate</span><span class="p">(</span><span class="n">msg</span><span class="p">)),</span> <span class="kc">None</span><span class="p">):</span>
                     <span class="n">send_value</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">runnable</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">send_value</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt;send </span><span class="si">{</span><span class="n">send_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&gt;send </span><span class="si">{</span><span class="n">send_value</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span>
         <span class="k">return</span> <span class="n">messages</span>
@@ -1489,20 +1328,20 @@ window.runMermaid = runMermaid;</script>
     <span class="n">predicate</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Msg</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span>
     <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find the next message matching the predicate, assert that we found it.</span>
+<span class="w">    </span><span class="sd">"""Find the next message matching the predicate, assert that we found it.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    list[Msg]</span>
 <span class="sd">        All the remaining messages starting from the matched message which is included as a</span>
 <span class="sd">        convenience to capture information that may be used in subsequent calls.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">not_matching</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="n">Msg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">group</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">group</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">predicate</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">group</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"group"</span><span class="p">)</span> <span class="o">!=</span> <span class="n">group</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">predicate</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="n">matched</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dropwhile</span><span class="p">(</span><span class="n">not_matching</span><span class="p">,</span> <span class="n">messages</span><span class="p">))</span>
-    <span class="k">assert</span> <span class="n">matched</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Nothing matched predicate </span><span class="si">{</span><span class="n">predicate</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">assert</span> <span class="n">matched</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Nothing matched predicate </span><span class="si">{</span><span class="n">predicate</span><span class="si">}</span><span class="s2">"</span>
     <span class="k">return</span> <span class="n">matched</span>
 
 

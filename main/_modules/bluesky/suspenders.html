@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.suspenders &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>bluesky.suspenders &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -38,185 +38,20 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="../../_static/documentation_options.js?v=df383aee"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
-
-
 
 
 
 const initStyles = () => {
     const defaultStyle = document.createElement('style');
-    defaultStyle.textContent = `pre.mermaid {
-    /* Same as .mermaid-container > pre */
-    display: block;
-    width: 100%;
-}
-
-pre.mermaid > svg {
-    /* Same as .mermaid-container > pre > svg */
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}`;
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
     document.head.appendChild(defaultStyle);
 
     const fullscreenStyle = document.createElement('style');
-    fullscreenStyle.textContent = `.mermaid-container {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-}
-
-.mermaid-container > pre {
-    display: block;
-    width: 100%;
-}
-
-.mermaid-container > pre > svg {
-    height: 500px;
-    width: 100%;
-    max-width: 100% !important;
-}
-
-.mermaid-fullscreen-btn {
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    color: #333;
-}
-
-.mermaid-fullscreen-btn:hover {
-    opacity: 100% !important;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-btn.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-btn.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal {
-    display: none;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 95vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.98);
-    z-index: 9999;
-    padding: 20px;
-    overflow: auto;
-}
-
-.mermaid-fullscreen-modal.dark-theme {
-    background: rgba(0, 0, 0, 0.98);
-}
-
-.mermaid-fullscreen-modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen {
-    position: relative;
-    width: 95vw;
-    height: 90vh;
-    max-width: 95vw;
-    max-height: 90vh;
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    overflow: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen.dark-theme {
-    background: #1a1a1a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.mermaid-container-fullscreen pre.mermaid {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-container-fullscreen .mermaid svg {
-    height: 100% !important;
-    width: 100% !important;
-    cursor: grab;
-}
-
-.mermaid-fullscreen-close {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s;
-    font-size: 24px;
-    line-height: 1;
-    color: #333;
-}
-
-.mermaid-fullscreen-close:hover {
-    background: white;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transform: scale(1.1);
-}
-
-.mermaid-fullscreen-close.dark-theme {
-    background: rgba(50, 50, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-}
-
-.mermaid-fullscreen-close.dark-theme:hover {
-    background: rgba(60, 60, 60, 1);
-    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-}
-
-.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
-    display: none !important;
-}`;
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
     document.head.appendChild(fullscreenStyle);
 }
 
@@ -263,6 +98,13 @@ let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
 let _lazyObserver = null;
 let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
 
 // Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
 // so this is safe to call both for the initial batch and for diagrams that
@@ -359,8 +201,10 @@ const runMermaid = async (rerun) => {
                                     el.removeAttribute('data-mermaid-deferred');
                                     // Apply zoom to the now-rendered diagram, matching
                                     // the decoration visible diagrams receive.
-                                    if ("False" === "True") {
-                                        addZoomToSvgs(d3.selectAll(""));
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
                                     }
                                 } catch (e) {
                                     console.error("Mermaid deferred rendering failed:", e);
@@ -381,10 +225,12 @@ const runMermaid = async (rerun) => {
     const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
     const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
-    if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
         if(mermaids_to_add_zoom > 0) {
-            var svgs = d3.selectAll("");
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
             // Wait until every active (visible) diagram has rendered. Deferred
             // diagrams are excluded, so a fixed d3_node_count that counts a
             // hidden diagram no longer loops forever waiting for its SVG.
@@ -401,7 +247,7 @@ const runMermaid = async (rerun) => {
     }
 
     // Stop here if not adding fullscreen capability
-    if ("True" !== "True") return;
+    if (!true) return;
 
     if (modal !== null ) {
         // Destroy existing modal
@@ -424,7 +270,7 @@ const runMermaid = async (rerun) => {
     modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
 
-    const closeModal = () => {
+    closeModal = () => {
         modal.classList.remove('active');
         modalContent.innerHTML = '';
         document.body.style.overflow = ''
@@ -435,12 +281,6 @@ const runMermaid = async (rerun) => {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
@@ -460,8 +300,8 @@ const runMermaid = async (rerun) => {
         const fullscreenBtn = document.createElement('button');
         fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
         fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
-        fullscreenBtn.textContent = '⛶';
-        fullscreenBtn.style.opacity = '50%';
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
 
         // Calculate dynamic position based on diagram's margin and padding
         const diagramStyle = window.getComputedStyle(mermaidDiv);
@@ -473,7 +313,7 @@ const runMermaid = async (rerun) => {
         fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
 
         fullscreenBtn.addEventListener('click', () => {
-            previousScrollOffset = [window.scroll, window.scrollY];
+            previousScrollOffset = [window.scrollX, window.scrollY];
             const clone = mermaidDiv.cloneNode(true);
             modalContent.innerHTML = '';
             modalContent.appendChild(clone);
@@ -485,9 +325,9 @@ const runMermaid = async (rerun) => {
                 svg.style.width = '100%';
                 svg.style.height = 'auto';
                 svg.style.maxWidth = '100%';
-                svg.style.sdisplay = 'block';
+                svg.style.display = 'block';
 
-                if ("False" === "True") {
+                if (false) {
                     setTimeout(() => {
                         const g = svg.querySelector('g');
                         if (g) {
@@ -510,8 +350,11 @@ const runMermaid = async (rerun) => {
     });
 };
 
+
+
 const load = async () => {
     initStyles();
+
 
     await runMermaid(true);
 
@@ -521,10 +364,8 @@ const load = async () => {
             darkTheme = newDarkTheme;
             console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
             await mermaid.initialize(
-                {...JSON.parse(
-                    `{"startOnLoad": false}`
-                ),
-                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
                 }
             );
             await runMermaid(true);
@@ -549,10 +390,8 @@ const load = async () => {
 
 console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
 mermaid.initialize(
-    {...JSON.parse(
-        `{"startOnLoad": false}`
-    ),
-    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
     }
 );
 
@@ -562,7 +401,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -571,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1078,7 +917,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspenderBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An ABC to manage the callbacks between asyincio and pyepics.</span>
+<span class="w">    </span><span class="sd">"""An ABC to manage the callbacks between asyincio and pyepics.</span>
 
 
 <span class="sd">    Parameters</span>
@@ -1099,10 +938,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    tripped_message : str, optional</span>
 <span class="sd">        Message to include in the trip notification</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sleep</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pre_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">post_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tripped_message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sleep</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pre_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">post_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tripped_message</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tripped</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1114,7 +953,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_post_plan</span> <span class="o">=</span> <span class="n">post_plan</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(</span><span class="si">{!r}</span><span class="s2">, sleep=</span><span class="si">{}</span><span class="s2">, pre_plan=</span><span class="si">{}</span><span class="s2">, post_plan=</span><span class="si">{}</span><span class="s2">, tripped_message=</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="si">{}</span><span class="s2">(</span><span class="si">{!r}</span><span class="s2">, sleep=</span><span class="si">{}</span><span class="s2">, pre_plan=</span><span class="si">{}</span><span class="s2">, post_plan=</span><span class="si">{}</span><span class="s2">, tripped_message=</span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
             <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">,</span>
@@ -1124,7 +963,7 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">install</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">RE</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">event_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Install callback on signal</span>
+<span class="w">        </span><span class="sd">"""Install callback on signal</span>
 
 <span class="sd">        This (re)installs the required callbacks at the pyepics level</span>
 
@@ -1136,16 +975,16 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        event_type : str, optional</span>
 <span class="sd">            The event type (subscription type) to watch</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="o">=</span> <span class="n">RE</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="o">=</span><span class="n">event_type</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disable the suspender</span>
+<span class="w">        </span><span class="sd">"""Disable the suspender</span>
 
 <span class="sd">        Removes the callback at the pyepics level</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1155,7 +994,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Determine if the current value of the signal is such</span>
 <span class="sd">        that we need to tell the scan to suspend</span>
 
@@ -1169,12 +1008,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        suspend : bool</span>
 <span class="sd">            True means suspend</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_resume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Determine if the scan is ready to automatically</span>
 <span class="sd">        restart.</span>
 
@@ -1188,15 +1027,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        suspend : bool</span>
 <span class="sd">            True means resume</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make the class callable so that we can</span>
+<span class="w">        </span><span class="sd">"""Make the class callable so that we can</span>
 <span class="sd">        pass it off to the ophyd callback stack.</span>
 
 <span class="sd">        This expects the massive blob that comes from ophyd</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">return</span>
@@ -1208,7 +1047,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">__make_event</span><span class="p">()</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Could not create the suspender event&quot;</span><span class="p">)</span>
+                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Could not create the suspender event"</span><span class="p">)</span>
                     <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">request_suspend</span><span class="p">,</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span><span class="o">.</span><span class="n">wait</span><span class="p">,</span>
@@ -1223,10 +1062,10 @@ window.runMermaid = runMermaid;</script>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_tripped</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__make_event</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make or return the asyncio.Event to use as a bridge.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Make or return the asyncio.Event to use as a bridge."""</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="o">.</span><span class="n">locked</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">threading</span><span class="o">.</span><span class="n">get_ident</span><span class="p">()</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">_loop</span><span class="p">,</span> <span class="s2">&quot;_thread_id&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">threading</span><span class="o">.</span><span class="n">get_ident</span><span class="p">()</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">_loop</span><span class="p">,</span> <span class="s2">"_thread_id"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span>
             <span class="k">else</span><span class="p">:</span>
@@ -1242,18 +1081,18 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__set_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Notify the event that it can resume&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Notify the event that it can resume"""</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="o">.</span><span class="n">locked</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span><span class="p">:</span>
             <span class="n">ev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span>
             <span class="n">sleep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">local</span><span class="p">():</span>
-                <span class="n">ts</span> <span class="o">=</span> <span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">sleep</span><span class="p">))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span>
+                <span class="n">ts</span> <span class="o">=</span> <span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">sleep</span><span class="p">))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S"</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Suspender </span><span class="si">{</span><span class="bp">self</span><span class="si">!r}</span><span class="s2"> reports a return to nominal &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;conditions. Will sleep for </span><span class="si">{</span><span class="n">sleep</span><span class="si">}</span><span class="s2"> seconds and then &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;release suspension at </span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Suspender </span><span class="si">{</span><span class="bp">self</span><span class="si">!r}</span><span class="s2"> reports a return to nominal "</span>
+                    <span class="sa">f</span><span class="s2">"conditions. Will sleep for </span><span class="si">{</span><span class="n">sleep</span><span class="si">}</span><span class="s2"> seconds and then "</span>
+                    <span class="sa">f</span><span class="s2">"release suspension at </span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">."</span>
                 <span class="p">)</span>
                 <span class="c1"># we can use call_later here because this function</span>
                 <span class="c1"># is scheduled to be run in the event loop thread</span>
@@ -1265,9 +1104,9 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ev</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_futures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of futures to wait on.</span>
+<span class="w">        </span><span class="sd">"""Return a list of futures to wait on.</span>
 
-<span class="sd">        This will only work correctly if this suspender is &#39;installed&#39;</span>
+<span class="sd">        This will only work correctly if this suspender is 'installed'</span>
 <span class="sd">        and watching a signal</span>
 
 <span class="sd">        Returns</span>
@@ -1277,9 +1116,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        justification : str</span>
 <span class="sd">            String explaining why the suspender is tripped</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[],</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="p">[],</span> <span class="s2">""</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__make_event</span><span class="p">()</span><span class="o">.</span><span class="n">wait</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_justification</span><span class="p">()</span>
 
@@ -1289,17 +1128,17 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
-        <span class="n">template</span> <span class="o">=</span> <span class="s2">&quot;Suspender of type </span><span class="si">{}</span><span class="s2"> stopped by signal </span><span class="si">{!r}</span><span class="s2">&quot;</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="s2">"Suspender of type </span><span class="si">{}</span><span class="s2"> stopped by signal </span><span class="si">{!r}</span><span class="s2">"</span>
         <span class="n">just</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="p">)</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SuspendBoolHigh">
 <a class="viewcode-back" href="../../generated/bluesky.suspenders.SuspendBoolHigh.html#bluesky.suspenders.SuspendBoolHigh">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspendBoolHigh</span><span class="p">(</span><span class="n">SuspenderBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Suspend when a boolean signal goes high; resume when it goes low.</span>
 
 <span class="sd">    Parameters</span>
@@ -1317,7 +1156,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    post_plan : iterable or iterator, optional</span>
 <span class="sd">            a generator, list, or similar containing `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
@@ -1327,17 +1166,17 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is high&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
+        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is high"</span>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="SuspendBoolLow">
 <a class="viewcode-back" href="../../generated/bluesky.suspenders.SuspendBoolLow.html#bluesky.suspenders.SuspendBoolLow">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspendBoolLow</span><span class="p">(</span><span class="n">SuspenderBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Suspend when a boolean signal goes low; resume when it goes high.</span>
 
 <span class="sd">    Parameters</span>
@@ -1355,7 +1194,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    post_plan : iterable or iterator, optional</span>
 <span class="sd">            a generator, list, or similar containing `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
@@ -1365,19 +1204,19 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is low&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
+        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is low"</span>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
 
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_Threshold</span><span class="p">(</span><span class="n">SuspenderBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Private base class for suspenders that watch when a scalar</span>
 <span class="sd">    signal fall above or below a threshold.  Allow for a possibly different</span>
 <span class="sd">    threshold to resume.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">suspend_thresh</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resume_thresh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -1405,7 +1244,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SuspendFloor">
 <a class="viewcode-back" href="../../generated/bluesky.suspenders.SuspendFloor.html#bluesky.suspenders.SuspendFloor">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspendFloor</span><span class="p">(</span><span class="n">_Threshold</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Suspend when a scalar falls below a threshold.</span>
 
 <span class="sd">    Optionally, the threshold to resume can be set to be greater than the</span>
@@ -1433,14 +1272,14 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    post_plan : iterable or iterator, optional</span>
 <span class="sd">            a generator, list, or similar containing `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Resume threshold must be equal or greater &quot;</span>
-                <span class="s2">&quot;than suspend threshold, you passed: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;suspend: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2">  resume: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="s2">"Resume threshold must be equal or greater "</span>
+                <span class="s2">"than suspend threshold, you passed: "</span>
+                <span class="sa">f</span><span class="s2">"suspend: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2">  resume: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -1449,21 +1288,21 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
         <span class="n">just</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">!r}</span><span class="s2"> &quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;fell below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;and has not yet crossed above </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">!r}</span><span class="s2"> "</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">"fell below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">"and has not yet crossed above </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="SuspendCeil">
 <a class="viewcode-back" href="../../generated/bluesky.suspenders.SuspendCeil.html#bluesky.suspenders.SuspendCeil">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspendCeil</span><span class="p">(</span><span class="n">_Threshold</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Suspend when a scalar rises above a threshold.</span>
 
 <span class="sd">    Optionally, the threshold to resume can be set to be less than the</span>
@@ -1491,14 +1330,14 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    post_plan : iterable or iterator, optional</span>
 <span class="sd">            a generator, list, or similar containing `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Resume threshold must be equal or less &quot;</span>
-                <span class="s2">&quot;than suspend threshold, you passed: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;suspend: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2">  resume: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="s2">"Resume threshold must be equal or less "</span>
+                <span class="s2">"than suspend threshold, you passed: "</span>
+                <span class="sa">f</span><span class="s2">"suspend: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2">  resume: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -1507,30 +1346,30 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
         <span class="n">just</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">!r}</span><span class="s2"> &quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;went above </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;and has not yet crossed below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">!r}</span><span class="s2"> "</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">"went above </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">"and has not yet crossed below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
 
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_SuspendBandBase</span><span class="p">(</span><span class="n">SuspenderBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Private base-class for suspenders based on keeping a scalar inside</span>
 <span class="sd">    or outside of a band</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">band_bottom</span><span class="p">,</span> <span class="n">band_top</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">band_bottom</span> <span class="o">&lt;</span> <span class="n">band_top</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;The bottom of the band must be strictly &quot;</span>
-                <span class="s2">&quot;less than the top of the band.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;bottom: </span><span class="si">{</span><span class="n">band_bottom</span><span class="si">}</span><span class="se">\t</span><span class="s2">top: </span><span class="si">{</span><span class="n">band_top</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="s2">"The bottom of the band must be strictly "</span>
+                <span class="s2">"less than the top of the band.</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"bottom: </span><span class="si">{</span><span class="n">band_bottom</span><span class="si">}</span><span class="se">\t</span><span class="s2">top: </span><span class="si">{</span><span class="n">band_top</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span> <span class="o">=</span> <span class="n">band_bottom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_top</span> <span class="o">=</span> <span class="n">band_top</span>
@@ -1539,7 +1378,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SuspendWhenOutsideBand">
 <a class="viewcode-back" href="../../generated/bluesky.suspenders.SuspendWhenOutsideBand.html#bluesky.suspenders.SuspendWhenOutsideBand">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspendWhenOutsideBand</span><span class="p">(</span><span class="n">_SuspendBandBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Suspend when a scalar signal leaves a given band of values.</span>
 
 <span class="sd">    Parameters</span>
@@ -1561,7 +1400,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    post_plan : iterable or iterator, optional</span>
 <span class="sd">            a generator, list, or similar containing `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_resume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span> <span class="o">&lt;</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
@@ -1571,12 +1410,12 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="s2">&quot;Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is outside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
+        <span class="n">just</span> <span class="o">=</span> <span class="s2">"Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is outside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
 
 
 
@@ -1584,13 +1423,13 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">warn</span><span class="p">(</span>  <span class="c1"># noqa: B028</span>
-            <span class="s2">&quot;SuspendInBand has been renamed SuspendWhenOutsideBand to make &quot;</span>
-            <span class="s2">&quot;its meaning more clear. Its behavior has not changed.&quot;</span>
+            <span class="s2">"SuspendInBand has been renamed SuspendWhenOutsideBand to make "</span>
+            <span class="s2">"its meaning more clear. Its behavior has not changed."</span>
         <span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspendOutBand</span><span class="p">(</span><span class="n">_SuspendBandBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Suspend when a scalar signal enters a given band of values.</span>
 
 <span class="sd">    This is mostly here because it is the opposite of `SuspenderInBand`.</span>
@@ -1615,10 +1454,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    post_plan : iterable or iterator, optional</span>
 <span class="sd">            a generator, list, or similar containing `Msg` objects</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;bluesky.suspenders.SuspendOutBand is deprecated.&quot;</span><span class="p">)</span>  <span class="c1"># noqa: B028</span>
+        <span class="n">warn</span><span class="p">(</span><span class="s2">"bluesky.suspenders.SuspendOutBand is deprecated."</span><span class="p">)</span>  <span class="c1"># noqa: B028</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_resume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
@@ -1629,18 +1468,18 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="s2">&quot;Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is inside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
+        <span class="n">just</span> <span class="o">=</span> <span class="s2">"Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is inside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SuspendWhenChanged">
 <a class="viewcode-back" href="../../generated/bluesky.suspenders.SuspendWhenChanged.html#bluesky.suspenders.SuspendWhenChanged">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspendWhenChanged</span><span class="p">(</span><span class="n">SuspenderBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Suspend when the monitored value deviates from the expected.</span>
 
 <span class="sd">    Only resume if allowed AND when monitored equals expected.</span>
@@ -1653,7 +1492,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    USE CASE:</span>
 
 <span class="sd">    :class:`~SuspendWhenChanged()` is useful when ``signal`` is an EPICS enumeration</span>
-<span class="sd">    (`&quot;mbbo&quot; &lt;https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output&gt;`_)</span>
+<span class="sd">    (`"mbbo" &lt;https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output&gt;`_)</span>
 <span class="sd">    used with a multi-instrument facility.</span>
 <span class="sd">    Choices predefined in the mbbo record are the</span>
 <span class="sd">    names of instruments allowed to control any shared hardware.</span>
@@ -1718,21 +1557,21 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    .. code-block:: text</span>
 
-<span class="sd">        record(mbbo, &quot;2bm:instrument_in_use&quot;) {</span>
+<span class="sd">        record(mbbo, "2bm:instrument_in_use") {</span>
 <span class="sd">            # instrument team sets this</span>
 <span class="sd">            # For additional field names, see</span>
 <span class="sd">            # https://epics.anl.gov/EpicsDocumentation/AppDevManuals/RecordRef/Recordref-25.html#HEADING25-15</span>
-<span class="sd">            field(DESC, &quot;instrument using beam now&quot;)</span>
-<span class="sd">            field(ZRST, &quot;none&quot;)</span>
-<span class="sd">            field(ONST, &quot;2-BM-A&quot;)</span>
-<span class="sd">            field(TWST, &quot;2-BM-B&quot;)</span>
+<span class="sd">            field(DESC, "instrument using beam now")</span>
+<span class="sd">            field(ZRST, "none")</span>
+<span class="sd">            field(ONST, "2-BM-A")</span>
+<span class="sd">            field(TWST, "2-BM-B")</span>
 <span class="sd">            # THST</span>
 <span class="sd">            # FRST</span>
 <span class="sd">            # FVST</span>
 <span class="sd">            # ...</span>
 <span class="sd">        }</span>
 
-<span class="sd">    NOTE: **Always** make the zero choice (``ZRST``) in the mbbo record to be &#39;none&#39;.</span>
+<span class="sd">    NOTE: **Always** make the zero choice (``ZRST``) in the mbbo record to be 'none'.</span>
 <span class="sd">    This allows the instrument staff to designate that *no* instrument is allowed</span>
 <span class="sd">    to control the shared hardware.  Start the names of the allowed instruments</span>
 <span class="sd">    with ``ONST``.</span>
@@ -1740,7 +1579,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    It is convenient for the multi-instrument facility to make this definition</span>
 <span class="sd">    in EPICS rather than in a specific bluesky session.  The EPICS value could be</span>
 <span class="sd">    useful in other contexts of instrument control beyond the realm of bluesky.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="SuspendWhenChanged.__init__">
 <a class="viewcode-back" href="../../generated/bluesky.suspenders.SuspendWhenChanged.html#bluesky.suspenders.SuspendWhenChanged.__init__">[docs]</a>
@@ -1753,7 +1592,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">sleep</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="n">pre_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">post_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">tripped_message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">tripped_message</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="n">expected_value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">expected_value</span>
@@ -1771,12 +1610,12 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_justification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">, got &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s1">&quot;, expected &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">, got "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s1">", expected "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span><span class="si">}</span><span class="s1">"'</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_resume</span><span class="p">:</span>
-            <span class="n">just</span> <span class="o">+=</span> <span class="s1">&#39;.  &quot;RE.abort()&quot; and then restart session to use new configuration.&#39;</span>
-        <span class="k">return</span> <span class="s2">&quot;: &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
+            <span class="n">just</span> <span class="o">+=</span> <span class="s1">'.  "RE.abort()" and then restart session to use new configuration.'</span>
+        <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
 
 </pre></div>
 

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Tutorial &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>Tutorial &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tutorial';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="User Documentation" href="userindex.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -621,7 +621,7 @@ installation will not interfere with any existing Python software:</p>
 <p>Alternatively, if you are a
 <a class="reference external" href="https://conda.io/docs/user-guide/install/download.html">conda</a> user,
 you can create a conda environment:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>bluesky-tutorial<span class="w"> </span><span class="s2">&quot;python&gt;=3.10&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>bluesky-tutorial<span class="w"> </span><span class="s2">"python&gt;=3.10"</span>
 conda<span class="w"> </span>activate<span class="w"> </span>bluesky-tutorial
 </pre></div>
 </div>
@@ -631,7 +631,7 @@ bluesky-tiled-plugins unless you plan to skip the sections about accessing
 saved data. If you want to follow along with the visualization examples,
 install matplotlib and PyQt5. Finally, install IPython (a Python interpreter
 designed by scientists for scientists).</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>bluesky<span class="w"> </span>ophyd<span class="w"> </span><span class="s2">&quot;tiled[all]&quot;</span><span class="w"> </span>bluesky-tiled-plugins<span class="w"> </span>matplotlib<span class="w"> </span>pyqt5<span class="w"> </span>ipython<span class="w"> </span>pyepics
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>bluesky<span class="w"> </span>ophyd<span class="w"> </span><span class="s2">"tiled[all]"</span><span class="w"> </span>bluesky-tiled-plugins<span class="w"> </span>matplotlib<span class="w"> </span>pyqt5<span class="w"> </span>ipython<span class="w"> </span>pyepics
 </pre></div>
 </div>
 <p>Alternatively, if you are a conda user and you prefer conda packages, you can
@@ -647,7 +647,7 @@ use:</p>
 <p>The flag <code class="docutils literal notranslate"><span class="pre">--matplotlib=qt5</span></code> is necessary for live-updating plots to work.</p>
 <p>Or, if you wish you use bluesky from a Jupyter notebook, install a kernel like
 so:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ipython</span> <span class="n">kernel</span> <span class="n">install</span> <span class="o">--</span><span class="n">user</span> <span class="o">--</span><span class="n">name</span><span class="o">=</span><span class="n">bluesky</span><span class="o">-</span><span class="n">tutorial</span> <span class="o">--</span><span class="n">display</span><span class="o">-</span><span class="n">name</span> <span class="s2">&quot;Python (bluesky)&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ipython</span> <span class="n">kernel</span> <span class="n">install</span> <span class="o">--</span><span class="n">user</span> <span class="o">--</span><span class="n">name</span><span class="o">=</span><span class="n">bluesky</span><span class="o">-</span><span class="n">tutorial</span> <span class="o">--</span><span class="n">display</span><span class="o">-</span><span class="n">name</span> <span class="s2">"Python (bluesky)"</span>
 </pre></div>
 </div>
 <p>You may start Jupyter from any environment where it is already installed, or
@@ -786,19 +786,19 @@ like to configure <em>real</em> hardware with ophyd.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [2]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2026-07-17 14:27:15</span>
-<span class="go">Persistent Unique Scan ID: &#39;c14faa19-9316-4ff3-b2fe-2ecb6113e529&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 1     Time: 2026-08-25 11:17:40</span>
+<span class="go">Persistent Unique Scan ID: '231a1860-5900-44c5-9e59-a9bc8276af96'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:15.7 |      0.000 |      1.213 |</span>
+<span class="go">|         1 | 11:17:40.7 |      0.000 |      1.213 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator count [&#39;c14faa19&#39;] (scan num: 1)</span>
+<span class="go">generator count ['231a1860'] (scan num: 1)</span>
 
 
 
-<span class="gh">Out[2]: </span><span class="go">(&#39;c14faa19-9316-4ff3-b2fe-2ecb6113e529&#39;,)</span>
+<span class="gh">Out[2]: </span><span class="go">('231a1860-5900-44c5-9e59-a9bc8276af96',)</span>
 </pre></div>
 </div>
 <p>A key feature of bluesky is that these detectors could be simple photodiodes or
@@ -835,28 +835,28 @@ baseline readings to be taken automatically before every experiment.</p></li>
 <p class="admonition-title">Warning</p>
 <p>Notice that entering a plan by itself doesn’t do anything:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [3]: </span><span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-<span class="gh">Out[3]: </span><span class="go">&lt;generator object count at 0x7febb5566700&gt;</span>
+<span class="gh">Out[3]: </span><span class="go">&lt;generator object count at 0x7f60e9f2c900&gt;</span>
 </pre></div>
 </div>
 <p>If we mean to <em>execute</em> the plan, we must use the RunEngine:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2026-07-17 14:27:16</span>
-<span class="go">Persistent Unique Scan ID: &#39;8a2c2c91-a8d5-485f-bb75-fae1a10bea95&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 2     Time: 2026-08-25 11:17:40</span>
+<span class="go">Persistent Unique Scan ID: 'f9f1acb3-8fd4-46c2-8fca-716c31fea6bc'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 14:27:16.1 |      0.000 |</span>
-<span class="go">|         2 | 14:27:16.2 |      0.000 |</span>
-<span class="go">|         3 | 14:27:16.2 |      0.000 |</span>
+<span class="go">|         1 | 11:17:41.0 |      0.000 |</span>
+<span class="go">|         2 | 11:17:41.0 |      0.000 |</span>
+<span class="go">|         3 | 11:17:41.1 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;8a2c2c91&#39;] (scan num: 2)</span>
+<span class="go">generator count ['f9f1acb3'] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[4]: </span><span class="go">(&#39;8a2c2c91-a8d5-485f-bb75-fae1a10bea95&#39;,)</span>
+<span class="gh">Out[4]: </span><span class="go">('f9f1acb3-8fd4-46c2-8fca-716c31fea6bc',)</span>
 </pre></div>
 </div>
 </div>
@@ -876,28 +876,28 @@ read some detector, <code class="docutils literal notranslate"><span class="pre"
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2026-07-17 14:27:16</span>
-<span class="go">Persistent Unique Scan ID: &#39;19260de3-d730-4600-9b67-5c64934e57ef&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 3     Time: 2026-08-25 11:17:41</span>
+<span class="go">Persistent Unique Scan ID: 'dd3a9131-99e2-4991-beae-e8778edcaddf'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:16.6 |     -1.000 |      0.607 |</span>
-<span class="go">|         2 | 14:27:16.7 |     -0.778 |      0.739 |</span>
-<span class="go">|         3 | 14:27:16.8 |     -0.556 |      0.857 |</span>
-<span class="go">|         4 | 14:27:16.8 |     -0.333 |      0.946 |</span>
-<span class="go">|         5 | 14:27:16.9 |     -0.111 |      0.994 |</span>
-<span class="go">|         6 | 14:27:16.9 |      0.111 |      0.994 |</span>
-<span class="go">|         7 | 14:27:17.0 |      0.333 |      0.946 |</span>
-<span class="go">|         8 | 14:27:17.1 |      0.556 |      0.857 |</span>
-<span class="go">|         9 | 14:27:17.1 |      0.778 |      0.739 |</span>
-<span class="go">|        10 | 14:27:17.2 |      1.000 |      0.607 |</span>
+<span class="go">|         1 | 11:17:41.4 |     -1.000 |      0.607 |</span>
+<span class="go">|         2 | 11:17:41.5 |     -0.778 |      0.739 |</span>
+<span class="go">|         3 | 11:17:41.5 |     -0.556 |      0.857 |</span>
+<span class="go">|         4 | 11:17:41.6 |     -0.333 |      0.946 |</span>
+<span class="go">|         5 | 11:17:41.6 |     -0.111 |      0.994 |</span>
+<span class="go">|         6 | 11:17:41.7 |      0.111 |      0.994 |</span>
+<span class="go">|         7 | 11:17:41.7 |      0.333 |      0.946 |</span>
+<span class="go">|         8 | 11:17:41.8 |      0.556 |      0.857 |</span>
+<span class="go">|         9 | 11:17:41.8 |      0.778 |      0.739 |</span>
+<span class="go">|        10 | 11:17:41.8 |      1.000 |      0.607 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;19260de3&#39;] (scan num: 3)</span>
+<span class="go">generator scan ['dd3a9131'] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[5]: </span><span class="go">(&#39;19260de3-d730-4600-9b67-5c64934e57ef&#39;,)</span>
+<span class="gh">Out[5]: </span><span class="go">('dd3a9131-99e2-4991-beae-e8778edcaddf',)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -972,29 +972,29 @@ are not technically meaningful; you may take them or leave them.</p>
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 4     Time: 2026-07-17 14:27:18</span>
-<span class="go">Persistent Unique Scan ID: &#39;42f2aa59-4db1-42a9-987f-ea701f255b62&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 4     Time: 2026-08-25 11:17:43</span>
+<span class="go">Persistent Unique Scan ID: 'cd106767-3800-41d9-968d-49d045b85259'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:18.5 |     -1.500 |     -0.100 |      0.323 |</span>
-<span class="go">|         2 | 14:27:18.6 |     -1.200 |     -0.080 |      0.485 |</span>
-<span class="go">|         3 | 14:27:18.7 |     -0.900 |     -0.060 |      0.666 |</span>
-<span class="go">|         4 | 14:27:18.8 |     -0.600 |     -0.040 |      0.835 |</span>
-<span class="go">|         5 | 14:27:18.8 |     -0.300 |     -0.020 |      0.956 |</span>
-<span class="go">|         6 | 14:27:18.9 |      0.000 |      0.000 |      1.000 |</span>
-<span class="go">|         7 | 14:27:19.0 |      0.300 |      0.020 |      0.956 |</span>
-<span class="go">|         8 | 14:27:19.0 |      0.600 |      0.040 |      0.835 |</span>
-<span class="go">|         9 | 14:27:19.1 |      0.900 |      0.060 |      0.666 |</span>
-<span class="go">|        10 | 14:27:19.1 |      1.200 |      0.080 |      0.485 |</span>
-<span class="go">|        11 | 14:27:19.2 |      1.500 |      0.100 |      0.323 |</span>
+<span class="go">|         1 | 11:17:43.5 |     -1.500 |     -0.100 |      0.323 |</span>
+<span class="go">|         2 | 11:17:43.5 |     -1.200 |     -0.080 |      0.485 |</span>
+<span class="go">|         3 | 11:17:43.6 |     -0.900 |     -0.060 |      0.666 |</span>
+<span class="go">|         4 | 11:17:43.7 |     -0.600 |     -0.040 |      0.835 |</span>
+<span class="go">|         5 | 11:17:43.7 |     -0.300 |     -0.020 |      0.956 |</span>
+<span class="go">|         6 | 11:17:43.8 |      0.000 |      0.000 |      1.000 |</span>
+<span class="go">|         7 | 11:17:43.8 |      0.300 |      0.020 |      0.956 |</span>
+<span class="go">|         8 | 11:17:43.9 |      0.600 |      0.040 |      0.835 |</span>
+<span class="go">|         9 | 11:17:43.9 |      0.900 |      0.060 |      0.666 |</span>
+<span class="go">|        10 | 11:17:44.0 |      1.200 |      0.080 |      0.485 |</span>
+<span class="go">|        11 | 11:17:44.0 |      1.500 |      0.100 |      0.323 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;42f2aa59&#39;] (scan num: 4)</span>
+<span class="go">generator scan ['cd106767'] (scan num: 4)</span>
 
 
 
-<span class="gh">Out[6]: </span><span class="go">(&#39;42f2aa59-4db1-42a9-987f-ea701f255b62&#39;,)</span>
+<span class="gh">Out[6]: </span><span class="go">('cd106767-3800-41d9-968d-49d045b85259',)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1017,23 +1017,23 @@ use <a class="reference internal" href="generated/bluesky.plans.list_scan.html#b
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 5     Time: 2026-07-17 14:27:20</span>
-<span class="go">Persistent Unique Scan ID: &#39;8af3a2cf-2158-4612-8669-874d2781b2e9&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 5     Time: 2026-08-25 11:17:45</span>
+<span class="go">Persistent Unique Scan ID: '4b682850-47ee-4ec2-b7d6-a1176b2efd84'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:20.8 |      1.000 |     25.000 |      0.000 |</span>
-<span class="go">|         2 | 14:27:20.9 |      1.000 |     16.000 |      0.000 |</span>
-<span class="go">|         3 | 14:27:20.9 |      3.000 |      9.000 |      0.000 |</span>
-<span class="go">|         4 | 14:27:21.0 |      5.000 |      4.000 |      0.000 |</span>
-<span class="go">|         5 | 14:27:21.0 |      8.000 |      1.000 |      0.000 |</span>
+<span class="go">|         1 | 11:17:45.3 |      1.000 |     25.000 |      0.000 |</span>
+<span class="go">|         2 | 11:17:45.4 |      1.000 |     16.000 |      0.000 |</span>
+<span class="go">|         3 | 11:17:45.5 |      3.000 |      9.000 |      0.000 |</span>
+<span class="go">|         4 | 11:17:45.5 |      5.000 |      4.000 |      0.000 |</span>
+<span class="go">|         5 | 11:17:45.5 |      8.000 |      1.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator list_scan [&#39;8af3a2cf&#39;] (scan num: 5)</span>
+<span class="go">generator list_scan ['4b682850'] (scan num: 5)</span>
 
 
 
-<span class="gh">Out[7]: </span><span class="go">(&#39;8af3a2cf-2158-4612-8669-874d2781b2e9&#39;,)</span>
+<span class="gh">Out[7]: </span><span class="go">('4b682850-47ee-4ec2-b7d6-a1176b2efd84',)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1082,33 +1082,33 @@ axis.</p>
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 6     Time: 2026-07-17 14:27:23</span>
-<span class="go">Persistent Unique Scan ID: &#39;0f808115-91e3-45f6-8017-264887310758&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 6     Time: 2026-08-25 11:17:47</span>
+<span class="go">Persistent Unique Scan ID: '4f75b89f-4fce-417e-9275-e95b5fd6d3aa'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:23.7 |     -1.500 |     -0.100 |      0.323 |</span>
-<span class="go">|         2 | 14:27:23.9 |     -1.500 |     -0.050 |      0.324 |</span>
-<span class="go">|         3 | 14:27:24.0 |     -1.500 |      0.000 |      0.325 |</span>
-<span class="go">|         4 | 14:27:24.1 |     -1.500 |      0.050 |      0.324 |</span>
-<span class="go">|         5 | 14:27:24.2 |     -1.500 |      0.100 |      0.323 |</span>
-<span class="go">|         6 | 14:27:24.4 |      0.000 |     -0.100 |      0.995 |</span>
-<span class="go">|         7 | 14:27:24.5 |      0.000 |     -0.050 |      0.999 |</span>
-<span class="go">|         8 | 14:27:24.6 |      0.000 |      0.000 |      1.000 |</span>
-<span class="go">|         9 | 14:27:24.7 |      0.000 |      0.050 |      0.999 |</span>
-<span class="go">|        10 | 14:27:24.8 |      0.000 |      0.100 |      0.995 |</span>
-<span class="go">|        11 | 14:27:24.9 |      1.500 |     -0.100 |      0.323 |</span>
-<span class="go">|        12 | 14:27:25.0 |      1.500 |     -0.050 |      0.324 |</span>
-<span class="go">|        13 | 14:27:25.2 |      1.500 |      0.000 |      0.325 |</span>
-<span class="go">|        14 | 14:27:25.3 |      1.500 |      0.050 |      0.324 |</span>
-<span class="go">|        15 | 14:27:25.4 |      1.500 |      0.100 |      0.323 |</span>
+<span class="go">|         1 | 11:17:47.7 |     -1.500 |     -0.100 |      0.323 |</span>
+<span class="go">|         2 | 11:17:47.9 |     -1.500 |     -0.050 |      0.324 |</span>
+<span class="go">|         3 | 11:17:48.0 |     -1.500 |      0.000 |      0.325 |</span>
+<span class="go">|         4 | 11:17:48.1 |     -1.500 |      0.050 |      0.324 |</span>
+<span class="go">|         5 | 11:17:48.2 |     -1.500 |      0.100 |      0.323 |</span>
+<span class="go">|         6 | 11:17:48.2 |      0.000 |     -0.100 |      0.995 |</span>
+<span class="go">|         7 | 11:17:48.3 |      0.000 |     -0.050 |      0.999 |</span>
+<span class="go">|         8 | 11:17:48.4 |      0.000 |      0.000 |      1.000 |</span>
+<span class="go">|         9 | 11:17:48.5 |      0.000 |      0.050 |      0.999 |</span>
+<span class="go">|        10 | 11:17:48.6 |      0.000 |      0.100 |      0.995 |</span>
+<span class="go">|        11 | 11:17:48.7 |      1.500 |     -0.100 |      0.323 |</span>
+<span class="go">|        12 | 11:17:48.8 |      1.500 |     -0.050 |      0.324 |</span>
+<span class="go">|        13 | 11:17:48.9 |      1.500 |      0.000 |      0.325 |</span>
+<span class="go">|        14 | 11:17:49.0 |      1.500 |      0.050 |      0.324 |</span>
+<span class="go">|        15 | 11:17:49.1 |      1.500 |      0.100 |      0.323 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator grid_scan [&#39;0f808115&#39;] (scan num: 6)</span>
+<span class="go">generator grid_scan ['4f75b89f'] (scan num: 6)</span>
 
 
 
-<span class="gh">Out[8]: </span><span class="go">(&#39;0f808115-91e3-45f6-8017-264887310758&#39;,)</span>
+<span class="gh">Out[8]: </span><span class="go">('4f75b89f-4fce-417e-9275-e95b5fd6d3aa',)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1131,33 +1131,33 @@ use <a class="reference internal" href="generated/bluesky.plans.list_grid_scan.h
 <span class="gp">   ...: </span>
 
 
-<span class="go">Transient Scan ID: 7     Time: 2026-07-17 14:27:28</span>
-<span class="go">Persistent Unique Scan ID: &#39;6f70170d-6c88-4328-b4f1-7cb9e8d9c4f0&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 7     Time: 2026-08-25 11:17:51</span>
+<span class="go">Persistent Unique Scan ID: 'e25dd495-ddb3-4bc0-8cd4-2c1f74da6601'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |     motor2 |       det4 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:28.2 |      1.000 |     25.000 |      0.000 |</span>
-<span class="go">|         2 | 14:27:28.3 |      1.000 |     16.000 |      0.000 |</span>
-<span class="go">|         3 | 14:27:28.4 |      1.000 |      9.000 |      0.000 |</span>
-<span class="go">|         4 | 14:27:28.5 |      1.000 |     25.000 |      0.000 |</span>
-<span class="go">|         5 | 14:27:28.6 |      1.000 |     16.000 |      0.000 |</span>
-<span class="go">|         6 | 14:27:28.7 |      1.000 |      9.000 |      0.000 |</span>
-<span class="go">|         7 | 14:27:28.8 |      2.000 |     25.000 |      0.000 |</span>
-<span class="go">|         8 | 14:27:28.8 |      2.000 |     16.000 |      0.000 |</span>
-<span class="go">|         9 | 14:27:28.9 |      2.000 |      9.000 |      0.000 |</span>
-<span class="go">|        10 | 14:27:29.0 |      3.000 |     25.000 |      0.000 |</span>
-<span class="go">|        11 | 14:27:29.1 |      3.000 |     16.000 |      0.000 |</span>
-<span class="go">|        12 | 14:27:29.2 |      3.000 |      9.000 |      0.000 |</span>
-<span class="go">|        13 | 14:27:29.2 |      5.000 |     25.000 |      0.000 |</span>
-<span class="go">|        14 | 14:27:29.3 |      5.000 |     16.000 |      0.000 |</span>
-<span class="go">|        15 | 14:27:29.4 |      5.000 |      9.000 |      0.000 |</span>
+<span class="go">|         1 | 11:17:51.4 |      1.000 |     25.000 |      0.000 |</span>
+<span class="go">|         2 | 11:17:51.5 |      1.000 |     16.000 |      0.000 |</span>
+<span class="go">|         3 | 11:17:51.6 |      1.000 |      9.000 |      0.000 |</span>
+<span class="go">|         4 | 11:17:51.6 |      1.000 |     25.000 |      0.000 |</span>
+<span class="go">|         5 | 11:17:51.7 |      1.000 |     16.000 |      0.000 |</span>
+<span class="go">|         6 | 11:17:51.8 |      1.000 |      9.000 |      0.000 |</span>
+<span class="go">|         7 | 11:17:51.8 |      2.000 |     25.000 |      0.000 |</span>
+<span class="go">|         8 | 11:17:51.9 |      2.000 |     16.000 |      0.000 |</span>
+<span class="go">|         9 | 11:17:52.0 |      2.000 |      9.000 |      0.000 |</span>
+<span class="go">|        10 | 11:17:52.0 |      3.000 |     25.000 |      0.000 |</span>
+<span class="go">|        11 | 11:17:52.1 |      3.000 |     16.000 |      0.000 |</span>
+<span class="go">|        12 | 11:17:52.2 |      3.000 |      9.000 |      0.000 |</span>
+<span class="go">|        13 | 11:17:52.3 |      5.000 |     25.000 |      0.000 |</span>
+<span class="go">|        14 | 11:17:52.3 |      5.000 |     16.000 |      0.000 |</span>
+<span class="go">|        15 | 11:17:52.4 |      5.000 |      9.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator list_grid_scan [&#39;6f70170d&#39;] (scan num: 7)</span>
+<span class="go">generator list_grid_scan ['e25dd495'] (scan num: 7)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">(&#39;6f70170d-6c88-4328-b4f1-7cb9e8d9c4f0&#39;,)</span>
+<span class="gh">Out[9]: </span><span class="go">('e25dd495-ddb3-4bc0-8cd4-2c1f74da6601',)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1192,17 +1192,17 @@ its unique ID, which is returned by the RunEngine at collection time.</p>
 <span class="gp">In [12]: </span><span class="n">uid</span><span class="p">,</span> <span class="o">=</span> <span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 8     Time: 2026-07-17 14:27:31</span>
-<span class="go">Persistent Unique Scan ID: &#39;6de51709-b63f-4645-8de1-e095500343ff&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 8     Time: 2026-08-25 11:17:54</span>
+<span class="go">Persistent Unique Scan ID: '9f96ecc9-3b0b-445a-9fb8-e9f566ff85df'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 14:27:31.6 |      0.607 |</span>
-<span class="go">|         2 | 14:27:31.6 |      0.607 |</span>
-<span class="go">|         3 | 14:27:31.7 |      0.607 |</span>
+<span class="go">|         1 | 11:17:54.2 |      0.607 |</span>
+<span class="go">|         2 | 11:17:54.3 |      0.607 |</span>
+<span class="go">|         3 | 11:17:54.3 |      0.607 |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count [&#39;6de51709&#39;] (scan num: 8)</span>
+<span class="go">generator count ['9f96ecc9'] (scan num: 8)</span>
 
 
 
@@ -1211,7 +1211,7 @@ its unique ID, which is returned by the RunEngine at collection time.</p>
 </pre></div>
 </div>
 <p>Alternatively, perhaps more conveniently, you can access it by recency:</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [14]: </span><span class="n">run</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># meaning &#39;1 run ago&#39;, i.e. the most recent run</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [14]: </span><span class="n">run</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># meaning '1 run ago', i.e. the most recent run</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -1228,32 +1228,32 @@ which in turn lets you look up multiple runs.</p>
 <p>Most of the useful metadata is in this dictionary:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [15]: </span><span class="n">run</span><span class="o">.</span><span class="n">start</span>
 <span class="gh">Out[15]: </span>
-<span class="go">{&#39;uid&#39;: &#39;6de51709-b63f-4645-8de1-e095500343ff&#39;,</span>
-<span class="go"> &#39;time&#39;: 1784298451.5495217,</span>
-<span class="go"> &#39;versions&#39;: {&#39;ophyd&#39;: &#39;1.11.2&#39;,</span>
-<span class="go">  &#39;bluesky&#39;: &#39;1.15.2.dev66+g6f839a1a2&#39;,</span>
-<span class="go">  &#39;event_model&#39;: &#39;1.24.0&#39;},</span>
-<span class="go"> &#39;scan_id&#39;: 8,</span>
-<span class="go"> &#39;plan_type&#39;: &#39;generator&#39;,</span>
-<span class="go"> &#39;plan_name&#39;: &#39;count&#39;,</span>
-<span class="go"> &#39;detectors&#39;: [&#39;det&#39;],</span>
-<span class="go"> &#39;num_points&#39;: 3,</span>
-<span class="go"> &#39;num_intervals&#39;: 2,</span>
-<span class="go"> &#39;plan_args&#39;: {&#39;detectors&#39;: [&quot;SynGauss(prefix=&#39;&#39;, name=&#39;det&#39;, read_attrs=[&#39;val&#39;], configuration_attrs=[&#39;Imax&#39;, &#39;center&#39;, &#39;sigma&#39;, &#39;noise&#39;, &#39;noise_multiplier&#39;])&quot;],</span>
-<span class="go">  &#39;num&#39;: 3,</span>
-<span class="go">  &#39;delay&#39;: 0.0},</span>
-<span class="go"> &#39;hints&#39;: {&#39;dimensions&#39;: [[[&#39;time&#39;], &#39;primary&#39;]]}}</span>
+<span class="go">{'uid': '9f96ecc9-3b0b-445a-9fb8-e9f566ff85df',</span>
+<span class="go"> 'time': 1787656674.2248018,</span>
+<span class="go"> 'versions': {'ophyd': '1.11.2',</span>
+<span class="go">  'bluesky': '1.15.2.dev76+g79e2d45e2',</span>
+<span class="go">  'event_model': '1.24.0'},</span>
+<span class="go"> 'scan_id': 8,</span>
+<span class="go"> 'plan_type': 'generator',</span>
+<span class="go"> 'plan_name': 'count',</span>
+<span class="go"> 'detectors': ['det'],</span>
+<span class="go"> 'num_points': 3,</span>
+<span class="go"> 'num_intervals': 2,</span>
+<span class="go"> 'plan_args': {'detectors': ["SynGauss(prefix='', name='det', read_attrs=['val'], configuration_attrs=['Imax', 'center', 'sigma', 'noise', 'noise_multiplier'])"],</span>
+<span class="go">  'num': 3,</span>
+<span class="go">  'delay': 0.0},</span>
+<span class="go"> 'hints': {'dimensions': [[['time'], 'primary']]}}</span>
 </pre></div>
 </div>
 <p>And the (“primary”) stream of data is accessible like so:</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="n">run</span><span class="p">[</span><span class="s2">&quot;primary&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="n">run</span><span class="p">[</span><span class="s2">"primary"</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <span class="gh">Out[16]: </span>
 <span class="go">&lt;xarray.Dataset&gt; Size: 48B</span>
 <span class="go">Dimensions:  (dim0: 3)</span>
 <span class="go">Dimensions without coordinates: dim0</span>
 <span class="go">Data variables:</span>
 <span class="go">    det      (dim0) float64 24B 0.6065 0.6065 0.6065</span>
-<span class="go">    time     (dim0) float64 24B 1.784e+09 1.784e+09 1.784e+09</span>
+<span class="go">    time     (dim0) float64 24B 1.788e+09 1.788e+09 1.788e+09</span>
 </pre></div>
 </div>
 <p>From here we refer to the
@@ -1286,7 +1286,7 @@ why.) Examples:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">coarse_and_fine</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">):</span>
-    <span class="s2">&quot;Scan from &#39;start&#39; to &#39;stop&#39; in 10 steps and then again in 100 steps.&quot;</span>
+    <span class="s2">"Scan from 'start' to 'stop' in 10 steps and then again in 100 steps."</span>
     <span class="k">yield from</span> <span class="n">scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">scan</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 
@@ -1309,7 +1309,7 @@ them all to arrive.</p>
 <p>We can combine <a class="reference internal" href="generated/bluesky.plan_stubs.mv.html#bluesky.plan_stubs.mv" title="bluesky.plan_stubs.mv"><code class="xref py py-func docutils literal notranslate"><span class="pre">mv()</span></code></a> and <a class="reference internal" href="generated/bluesky.plans.count.html#bluesky.plans.count" title="bluesky.plans.count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a>
 into one plan like so:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">move_then_count</span><span class="p">():</span>
-    <span class="s2">&quot;Move motor1 and motor2 into position; then count det.&quot;</span>
+    <span class="s2">"Move motor1 and motor2 into position; then count det."</span>
     <span class="k">yield from</span> <span class="n">mv</span><span class="p">(</span><span class="n">motor1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">)</span>
 
@@ -1321,7 +1321,7 @@ nothing at all! (The plans inside it will be <em>defined</em> but never executed
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WRONG EXAMPLE!</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">oops</span><span class="p">():</span>
-    <span class="s2">&quot;Forgot &#39;yield from&#39;!&quot;</span>
+    <span class="s2">"Forgot 'yield from'!"</span>
     <span class="n">mv</span><span class="p">(</span><span class="n">motor1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">motor2</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
     <span class="n">count</span><span class="p">(</span><span class="n">dets</span><span class="p">)</span>
 </pre></div>
@@ -1337,17 +1337,17 @@ it directly — typed by the user at the terminal — and only once.</strong></p
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">motor</span><span class="p">,</span> <span class="n">det</span>
 
-<span class="c1"># Don&#39;t do this!</span>
+<span class="c1"># Don't do this!</span>
 <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="s1">&#39;steps&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="s1">'steps'</span><span class="p">)</span>
     <span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">j</span><span class="p">)))</span>
 </pre></div>
 </div>
 <p>Or a function like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Don&#39;t do this!</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Don't do this!</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">bad_function</span><span class="p">():</span>
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="s1">&#39;steps&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="s1">'steps'</span><span class="p">)</span>
         <span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">j</span><span class="p">)))</span>
 </pre></div>
 </div>
@@ -1357,7 +1357,7 @@ it directly — typed by the user at the terminal — and only once.</strong></p
 
 <span class="k">def</span><span class="w"> </span><span class="nf">good_plan</span><span class="p">():</span>
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="s1">&#39;steps&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="s1">'steps'</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
 
 <span class="n">RE</span><span class="p">(</span><span class="n">my_plan</span><span class="p">())</span>
@@ -1440,9 +1440,9 @@ Demo:</p>
 <span class="gp">In [23]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 9     Time: 2026-07-17 14:27:32</span>
-<span class="go">Persistent Unique Scan ID: &#39;089804cd-dcb3-488d-beb2-7cd94c61cf1b&#39;</span>
-<span class="go">New stream: &#39;baseline&#39;</span>
+<span class="go">Transient Scan ID: 9     Time: 2026-08-25 11:17:54</span>
+<span class="go">Persistent Unique Scan ID: '13cac828-4248-4a19-a708-aec43e060c19'</span>
+<span class="go">New stream: 'baseline'</span>
 <span class="go">Start-of-run baseline readings:</span>
 <span class="go">+--------------------------------+--------------------------------+</span>
 <span class="go">|                           det1 | 9.643749239819588e-22          |</span>
@@ -1451,17 +1451,17 @@ Demo:</p>
 <span class="go">|                         motor1 | 5.0                            |</span>
 <span class="go">|                         motor2 | 9.0                            |</span>
 <span class="go">+--------------------------------+--------------------------------+</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:32.5 |     -1.000 |      0.607 |</span>
-<span class="go">|         2 | 14:27:32.5 |     -0.500 |      0.882 |</span>
-<span class="go">|         3 | 14:27:32.6 |      0.000 |      1.000 |</span>
-<span class="go">|         4 | 14:27:32.7 |      0.500 |      0.882 |</span>
-<span class="go">|         5 | 14:27:32.7 |      1.000 |      0.607 |</span>
+<span class="go">|         1 | 11:17:54.9 |     -1.000 |      0.607 |</span>
+<span class="go">|         2 | 11:17:55.0 |     -0.500 |      0.882 |</span>
+<span class="go">|         3 | 11:17:55.0 |      0.000 |      1.000 |</span>
+<span class="go">|         4 | 11:17:55.1 |      0.500 |      0.882 |</span>
+<span class="go">|         5 | 11:17:55.1 |      1.000 |      0.607 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;089804cd&#39;] (scan num: 9)</span>
+<span class="go">generator scan ['13cac828'] (scan num: 9)</span>
 <span class="go">End-of-run baseline readings:</span>
 <span class="go">+--------------------------------+--------------------------------+</span>
 <span class="go">|                           det1 | 9.643749239819588e-22          |</span>
@@ -1473,7 +1473,7 @@ Demo:</p>
 
 
 
-<span class="gh">Out[23]: </span><span class="go">(&#39;089804cd-dcb3-488d-beb2-7cd94c61cf1b&#39;,)</span>
+<span class="gh">Out[23]: </span><span class="go">('13cac828-4248-4a19-a708-aec43e060c19',)</span>
 </pre></div>
 </div>
 <p>We can clear or update the list of baseline detectors at any time.</p>
@@ -1491,52 +1491,52 @@ individually.</p>
 baseline data is missing!</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [25]: </span><span class="n">run</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-<span class="gp">In [26]: </span><span class="n">run</span><span class="p">[</span><span class="s2">&quot;primary&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="gp">In [26]: </span><span class="n">run</span><span class="p">[</span><span class="s2">"primary"</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <span class="gh">Out[26]: </span>
 <span class="go">&lt;xarray.Dataset&gt; Size: 160B</span>
 <span class="go">Dimensions:         (dim0: 5)</span>
 <span class="go">Dimensions without coordinates: dim0</span>
 <span class="go">Data variables:</span>
 <span class="go">    motor_setpoint  (dim0) float64 40B -1.0 -0.5 0.0 0.5 1.0</span>
-<span class="go">    motor           (dim0) float64 40B -1.0 -0.5 0.0 0.5 1.0</span>
 <span class="go">    det             (dim0) float64 40B 0.6065 0.8825 1.0 0.8825 0.6065</span>
-<span class="go">    time            (dim0) float64 40B 1.784e+09 1.784e+09 ... 1.784e+09</span>
+<span class="go">    motor           (dim0) float64 40B -1.0 -0.5 0.0 0.5 1.0</span>
+<span class="go">    time            (dim0) float64 40B 1.788e+09 1.788e+09 ... 1.788e+09</span>
 </pre></div>
 </div>
 <p>Looking again at the output when we executed this scan, notice these lines:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>New stream: &#39;baseline&#39;
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>New stream: 'baseline'
 ...
-New stream: &#39;primary&#39;
+New stream: 'primary'
 </pre></div>
 </div>
 <p>The “primary” stream contains the event data from the main body of the scan:</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [27]: </span><span class="n">run</span><span class="p">[</span><span class="s2">&quot;primary&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [27]: </span><span class="n">run</span><span class="p">[</span><span class="s2">"primary"</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <span class="gh">Out[27]: </span>
 <span class="go">&lt;xarray.Dataset&gt; Size: 160B</span>
 <span class="go">Dimensions:         (dim0: 5)</span>
 <span class="go">Dimensions without coordinates: dim0</span>
 <span class="go">Data variables:</span>
 <span class="go">    motor_setpoint  (dim0) float64 40B -1.0 -0.5 0.0 0.5 1.0</span>
-<span class="go">    motor           (dim0) float64 40B -1.0 -0.5 0.0 0.5 1.0</span>
 <span class="go">    det             (dim0) float64 40B 0.6065 0.8825 1.0 0.8825 0.6065</span>
-<span class="go">    time            (dim0) float64 40B 1.784e+09 1.784e+09 ... 1.784e+09</span>
+<span class="go">    motor           (dim0) float64 40B -1.0 -0.5 0.0 0.5 1.0</span>
+<span class="go">    time            (dim0) float64 40B 1.788e+09 1.788e+09 ... 1.788e+09</span>
 </pre></div>
 </div>
 <p>We can access other streams by name.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [28]: </span><span class="n">run</span><span class="p">[</span><span class="s2">&quot;baseline&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [28]: </span><span class="n">run</span><span class="p">[</span><span class="s2">"baseline"</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <span class="gh">Out[28]: </span>
 <span class="go">&lt;xarray.Dataset&gt; Size: 128B</span>
 <span class="go">Dimensions:          (dim0: 2)</span>
 <span class="go">Dimensions without coordinates: dim0</span>
 <span class="go">Data variables:</span>
-<span class="go">    motor2_setpoint  (dim0) int64 16B 9 9</span>
-<span class="go">    time             (dim0) float64 16B 1.784e+09 1.784e+09</span>
-<span class="go">    motor2           (dim0) float64 16B 9.0 9.0</span>
-<span class="go">    motor1_setpoint  (dim0) int64 16B 5 5</span>
-<span class="go">    motor1           (dim0) float64 16B 5.0 5.0</span>
-<span class="go">    det1             (dim0) float64 16B 9.644e-22 9.644e-22</span>
 <span class="go">    det3             (dim0) float64 16B 1.213 1.213</span>
+<span class="go">    time             (dim0) float64 16B 1.788e+09 1.788e+09</span>
+<span class="go">    motor2_setpoint  (dim0) int64 16B 9 9</span>
+<span class="go">    det1             (dim0) float64 16B 9.644e-22 9.644e-22</span>
+<span class="go">    motor1           (dim0) float64 16B 5.0 5.0</span>
 <span class="go">    det2             (dim0) float64 16B 0.0006709 0.0006709</span>
+<span class="go">    motor1_setpoint  (dim0) int64 16B 5 5</span>
+<span class="go">    motor2           (dim0) float64 16B 9.0 9.0</span>
 </pre></div>
 </div>
 <p>A list of the stream names in a given run is available as
@@ -1571,8 +1571,8 @@ user to know that and use this feature only when applicable.</p>
 <p>Demo:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [29]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="go">Transient Scan ID: 1     Time: 2018/02/12 12:40:36</span>
-<span class="go">Persistent Unique Scan ID: &#39;c5db9bb4-fb7f-49f4-948b-72fb716d1f67&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Persistent Unique Scan ID: 'c5db9bb4-fb7f-49f4-948b-72fb716d1f67'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
@@ -1584,7 +1584,7 @@ user to know that and use this feature only when applicable.</p>
 <p>At this point we decide to hit <strong>Ctrl+C</strong> (SIGINT). The RunEngine will catch
 this signal and react like so. We will examine this output piece by piece.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>^C
-A &#39;deferred pause&#39; has been requested.The RunEngine will pause at the next
+A 'deferred pause' has been requested.The RunEngine will pause at the next
 checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
 Deferred pause acknowledged. Continuing to checkpoint.
 &lt;...a few seconds later...&gt;
@@ -1601,8 +1601,8 @@ RunEngineInterrupted:
 Your RunEngine is entering a paused state. These are your options for changing
 the state of the RunEngine:
 RE.resume()    Resume the plan.
-RE.abort()     Perform cleanup, then kill plan. Mark exit_status=&#39;abort&#39;.
-RE.stop()      Perform cleanup, then kill plan. Mark exit_status=&#39;success&#39;.
+RE.abort()     Perform cleanup, then kill plan. Mark exit_status='abort'.
+RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
 RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 </pre></div>
 </div>
@@ -1628,7 +1628,7 @@ plans may specify checkpoints anywhere they like.</p>
 <span class="go">|         9 | 12:40:54.1 |      9.000 |      0.000 |</span>
 <span class="go">|        10 | 12:40:55.1 |     10.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan [&#39;c5db9bb4&#39;] (scan num: 1)</span>
+<span class="go">generator scan ['c5db9bb4'] (scan num: 1)</span>
 </pre></div>
 </div>
 <p>The scan has completed successfully.</p>
@@ -1636,7 +1636,7 @@ plans may specify checkpoints anywhere they like.</p>
 that the RunEngine didn’t pause immediately: it finished the current step of
 the scan first. Quoting an excerpt from the demo above:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>^C
-A &#39;deferred pause&#39; has been requested.The RunEngine will pause at the next
+A 'deferred pause' has been requested.The RunEngine will pause at the next
 checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
 Deferred pause acknowledged. Continuing to checkpoint.
 &lt;...a few seconds later...&gt;
@@ -1648,8 +1648,8 @@ Pausing...
 finish the current step.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>In [2]: RE(scan([det], motor, 1, 10, 10))
 Transient Scan ID: 2     Time: 2018/02/15 12:31:14
-Persistent Unique Scan ID: &#39;b342448f-6a64-4f26-91a6-37f559cb5537&#39;
-New stream: &#39;primary&#39;
+Persistent Unique Scan ID: 'b342448f-6a64-4f26-91a6-37f559cb5537'
+New stream: 'primary'
 +-----------+------------+------------+------------+
 |   seq_num |       time |      motor |        det |
 +-----------+------------+------------+------------+
@@ -1667,8 +1667,8 @@ options. If we decide not to continue we can quit in three different ways:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Your RunEngine is entering a paused state. These are your options for changing
 the state of the RunEngine:
 RE.resume()    Resume the plan.
-RE.abort()     Perform cleanup, then kill plan. Mark exit_status=&#39;abort&#39;.
-RE.stop()      Perform cleanup, then kill plan. Mark exit_status=&#39;success&#39;.
+RE.abort()     Perform cleanup, then kill plan. Mark exit_status='abort'.
+RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
 RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 </pre></div>
 </div>
@@ -1696,31 +1696,31 @@ interactive, user-initiated pause and resume, we call this behavior
 <span id="tutorial-metadata"></span><h2>Metadata<a class="headerlink" href="#metadata" title="Link to this heading">#</a></h2>
 <p>If users pass extra keyword arguments to <code class="docutils literal notranslate"><span class="pre">RE</span></code>, they are interpreted as
 metadata</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="n">user</span><span class="o">=</span><span class="s1">&#39;Dan&#39;</span><span class="p">,</span> <span class="n">mood</span><span class="o">=</span><span class="s1">&#39;skeptical&#39;</span><span class="p">)</span>
-<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="n">user</span><span class="o">=</span><span class="s1">&#39;Dan&#39;</span><span class="p">,</span> <span class="n">mood</span><span class="o">=</span><span class="s1">&#39;optimistic&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="n">user</span><span class="o">=</span><span class="s1">'Dan'</span><span class="p">,</span> <span class="n">mood</span><span class="o">=</span><span class="s1">'skeptical'</span><span class="p">)</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="n">user</span><span class="o">=</span><span class="s1">'Dan'</span><span class="p">,</span> <span class="n">mood</span><span class="o">=</span><span class="s1">'optimistic'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>and they can be used for searching later:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">headers</span> <span class="o">=</span> <span class="n">db</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="s1">&#39;Dan&#39;</span><span class="p">)</span>
-<span class="n">headers</span> <span class="o">=</span> <span class="n">db</span><span class="p">(</span><span class="n">mood</span><span class="o">=</span><span class="s1">&#39;skeptical&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">headers</span> <span class="o">=</span> <span class="n">db</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="s1">'Dan'</span><span class="p">)</span>
+<span class="n">headers</span> <span class="o">=</span> <span class="n">db</span><span class="p">(</span><span class="n">mood</span><span class="o">=</span><span class="s1">'skeptical'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Metadata can also be added <em>persistently</em> (i.e. applied to all future runs
 until removed) by editing the dictionary <code class="docutils literal notranslate"><span class="pre">RE.md</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="o">.</span><span class="n">md</span>
-<span class="n">RE</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Dan&#39;</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="s1">'user'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'Dan'</span>
 </pre></div>
 </div>
 <p>No need to specify <code class="docutils literal notranslate"><span class="pre">user</span></code> every time now….</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]))</span>  <span class="c1"># automatically includes user=&#39;Dan&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]))</span>  <span class="c1"># automatically includes user='Dan'</span>
 </pre></div>
 </div>
 <p>The key can be temporarily overridden:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="n">user</span><span class="o">=</span><span class="s1">&#39;Tom&#39;</span><span class="p">)</span>  <span class="c1"># overrides the setting in RE.md, just once</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="n">user</span><span class="o">=</span><span class="s1">'Tom'</span><span class="p">)</span>  <span class="c1"># overrides the setting in RE.md, just once</span>
 </pre></div>
 </div>
 <p>or deleted:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">del</span> <span class="n">RE</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">del</span> <span class="n">RE</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="s1">'user'</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>In addition to any user-provided metadata, the RunEngine, the devices, and the
@@ -1757,20 +1757,20 @@ to answer the question, “What will this plan do?”</p>
 <span class="go"># Count a detector 3 times.</span>
 <span class="gp">In [34]: </span><span class="n">summarize_plan</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
 <span class="go">=================================== Open Run ===================================</span>
-<span class="go">  Read [&#39;det&#39;]</span>
-<span class="go">  Read [&#39;det&#39;]</span>
-<span class="go">  Read [&#39;det&#39;]</span>
+<span class="go">  Read ['det']</span>
+<span class="go">  Read ['det']</span>
+<span class="go">  Read ['det']</span>
 <span class="go">================================== Close Run ===================================</span>
 
 <span class="go"># A 3-step scan.</span>
 <span class="gp">In [35]: </span><span class="n">summarize_plan</span><span class="p">(</span><span class="n">rel_scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
 <span class="go">=================================== Open Run ===================================</span>
 <span class="go">motor -&gt; 0.0</span>
-<span class="go">  Read [&#39;det&#39;, &#39;motor&#39;]</span>
+<span class="go">  Read ['det', 'motor']</span>
 <span class="go">motor -&gt; 1.0</span>
-<span class="go">  Read [&#39;det&#39;, &#39;motor&#39;]</span>
+<span class="go">  Read ['det', 'motor']</span>
 <span class="go">motor -&gt; 2.0</span>
-<span class="go">  Read [&#39;det&#39;, &#39;motor&#39;]</span>
+<span class="go">  Read ['det', 'motor']</span>
 <span class="go">================================== Close Run ===================================</span>
 <span class="go">motor -&gt; 1.0</span>
 </pre></div>
@@ -1824,7 +1824,7 @@ any specific hardware control protocol.</p>
 connecting to an EPICS motor looks like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd</span><span class="w"> </span><span class="kn">import</span> <span class="n">EpicsMotor</span>
 
-<span class="n">nano_top_x</span> <span class="o">=</span> <span class="n">EpicsMotor</span><span class="p">(</span><span class="s1">&#39;XF:31ID-ES{Dif:Nano-Ax:TopX}Mtr&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;nano_top_x&#39;</span><span class="p">)</span>
+<span class="n">nano_top_x</span> <span class="o">=</span> <span class="n">EpicsMotor</span><span class="p">(</span><span class="s1">'XF:31ID-ES{Dif:Nano-Ax:TopX}Mtr'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'nano_top_x'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>We have provided both the machine-readable address of the motor on the network,
@@ -1845,8 +1845,8 @@ nano_top_x_user_setpoint
 
 read attrs
 ----------
-user_readback        EpicsSignalRO       (&#39;nano_top_x&#39;)
-user_setpoint        EpicsSignal         (&#39;nano_top_x_user_setpoint&#39;)
+user_readback        EpicsSignalRO       ('nano_top_x')
+user_setpoint        EpicsSignal         ('nano_top_x_user_setpoint')
 
 config keys
 -----------
@@ -1858,24 +1858,24 @@ nano_top_x_velocity
 
 configuration attrs
 ----------
-motor_egu            EpicsSignal         (&#39;nano_top_x_motor_egu&#39;)
-velocity             EpicsSignal         (&#39;nano_top_x_velocity&#39;)
-acceleration         EpicsSignal         (&#39;nano_top_x_acceleration&#39;)
-user_offset          EpicsSignal         (&#39;nano_top_x_user_offset&#39;)
-user_offset_dir      EpicsSignal         (&#39;nano_top_x_user_offset_dir&#39;)
+motor_egu            EpicsSignal         ('nano_top_x_motor_egu')
+velocity             EpicsSignal         ('nano_top_x_velocity')
+acceleration         EpicsSignal         ('nano_top_x_acceleration')
+user_offset          EpicsSignal         ('nano_top_x_user_offset')
+user_offset_dir      EpicsSignal         ('nano_top_x_user_offset_dir')
 
 Unused attrs
 ------------
-offset_freeze_switch EpicsSignal         (&#39;nano_top_x_offset_freeze_switch&#39;)
-set_use_switch       EpicsSignal         (&#39;nano_top_x_set_use_switch&#39;)
-motor_is_moving      EpicsSignalRO       (&#39;nano_top_x_motor_is_moving&#39;)
-motor_done_move      EpicsSignalRO       (&#39;nano_top_x_motor_done_move&#39;)
-high_limit_switch    EpicsSignal         (&#39;nano_top_x_high_limit_switch&#39;)
-low_limit_switch     EpicsSignal         (&#39;nano_top_x_low_limit_switch&#39;)
-direction_of_travel  EpicsSignal         (&#39;nano_top_x_direction_of_travel&#39;)
-motor_stop           EpicsSignal         (&#39;nano_top_x_motor_stop&#39;)
-home_forward         EpicsSignal         (&#39;nano_top_x_home_forward&#39;)
-home_reverse         EpicsSignal         (&#39;nano_top_x_home_reverse&#39;)
+offset_freeze_switch EpicsSignal         ('nano_top_x_offset_freeze_switch')
+set_use_switch       EpicsSignal         ('nano_top_x_set_use_switch')
+motor_is_moving      EpicsSignalRO       ('nano_top_x_motor_is_moving')
+motor_done_move      EpicsSignalRO       ('nano_top_x_motor_done_move')
+high_limit_switch    EpicsSignal         ('nano_top_x_high_limit_switch')
+low_limit_switch     EpicsSignal         ('nano_top_x_low_limit_switch')
+direction_of_travel  EpicsSignal         ('nano_top_x_direction_of_travel')
+motor_stop           EpicsSignal         ('nano_top_x_motor_stop')
+home_forward         EpicsSignal         ('nano_top_x_home_forward')
+home_reverse         EpicsSignal         ('nano_top_x_home_reverse')
 </pre></div>
 </div>
 </section>
@@ -1918,18 +1918,18 @@ slow motor to arrive, and print a second message.</p>
     <span class="c1"># Start all the motors, fast and slow, moving at once.</span>
     <span class="c1"># Put all the fast_motors in one group...</span>
     <span class="k">for</span> <span class="n">motor</span> <span class="ow">in</span> <span class="n">fast_motors</span><span class="p">:</span>
-        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">abs_set</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">abs_set</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">'A'</span><span class="p">)</span>
     <span class="c1"># ...but put the slow motor is separate group.</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">abs_set</span><span class="p">(</span><span class="n">slow_motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">abs_set</span><span class="p">(</span><span class="n">slow_motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">'B'</span><span class="p">)</span>
 
     <span class="c1"># Wait for all the fast motors.</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Waiting on the fast motors.&#39;</span><span class="p">)</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Fast motors are in place. Just waiting on the slow one now.&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Waiting on the fast motors.'</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="s1">'A'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Fast motors are in place. Just waiting on the slow one now.'</span><span class="p">)</span>
 
     <span class="c1"># Then wait for the slow motor.</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Slow motor is in place.&#39;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="s1">'B'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Slow motor is in place.'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1947,7 +1947,7 @@ configured like <code class="docutils literal notranslate"><span class="pre">mot
 <p>For timed delays, bluesky has a special plan, which allows the RunEngine to
 continue its business during the sleep.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sleepy_plan</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="n">positions</span><span class="p">):</span>
-    <span class="s2">&quot;Step a motor through a list of positions with 1-second delays between steps.&quot;</span><span class="p">)</span>
+    <span class="s2">"Step a motor through a list of positions with 1-second delays between steps."</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -1970,7 +1970,7 @@ into <em>Events</em> (i.e. rows in a table) and grouping those Events into <em>R
 <span class="k">def</span><span class="w"> </span><span class="nf">one_run_one_event</span><span class="p">(</span><span class="n">detectors</span><span class="p">):</span>
     <span class="c1"># Declare the beginning of a new run.</span>
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">()</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
 
     <span class="c1"># Trigger each detector and wait for triggering to complete.</span>
     <span class="c1"># Then read the detectors and bundle these readings into an Event</span>
@@ -1985,19 +1985,19 @@ into <em>Events</em> (i.e. rows in a table) and grouping those Events into <em>R
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [36]: </span><span class="n">RE</span><span class="p">(</span><span class="n">one_run_one_event</span><span class="p">([</span><span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">]))</span>
 
 
-<span class="go">Transient Scan ID: 10     Time: 2026-07-17 14:27:33</span>
-<span class="go">Persistent Unique Scan ID: &#39;d86de199-684e-4d23-ac9b-ea8c019d4cc3&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 10     Time: 2026-08-25 11:17:55</span>
+<span class="go">Persistent Unique Scan ID: '63c84dec-dc7f-4634-8293-19cbeeea944d'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det2 |       det1 |</span>
+<span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:33.9 |      0.001 |      0.000 |</span>
+<span class="go">|         1 | 11:17:56.0 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator one_run_one_event [&#39;d86de199&#39;] (scan num: 10)</span>
+<span class="go">generator one_run_one_event ['63c84dec'] (scan num: 10)</span>
 
 
 
-<span class="gh">Out[36]: </span><span class="go">(&#39;d86de199-684e-4d23-ac9b-ea8c019d4cc3&#39;,)</span>
+<span class="gh">Out[36]: </span><span class="go">('63c84dec-dc7f-4634-8293-19cbeeea944d',)</span>
 </pre></div>
 </div>
 <p>We observe:</p>
@@ -2010,7 +2010,7 @@ into <em>Events</em> (i.e. rows in a table) and grouping those Events into <em>R
 moved inside a for loop.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">one_run_multi_events</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">()</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
@@ -2022,21 +2022,21 @@ moved inside a for loop.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [37]: </span><span class="n">RE</span><span class="p">(</span><span class="n">one_run_multi_events</span><span class="p">([</span><span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 11     Time: 2026-07-17 14:27:34</span>
-<span class="go">Persistent Unique Scan ID: &#39;b13935b8-31a1-4faa-8bfd-06b59ad2afc3&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 11     Time: 2026-08-25 11:17:56</span>
+<span class="go">Persistent Unique Scan ID: 'a41b1ef9-d92b-48ac-806a-660a6410b5ae'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det2 |       det1 |</span>
+<span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:34.6 |      0.001 |      0.000 |</span>
-<span class="go">|         2 | 14:27:34.8 |      0.001 |      0.000 |</span>
-<span class="go">|         3 | 14:27:35.0 |      0.001 |      0.000 |</span>
+<span class="go">|         1 | 11:17:56.6 |      0.000 |      0.001 |</span>
+<span class="go">|         2 | 11:17:56.8 |      0.000 |      0.001 |</span>
+<span class="go">|         3 | 11:17:57.0 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator one_run_multi_events [&#39;b13935b8&#39;] (scan num: 11)</span>
+<span class="go">generator one_run_multi_events ['a41b1ef9'] (scan num: 11)</span>
 
 
 
-<span class="gh">Out[37]: </span><span class="go">(&#39;b13935b8-31a1-4faa-8bfd-06b59ad2afc3&#39;,)</span>
+<span class="gh">Out[37]: </span><span class="go">('a41b1ef9-d92b-48ac-806a-660a6410b5ae',)</span>
 </pre></div>
 </div>
 <p>We observe:</p>
@@ -2047,7 +2047,7 @@ moved inside a for loop.</p>
 </ul>
 <p>Finally, add another loop re-using <code class="docutils literal notranslate"><span class="pre">one_run_multi_events</span></code> inside that loop.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">multi_runs_multi_events</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">num_runs</span><span class="p">):</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_runs</span><span class="p">):</span>
         <span class="k">yield from</span> <span class="n">one_run_multi_events</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
@@ -2056,39 +2056,39 @@ moved inside a for loop.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [38]: </span><span class="n">RE</span><span class="p">(</span><span class="n">multi_runs_multi_events</span><span class="p">([</span><span class="n">det1</span><span class="p">,</span> <span class="n">det2</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">num_runs</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 12     Time: 2026-07-17 14:27:35</span>
-<span class="go">Persistent Unique Scan ID: &#39;c6f7dbac-59e8-48df-bf4a-4e0a544f6867&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 12     Time: 2026-08-25 11:17:57</span>
+<span class="go">Persistent Unique Scan ID: '34305d29-1d88-4d2b-a46d-1c4eb306d2e2'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det2 |       det1 |</span>
+<span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:35.7 |      0.001 |      0.000 |</span>
-<span class="go">|         2 | 14:27:35.9 |      0.001 |      0.000 |</span>
-<span class="go">|         3 | 14:27:36.1 |      0.001 |      0.000 |</span>
+<span class="go">|         1 | 11:17:57.6 |      0.000 |      0.001 |</span>
+<span class="go">|         2 | 11:17:57.8 |      0.000 |      0.001 |</span>
+<span class="go">|         3 | 11:17:58.0 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator multi_runs_multi_events [&#39;c6f7dbac&#39;] (scan num: 12)</span>
+<span class="go">generator multi_runs_multi_events ['34305d29'] (scan num: 12)</span>
 
 
 
 
 
-<span class="go">Transient Scan ID: 13     Time: 2026-07-17 14:27:36</span>
-<span class="go">Persistent Unique Scan ID: &#39;22ef96e2-d085-41f3-bb7b-e4eed4a16c26&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 13     Time: 2026-08-25 11:17:58</span>
+<span class="go">Persistent Unique Scan ID: 'e294a152-b309-4431-8963-8f0f05964c84'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det2 |       det1 |</span>
+<span class="go">|   seq_num |       time |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 14:27:36.8 |      0.001 |      0.000 |</span>
-<span class="go">|         2 | 14:27:37.0 |      0.001 |      0.000 |</span>
-<span class="go">|         3 | 14:27:37.2 |      0.001 |      0.000 |</span>
+<span class="go">|         1 | 11:17:58.5 |      0.000 |      0.001 |</span>
+<span class="go">|         2 | 11:17:58.7 |      0.000 |      0.001 |</span>
+<span class="go">|         3 | 11:17:58.9 |      0.000 |      0.001 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator multi_runs_multi_events [&#39;22ef96e2&#39;] (scan num: 13)</span>
+<span class="go">generator multi_runs_multi_events ['e294a152'] (scan num: 13)</span>
 
 
 
 <span class="gh">Out[38]: </span>
-<span class="go">(&#39;c6f7dbac-59e8-48df-bf4a-4e0a544f6867&#39;,</span>
-<span class="go"> &#39;22ef96e2-d085-41f3-bb7b-e4eed4a16c26&#39;)</span>
+<span class="go">('34305d29-1d88-4d2b-a46d-1c4eb306d2e2',</span>
+<span class="go"> 'e294a152-b309-4431-8963-8f0f05964c84')</span>
 </pre></div>
 </div>
 <p>We observe:</p>
@@ -2117,7 +2117,7 @@ have a <code class="docutils literal notranslate"><span class="pre">stage()</spa
 
 <span class="k">def</span><span class="w"> </span><span class="nf">one_run_one_event</span><span class="p">(</span><span class="n">detectors</span><span class="p">):</span>
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">()</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
 </pre></div>
@@ -2125,16 +2125,16 @@ have a <code class="docutils literal notranslate"><span class="pre">stage()</spa
 <p>we incorporate staging like so:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">one_run_one_event</span><span class="p">(</span><span class="n">detectors</span><span class="p">):</span>
 
-    <span class="c1"># &#39;Stage&#39; every device.</span>
+    <span class="c1"># 'Stage' every device.</span>
     <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">stage</span><span class="p">(</span><span class="n">det</span><span class="p">)</span>
 
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">()</span>
-    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
     <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
 
-    <span class="c1"># &#39;Unstage&#39; every device.</span>
+    <span class="c1"># 'Unstage' every device.</span>
     <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">unstage</span><span class="p">(</span><span class="n">det</span><span class="p">)</span>
 </pre></div>
@@ -2150,7 +2150,7 @@ equivalent:</p>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">():</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">open_run</span><span class="p">()</span>
-        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">close_run</span><span class="p">()</span>
 
@@ -2172,7 +2172,7 @@ The result:</p>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">():</span>
-        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner</span><span class="p">())</span>
@@ -2194,19 +2194,19 @@ in the <a class="reference internal" href="#tutorial-metadata"><span class="std 
 
     <span class="n">md</span> <span class="o">=</span> <span class="p">{</span>
         <span class="c1"># Human-friendly names of detector Devices (useful for searching)</span>
-        <span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">det</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">],</span>
+        <span class="s1">'detectors'</span><span class="p">:</span> <span class="p">[</span><span class="n">det</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">],</span>
 
-        <span class="c1"># The Python &#39;repr&#39;s each argument to the plan</span>
-        <span class="s1">&#39;plan_args&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="n">detectors</span><span class="p">))},</span>
+        <span class="c1"># The Python 'repr's each argument to the plan</span>
+        <span class="s1">'plan_args'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'detectors'</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="n">detectors</span><span class="p">))},</span>
 
         <span class="c1"># The name of this plan</span>
-        <span class="s1">&#39;plan_name&#39;</span><span class="p">:</span> <span class="s1">&#39;one_run_one_event&#39;</span><span class="p">,</span>
+        <span class="s1">'plan_name'</span><span class="p">:</span> <span class="s1">'one_run_one_event'</span><span class="p">,</span>
     <span class="p">}</span>
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">():</span>
-        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner</span><span class="p">())</span>
@@ -2226,9 +2226,9 @@ purpose, implemented like so:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">one_run_one_event</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
     <span class="n">_md</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">det</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">],</span>
-        <span class="s1">&#39;plan_args&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="n">detectors</span><span class="p">))},</span>
-        <span class="s1">&#39;plan_name&#39;</span><span class="p">:</span> <span class="s1">&#39;one_run_one_event&#39;</span><span class="p">,</span>
+        <span class="s1">'detectors'</span><span class="p">:</span> <span class="p">[</span><span class="n">det</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detectors</span><span class="p">],</span>
+        <span class="s1">'plan_args'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'detectors'</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="n">detectors</span><span class="p">))},</span>
+        <span class="s1">'plan_name'</span><span class="p">:</span> <span class="s1">'one_run_one_event'</span><span class="p">,</span>
     <span class="p">}</span>
 
     <span class="c1"># If a key exists in md, it overwrites the default in _md.</span>
@@ -2237,7 +2237,7 @@ purpose, implemented like so:</p>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">(</span><span class="n">_md</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">():</span>
-        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner</span><span class="p">())</span>
@@ -2269,7 +2269,7 @@ because any given movable device can be used as an axis or as a “detector”
 depending on the context — <code class="docutils literal notranslate"><span class="pre">count([motor])</span></code> is a perfectly valid thing to
 do!</p>
 <p>The schema of the plan’s hint metadata is:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="p">[([</span><span class="o">&lt;</span><span class="n">FIELD</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">&lt;</span><span class="n">STREAM_NAME</span><span class="o">&gt;</span><span class="p">),</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">'dimensions'</span><span class="p">:</span> <span class="p">[([</span><span class="o">&lt;</span><span class="n">FIELD</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">&lt;</span><span class="n">STREAM_NAME</span><span class="o">&gt;</span><span class="p">),</span>
                 <span class="p">([</span><span class="o">&lt;</span><span class="n">FIELD</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">&lt;</span><span class="n">STREAM_NAME</span><span class="o">&gt;</span><span class="p">),</span>
                 <span class="o">...</span>
                <span class="p">]}</span>
@@ -2277,23 +2277,23 @@ do!</p>
 </div>
 <p>Examples:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># a 1-D scan over x</span>
-<span class="p">{</span><span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="p">[([</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]}</span>
+<span class="p">{</span><span class="s1">'dimensions'</span><span class="p">:</span> <span class="p">[([</span><span class="s1">'x'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]}</span>
 
 <span class="c1"># a 2-D grid_scan over x and y</span>
-<span class="p">{</span><span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="p">[([</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">),</span>
-                <span class="p">([</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]}</span>
+<span class="p">{</span><span class="s1">'dimensions'</span><span class="p">:</span> <span class="p">[([</span><span class="s1">'x'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">),</span>
+                <span class="p">([</span><span class="s1">'y'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]}</span>
 
 <span class="c1"># a scan moving x and y together along a diagonal</span>
-<span class="p">{</span><span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="p">[([</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]}</span>
+<span class="p">{</span><span class="s1">'dimensions'</span><span class="p">:</span> <span class="p">[([</span><span class="s1">'x'</span><span class="p">,</span> <span class="s1">'y'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]}</span>
 
 <span class="c1"># a 1-D scan over temperature, represented in C and K units</span>
-<span class="p">{</span><span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="p">[([</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;K&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]}</span>
+<span class="p">{</span><span class="s1">'dimensions'</span><span class="p">:</span> <span class="p">[([</span><span class="s1">'C'</span><span class="p">,</span> <span class="s1">'K'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]}</span>
 
 <span class="c1"># a 1-D scan over energy, as measured in energy and diffractometer position</span>
-<span class="p">{</span><span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="p">[([</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;dcm&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]}</span>
+<span class="p">{</span><span class="s1">'dimensions'</span><span class="p">:</span> <span class="p">[([</span><span class="s1">'E'</span><span class="p">,</span> <span class="s1">'dcm'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]}</span>
 
 <span class="c1"># special case: a sequence of readings where the independent axis is just time</span>
-<span class="p">{</span><span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="p">[([</span><span class="s1">&#39;time&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]}</span>
+<span class="p">{</span><span class="s1">'dimensions'</span><span class="p">:</span> <span class="p">[([</span><span class="s1">'time'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]}</span>
 </pre></div>
 </div>
 <p>Each entry in the outer list represents one independent dimension. A dimension
@@ -2308,7 +2308,7 @@ example above.  This should correspond to the <code class="docutils literal notr
 <code class="docutils literal notranslate"><span class="pre">primary</span></code>.</p>
 <p>Putting it all together, the plan asks the device(s) being used as independent
 axes for their important field(s) and builds a list of dimensions like so:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">[(</span><span class="n">motor</span><span class="o">.</span><span class="n">hints</span><span class="p">[</span><span class="s1">&#39;fields&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">[(</span><span class="n">motor</span><span class="o">.</span><span class="n">hints</span><span class="p">[</span><span class="s1">'fields'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]</span>
 </pre></div>
 </div>
 <p>We must account for the fact that <code class="docutils literal notranslate"><span class="pre">hints</span></code> is optional. A given Device
@@ -2321,11 +2321,11 @@ provided by the Device:</p>
     <span class="n">_md</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">md</span> <span class="ow">or</span> <span class="p">{})</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">dimensions</span> <span class="o">=</span> <span class="p">[(</span><span class="n">motor</span><span class="o">.</span><span class="n">hints</span><span class="p">[</span><span class="s1">&#39;fields&#39;</span><span class="p">],</span> <span class="s1">&#39;primary&#39;</span><span class="p">)]</span>
+        <span class="n">dimensions</span> <span class="o">=</span> <span class="p">[(</span><span class="n">motor</span><span class="o">.</span><span class="n">hints</span><span class="p">[</span><span class="s1">'fields'</span><span class="p">],</span> <span class="s1">'primary'</span><span class="p">)]</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
         <span class="k">pass</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">_md</span><span class="p">[</span><span class="s1">&#39;hints&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;dimensions&#39;</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">)</span>
+        <span class="n">_md</span><span class="p">[</span><span class="s1">'hints'</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">'dimensions'</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">)</span>
 
     <span class="o">...</span>
 </pre></div>
@@ -2342,17 +2342,17 @@ can use it to make an on-the-fly decision about whether to continue or stop.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">conditional_break</span><span class="p">(</span><span class="n">threshold</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set, trigger, read until the detector reads intensity &lt; threshold&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Set, trigger, read until the detector reads intensity &lt; threshold"""</span>
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">([</span><span class="n">det</span><span class="p">,</span> <span class="n">motor</span><span class="p">])</span>
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">run_decorator</span><span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">():</span>
         <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">det</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">det</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'primary'</span><span class="p">)</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
             <span class="n">readings</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">trigger_and_read</span><span class="p">([</span><span class="n">det</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">readings</span><span class="p">[</span><span class="s1">&#39;det&#39;</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">readings</span><span class="p">[</span><span class="s1">'det'</span><span class="p">][</span><span class="s1">'value'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
                 <span class="k">break</span>
             <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">inner</span><span class="p">())</span>
@@ -2362,21 +2362,21 @@ can use it to make an on-the-fly decision about whether to continue or stop.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [39]: </span><span class="n">RE</span><span class="p">(</span><span class="n">conditional_break</span><span class="p">(</span><span class="mf">0.2</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 14     Time: 2026-07-17 14:27:37</span>
-<span class="go">Persistent Unique Scan ID: &#39;33fee27d-f74c-4c23-9f2e-e6827d03ad6b&#39;</span>
-<span class="go">New stream: &#39;primary&#39;</span>
+<span class="go">Transient Scan ID: 14     Time: 2026-08-25 11:17:59</span>
+<span class="go">Persistent Unique Scan ID: '6c2b62cb-b796-4932-949a-159c0baf17ed'</span>
+<span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 14:27:38.0 |      1.000 |</span>
-<span class="go">|         2 | 14:27:38.0 |      0.607 |</span>
-<span class="go">|         3 | 14:27:38.1 |      0.135 |</span>
+<span class="go">|         1 | 11:17:59.5 |      1.000 |</span>
+<span class="go">|         2 | 11:17:59.5 |      0.607 |</span>
+<span class="go">|         3 | 11:17:59.6 |      0.135 |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator conditional_break [&#39;33fee27d&#39;] (scan num: 14)</span>
+<span class="go">generator conditional_break ['6c2b62cb'] (scan num: 14)</span>
 
 
 
-<span class="gh">Out[39]: </span><span class="go">(&#39;33fee27d-f74c-4c23-9f2e-e6827d03ad6b&#39;,)</span>
+<span class="gh">Out[39]: </span><span class="go">('6c2b62cb-b796-4932-949a-159c0baf17ed',)</span>
 </pre></div>
 </div>
 <p>The important line in this example is</p>
@@ -2391,7 +2391,7 @@ can use it to make an on-the-fly decision about whether to continue or stop.</p>
 assigned to the variable <code class="docutils literal notranslate"><span class="pre">reading</span></code>.</p></li>
 </ol>
 <p>The response, <code class="docutils literal notranslate"><span class="pre">reading</span></code>, is formatted like:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="p">,</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">timestamp</span><span class="o">&gt;</span><span class="p">},</span> <span class="o">...</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="p">:</span> <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="p">,</span> <span class="s1">'timestamp'</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">timestamp</span><span class="o">&gt;</span><span class="p">},</span> <span class="o">...</span><span class="p">}</span>
 </pre></div>
 </div>
 <p>For a detailed technical description of the messages and their responses,
@@ -2556,7 +2556,7 @@ succinct and fully correct way of applying this general pattern.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/tutorial.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/tutorial.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

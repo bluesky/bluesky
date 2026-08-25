@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Message Protocol &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>Message Protocol &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'msg';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="How Bluesky Interfaces with Hardware" href="hardware.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -589,13 +589,13 @@ object. A plan may be implemented as a simple list of messages:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">Msg</span>
 
 <span class="c1"># (Behold, the most boring data acquisition ever conducted!)</span>
-<span class="n">plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)]</span>
+<span class="n">plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">'open_run'</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">'close_run'</span><span class="p">)]</span>
 </pre></div>
 </div>
 <p>or as a generator the yields messages one at time:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">():</span>
-    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">)</span>
-    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">'open_run'</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">'close_run'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The above examples are equivalent. For more sophisticated uses, the second one
@@ -607,9 +607,9 @@ is represented by a <code class="docutils literal notranslate"><span class="pre"
 makes it safe to introspect the plan for error-checking, simulation, and
 visualization purposes — without touching real hardware. For example, we
 could print each message in the plan like so:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">)]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plan</span> <span class="o">=</span> <span class="p">[</span><span class="n">Msg</span><span class="p">(</span><span class="s1">'open_run'</span><span class="p">),</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">'close_run'</span><span class="p">)]</span>
 
-<span class="c1"># a very, very simple &#39;plan simulator&#39;</span>
+<span class="c1"># a very, very simple 'plan simulator'</span>
 <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 </pre></div>
@@ -734,8 +734,8 @@ of immediate motion.</p>
 <p>Instruct the RunEngine to stage/unstage the object. This calls
 <code class="docutils literal notranslate"><span class="pre">obj.stage()</span></code>/<code class="docutils literal notranslate"><span class="pre">obj.unstage</span></code>.</p>
 <p>Expected message objects are:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
-<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unstage&#39;</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'stage'</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">'unstage'</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>which results in these calls:</p>
@@ -754,7 +754,7 @@ involve lengthy set calls.</p>
 component Devices (if any) to also be staged. All of these children are added
 to a list, along with [self], and returned by Device.stage(), so that the plan
 can keep track of what has been staged, like so:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">devices_staged</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">devices_staged</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">'stage'</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Why would the plan want to know that? It needs to avoid accidentally trying to
@@ -787,7 +787,7 @@ Ex</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asyncio.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
 <span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">()</span>
 <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give false</span>
-<span class="n">RE</span><span class="p">(</span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;wait_for&#39;</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">Msg</span><span class="p">(</span><span class="s1">'wait_for'</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
 <span class="c1"># this sets the future to done</span>
 <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give True</span>
@@ -799,7 +799,7 @@ Ex</p>
 <span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">()</span>
 <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="c1"># will give false</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">()</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;wait_for&#39;</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s1">'wait_for'</span><span class="p">,</span> <span class="p">[</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">future</span> <span class="p">,]))</span>
     <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
         <span class="c1"># will give the exception raised</span>
         <span class="n">result</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
@@ -810,8 +810,8 @@ Ex</p>
 <h3>input<a class="headerlink" href="#input" title="Link to this heading">#</a></h3>
 <p>Process an input. Allows for user input during a run.</p>
 <p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s1">&#39;&gt;&#39;</span><span class="p">)</span>  <span class="c1"># customize prompt</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'input'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">'input'</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s1">'&gt;'</span><span class="p">)</span>  <span class="c1"># customize prompt</span>
 </pre></div>
 </div>
 </section>
@@ -831,7 +831,7 @@ point if necessary.</p>
 <h3>pause<a class="headerlink" href="#pause" title="Link to this heading">#</a></h3>
 <p>Request the run engine to pause</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;pause&#39;</span><span class="p">,</span> <span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'pause'</span><span class="p">,</span> <span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -857,7 +857,7 @@ issued.</p>
 <h3>configure<a class="headerlink" href="#configure" title="Link to this heading">#</a></h3>
 <p>Configure an object.</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;configure&#39;</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'configure'</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>which results in this call:</p>
@@ -892,8 +892,8 @@ information.</p>
 <p>Remove a subscription during a call – useful for a multi-run call
 where subscriptions are wanted for some runs but not others.</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TOKEN</span><span class="p">)</span>
-<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">TOKEN</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'unsubscribe'</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TOKEN</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">'unsubscribe'</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">TOKEN</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">TOKEN</span></code> is the return value from <code class="docutils literal notranslate"><span class="pre">RunEngine._subscribe()</span></code></p>
@@ -902,7 +902,7 @@ where subscriptions are wanted for some runs but not others.</p>
 <h3>open_run<a class="headerlink" href="#open-run" title="Link to this heading">#</a></h3>
 <p>Instruct the RunEngine to start a new “run”</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;open_run&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'open_run'</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> are any additional metadata that should go into the RunStart
@@ -912,7 +912,7 @@ document</p>
 <h3>close_run<a class="headerlink" href="#close-run" title="Link to this heading">#</a></h3>
 <p>Instruct the RunEngine to write the RunStop document</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;close_run&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exit_status</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'close_run'</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exit_status</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>if <em>exit_stats</em> and <em>reason</em> are not provided, use the values
@@ -938,8 +938,8 @@ defined that emits Event documents associated with that descriptor
 from a separate thread. This process is not related to the main
 bundling process (create/read/save).</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;monitor&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;monitor&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;event-stream-name&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'monitor'</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">Msg</span><span class="p">(</span><span class="s1">'monitor'</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'event-stream-name'</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>where kwargs are passed through to <code class="docutils literal notranslate"><span class="pre">obj.subscribe()</span></code></p>
@@ -948,7 +948,7 @@ bundling process (create/read/save).</p>
 <h3>unmonitor<a class="headerlink" href="#unmonitor" title="Link to this heading">#</a></h3>
 <p>Stop monitoring; i.e., remove the callback emitting event documents.</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;unmonitor&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'unmonitor'</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -956,7 +956,7 @@ bundling process (create/read/save).</p>
 <h3>stop<a class="headerlink" href="#stop" title="Link to this heading">#</a></h3>
 <p>Stop a device.</p>
 <p>Expected message object is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">&#39;stop&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'stop'</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This amounts to calling <code class="docutils literal notranslate"><span class="pre">obj.stop()</span></code>.</p>
@@ -1150,7 +1150,7 @@ commands.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/msg.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/msg.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

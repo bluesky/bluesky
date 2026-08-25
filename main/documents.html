@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Documents &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>Documents &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'documents';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="bluesky.preprocessors.make_decorator" href="generated/bluesky.preprocessors.make_decorator.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -681,27 +681,27 @@ detector(s) and motor(s) used. (User-defined plans may also do this; see
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">det</span><span class="p">,</span> <span class="n">motor</span>  <span class="c1"># simulated detector, motor</span>
 
-<span class="c1"># Scan &#39;motor&#39; from -3 to 3 in 10 steps, taking readings from &#39;det&#39;.</span>
-<span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">purpose</span><span class="o">=</span><span class="s1">&#39;calibration&#39;</span><span class="p">,</span>
-   <span class="n">sample</span><span class="o">=</span><span class="s1">&#39;kryptonite&#39;</span><span class="p">)</span>
+<span class="c1"># Scan 'motor' from -3 to 3 in 10 steps, taking readings from 'det'.</span>
+<span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">motor</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">purpose</span><span class="o">=</span><span class="s1">'calibration'</span><span class="p">,</span>
+   <span class="n">sample</span><span class="o">=</span><span class="s1">'kryptonite'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>generates a ‘start’ document like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;start&#39; document</span>
-<span class="p">{</span><span class="s1">&#39;purpose&#39;</span><span class="p">:</span> <span class="s1">&#39;calibration&#39;</span><span class="p">,</span>
- <span class="s1">&#39;sample&#39;</span><span class="p">:</span> <span class="s1">&#39;kryptonite&#39;</span><span class="p">,</span>
- <span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;det&#39;</span><span class="p">],</span>
- <span class="s1">&#39;motors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;motor&#39;</span><span class="p">],</span>
- <span class="s1">&#39;plan_name&#39;</span><span class="p">:</span> <span class="s1">&#39;scan&#39;</span><span class="p">,</span>
- <span class="s1">&#39;plan_type&#39;</span><span class="p">:</span> <span class="s1">&#39;generator&#39;</span><span class="p">,</span>
- <span class="s1">&#39;plan_args&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;detectors&#39;</span><span class="p">:</span> <span class="s1">&#39;[det]&#39;</span><span class="p">,</span>
-               <span class="s1">&#39;motor&#39;</span><span class="p">:</span> <span class="s1">&#39;Mover(...)&#39;</span><span class="p">,</span>
-               <span class="s1">&#39;num&#39;</span><span class="p">:</span> <span class="s1">&#39;16&#39;</span><span class="p">,</span>
-               <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="s1">&#39;-3&#39;</span><span class="p">,</span>
-               <span class="s1">&#39;stop&#39;</span><span class="p">:</span> <span class="s1">&#39;3&#39;</span><span class="p">},</span>
- <span class="s1">&#39;scan_id&#39;</span><span class="p">:</span> <span class="mi">282</span><span class="p">,</span>
- <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521005.6099606</span><span class="p">,</span>
- <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 'start' document</span>
+<span class="p">{</span><span class="s1">'purpose'</span><span class="p">:</span> <span class="s1">'calibration'</span><span class="p">,</span>
+ <span class="s1">'sample'</span><span class="p">:</span> <span class="s1">'kryptonite'</span><span class="p">,</span>
+ <span class="s1">'detectors'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'det'</span><span class="p">],</span>
+ <span class="s1">'motors'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'motor'</span><span class="p">],</span>
+ <span class="s1">'plan_name'</span><span class="p">:</span> <span class="s1">'scan'</span><span class="p">,</span>
+ <span class="s1">'plan_type'</span><span class="p">:</span> <span class="s1">'generator'</span><span class="p">,</span>
+ <span class="s1">'plan_args'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'detectors'</span><span class="p">:</span> <span class="s1">'[det]'</span><span class="p">,</span>
+               <span class="s1">'motor'</span><span class="p">:</span> <span class="s1">'Mover(...)'</span><span class="p">,</span>
+               <span class="s1">'num'</span><span class="p">:</span> <span class="s1">'16'</span><span class="p">,</span>
+               <span class="s1">'start'</span><span class="p">:</span> <span class="s1">'-3'</span><span class="p">,</span>
+               <span class="s1">'stop'</span><span class="p">:</span> <span class="s1">'3'</span><span class="p">},</span>
+ <span class="s1">'scan_id'</span><span class="p">:</span> <span class="mi">282</span><span class="p">,</span>
+ <span class="s1">'time'</span><span class="p">:</span> <span class="mf">1442521005.6099606</span><span class="p">,</span>
+ <span class="s1">'uid'</span><span class="p">:</span> <span class="s1">'&lt;randomly-generated unique ID&gt;'</span><span class="p">,</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -714,19 +714,19 @@ the data would, of course, translate that into a more human-readable form.</p>
 <section id="event">
 <h3>Event<a class="headerlink" href="#event" title="Link to this heading">#</a></h3>
 <p>An ‘event’ records one or more measurements with an associated time.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;event&#39; document</span>
-<span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
-      <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
-      <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span> <span class="mf">3.05</span><span class="p">},</span>
- <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span>
-    <span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="mf">1442521007.9258342</span><span class="p">,</span>
-     <span class="s1">&#39;x_setpoint&#39;</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">,</span>
-     <span class="s1">&#39;x_readback&#39;</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">},</span>
- <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521007.3438923</span><span class="p">,</span>
- <span class="s1">&#39;seq_num&#39;</span><span class="p">:</span> <span class="mi">1</span>
- <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
- <span class="s1">&#39;descriptor&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;reference to a descriptor document&gt;&#39;</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 'event' document</span>
+<span class="p">{</span><span class="s1">'data'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'temperature'</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
+      <span class="s1">'x_setpoint'</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
+      <span class="s1">'x_readback'</span><span class="p">:</span> <span class="mf">3.05</span><span class="p">},</span>
+ <span class="s1">'timestamps'</span><span class="p">:</span>
+    <span class="p">{</span><span class="s1">'temperature'</span><span class="p">:</span> <span class="mf">1442521007.9258342</span><span class="p">,</span>
+     <span class="s1">'x_setpoint'</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">,</span>
+     <span class="s1">'x_readback'</span><span class="p">:</span> <span class="mf">1442521007.5029348</span><span class="p">},</span>
+ <span class="s1">'time'</span><span class="p">:</span> <span class="mf">1442521007.3438923</span><span class="p">,</span>
+ <span class="s1">'seq_num'</span><span class="p">:</span> <span class="mi">1</span>
+ <span class="s1">'uid'</span><span class="p">:</span> <span class="s1">'&lt;randomly-generated unique ID&gt;'</span><span class="p">,</span>
+ <span class="s1">'descriptor'</span><span class="p">:</span> <span class="s1">'&lt;reference to a descriptor document&gt;'</span><span class="p">}</span>
 </pre></div>
 </div>
 <p>From a data analysis perspective, these readings were simultaneous, but in
@@ -739,13 +739,13 @@ overall event ‘time’ is often more useful.</p>
 <p>A ‘stop’ document marks the end of the run. It contains metadata that is not
 known until the run completes.</p>
 <p>The most commonly useful fields here are ‘time’ and ‘exit_status’.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;stop&#39; document</span>
-<span class="p">{</span><span class="s1">&#39;exit_status&#39;</span><span class="p">:</span> <span class="s1">&#39;success&#39;</span><span class="p">,</span>  <span class="c1"># or &#39;fail&#39; or &#39;abort&#39;</span>
- <span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="c1"># The RunEngine can provide reason for failure here.</span>
- <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="mf">1442521012.1021606</span><span class="p">,</span>
- <span class="s1">&#39;uid&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;randomly-generated unique ID&gt;&#39;</span><span class="p">,</span>
- <span class="s1">&#39;run_start&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;reference to the start document&gt;&#39;</span><span class="p">,</span>
- <span class="s1">&#39;num_events&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;primary&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 'stop' document</span>
+<span class="p">{</span><span class="s1">'exit_status'</span><span class="p">:</span> <span class="s1">'success'</span><span class="p">,</span>  <span class="c1"># or 'fail' or 'abort'</span>
+ <span class="s1">'reason'</span><span class="p">:</span> <span class="s1">''</span><span class="p">,</span>  <span class="c1"># The RunEngine can provide reason for failure here.</span>
+ <span class="s1">'time'</span><span class="p">:</span> <span class="mf">1442521012.1021606</span><span class="p">,</span>
+ <span class="s1">'uid'</span><span class="p">:</span> <span class="s1">'&lt;randomly-generated unique ID&gt;'</span><span class="p">,</span>
+ <span class="s1">'run_start'</span><span class="p">:</span> <span class="s1">'&lt;reference to the start document&gt;'</span><span class="p">,</span>
+ <span class="s1">'num_events'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'primary'</span><span class="p">:</span> <span class="mi">16</span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -823,7 +823,7 @@ and takes some time to cover, so we defer it to a
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/documents.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/documents.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

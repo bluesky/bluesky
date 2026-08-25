@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>IPython ‘Magics’ [Experimental] &#8212; bluesky 1.15.2.dev66+g6f839a1a2 documentation</title>
+    <title>IPython ‘Magics’ [Experimental] &#8212; bluesky 1.15.2.dev76+g79e2d45e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d2b12c45"></script>
+    <script src="_static/documentation_options.js?v=df383aee"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'magics';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev66+g6f839a1a2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev76+g79e2d45e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="bluesky.utils.DefaultDuringTask" href="generated/bluesky.utils.DefaultDuringTask.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev66+g6f839a1a2" />
+  <meta name="docsearch:version" content="1.15.2.dev76+g79e2d45e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -665,19 +665,19 @@ motors, a shutter motor, an area detector and a point detector:</p>
 
 <span class="gp">In [10]: </span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">SynAxis</span><span class="p">,</span> <span class="n">SynSignal</span>
 
-<span class="gp">In [11]: </span><span class="n">motor1</span> <span class="o">=</span> <span class="n">SynAxis</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;motor1&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;motors&#39;</span><span class="p">,</span> <span class="s1">&#39;scan_motors&#39;</span><span class="p">})</span>
+<span class="gp">In [11]: </span><span class="n">motor1</span> <span class="o">=</span> <span class="n">SynAxis</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'motor1'</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">'motors'</span><span class="p">,</span> <span class="s1">'scan_motors'</span><span class="p">})</span>
 
-<span class="gp">In [12]: </span><span class="n">motor2</span> <span class="o">=</span> <span class="n">SynAxis</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;motor2&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;motors&#39;</span><span class="p">,</span> <span class="s1">&#39;scan_motors&#39;</span><span class="p">})</span>
+<span class="gp">In [12]: </span><span class="n">motor2</span> <span class="o">=</span> <span class="n">SynAxis</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'motor2'</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">'motors'</span><span class="p">,</span> <span class="s1">'scan_motors'</span><span class="p">})</span>
 
-<span class="gp">In [13]: </span><span class="n">shutter_motor</span> <span class="o">=</span> <span class="n">SynAxis</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;shutter_motor&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;motors&#39;</span><span class="p">,</span> <span class="s1">&#39;shutter_motors&#39;</span><span class="p">})</span>
+<span class="gp">In [13]: </span><span class="n">shutter_motor</span> <span class="o">=</span> <span class="n">SynAxis</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'shutter_motor'</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">'motors'</span><span class="p">,</span> <span class="s1">'shutter_motors'</span><span class="p">})</span>
 
 <span class="go"># create a fake area detector that returns a 2x2 array</span>
 <span class="gp">In [14]: </span><span class="n">area_detector</span> <span class="o">=</span> <span class="n">SynSignal</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
-<span class="gp">   ....: </span>                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;adet1&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;detectors&#39;</span><span class="p">,</span> <span class="s1">&#39;area_detectors&#39;</span><span class="p">})</span>
+<span class="gp">   ....: </span>                          <span class="n">name</span><span class="o">=</span><span class="s1">'adet1'</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">'detectors'</span><span class="p">,</span> <span class="s1">'area_detectors'</span><span class="p">})</span>
 <span class="gp">   ....: </span>
 
 <span class="gp">In [15]: </span><span class="n">point_detector</span> <span class="o">=</span> <span class="n">SynSignal</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">1</span><span class="p">,)),</span>
-<span class="gp">   ....: </span>                           <span class="n">name</span><span class="o">=</span><span class="s1">&#39;pointdet1&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;detectors&#39;</span><span class="p">,</span> <span class="s1">&#39;point_detectors&#39;</span><span class="p">})</span>
+<span class="gp">   ....: </span>                           <span class="n">name</span><span class="o">=</span><span class="s1">'pointdet1'</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">'detectors'</span><span class="p">,</span> <span class="s1">'point_detectors'</span><span class="p">})</span>
 <span class="gp">   ....: </span>
 </pre></div>
 </div>
@@ -687,8 +687,8 @@ results to the screen without saving them or doing any fancy processing. Use
 the <code class="docutils literal notranslate"><span class="pre">%ct</span></code> magic:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="o">%</span><span class="k">ct</span> area_detectors
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.39254025 0.06720507]</span>
-<span class="go"> [0.4064867  0.58736094]]</span>
+<span class="go">adet1                          [[0.30777859 0.67110374]</span>
+<span class="go"> [0.80130098 0.95046177]]</span>
 </pre></div>
 </div>
 <p>Where the names after count are a list of whitespace separated labels. In this
@@ -696,12 +696,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <p>Running <code class="docutils literal notranslate"><span class="pre">%ct</span></code> without arguments looks for the <code class="docutils literal notranslate"><span class="pre">detectors</span></code> label by default:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [17]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.6991062  0.17914867]</span>
-<span class="go"> [0.38169505 0.13687963]]</span>
+<span class="go">adet1                          [[0.7369334  0.17460948]</span>
+<span class="go"> [0.44792974 0.30147526]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.80873039]</span>
+<span class="go">pointdet1                      [0.07638006]</span>
 </pre></div>
 </div>
 <p>In this case, we count both on the area detector and the point detector.</p>
@@ -712,12 +712,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <code class="docutils literal notranslate"><span class="pre">%</span></code> as long as the meaning is unambiguous:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [18]: </span><span class="n">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.9802833  0.02976804]</span>
-<span class="go"> [0.8978029  0.8694    ]]</span>
+<span class="go">adet1                          [[0.71337502 0.90837207]</span>
+<span class="go"> [0.24079547 0.56668964]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.29580242]</span>
+<span class="go">pointdet1                      [0.89722435]</span>
 
 <span class="gp">In [19]: </span><span class="n">ct</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Now ct is a variable so automagic will not work...</span>
 
@@ -727,12 +727,12 @@ case, only <code class="docutils literal notranslate"><span class="pre">area_det
 <span class="go"># ... but the magic still works.</span>
 <span class="gp">In [21]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.5286232  0.14442153]</span>
-<span class="go"> [0.42352029 0.34034648]]</span>
+<span class="go">adet1                          [[0.42471796 0.3292998 ]</span>
+<span class="go"> [0.62881375 0.34710966]]</span>
 <span class="go">det                            3.726653172078671e-06</span>
 <span class="go">det1                           7.614989872356314e-08</span>
 <span class="go">det2                           1.2130613194252668</span>
-<span class="go">pointdet1                      [0.10661355]</span>
+<span class="go">pointdet1                      [0.41592771]</span>
 </pre></div>
 </div>
 <p>For what it’s worth, we recommend disabling ‘automagic’. The <code class="docutils literal notranslate"><span class="pre">%</span></code> is useful
@@ -823,9 +823,9 @@ without any parameters. This behaviour is deprecated. Do not use this:</p>
 
 <span class="gp">In [25]: </span><span class="o">%</span><span class="k">ct</span>
 <span class="go">[This data will not be saved. Use the RunEngine to collect data.]</span>
-<span class="go">adet1                          [[0.05951572 0.05743772]</span>
-<span class="go"> [0.44395788 0.88477182]]</span>
-<span class="go">pointdet1                      [0.72571315]</span>
+<span class="go">adet1                          [[0.108983   0.78934269]</span>
+<span class="go"> [0.68096567 0.27389512]]</span>
+<span class="go">pointdet1                      [0.89806063]</span>
 </pre></div>
 </div>
 <p>This is no longer supported.</p>
@@ -933,7 +933,7 @@ deprecated. Do not use this:</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev66+g6f839a1a2/docs/magics.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev76+g79e2d45e2/docs/magics.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
