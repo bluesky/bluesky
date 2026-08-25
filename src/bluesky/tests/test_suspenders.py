@@ -178,6 +178,32 @@ def test_pretripped_async_signal(RE):
 
 
 @requires_ophyd_async
+def test_suspender_plans_async_signal(RE):
+    "Tests that an async suspender can be installed and removed via Msg"
+    sig = _connected_soft_signal(RE, 0)
+    my_suspender = SuspendBoolHigh(sig, sleep=0.2)
+    scan = [Msg("checkpoint"), Msg("sleep", None, 0.2)]
+
+    def trip_then_clear():
+        threading.Timer(0.1, _set_on_loop, (RE, sig, 1)).start()
+        threading.Timer(0.5, _set_on_loop, (RE, sig, 0)).start()
+
+    # installed from inside a plan, it suspends and resumes
+    trip_then_clear()
+    start = ttime.time()
+    RE([Msg("install_suspender", None, my_suspender)] + scan)
+    assert ttime.time() - start > 0.4 + 0.2 + 0.2
+    assert my_suspender in RE.suspenders
+
+    # removed from inside a plan, it no longer does
+    trip_then_clear()
+    start = ttime.time()
+    RE([Msg("remove_suspender", None, my_suspender)] + scan)
+    assert ttime.time() - start < 0.5
+    assert my_suspender not in RE.suspenders
+
+
+@requires_ophyd_async
 def test_suspend_when_changed_async_signal(RE):
     "expected_value cannot be read from a Subscribable signal until it is installed"
     sig = _connected_soft_signal(RE, 1)
