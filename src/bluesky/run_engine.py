@@ -30,6 +30,7 @@ from bluesky._vendor.super_state_machine.machines import StateMachine
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
 from .protocols import (
+    Executable,
     Flyable,
     Locatable,
     Movable,
@@ -535,6 +536,7 @@ class RunEngine:
         self._require_stream_declaration = False
         self._command_registry = {
             "declare_stream": self._declare_stream,
+            "execute": self._execute,
             "create": self._create,
             "save": self._save,
             "drop": self._drop,
@@ -2243,6 +2245,23 @@ class RunEngine:
 
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="set")
 
+        return ret
+
+    async def _execute(self, msg):
+        """
+        Execute an RCP on a device and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('execute', obj, *args, **kwargs)
+        """
+        obj = check_supports(msg.obj, Executable)
+        args = msg.execute_args
+        kwargs = dict(msg.execute_kwargs)
+        group = msg.group
+
+        ret = obj.execute(*args, **kwargs)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
         return ret
 
     async def _trigger(self, msg):
