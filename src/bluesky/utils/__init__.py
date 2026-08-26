@@ -1821,7 +1821,8 @@ class DefaultDuringTask(DuringTask):
                 app = QtWidgets.QApplication.instance()
                 if app is None:
                     _qapp = app = QtWidgets.QApplication(["bluesky"])
-                assert app is not None
+                if app is None:
+                    raise RuntimeError("Failed to create QApplication instance.")
                 event_loop = QtCore.QEventLoop()
 
                 def start_killer_thread():

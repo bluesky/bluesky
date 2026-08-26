@@ -213,7 +213,8 @@ def list_scan(
 
     # add the motor-based hints
     _md["hints"] = derive_default_hints(motors)
-    assert isinstance(_md["hints"], dict), "Hints must be a dictionary"
+    if not isinstance(_md["hints"], dict):
+        raise TypeError("Hints must be a dictionary")
     # override any hints from the original md (if  exists)
     _md["hints"].update(md.get("hints", {}))
 
@@ -348,7 +349,8 @@ def list_grid_scan(
     _md.update(md or {})  # type: ignore
     try:
         motor_hints = [(m.hints["fields"], "primary") for m in motors]
-        assert isinstance(_md["hints"], dict), "Hints must be a dictionary"
+        if not isinstance(_md["hints"], dict):
+            raise RuntimeError("Hints must be a dictionary")
         _md["hints"].setdefault("dimensions", motor_hints)
     except (AttributeError, KeyError):
         ...

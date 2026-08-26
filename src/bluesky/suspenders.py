@@ -154,7 +154,8 @@ class SuspenderBase(metaclass=ABCMeta):
 
     def __make_event(self):
         """Make or return the asyncio.Event to use as a bridge."""
-        assert self._lock.locked()
+        if not self._lock.locked():
+            raise RuntimeError("This method should be called with the lock held")
         if self._ev is None and self.RE is not None:
             if threading.get_ident() == getattr(self.RE._loop, "_thread_id", "unknown"):
                 self._ev = asyncio.Event()
@@ -173,7 +174,8 @@ class SuspenderBase(metaclass=ABCMeta):
 
     def __set_event(self, loop):
         """Notify the event that it can resume"""
-        assert self._lock.locked()
+        if not self._lock.locked():
+            raise RuntimeError("This method should be called with the lock held")
         if self._ev:
             ev = self._ev
             sleep = self._sleep

@@ -397,7 +397,7 @@ def test_collect_stream_true_raises(RE):
 
 def test_predeclare_requires_stream_name(RE):
     with pytest.raises(
-        AssertionError,
+        ValueError,
         match=re.escape("A stream name that is not None is required for pre-declare"),
     ):
         RE(collect_plan(OldPvCollectable(name="det"), pre_declare=True))
@@ -405,7 +405,7 @@ def test_predeclare_requires_stream_name(RE):
 
 def test_new_style_with_steam_name_requires_pre_declare(RE):
     with pytest.raises(
-        AssertionError,
+        RuntimeError,
         match=re.escape("If a message stream name is provided declare stream needs to be called first."),
     ):
         RE(collect_plan(StreamDatumReadableCollectable(name="det"), pre_declare=False, stream_name="main"))
@@ -413,7 +413,7 @@ def test_new_style_with_steam_name_requires_pre_declare(RE):
 
 def test_new_style_with_no_stream_name_and_no_pre_declare_does_not_try_and_make_a_stream(RE):
     with pytest.raises(
-        AssertionError,
+        RuntimeError,
         match=re.escape("Single nested data keys should be pre-declared"),
     ):
         RE(collect_plan(StreamDatumReadableCollectable(name="det"), pre_declare=False))
@@ -501,7 +501,7 @@ def test_pv_collectable(RE, cls):
 
 def test_new_collect_needs_predeclare(RE):
     with pytest.raises(
-        AssertionError,
+        RuntimeError,
         match="Single nested data keys should be pre-declared",
     ):
         RE(collect_plan(PvCollectable(name="det"), pre_declare=False))
@@ -539,7 +539,7 @@ def test_many_collectables_fails(RE, cls1, cls2):
     """If there are multiple objects they must all WritesStreamAssests"""
     det1, det2 = cls1(name="det1"), cls2(name="det2")
     with pytest.raises(
-        AssertionError,
+        TypeError,
         match=re.escape("does not implement all WritesStreamAssets methods"),
     ):
         RE(collect_plan(det1, det2, pre_declare=False))
