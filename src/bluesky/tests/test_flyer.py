@@ -97,7 +97,7 @@ def test_collect_while_completing_plan_trivial_case(RE):
     # every loop and checks if the flyer is done until it is checked for a tenth time
     assert_emitted(docs, start=1, descriptor=1, event_page=9, stop=1)
     # key should be removed from set when collection done
-    assert not RE._seen_wait_and_move_on_keys
+    assert not RE.objs_cache.seen_wait_and_move_on_keys
     assert det in collected
     assert flyer in completed
 

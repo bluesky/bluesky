@@ -144,9 +144,9 @@ def test_reset(RE):
     with pytest.raises(RunEngineInterrupted):
         RE([Msg("open_run"), Msg("pause")])
 
-    assert len(RE._run_bundlers) > 0
+    assert len(RE.objs_cache.run_bundlers) > 0
     RE.reset()
-    assert len(RE._run_bundlers) == 0
+    assert len(RE.objs_cache.run_bundlers) == 0
 
 
 def test_running_from_paused_state_raises(RE):
@@ -1548,7 +1548,7 @@ def test_sideband_cancel(RE):
         _careful_event_set(ev)()
 
     def side_band_kill():
-        RE.loop.call_soon_threadsafe(RE._task.cancel)
+        RE.loop.call_soon_threadsafe(RE.state_cache.task.cancel)
 
     scan = [
         Msg(
@@ -1566,7 +1566,7 @@ def test_sideband_cancel(RE):
     loop.call_soon_threadsafe(loop.call_later, 2, done)
     RE(scan)
     assert RE.state == "idle"
-    assert RE._task.cancelled()
+    assert RE.state_cache.task.cancelled()
     stop = ttime.time()
 
     assert 0.5 < (stop - start) < 2
