@@ -252,11 +252,10 @@ To enable this we are using ``asyncio`` from the python standard library
 integrating together two event loops: the RE loop which is processing
 the plan and the ``asyncio`` event loop which is managing multiple
 frames of execution. The event loop may switch between execution frames
-when a coroutine is suspended by a ``yield from`` statement. Thus we
+when a coroutine is suspended by an ``await`` statement. Thus we
 change the methods we dispatch to and the main ``_run`` method to
-co-routines by adding the ``@asyncio.coroutine`` decorator and calling
-the dispatched functions via ``yield from`` rather than with a direct
-function call.
+asynchronous functions by adding the ``async`` keyword and ``await``-ing them
+instead of using their return values directly.
 
 We also added a ``msg_hook`` attribute to the ``RunEngine``
 which is a super handy debugging tool to see exactly what messages are
@@ -298,14 +297,13 @@ takes a single ``Msg`` as input (ex ``print``)
                 if exc is not None:
                     raise exc
 
-        @asyncio.coroutine
-        def _run(self, plan):
+        async def _run(self, plan):
             plan = ensure_generator(plan)
             last_result = None
             _exception = None
             while True:
                 try:
-                    yield from asyncio.sleep(0.0001, loop=self.loop)
+                    await asyncio.sleep(0.0001, loop=self.loop)
                     if _exception is not None:
                         msg = plan.throw(_exception)
                         _exception = None
@@ -320,20 +318,17 @@ takes a single ``Msg`` as input (ex ``print``)
 
                 try:
                     func = self._command_registry[msg.command]
-                    last_result = yield from func(msg)
+                    last_result = await func(msg)
                 except Exception as e:
                     _exception = e
 
-        @asyncio.coroutine
-        def _sleep(self, msg):
-            yield from asyncio.sleep(msg.args[0])
+        async def _sleep(self, msg):
+            await asyncio.sleep(msg.args[0], loop=self.loop)
 
-        @asyncio.coroutine
-        def _print(self, msg):
+        async def _print(self, msg):
             print('-- {!s:10.10s} : {: <25.25s} --'.format(now().time(), msg.obj)),
 
-        @asyncio.coroutine
-        def _sum(self, msg):
+        async def _sum(self, msg):
             return sum(msg.args)
 
 
@@ -446,14 +441,13 @@ API to control the behavior.
             "i.e., can the plan in progress by rewound"
             return self._msg_cache is not None
 
-        @asyncio.coroutine
-        def _run(self):
+        async def _run(self):
             pending_cancel_exception = None
             try:
                 self.state = 'running'
                 while True:
                     try:
-                        yield from asyncio.sleep(0.0001, loop=self.loop)
+                        await asyncio.sleep(0.0001, loop=self.loop)
                         # The case where we have a stashed exception
                         if self._exception is not None:
                             # throw the exception at the current plan
@@ -527,7 +521,7 @@ API to control the behavior.
                             # this is one of two places that 'async'
                             # exceptions (coming in via throw) can be
                             # raised
-                            response = yield from coro(msg)
+                            response = await coro(msg)
                         # special case `CancelledError` and let the outer
                         # exception block deal with it.
                         except asyncio.CancelledError:
@@ -570,21 +564,18 @@ API to control the behavior.
             # if the task was cancelled
             if pending_cancel_exception is not None:
                 raise pending_cancel_exception
-        @asyncio.coroutine
-        def _sleep(self, msg):
-            yield from asyncio.sleep(msg.args[0])
 
-        @asyncio.coroutine
-        def _print(self, msg):
+        async def _sleep(self, msg):
+            await asyncio.sleep(msg.args[0], loop=self.loop)
+
+        async def _print(self, msg):
             now = datetime.datetime.now
             print('-- {!s:10.10s} : {: <25.25s} --'.format(now().time(), msg.obj))
 
-        @asyncio.coroutine
-        def _sum(self, msg):
+        async def _sum(self, msg):
             return sum(msg.args)
 
-        @asyncio.coroutine
-        def _input(self, msg):
+        async def _input(self, msg):
             """
             Process a 'input' Msg. Expected Msg:
 
@@ -594,10 +585,9 @@ API to control the behavior.
             prompt = msg.kwargs.get('prompt', '')
             async_input = AsyncInput(self.loop)
             async_input = functools.partial(async_input, end='', flush=True)
-            return (yield from async_input(prompt))
+            return (await async_input(prompt))
 
-        @asyncio.coroutine
-        def _pause(self, msg):
+        async def _pause(self, msg):
             """Request the run engine to pause
 
             Expected message object is:
@@ -702,8 +692,7 @@ API to control the behavior.
                 if exc is not None:
                     raise exc
 
-        @asyncio.coroutine
-        def _checkpoint(self, msg):
+        async def _checkpoint(self, msg):
             """Instruct the RunEngine to create a checkpoint so that we can rewind
             to this point if necessary
 
@@ -711,13 +700,13 @@ API to control the behavior.
 
                 Msg('checkpoint')
             """
-            yield from self._reset_checkpoint_state_coro()
+            await self._reset_checkpoint_state_coro()
 
             if self._deferred_pause_requested:
                 # We are at a checkpoint; we are done deferring the pause.
                 # Give the _check_for_signals coroutine time to look for
                 # additional SIGINTs that would trigger an abort.
-                yield from asyncio.sleep(0.5, loop=self.loop)
+                await asyncio.sleep(0.5, loop=self.loop)
                 self.request_pause(defer=False)
 
         def _reset_checkpoint_state(self):
@@ -726,10 +715,10 @@ API to control the behavior.
 
             self._msg_cache = deque()
 
-        _reset_checkpoint_state_coro = asyncio.coroutine(_reset_checkpoint_state)
+        async def _reset_checkpoint_state_coro(self):
+            return self._reset_checkpoint_state()
 
-        @asyncio.coroutine
-        def _clear_checkpoint(self, msg):
+        async def _clear_checkpoint(self, msg):
             """Clear a set checkpoint
 
             Expected message object is:
@@ -741,8 +730,7 @@ API to control the behavior.
             # clear stashed
             self._teed_sequence_counters.clear()
 
-        @asyncio.coroutine
-        def _rewindable(self, msg):
+        async def _rewindable(self, msg):
             '''Set rewindable state of RunEngine
 
             Expected message object is:
@@ -756,8 +744,7 @@ API to control the behavior.
 
             return self.rewindable
 
-        @asyncio.coroutine
-        def _null(self, msg):
+        async def _null(self, msg):
             """
             A no-op message, mainly for debugging and testing.
             """
