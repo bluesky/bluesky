@@ -1,6 +1,7 @@
 import asyncio
 import os
 import signal
+import subprocess
 import sys
 import threading
 import time as ttime
@@ -52,6 +53,26 @@ from bluesky.tests.utils import DocCollector, MsgCollector
 from bluesky.utils import SigintHandler
 
 from .utils import _careful_event_set, _fabricate_asycio_event
+
+
+def test_run_engine_import_with_deprecation_warnings_as_errors():
+    src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, [src_path, env.get("PYTHONPATH", "")]))
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-W",
+            "error::DeprecationWarning",
+            "-c",
+            "import bluesky.run_engine",
+        ],
+        check=True,
+        capture_output=True,
+        env=env,
+        text=True,
+    )
 
 
 def test_states():

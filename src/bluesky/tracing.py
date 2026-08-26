@@ -1,11 +1,21 @@
 import functools
 from collections.abc import Callable
 from typing import cast
-
-from opentelemetry.trace import Tracer, get_tracer
+from warnings import catch_warnings, filterwarnings
 
 from .protocols import P
 from .utils import MsgGenerator
+
+_OTEL_ENTRY_POINTS_DEPRECATION = "SelectableGroups dict interface is deprecated. Use select."
+
+with catch_warnings():
+    filterwarnings(
+        "ignore",
+        message=_OTEL_ENTRY_POINTS_DEPRECATION,
+        category=DeprecationWarning,
+    )
+    from opentelemetry.trace import Tracer, get_tracer
+    from opentelemetry.trace import get_current_span as get_current_span
 
 tracer = get_tracer(__name__)
 

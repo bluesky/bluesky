@@ -20,8 +20,6 @@ from warnings import warn
 
 import event_model
 from event_model import DocumentNames
-from opentelemetry import trace
-from opentelemetry.trace import Span
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky._vendor.super_state_machine.extras import PropertyMachine
@@ -44,7 +42,7 @@ from .protocols import (
     Triggerable,
     check_supports,
 )
-from .tracing import tracer
+from .tracing import get_current_span, tracer
 from .utils import (
     AsyncInput,
     CallbackRegistry,
@@ -70,6 +68,11 @@ from .utils import (
 )
 
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
+
+if typing.TYPE_CHECKING:
+    from opentelemetry.trace import Span
+else:
+    Span = typing.Any
 
 current_task: typing.Callable[[asyncio.AbstractEventLoop | None], asyncio.Task | None]
 try:
@@ -2176,7 +2179,7 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        _set_span_msg_attributes(get_current_span(), msg)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         obj = check_supports(msg.obj, Flyable)
@@ -2197,7 +2200,7 @@ class RunEngine:
             Msg('collect', flyer_object)
             Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        _set_span_msg_attributes(get_current_span(), msg)
         run_key = msg.run
         if (
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
@@ -2234,7 +2237,7 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        _set_span_msg_attributes(get_current_span(), msg)
         obj = check_supports(msg.obj, Movable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
@@ -2281,7 +2284,7 @@ class RunEngine:
 
         where ``<GROUP>`` is any hashable key and ``<ERROR_ON_TIMEOUT>`` is a boolean.
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        _set_span_msg_attributes(get_current_span(), msg)
         done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
@@ -2291,9 +2294,9 @@ class RunEngine:
         watch = msg.kwargs.get("watch", ())
         watch_task: asyncio.Task | None = None
         if group:
-            trace.get_current_span().set_attribute("group", group)
+            get_current_span().set_attribute("group", group)
         else:
-            trace.get_current_span().set_attribute("no_group_given", True)
+            get_current_span().set_attribute("no_group_given", True)
         futs = self._groups.pop(group, set())
         if futs:
             status_objs = self._status_objs.pop(group)
