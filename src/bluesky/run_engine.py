@@ -379,6 +379,11 @@ class PlanSession:
         self.on_pause = on_pause
         self._require_stream_declaration = False
 
+        # Whether messages may be replayed on a rewind. A user setting that
+        # outlives any one plan, although a plan may change it for its own
+        # duration with Msg('rewindable', ...).
+        self.rewindable_flag: bool = True
+
         self._suspenders: set[typing.Any] = set()
 
         # Commands the user has added or removed. An executor composes these
@@ -441,6 +446,125 @@ class PlanSession:
         """Announce that an executor has reached a paused resting state."""
         if self.on_pause is not None:
             self.on_pause()
+
+
+class PlanExecutor:
+    """Executes one plan, which may contain any number of runs.
+
+    An executor owns everything that belongs to the execution of a single
+    plan: the stack of generators being worked off, the messages cached for
+    rewinding, the devices seen and staged, and the status objects being
+    waited on. It is built for a plan and discarded after it, so clearing
+    those caches is a matter of building a new one.
+
+    It lives entirely on its session's event loop. It holds no locks and no
+    threading primitives, and none of its methods may be called from another
+    thread; a `RunEngine` marshals everything the main thread asks for onto
+    the loop before it arrives here.
+
+    Parameters
+    ----------
+    session : PlanSession
+        The environment to execute in: metadata, document routing, hooks and
+        the state machine. Many executors may share one session, in turn.
+    """
+
+    def __init__(self, session: PlanSession):
+        self._session = session
+
+        # When cleared, run() will pause until it is set again.
+        self._run_permit = asyncio.Event()
+        self._run_permit.set()
+        # When set, done callbacks from status objects belonging to this plan
+        # stop reporting failures: the plan they belong to is over.
+        self._pardon_failures = asyncio.Event()
+
+        self._task: asyncio.Task | None = None  # the task running this plan
+        self._plan: typing.Any = None  # the plan, kept for metadata introspection
+        self._plan_stack: deque[typing.Any] = deque()  # generators to work off of
+        self._response_stack: deque[typing.Any] = deque()  # responses to send into them
+        # Processed msgs, for rewinding. None once a 'clear_checkpoint' has
+        # made this plan unrewindable, which is what `resumable` tests for.
+        self._msg_cache: deque[typing.Any] | None = deque()
+
+        self._run_bundlers: dict[typing.Any, RunBundler] = {}  # open run -> bundler
+        self._metadata_per_call: dict[typing.Any, typing.Any] = {}  # md for every run
+        self.run_start_uids: list[typing.Any] = []  # RunStart uids generated
+        self._run_tracing_spans: list[Span] = []  # open tracing spans
+
+        self._staged: set[typing.Any] = set()  # staged, not yet unstaged
+        self._objs_seen: set[typing.Any] = set()  # every object seen in a Msg
+        self._movable_objs_touched: set[typing.Any] = set()  # everything we 'set'
+        self._groups: defaultdict[str, set[Callable[[], asyncio.Future]]] = defaultdict(set)
+        self._status_objs: defaultdict[typing.Any, set[typing.Any]] = defaultdict(set)
+        self._seen_wait_and_move_on_keys: set[typing.Any] = set()
+
+        self.exception: BaseException | None = None  # raised in the run loop
+        self.interrupted: bool = False  # paused, aborted or failed
+        self.exit_status: str = "success"  # optimistic default
+        self.reason: str = ""  # reason for an abort
+        self._deferred_pause_requested: bool = False  # pause at next 'checkpoint'
+
+        # Tokens for subscriptions that last only as long as this plan. They
+        # are tokens into the session's dispatcher, so that permanent and
+        # temporary callbacks stay in one registry, firing in one pass in
+        # subscription order; only the tokens belong to the plan.
+        self._temp_callback_ids: set[typing.Any] = set()
+
+    def add_temp_subscription(self, token):
+        """Record a token as belonging to this plan."""
+        self._temp_callback_ids.add(token)
+
+    def drop_temp_subscription(self, token):
+        """Unsubscribe a temporary subscription and forget its token."""
+        self._session.unsubscribe(token)
+        self._temp_callback_ids.remove(token)
+
+    def clear_temp_subscriptions(self):
+        """Unsubscribe every temporary subscription this plan made."""
+        for token in self._temp_callback_ids:
+            self._session.unsubscribe(token)
+        self._temp_callback_ids.clear()
+
+    @property
+    def session(self) -> PlanSession:
+        """The environment this plan is being executed in."""
+        return self._session
+
+    @property
+    def resumable(self) -> bool:
+        "i.e., can the plan in progress be rewound"
+        return self._msg_cache is not None
+
+    @property
+    def rewindable_flag(self) -> bool:
+        """Whether messages may be replayed. Held by the session, which
+        outlives this plan, since it is a user setting rather than plan
+        state."""
+        return self._session.rewindable_flag
+
+    @rewindable_flag.setter
+    def rewindable_flag(self, value: bool) -> None:
+        self._session.rewindable_flag = value
+
+    def permit_run(self) -> None:
+        """Allow run() to proceed. Must be called on the event loop."""
+        self._run_permit.set()
+
+    def block_run(self) -> None:
+        """Hold run() at its next resting point. Must be called on the loop."""
+        self._run_permit.clear()
+
+    def result(self, plan_return) -> RunEngineResult:
+        """Describe how the plan finished."""
+        return RunEngineResult(
+            tuple(self.run_start_uids),
+            plan_return,
+            self.exit_status,
+            self.interrupted,
+            self.reason,
+            self.exception,
+        )
 
 
 class RunEngine:
@@ -642,14 +766,6 @@ class RunEngine:
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
 
-        self._run_tracing_spans: list[Span] = []
-
-        # When cleared, RunEngine._run will pause until set. An asyncio.Event
-        # binds to the running loop when it is first awaited, not when it is
-        # created, so this does not have to be built on the loop thread.
-        self._run_permit = asyncio.Event()
-        self._run_permit.set()
-
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
         log = ComposableLogAdapter(logger, {"RE": self})
@@ -681,38 +797,16 @@ class RunEngine:
             during_task = DefaultDuringTask()
         self._during_task = during_task
 
-        # The RunEngine keeps track of a *lot* of state.
-        # All flags and caches are defined here with a comment. Good luck.
         self._call_returns_result = call_returns_result  # should __call__ return UIDs or plan value
-        self._run_bundlers: dict[typing.Any, RunBundler] = {}  # a mapping of open run -> bundlers
-        self._metadata_per_call: dict[typing.Any, typing.Any] = {}  # for all runs generated by one __call__
-        self._deferred_pause_requested = False  # pause at next 'checkpoint'
-        self._exception = None  # stored and then raised in the _run loop
-        self._interrupted = False  # True if paused, aborted, or failed
-        self._staged: set[typing.Any] = set()  # objects staged, not yet unstaged
-        self._objs_seen: set[typing.Any] = set()  # all objects seen
-        self._movable_objs_touched: set[typing.Any] = set()  # objects we moved at any point
-        self._run_start_uids: list[typing.Any] = list()  # run start uids generated by __call__  # noqa: C408
-        self._groups: defaultdict[str, set[Callable[[], asyncio.Future]]] = defaultdict(
-            set
-        )  # sets of Events to wait for
-        self._status_objs: defaultdict[typing.Any, set[typing.Any]] = defaultdict(
-            set
-        )  # status objects to wait for
-        self._temp_callback_ids: set[typing.Any] = set()  # ids from CallbackRegistry
-        self._seen_wait_and_move_on_keys: set[typing.Any] = (
-            set()
-        )  # group ids that have been passed to _wait_and_move_on
-        self._msg_cache: deque[typing.Any] = deque()  # history of processed msgs for rewinding
-        self._rewindable_flag: bool = True  # if the RE is allowed to replay msgs
-        self._plan_stack: deque[typing.Any] = deque()  # stack of generators to work off of
-        self._response_stack: deque[typing.Any] = deque()  # resps to send into the plans
-        self._exit_status = "success"  # optimistic default
-        self._reason = ""  # reason for abort
-        self._task = None  # asyncio.Task associated with call to self._run
-        self._task_fut = None  # future proxy to the task above
-        self._pardon_failures = None  # will hold an asyncio.Event
-        self._plan = None  # the plan instance from __call__
+        self._task_fut = None  # future proxy to the task running the plan
+
+        # Everything belonging to the execution of a single plan lives on an
+        # executor. A new one is built for each __call__ and kept afterwards,
+        # so that a paused plan can be resumed and a finished one inspected.
+        # The forwarding properties installed at the bottom of this module
+        # keep RE._msg_cache, RE._task and the rest pointing at it.
+        self._executor = PlanExecutor(self._session)
+
         self._default_command_registry = {
             "declare_stream": self._declare_stream,
             "create": self._create,
@@ -1013,38 +1107,28 @@ class RunEngine:
     def call_returns_result(self):
         return self._call_returns_result
 
-    def _clear_run_cache(self):
-        "Clean up for a new run."
-        self._groups.clear()
-        self._status_objs.clear()
-        self._interruptions_desc_uid = None
-        self._interruptions_counter = count(1)
+    def _new_executor(self):
+        """Start a fresh executor, discarding the state of the previous plan.
 
-    @_state_locked
-    def _clear_call_cache(self):
-        "Clean up for a new __call__ (which may encompass multiple runs)."
-        self._metadata_per_call.clear()
-        self._staged.clear()
-        self._objs_seen.clear()
-        self._movable_objs_touched.clear()
-        self._deferred_pause_requested = False
-        self._plan_stack = deque()
-        self._msg_cache = deque()
-        self._response_stack = deque()
-        self._exception = None
-        self._run_start_uids.clear()
-        self._exit_status = "success"
-        self._reason = ""
-        self._task = None
+        Building a new one is how the caches are cleared: there is no list of
+        things to remember to reset.
+        """
+        previous = self._executor
+        self._executor = PlanExecutor(self._session)
         self._task_fut = None
-        self._pardon_failures = asyncio.Event()
-        self._plan = None
-        self._interrupted = False
 
-        # Unsubscribe for per-run callbacks.
-        for cid in self._temp_callback_ids:
-            self.unsubscribe(cid)
-        self._temp_callback_ids.clear()
+        # Unsubscribe the previous plan's per-run callbacks. They belong to
+        # the executor that made them, and last until the next plan starts
+        # rather than until their own finishes.
+        previous.clear_temp_subscriptions()
+
+    def _clear_run_cache(self):
+        "Deprecated. Clean up for a new run."
+        self._new_executor()
+
+    def _clear_call_cache(self):
+        "Deprecated. Clean up for a new __call__."
+        self._new_executor()
 
     def reset(self):
         """
@@ -1054,8 +1138,7 @@ class RunEngine:
         """
         if self._state != "idle":
             self.halt()
-        self._clear_run_cache()
-        self._clear_call_cache()
+        self._new_executor()
         self.dispatcher.unsubscribe_all()
 
     @property
@@ -1161,15 +1244,7 @@ class RunEngine:
         Create a RunEngineResult to return from __call__, using
         plan_return and internal state
         """
-        rs = RunEngineResult(
-            tuple(self._run_start_uids),
-            plan_return,
-            self._exit_status,
-            self._interrupted,
-            self._reason,
-            self._exception,
-        )
-        return rs
+        return self._executor.result(plan_return)
 
     def __call__(
         self,
@@ -1249,8 +1324,7 @@ class RunEngine:
             print()
             print("Suspending... To get to the prompt, hit Ctrl-C twice to pause.")
 
-        self._clear_call_cache()
-        self._clear_run_cache()  # paranoia, in case of previous bad exit
+        self._new_executor()
 
         for name, funcs in normalize_subs_input(subs).items():
             for func in funcs:
@@ -3198,3 +3272,56 @@ def autoawait_in_bluesky_event_loop(ip=None):
         ip = IPython.get_ipython()  # type: ignore
     assert ip, "Couldn't import IPython"
     ip.loop_runner = call_in_bluesky_event_loop
+
+
+# Names the RunEngine used to hold itself, which now belong to the executor
+# for the plan being run. Mapped to the executor attribute they forward to.
+#
+# These are private, but they are read and written by tests and by downstream
+# code, so they keep working. Forwarding silently is deliberate: the test
+# suite turns warnings into errors, so a DeprecationWarning here would break
+# callers rather than warn them. One can be added once the ecosystem has
+# moved to reading RunEngine._executor, or to using a PlanExecutor directly.
+_EXECUTOR_FORWARDS = {
+    "_run_permit": "_run_permit",
+    "_temp_callback_ids": "_temp_callback_ids",
+    "_pardon_failures": "_pardon_failures",
+    "_task": "_task",
+    "_plan": "_plan",
+    "_plan_stack": "_plan_stack",
+    "_response_stack": "_response_stack",
+    "_msg_cache": "_msg_cache",
+    "_rewindable_flag": "rewindable_flag",
+    "_run_bundlers": "_run_bundlers",
+    "_metadata_per_call": "_metadata_per_call",
+    "_run_start_uids": "run_start_uids",
+    "_run_tracing_spans": "_run_tracing_spans",
+    "_staged": "_staged",
+    "_objs_seen": "_objs_seen",
+    "_movable_objs_touched": "_movable_objs_touched",
+    "_groups": "_groups",
+    "_status_objs": "_status_objs",
+    "_seen_wait_and_move_on_keys": "_seen_wait_and_move_on_keys",
+    "_exception": "exception",
+    "_interrupted": "interrupted",
+    "_exit_status": "exit_status",
+    "_reason": "reason",
+    "_deferred_pause_requested": "_deferred_pause_requested",
+}
+
+
+def _forward_to_executor(name: str) -> property:
+    """A property reading and writing ``name`` on the current executor."""
+
+    def getter(self):
+        return getattr(self._executor, name)
+
+    def setter(self, value):
+        setattr(self._executor, name, value)
+
+    return property(getter, setter, doc=f"Forwards to :attr:`PlanExecutor.{name}`.")
+
+
+for _old_name, _new_name in _EXECUTOR_FORWARDS.items():
+    setattr(RunEngine, _old_name, _forward_to_executor(_new_name))
+del _old_name, _new_name
