@@ -780,8 +780,31 @@ class PlanExecutor:
             _span.set_attribute("exit_status", "aborted")
             _span.end()
 
-    async def run(self):
-        """Pull messages from the plan, process them, send results back.
+    async def run(self, plan=None, *, metadata=None):
+        """Execute ``plan``, or whatever has already been loaded.
+
+        Awaiting this is all that is needed to run a plan::
+
+            executor = PlanExecutor(session)
+            result = await executor.run(plan)
+
+        Parameters
+        ----------
+        plan : iterable of Msg, optional
+            The plan to execute. If omitted, whatever :meth:`load_plan` has
+            put on the stack is executed instead, which is how a `RunEngine`
+            uses this.
+        metadata : dict, optional
+            Metadata for every run the plan opens.
+
+        Returns
+        -------
+        The value the plan returned, or :data:`NO_PLAN_RETURN` if it did not
+        run to completion.
+
+        Notes
+        -----
+        Pull messages from the plan, process them, send results back.
 
         Upon exit, clean up.
         - Call stop() on all objects that were 'set' or 'kickoff'.
@@ -790,6 +813,8 @@ class PlanExecutor:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+        if plan is not None:
+            self.load_plan(plan, metadata=metadata)
         await self._run_permit.wait()
         # grab the current task.  We need to do this here because the
         # object returned by `run_coroutine_threadsafe` is a future
@@ -2842,19 +2867,13 @@ class RunEngine:
 
         self._new_executor(subs)
 
-        self._executor._plan = plan  # this ref is just used for metadata introspection
-        self._executor._metadata_per_call.update(metadata_kw)
-
-        gen = ensure_generator(plan)
-        for wrapper_func in self.preprocessors:
-            gen = wrapper_func(gen)
-
-        self._executor._plan_stack.append(gen)
-        self._executor._response_stack.append(None)
-        if futs:
-            self._executor._plan_stack.append(single_gen(Msg("wait_for", None, futs)))
-            self._executor._response_stack.append(None)
-        self.log.info("Executing plan %r", self._executor._plan)
+        self._executor.load_plan(
+            plan,
+            metadata=metadata_kw,
+            # Wait for any already-tripped suspenders before starting.
+            prologue=single_gen(Msg("wait_for", None, futs)) if futs else None,
+        )
+        self.log.info("Executing plan %r", plan)
 
         def _build_task():
             # make sure _run will block at the top
