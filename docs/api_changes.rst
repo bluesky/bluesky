@@ -8,6 +8,21 @@ Unreleased
 Added
 -----
 
+- ``PlanSession`` and ``PlanExecutor``, which are the ``RunEngine`` split into
+  the environment plans run in and the execution of one plan.  A session holds
+  what outlives any single plan: the persistent metadata, the document
+  routing, the suspenders, the hooks and the state machine.  An executor runs
+  one plan and is discarded after it.  Neither needs a ``RunEngine``, so a
+  plan can be executed from code that is already in an asyncio event loop::
+
+      session = PlanSession(md={"beamline": "i22"})
+      session.subscribe(callback)
+      result = await PlanExecutor(session).run(plan)
+
+  ``RunEngine`` now composes the two and adds what is needed to drive them
+  from a terminal on the main thread.  Its API is unchanged, including the
+  private attributes that tests and downstream code reach for, which forward
+  to the session or to the executor for the plan being run.
 - Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
   such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
   subscription style from the signal.  For a ``Subscribable`` it subscribes,
