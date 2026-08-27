@@ -16,6 +16,7 @@ from datetime import datetime
 from enum import Enum
 from inspect import iscoroutine
 from itertools import count
+from logging import LoggerAdapter
 from warnings import warn
 
 import event_model
@@ -238,6 +239,210 @@ def _state_locked(func):
     return inner
 
 
+def _default_event_loop() -> asyncio.AbstractEventLoop:
+    """The loop to use when none was given: this one, or the RunEngine's."""
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+    loop = get_bluesky_event_loop()
+    if loop is None:
+        raise RuntimeError(
+            "No event loop to run plans on. Either construct this from a "
+            "coroutine, so that there is a running loop to adopt, or pass "
+            "one in as loop=."
+        )
+    return loop
+
+
+class PlanSession:
+    """The environment that plans are executed in.
+
+    A session holds everything that outlives any single plan: the persistent
+    metadata, the document routing, the suspenders, the hooks, and the state
+    machine. It does not execute anything itself; a
+    :class:`PlanExecutor` does that, and one session may be used by many
+    executors in turn.
+
+    A `RunEngine` composes a session with the machinery needed to drive it
+    from a terminal on the main thread. A session needs no `RunEngine`, so it
+    can also be used directly from code that is already running in an asyncio
+    event loop, such as a headless data acquisition service.
+
+    Parameters
+    ----------
+    md : MutableMapping[str, Any], optional
+        The default is a standard Python dictionary, but fancier objects can
+        be used to store long-term history and persist it between sessions.
+        Any object adhering to the MutableMapping Protocol will work.
+
+    loop : asyncio event loop, optional
+        The loop plans will be executed on. Defaults to the running loop, or
+        to the loop a `RunEngine` has already established.
+
+    preprocessors : list, optional
+        Generator functions that take in a plan (generator instance) and
+        modify its messages on the way out. Functions are composed in order:
+        the preprocessors ``[f, g]`` are applied like ``f(g(plan))``.
+
+    md_validator : callable, optional
+        A function that raises and prevents starting a run if it deems the
+        metadata to be invalid or incomplete.
+
+    md_normalizer : callable, optional
+        A function that, like ``md_validator``, raises to prevent starting a
+        run, but which returns the normalized metadata if it succeeds.
+
+    scan_id_source : callable, optional
+        A (possibly async) function used to calculate ``scan_id``.
+
+    log : logging.LoggerAdapter, optional
+        Where this session and its executors log to.
+
+    on_pause : callable, optional
+        Called with no arguments when an executor reaches a paused resting
+        state. A `RunEngine` uses this to release the main thread; a headless
+        caller has no thread to release and can leave it unset.
+
+    Attributes
+    ----------
+    state
+        {'idle', 'running', 'paused'}
+
+    dispatcher
+        The `Dispatcher` documents are emitted through.
+
+    suspenders
+        Read-only collection of `bluesky.suspenders.SuspenderBase` objects.
+    """
+
+    _state = LoggingPropertyMachine(RunEngineStateMachine)
+
+    def __init__(
+        self,
+        md: RunEngineMetadata | None = None,
+        *,
+        loop: asyncio.AbstractEventLoop | None = None,
+        preprocessors: list | None = None,
+        md_validator: typing.Callable | None = None,
+        md_normalizer: typing.Callable | None = None,
+        scan_id_source: typing.Callable[[RunEngineMetadata], SyncOrAsync[int]] = default_scan_id_source,
+        log: LoggerAdapter | None = None,
+        on_pause: typing.Callable[[], None] | None = None,
+        run_bundler_cls: type[RunBundler] = RunBundler,
+    ):
+        if loop is None:
+            loop = _default_event_loop()
+        self._loop = loop
+
+        # Guards transitions of the state machine, which a RunEngine writes to
+        # from the main thread as well as from the loop. Nothing else in a
+        # session or an executor takes a lock.
+        self._state_lock = threading.RLock()
+
+        self.log = log if log is not None else ComposableLogAdapter(logger, {"RE": self})
+
+        if md is None:
+            md = {}
+        self.md = md
+        self.md.setdefault("versions", {})
+
+        try:
+            import ophyd
+
+            self.md["versions"]["ophyd"] = ophyd.__version__
+        except ImportError:
+            self.log.debug("Failed to import ophyd.")
+
+        try:
+            import ophyd_async
+
+            self.md["versions"]["ophyd_async"] = ophyd_async.__version__
+        except ImportError:
+            self.log.debug("Failed to import ophyd_async.")
+
+        from ._version import __version__
+
+        self.md["versions"]["bluesky"] = __version__
+        self.md["versions"]["event_model"] = event_model.__version__
+
+        self.run_bundler_cls = run_bundler_cls
+        self.preprocessors = preprocessors if preprocessors is not None else []
+        self.md_validator = md_validator if md_validator is not None else _default_md_validator
+        self.md_normalizer = md_normalizer if md_normalizer is not None else _default_md_normalizer
+        self.scan_id_source = scan_id_source
+
+        self.msg_hook: typing.Callable | None = None
+        self.state_hook: typing.Callable | None = None
+        self.waiting_hook: typing.Callable | None = None
+        self.record_interruptions = False
+        self.on_pause = on_pause
+        self._require_stream_declaration = False
+
+        self._suspenders: set[typing.Any] = set()
+
+        # Commands the user has added or removed. An executor composes these
+        # over its own built-ins, so that registrations survive the executor
+        # that was current when they were made.
+        self._registered_commands: dict[str, typing.Callable] = {}
+        self._unregistered_commands: set[str] = set()
+
+        # public dispatcher for callbacks
+        self.dispatcher = Dispatcher()
+        self.ignore_exceptions = False
+
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        """The event loop plans are executed on."""
+        return self._loop
+
+    @property
+    def state(self):
+        """One of {'idle', 'running', 'paused'}."""
+        return self._state
+
+    @property
+    def ignore_exceptions(self):
+        return self.dispatcher.ignore_exceptions
+
+    @ignore_exceptions.setter
+    def ignore_exceptions(self, val):
+        self.dispatcher.ignore_exceptions = val
+
+    @property
+    def suspenders(self):
+        """Read-only collection of installed suspenders."""
+        return tuple(self._suspenders)
+
+    def subscribe(self, func, name="all"):
+        """Register a callback function to consume documents.
+
+        See :meth:`RunEngine.subscribe`.
+        """
+        return self.dispatcher.subscribe(func, name)
+
+    def unsubscribe(self, token):
+        """Unregister a callback function by its integer ID."""
+        return self.dispatcher.unsubscribe(token)
+
+    def emit_sync(self, name, doc):
+        "Process blocking callbacks and schedule non-blocking callbacks."
+        self.dispatcher.process(name, doc)
+
+    async def emit(self, name, doc):
+        self.emit_sync(name, doc)
+
+    def _call_waiting_hook(self, *args, **kwargs):
+        """Notify the waiting hook, if one is set."""
+        if self.waiting_hook is not None:
+            self.waiting_hook(*args, **kwargs)
+
+    def _notify_paused(self):
+        """Announce that an executor has reached a paused resting state."""
+        if self.on_pause is not None:
+            self.on_pause()
+
+
 class RunEngine:
     """The Run Engine execute messages and emits Documents.
 
@@ -388,13 +593,12 @@ class RunEngine:
 
     """
 
-    _state = LoggingPropertyMachine(RunEngineStateMachine)
-
     # Aliases of the module-level constants, kept so that
     # RunEngine.NO_PLAN_RETURN and RunEngine._UNCACHEABLE_COMMANDS keep working.
     NO_PLAN_RETURN = NO_PLAN_RETURN
     _UNCACHEABLE_COMMANDS = UNCACHEABLE_COMMANDS
 
+    #: Overridable by subclasses; copied onto the session on construction.
     RunBundler = RunBundler
 
     @property
@@ -434,7 +638,6 @@ class RunEngine:
             loop = asyncio.new_event_loop()
         set_bluesky_event_loop(loop)
         self._th = _ensure_event_loop_running(loop)
-        self._state_lock = threading.RLock()
         self._loop = loop
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
@@ -449,51 +652,29 @@ class RunEngine:
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
-        self.log = ComposableLogAdapter(logger, {"RE": self})
+        log = ComposableLogAdapter(logger, {"RE": self})
 
-        if md is None:
-            md = {}
-        self.md = md
-        self.md.setdefault("versions", {})
+        # Everything that outlives a single plan lives on the session, which
+        # this RunEngine drives but does not otherwise own. The properties
+        # below forward to it, so RE.md, RE.state and friends are unchanged.
+        self._session = PlanSession(
+            md,
+            loop=loop,
+            preprocessors=preprocessors,
+            md_validator=md_validator,
+            md_normalizer=md_normalizer,
+            scan_id_source=scan_id_source,
+            log=log,
+            on_pause=self._blocking_event.set,
+            # Honour a RunBundler overridden on a RunEngine subclass.
+            run_bundler_cls=type(self).RunBundler,
+        )
 
-        try:
-            import ophyd
-
-            self.md["versions"]["ophyd"] = ophyd.__version__
-        except ImportError:
-            self.log.debug("Failed to import ophyd.")
-
-        try:
-            import ophyd_async
-
-            self.md["versions"]["ophyd_async"] = ophyd_async.__version__
-        except ImportError:
-            self.log.debug("Failed to import ophyd_async.")
-
-        from ._version import __version__
-
-        self.md["versions"]["bluesky"] = __version__
-        self.md["versions"]["event_model"] = event_model.__version__
-
-        if preprocessors is None:
-            preprocessors = []
-        self.preprocessors = preprocessors
         if context_managers is None:
             context_managers = [SigintHandler]
         self.context_managers = context_managers
-        if md_validator is None:
-            md_validator = _default_md_validator
-        self.md_validator = md_validator
-        if md_normalizer is None:
-            md_normalizer = _default_md_normalizer
-        self.md_normalizer = md_normalizer
-        self.scan_id_source = scan_id_source
 
         self.max_depth = None
-        self.msg_hook = None
-        self.state_hook = None
-        self.waiting_hook = None
-        self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
 
         if during_task is None:
@@ -512,7 +693,6 @@ class RunEngine:
         self._objs_seen: set[typing.Any] = set()  # all objects seen
         self._movable_objs_touched: set[typing.Any] = set()  # objects we moved at any point
         self._run_start_uids: list[typing.Any] = list()  # run start uids generated by __call__  # noqa: C408
-        self._suspenders: set[typing.Any] = set()  # set holding suspenders
         self._groups: defaultdict[str, set[Callable[[], asyncio.Future]]] = defaultdict(
             set
         )  # sets of Events to wait for
@@ -533,8 +713,7 @@ class RunEngine:
         self._task_fut = None  # future proxy to the task above
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the plan instance from __call__
-        self._require_stream_declaration = False
-        self._command_registry = {
+        self._default_command_registry = {
             "declare_stream": self._declare_stream,
             "create": self._create,
             "save": self._save,
@@ -572,18 +751,132 @@ class RunEngine:
             "install_suspender": self._install_suspender,
             "remove_suspender": self._remove_suspender,
         }
-
-        # public dispatcher for callbacks
-        # The Dispatcher's public methods are exposed through the
-        # RunEngine for user convenience.
-        self.dispatcher = Dispatcher()
-        self.ignore_callback_exceptions = False
+        self._rebuild_command_registry()
 
         # aliases for back-compatibility
         self.subscribe_lossless = self.dispatcher.subscribe
         self.unsubscribe_lossless = self.dispatcher.unsubscribe
         self._subscribe_lossless = self.dispatcher.subscribe
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
+
+    def _rebuild_command_registry(self):
+        """Compose the live vocabulary from the built-ins and the session.
+
+        The session records what the user has registered and unregistered, so
+        that those survive being composed over a different set of built-ins.
+        """
+        registry = dict(self._default_command_registry)
+        registry.update(self._session._registered_commands)
+        for name in self._session._unregistered_commands:
+            registry.pop(name, None)
+        self._command_registry = registry
+
+    # ------------------------------------------------------------------
+    # Forwarded to the session, which owns everything that outlives a plan.
+
+    @property
+    def _state(self):
+        return self._session._state
+
+    @_state.setter
+    def _state(self, value):
+        self._session._state = value
+
+    @property
+    def _state_lock(self):
+        return self._session._state_lock
+
+    @property
+    def log(self):
+        return self._session.log
+
+    @property
+    def md(self):
+        return self._session.md
+
+    @md.setter
+    def md(self, value):
+        self._session.md = value
+
+    @property
+    def dispatcher(self):
+        return self._session.dispatcher
+
+    @property
+    def preprocessors(self):
+        return self._session.preprocessors
+
+    @preprocessors.setter
+    def preprocessors(self, value):
+        self._session.preprocessors = value
+
+    @property
+    def md_validator(self):
+        return self._session.md_validator
+
+    @md_validator.setter
+    def md_validator(self, value):
+        self._session.md_validator = value
+
+    @property
+    def md_normalizer(self):
+        return self._session.md_normalizer
+
+    @md_normalizer.setter
+    def md_normalizer(self, value):
+        self._session.md_normalizer = value
+
+    @property
+    def scan_id_source(self):
+        return self._session.scan_id_source
+
+    @scan_id_source.setter
+    def scan_id_source(self, value):
+        self._session.scan_id_source = value
+
+    @property
+    def msg_hook(self):
+        return self._session.msg_hook
+
+    @msg_hook.setter
+    def msg_hook(self, value):
+        self._session.msg_hook = value
+
+    @property
+    def state_hook(self):
+        return self._session.state_hook
+
+    @state_hook.setter
+    def state_hook(self, value):
+        self._session.state_hook = value
+
+    @property
+    def waiting_hook(self):
+        return self._session.waiting_hook
+
+    @waiting_hook.setter
+    def waiting_hook(self, value):
+        self._session.waiting_hook = value
+
+    @property
+    def record_interruptions(self):
+        return self._session.record_interruptions
+
+    @record_interruptions.setter
+    def record_interruptions(self, value):
+        self._session.record_interruptions = value
+
+    @property
+    def _require_stream_declaration(self):
+        return self._session._require_stream_declaration
+
+    @_require_stream_declaration.setter
+    def _require_stream_declaration(self, value):
+        self._session._require_stream_declaration = value
+
+    @property
+    def _suspenders(self):
+        return self._session._suspenders
 
     @property
     def commands(self):
@@ -794,7 +1087,9 @@ class RunEngine:
         :meth:`RunEngine.print_command_registry`
         :attr:`RunEngine.commands`
         """
-        self._command_registry[name] = func
+        self._session._registered_commands[name] = func
+        self._session._unregistered_commands.discard(name)
+        self._rebuild_command_registry()
 
     def unregister_command(self, name):
         """
@@ -810,7 +1105,12 @@ class RunEngine:
         :meth:`RunEngine.print_command_registry`
         :attr:`RunEngine.commands`
         """
+        # Raise KeyError for an unknown command, as deleting from the registry
+        # directly used to.
         del self._command_registry[name]
+        self._session._registered_commands.pop(name, None)
+        self._session._unregistered_commands.add(name)
+        self._rebuild_command_registry()
 
     def request_pause(self, defer=False):
         """
