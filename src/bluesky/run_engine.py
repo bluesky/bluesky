@@ -72,6 +72,38 @@ from .utils import (
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
 
+class _NoPlanReturn:
+    """The type of :data:`NO_PLAN_RETURN`."""
+
+    def __repr__(self) -> str:
+        return "NO_PLAN_RETURN"
+
+
+#: Returned in place of a plan's return value when the plan did not run to
+#: completion, and so never returned one. Distinguishable from a plan that
+#: completed and returned ``None``.
+NO_PLAN_RETURN = _NoPlanReturn()
+
+#: Commands that must not be replayed when rewinding to a checkpoint, either
+#: because they act on the RunEngine itself or because they are not idempotent.
+UNCACHEABLE_COMMANDS = frozenset(
+    {
+        "pause",
+        "subscribe",
+        "unsubscribe",
+        "stage",
+        "unstage",
+        "monitor",
+        "unmonitor",
+        "open_run",
+        "close_run",
+        "install_suspender",
+        "remove_suspender",
+        "_start_suspender",
+    }
+)
+
+
 class _RunEnginePanic(Exception): ...
 
 
@@ -357,20 +389,11 @@ class RunEngine:
     """
 
     _state = LoggingPropertyMachine(RunEngineStateMachine)
-    _UNCACHEABLE_COMMANDS = [
-        "pause",
-        "subscribe",
-        "unsubscribe",
-        "stage",
-        "unstage",
-        "monitor",
-        "unmonitor",
-        "open_run",
-        "close_run",
-        "install_suspender",
-        "remove_suspender",
-        "_start_suspender",
-    ]
+
+    # Aliases of the module-level constants, kept so that
+    # RunEngine.NO_PLAN_RETURN and RunEngine._UNCACHEABLE_COMMANDS keep working.
+    NO_PLAN_RETURN = NO_PLAN_RETURN
+    _UNCACHEABLE_COMMANDS = UNCACHEABLE_COMMANDS
 
     RunBundler = RunBundler
 
@@ -472,7 +495,6 @@ class RunEngine:
         self.waiting_hook = None
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
-        self.NO_PLAN_RETURN = object()
 
         if during_task is None:
             during_task = DefaultDuringTask()
@@ -1047,7 +1069,7 @@ class RunEngine:
                 try:
                     return self._task_fut.result()
                 except concurrent.futures.CancelledError:
-                    return self.NO_PLAN_RETURN
+                    return NO_PLAN_RETURN
             # The _run task is waiting on this Event. Let is continue.
             self.loop.call_soon_threadsafe(self._run_permit.set)
             try:
@@ -1096,12 +1118,12 @@ class RunEngine:
                         try:
                             plan_return = self._task_fut.result()
                         except concurrent.futures.CancelledError:
-                            plan_return = self.NO_PLAN_RETURN
+                            plan_return = NO_PLAN_RETURN
                     # we have something in exc
                     else:
                         # special case the panic exception that we put in above
                         if isinstance(exc, _RunEnginePanic):
-                            plan_return = self.NO_PLAN_RETURN
+                            plan_return = NO_PLAN_RETURN
                         # otherwise re-raise it
                         else:
                             raise exc
@@ -1327,7 +1349,7 @@ class RunEngine:
             self._task.cancel()
 
         if self._call_returns_result:
-            plan_return = self.NO_PLAN_RETURN
+            plan_return = NO_PLAN_RETURN
             run_engine_result = self._create_result(plan_return)
             return run_engine_result
         else:
@@ -1367,7 +1389,7 @@ class RunEngine:
             self._task.cancel()
 
         if self._call_returns_result:
-            plan_return = self.NO_PLAN_RETURN
+            plan_return = NO_PLAN_RETURN
             run_engine_result = self._create_result(plan_return)
             return run_engine_result
         else:
@@ -1432,7 +1454,7 @@ class RunEngine:
             self._task.cancel()
 
         if self._call_returns_result:
-            plan_return = self.NO_PLAN_RETURN
+            plan_return = NO_PLAN_RETURN
             run_engine_result = self._create_result(plan_return)
             return run_engine_result
         else:
@@ -1477,7 +1499,7 @@ class RunEngine:
         self._reason = ""
         # sentinel to decide if need to add to the response stack or not
         sentinel = object()
-        plan_return = self.NO_PLAN_RETURN
+        plan_return = NO_PLAN_RETURN
         exit_reason = ""
         try:
             self._state = "running"
@@ -1641,7 +1663,7 @@ class RunEngine:
                     if (
                         self._msg_cache is not None
                         and self._rewindable_flag
-                        and msg.command not in self._UNCACHEABLE_COMMANDS
+                        and msg.command not in UNCACHEABLE_COMMANDS
                     ):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
