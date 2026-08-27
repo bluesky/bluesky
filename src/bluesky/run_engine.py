@@ -71,16 +71,6 @@ from .utils import (
 
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
-current_task: typing.Callable[[asyncio.AbstractEventLoop | None], asyncio.Task | None]
-try:
-    from asyncio import current_task
-except ImportError:
-    # handle py < 3,7
-    from asyncio.tasks import Task
-
-    current_task = Task.current_task  # type: ignore
-    del Task
-
 
 class _RunEnginePanic(Exception): ...
 
@@ -423,27 +413,16 @@ class RunEngine:
         self._th = _ensure_event_loop_running(loop)
         self._state_lock = threading.RLock()
         self._loop = loop
-        if sys.version_info < (3, 8):  # noqa: UP036
-            self._loop_for_kwargs = {"loop": self._loop}
-        else:
-            self._loop_for_kwargs: dict[str, asyncio.AbstractEventLoop] = {}
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
 
         self._run_tracing_spans: list[Span] = []
 
-        # When cleared, RunEngine._run will pause until set.
-        self._run_permit = None
-
-        setup_event = threading.Event()
-
-        def setup_run_permit():
-            self._run_permit = asyncio.Event(**self._loop_for_kwargs)
-            self._run_permit.set()
-            setup_event.set()
-
-        self.loop.call_soon_threadsafe(setup_run_permit)
-        setup_event.wait()
+        # When cleared, RunEngine._run will pause until set. An asyncio.Event
+        # binds to the running loop when it is first awaited, not when it is
+        # created, so this does not have to be built on the loop thread.
+        self._run_permit = asyncio.Event()
+        self._run_permit.set()
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -743,7 +722,7 @@ class RunEngine:
         self._reason = ""
         self._task = None
         self._task_fut = None
-        self._pardon_failures = asyncio.Event(**self._loop_for_kwargs)
+        self._pardon_failures = asyncio.Event()
         self._plan = None
         self._interrupted = False
 
@@ -1492,7 +1471,7 @@ class RunEngine:
         # that acts as a proxy that does not have the correct behavior
         # when `.cancel` is called on it.
         with self._state_lock:
-            self._task = current_task(self.loop)
+            self._task = asyncio.current_task(self.loop)
         stashed_exception = None
         debug = msg_logger.debug
         self._reason = ""
@@ -1574,7 +1553,7 @@ class RunEngine:
                     # current plan stack before rather than allowing a pause or
                     # suspension to try and finish firing.
                     if stashed_exception is None:
-                        await asyncio.sleep(0, **self._loop_for_kwargs)
+                        await asyncio.sleep(0)
                     # always pop off a result, we are either sending it back in
                     # or throwing an exception in, in either case the left hand
                     # side of the yield in the plan will be moved past
@@ -1742,15 +1721,15 @@ class RunEngine:
             self._exit_status = "success"
             plan_return = e.value
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, **self._loop_for_kwargs)
+            await asyncio.sleep(0)
         except RequestStop:
             self._exit_status = "success"
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, **self._loop_for_kwargs)
+            await asyncio.sleep(0)
         except (FailedPause, RequestAbort, asyncio.CancelledError, PlanHalt):
             self._exit_status = "abort"
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, **self._loop_for_kwargs)
+            await asyncio.sleep(0)
             self.log.exception("Run aborted")
         except GeneratorExit as err:
             self._exit_status = "fail"  # Exception raises during 'running'
@@ -1827,7 +1806,7 @@ class RunEngine:
 
         (futs,) = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        completed, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        completed, pending = await asyncio.wait(futs, **msg.kwargs)
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
         return futs
@@ -2403,7 +2382,7 @@ class RunEngine:
 
         where `sleep_time` is in seconds
         """
-        await asyncio.sleep(*msg.args, **self._loop_for_kwargs)
+        await asyncio.sleep(*msg.args)
 
     async def _pause(self, msg):
         """Request the run engine to pause
@@ -2453,7 +2432,7 @@ class RunEngine:
             # We are at a checkpoint; we are done deferring the pause.
             # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
-            await asyncio.sleep(0.5, **self._loop_for_kwargs)
+            await asyncio.sleep(0.5)
             await self._request_pause_coro(defer=False)
 
     def _reset_checkpoint_state(self):
