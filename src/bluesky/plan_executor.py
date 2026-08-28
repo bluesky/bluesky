@@ -523,16 +523,6 @@ class PlanSession:
         self.executor = PlanExecutor(self, subs=subs)
         return self.executor
 
-    def _call_waiting_hook(self, *args, **kwargs):
-        """Notify the waiting hook, if one is set."""
-        if self.waiting_hook is not None:
-            self.waiting_hook(*args, **kwargs)
-
-    def _notify_paused(self):
-        """Announce that an executor has reached a paused resting state."""
-        if self.on_pause is not None:
-            self.on_pause()
-
     def install_suspender(self, suspender):
         """Install a suspender, which can suspend and resume execution."""
         self._suspenders.add(suspender)
@@ -649,6 +639,28 @@ class PlanExecutor:
 
         self.command_registry: dict[str, typing.Callable] = {}
         self.rebuild_command_registry()
+
+    # The session holds the user's hooks; firing one, and checking whether it
+    # is set at all, belongs to whoever has something to report -- which for
+    # all three of these is the executor.
+
+    def _call_msg_hook(self, msg) -> None:
+        """Show a message to the msg hook, if one is set."""
+        if self._session.msg_hook is not None:
+            self._session.msg_hook(msg)
+
+    def _call_waiting_hook(self, status_objs) -> None:
+        """Tell the waiting hook what this plan is waiting for, if one is set.
+
+        ``status_objs`` is None once there is nothing left to wait for.
+        """
+        if self._session.waiting_hook is not None:
+            self._session.waiting_hook(status_objs)
+
+    def _notify_paused(self) -> None:
+        """Announce that this plan has reached a paused resting state."""
+        if self._session.on_pause is not None:
+            self._session.on_pause()
 
     def emit(self, name, doc) -> None:
         """Give a document to the session's subscribers, then to this plan's.
@@ -933,7 +945,7 @@ class PlanExecutor:
                                 self._reset_checkpoint_state_meth()
                     self.state = "paused"
                     # Let RunEngine.__call__ return...
-                    self._session._notify_paused()
+                    self._notify_paused()
 
                     await self._run_permit.wait()
                     # Restore any monitors
@@ -1039,8 +1051,7 @@ class PlanExecutor:
                                 raise
 
                     # if we have a message hook, call it
-                    if self._session.msg_hook is not None:
-                        self._session.msg_hook(msg)
+                    self._call_msg_hook(msg)
                     debug(
                         "%s(%r, *%r **%r, run=%r)",
                         msg.command,
@@ -1692,13 +1703,13 @@ class PlanExecutor:
                 if not error_on_timeout:
                     if group not in self._seen_wait_and_move_on_keys:
                         self._seen_wait_and_move_on_keys.add(group)
-                        self._session._call_waiting_hook(status_objs)
+                        self._call_waiting_hook(status_objs)
                 else:  # if error_on_timeout False
                     # Notify the waiting_hook function that the RunEngine is
                     # waiting for these status_objs to complete. Users can use
                     # the information these encapsulate to create a progress
                     # bar.
-                    self._session._call_waiting_hook(status_objs)
+                    self._call_waiting_hook(status_objs)
 
                 async def wait_for_first_exception(futures: set) -> list[asyncio.Future]:
                     return await self._wait_for(
@@ -1744,12 +1755,12 @@ class PlanExecutor:
                     # sending it `None`. If all goes well, it could have
                     # inferred this from the status_obj, but there are edge
                     # cases.
-                    self._session._call_waiting_hook(None)
+                    self._call_waiting_hook(None)
                     done = True
                 else:
                     done = all(obj.done for obj in status_objs)
                     if done:
-                        self._session._call_waiting_hook(None)
+                        self._call_waiting_hook(None)
                         self._seen_wait_and_move_on_keys.remove(group)
         else:
             done = True
