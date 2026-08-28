@@ -211,6 +211,21 @@ class RunEngineStateMachine(StateMachine):
         ]
 
 
+def announce_state_change(obj, old_value, value) -> None:
+    """Log a state change, and tell ``obj``'s state hook about it.
+
+    Split out of :meth:`LoggingPropertyMachine.__set__` so that a state change
+    which does not go through the machine can be announced too, and announced
+    identically: there is one definition of what an observer is told rather
+    than two to drift apart.
+    """
+    tags = {"old_state": old_value, "new_state": value, "RE": obj}
+
+    state_logger.info("Change state on %r from %r -> %r", obj, old_value, value, extra=tags)
+    if obj.state_hook is not None:
+        obj.state_hook(value, old_value)
+
+
 class LoggingPropertyMachine(PropertyMachine):
     """expects object to have a `log` attribute
     and a `state_hook` attribute that is ``None`` or a callable with signature
@@ -225,11 +240,7 @@ class LoggingPropertyMachine(PropertyMachine):
         with obj._state_lock:
             super().__set__(obj, value)
         value = self.__get__(obj, own)
-        tags = {"old_state": old_value, "new_state": value, "RE": self}
-
-        state_logger.info("Change state on %r from %r -> %r", obj, old_value, value, extra=tags)
-        if obj.state_hook is not None:
-            obj.state_hook(value, old_value)
+        announce_state_change(obj, old_value, value)
 
     def __get__(self, instance, owner):
         if instance is None:
