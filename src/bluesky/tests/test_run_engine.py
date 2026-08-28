@@ -76,6 +76,24 @@ def test_panic_trap(RE):
                 RE._state = k
 
 
+def test_panicked_state_answers_like_any_other_state(RE):
+    """A panicked RunEngine reports its own state, not the session's.
+
+    Callers ask a state for more than its text, so it has to answer ``is_*``
+    like every other state does.
+    """
+    assert RE.state == "idle"
+
+    RE._is_panicked = True
+
+    assert RE.state == "panicked"
+    assert RE.state.is_panicked
+    assert not RE.state.is_running
+    assert not RE.state.is_idle
+    # the session knows nothing about it; the panic belongs to the engine
+    assert RE._session.state == "idle"
+
+
 def test_state_is_readonly(RE):
     with pytest.raises(AttributeError):
         RE.state = "running"

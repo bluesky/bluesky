@@ -29,6 +29,8 @@ from .plan_executor import (  # noqa: F401
     RunEngineStateMachine,
     WaitForTimeoutError,
     _ensure_event_loop_running,
+    _panicked_state,
+    announce_state_change,
     autoawait_in_bluesky_event_loop,
     call_in_bluesky_event_loop,
     default_scan_id_source,
@@ -78,6 +80,10 @@ __all__ = [
 
 
 class _RunEnginePanic(Exception): ...
+
+
+#: What `RunEngine.state` reports once this engine has panicked.
+_PANICKED_STATE = _panicked_state()
 
 
 PAUSE_MSG = """
@@ -263,6 +269,11 @@ class RunEngine:
 
     @property
     def state(self):
+        # 'panicked' is the RunEngine's own state, not the session's: it means
+        # this engine's loop thread is wedged. It is a one-way latch, so it
+        # trumps whatever the plan's state machine last recorded.
+        if self._is_panicked:
+            return _PANICKED_STATE
         return self._state
 
     @property
@@ -301,6 +312,12 @@ class RunEngine:
         self._loop = loop
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
+        # Set when this engine's loop thread could not be shut down and the
+        # engine is unusable. Written once, from the main thread, and never
+        # cleared; see _resume_task. A plain bool rather than a state machine
+        # transition because the loop it would have to be marshalled onto is
+        # precisely the thing that has stopped responding.
+        self._is_panicked = False
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -366,10 +383,6 @@ class RunEngine:
     @_state.setter
     def _state(self, value):
         self._session._state = value
-
-    @property
-    def _state_lock(self):
-        return self._session._state_lock
 
     @property
     def log(self):
@@ -917,7 +930,13 @@ class RunEngine:
                     # before giving up and putting the RE in a
                     # non-recoverable panicked state.
                     if not task_finished or num_threads != 1:
-                        self._state = "panicked"
+                        old_state = self._state
+                        self._is_panicked = True
+                        # The session's machine is untouched -- it belongs to
+                        # the loop -- so announce the change by hand, so that
+                        # a state_hook driving a display still sees the panic
+                        # rather than watching the state freeze.
+                        announce_state_change(self._session, old_state, "panicked")
                 except Exception as raised_er:
                     self.halt()
                     self._executor.interrupted = True

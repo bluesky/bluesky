@@ -42,19 +42,25 @@ def test_executor_holds_no_threading_primitives():
     assert offenders == {}
 
 
-def test_executor_source_takes_no_locks():
-    """The executor never blocks a thread, so it must not lock or join."""
-    source = inspect.getsource(PlanExecutor)
+@pytest.mark.parametrize("cls", [PlanSession, PlanExecutor])
+def test_source_takes_no_locks(cls):
+    """Neither class ever blocks a thread, so neither may lock or join."""
+    source = inspect.getsource(cls)
     for forbidden in ("threading.", "_state_lock", ".acquire(", ".join("):
-        assert forbidden not in source, f"PlanExecutor uses {forbidden}"
+        assert forbidden not in source, f"{cls.__name__} uses {forbidden}"
 
 
-def test_session_holds_only_the_state_lock():
-    """The session's one lock guards the state machine, which a RunEngine
-    writes to from the main thread. Nothing else in it takes a lock."""
+def test_session_holds_no_threading_primitives():
+    """The session is reachable from the main thread and from the loop, but
+    everything that writes to it runs on the loop, so it needs no locks."""
     session = PlanSession(loop=asyncio.new_event_loop())
-    locks = [name for name, value in vars(session).items() if isinstance(value, THREADING_PRIMITIVES)]
-    assert locks == ["_state_lock"]
+
+    offenders = {
+        name: type(value).__name__
+        for name, value in vars(session).items()
+        if isinstance(value, THREADING_PRIMITIVES)
+    }
+    assert offenders == {}
 
 
 def test_run_a_plan_without_a_run_engine():

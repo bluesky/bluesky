@@ -29,7 +29,7 @@ from opentelemetry import trace
 from opentelemetry.trace import Span
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
-from bluesky._vendor.super_state_machine.extras import PropertyMachine
+from bluesky._vendor.super_state_machine.extras import PropertyMachine, ProxyString
 from bluesky._vendor.super_state_machine.machines import StateMachine
 
 from .bundlers import RunBundler, maybe_await
@@ -226,6 +226,22 @@ def announce_state_change(obj, old_value, value) -> None:
         obj.state_hook(value, old_value)
 
 
+def _panicked_state() -> ProxyString:
+    """The value `RunEngine.state` reports once the engine has panicked.
+
+    A panicked RunEngine is not described by its session's state machine --
+    the panic belongs to the engine, whose loop thread is wedged. But callers
+    ask a state for more than its text: every other state is a ProxyString, a
+    str subclass whose __getattr__ proxies to the machine, so `.is_running`
+    and its like have to keep working. Report a ProxyString over a machine
+    forced to 'panicked' rather than a bare str, which would answer none of
+    them.
+    """
+    machine = RunEngineStateMachine()
+    machine.set_("panicked")
+    return ProxyString("panicked", machine)
+
+
 class LoggingPropertyMachine(PropertyMachine):
     """expects object to have a `log` attribute
     and a `state_hook` attribute that is ``None`` or a callable with signature
@@ -237,16 +253,9 @@ class LoggingPropertyMachine(PropertyMachine):
     def __set__(self, obj, value):
         own = type(obj)
         old_value = self.__get__(obj, own)
-        with obj._state_lock:
-            super().__set__(obj, value)
+        super().__set__(obj, value)
         value = self.__get__(obj, own)
         announce_state_change(obj, old_value, value)
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return super().__get__(instance, owner)
-        with instance._state_lock:
-            return super().__get__(instance, owner)
 
 
 RunEngineMetadata = MutableMapping[str, typing.Any]
@@ -362,11 +371,6 @@ class PlanSession:
             loop = _default_event_loop()
         self._loop = loop
 
-        # Guards transitions of the state machine, which a RunEngine writes to
-        # from the main thread as well as from the loop. Nothing else in a
-        # session or an executor takes a lock.
-        self._state_lock = threading.RLock()
-
         self.log = log if log is not None else ComposableLogAdapter(logger, {"RE": self})
 
         if md is None:
@@ -424,6 +428,13 @@ class PlanSession:
         # The executor currently running, or last to run, a plan. Suspenders
         # and other session-level callers reach the live plan through this.
         self.executor: PlanExecutor | None = None
+
+        # PropertyMachine.__get__ creates this session's machine on first
+        # access, by inserting into a WeakKeyDictionary. Do it here, while
+        # this is the only thread that has a reference, so that no later read
+        # from another thread can race the insertion. Every write after this
+        # happens on the event loop, which is why the machine needs no lock.
+        _ = self._state
 
         # public dispatcher for callbacks
         self.dispatcher = Dispatcher()
