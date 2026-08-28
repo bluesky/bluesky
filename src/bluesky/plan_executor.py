@@ -425,10 +425,6 @@ class PlanSession:
         self.run_bundler_cls = run_bundler_cls
         self.run_engine_cls = run_engine_cls
 
-        # The executor currently running, or last to run, a plan. Suspenders
-        # and other session-level callers reach the live plan through this.
-        self.executor: PlanExecutor | None = None
-
         # PropertyMachine.__get__ creates this session's machine on first
         # access, by inserting into a WeakKeyDictionary. Do it here, while
         # this is the only thread that has a reference, so that no later read
@@ -439,6 +435,13 @@ class PlanSession:
         # public dispatcher for callbacks
         self.dispatcher = Dispatcher()
         self.ignore_exceptions = False
+
+        # The executor currently running, or last to run, a plan. Suspenders
+        # and other session-level callers reach the live plan through this.
+        # Built here rather than left None, so that "no executor yet" is not a
+        # third state every caller has to reason about. Last, because an
+        # executor reads the session it is given.
+        self.executor: PlanExecutor = self.new_executor()
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -488,8 +491,7 @@ class PlanSession:
         """
         self._registered_commands[name] = func
         self._unregistered_commands.discard(name)
-        if self.executor is not None:
-            self.executor.rebuild_command_registry()
+        self.executor.rebuild_command_registry()
 
     def unregister_command(self, name):
         """Unregister a Message command.
@@ -498,14 +500,14 @@ class PlanSession:
         ----------
         name : str
         """
-        if self.executor is not None:
-            # Raise KeyError for an unknown command, as deleting from the
-            # registry directly used to.
-            del self.executor.command_registry[name]
+        # Raise KeyError for an unknown command, as deleting from the registry
+        # directly used to. Ask rather than delete: the removal itself is the
+        # rebuild below, working from what this session has recorded.
+        if name not in self.executor.command_registry:
+            raise KeyError(name)
         self._registered_commands.pop(name, None)
         self._unregistered_commands.add(name)
-        if self.executor is not None:
-            self.executor.rebuild_command_registry()
+        self.executor.rebuild_command_registry()
 
     def new_executor(self, subs=None):
         """Build the executor for the next plan and adopt it as the current one.
