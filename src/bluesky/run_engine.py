@@ -1807,10 +1807,22 @@ class RunEngine:
         was_paused = self._state == "paused"
         self.loop.call_soon_threadsafe(start_task)
         coro_event.wait()
+        # Surface anything the interrupt coroutine raised, then take the
+        # result before resuming rather than after. Resuming runs the plan's
+        # cleanup, which opens and closes runs of its own, so a result read
+        # afterwards describes the cleanup as much as the plan.
+        task.result()
+        result = self._interrupted_result()
         if was_paused:
             self._resume_task()
 
-        return task.result()
+        return result
+
+    def _interrupted_result(self):
+        """What abort(), stop() and halt() return."""
+        if self._call_returns_result:
+            return self._create_result(NO_PLAN_RETURN)
+        return tuple(self._run_start_uids)
 
     async def _halt_coro(self):
         if self._state.is_idle:
