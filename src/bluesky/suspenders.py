@@ -40,7 +40,7 @@ class SuspenderBase(metaclass=ABCMeta):
 
     def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message=""):
         """ """
-        self.RE = None
+        self.session = None
         self._ev = None
         self._tripped = False
         self._tripped_message = tripped_message
@@ -62,7 +62,19 @@ class SuspenderBase(metaclass=ABCMeta):
             self._tripped_message,
         )
 
-    def install(self, RE, *, event_type=None):
+    @property
+    def RE(self):
+        """Deprecated alias for :attr:`session`.
+
+        A suspender used to be installed with the `RunEngine` itself. It is
+        now given the `bluesky.plan_executor.PlanSession`, because a suspender
+        outlives any one plan and so cannot hold the executor running it, and
+        because everything a suspender needs -- the loop, the state, and a way
+        to ask the current plan to suspend -- belongs to the session.
+        """
+        return self.session
+
+    def install(self, session, *, event_type=None):
         """Install callback on signal
 
         This (re)installs the required callbacks at the pyepics level
@@ -70,16 +82,18 @@ class SuspenderBase(metaclass=ABCMeta):
         Parameters
         ----------
 
-        RE : RunEngine
-            The run engine instance this should work on
+        session : PlanSession
+            The environment this should suspend. A `RunEngine` installs its
+            own session, since a suspender outlives any one plan and so
+            cannot hold the executor running it.
 
         event_type : str, optional
             The event type (subscription type) to watch
         """
         with self._lock:
-            self.RE = RE
+            self.session = session
         if self._implements_protocol:
-            self.__on_loop(RE, partial(self._sig.subscribe_reading, self))
+            self.__on_loop(session, partial(self._sig.subscribe_reading, self))
         elif callable(getattr(self._sig, "subscribe", None)):
             self._sig.subscribe(self, event_type=event_type, run=True)
         else:
@@ -122,14 +136,14 @@ class SuspenderBase(metaclass=ABCMeta):
         if self._implements_protocol:
             # Nothing was subscribed if we were never installed, and there is
             # no event loop to unsubscribe on either.
-            if self.RE is not None:
-                self.__on_loop(self.RE, partial(self._sig.clear_sub, self))
+            if self.session is not None:
+                self.__on_loop(self.session, partial(self._sig.clear_sub, self))
         else:
             self._sig.clear_sub(self)
         with self._lock:
-            if self.RE is not None:
-                self.__set_event(self.RE._loop)
-            self.RE = None
+            if self.session is not None:
+                self.__set_event(self.session.loop)
+            self.session = None
             self._tripped = False
 
     @abstractmethod
@@ -177,9 +191,9 @@ class SuspenderBase(metaclass=ABCMeta):
         This expects the massive blob that comes from ophyd
         """
         with self._lock:
-            if self.RE is None:
+            if self.session is None:
                 return
-            loop = self.RE._loop
+            loop = self.session.loop
             if self._implements_protocol:
                 # Subscribable calls back with {name: Reading}
                 value = value[self._sig.name]["value"]
@@ -187,18 +201,18 @@ class SuspenderBase(metaclass=ABCMeta):
             if self._should_suspend(value):
                 self._tripped = True
                 # this does dirty things with internal state
-                if self._ev is None and self.RE is not None:
+                if self._ev is None and self.session is not None:
                     self.__make_event()
                     if self._ev is None:
                         raise RuntimeError("Could not create the suspender event")
                     cb = partial(
-                        self.RE.request_suspend,
+                        self.session.request_suspend,
                         self._ev.wait,
                         pre_plan=self._pre_plan,
                         post_plan=self._post_plan,
                         justification=self._get_justification(),
                     )
-                    if self.RE.state.is_running:
+                    if self.session.state.is_running:
                         loop.call_soon_threadsafe(cb)
             elif self._should_resume(value):
                 self.__set_event(loop)
@@ -207,8 +221,8 @@ class SuspenderBase(metaclass=ABCMeta):
     def __make_event(self):
         """Make or return the asyncio.Event to use as a bridge."""
         assert self._lock.locked()
-        if self._ev is None and self.RE is not None:
-            if threading.get_ident() == getattr(self.RE._loop, "_thread_id", "unknown"):
+        if self._ev is None and self.session is not None:
+            if threading.get_ident() == getattr(self.session.loop, "_thread_id", "unknown"):
                 self._ev = asyncio.Event()
                 return self._ev
             else:
@@ -218,7 +232,7 @@ class SuspenderBase(metaclass=ABCMeta):
                     self._ev = asyncio.Event()
                     th_ev.set()
 
-                h = self.RE._loop.call_soon_threadsafe(really_make_the_event)
+                h = self.session.loop.call_soon_threadsafe(really_make_the_event)
                 if not th_ev.wait(0.1):
                     h.cancel()
         return self._ev

@@ -1,6 +1,5 @@
 import asyncio
 import concurrent
-import functools
 import inspect
 import threading
 import typing
@@ -31,6 +30,7 @@ from .plan_executor import (  # noqa: F401
     _ensure_event_loop_running,
     _panicked_state,
     announce_state_change,
+    announce_suspend,
     autoawait_in_bluesky_event_loop,
     call_in_bluesky_event_loop,
     default_scan_id_source,
@@ -685,11 +685,9 @@ class RunEngine:
     async def _request_pause_coro(self, defer=False):
         """Pause without blocking the caller.
 
-        The interrupt coroutines belong to the executor now, but this one keeps
-        a home here: bluesky-queueserver calls it directly, and deliberately.
-        Its worker cannot use the blocking `request_pause` below, which never
-        returns if the event loop is wedged, and there is no public
-        non-blocking equivalent to send it to instead.
+        Kept because bluesky-queueserver calls it directly: its worker cannot
+        use the blocking `request_pause` below, which never returns if the
+        event loop is wedged, and there is no public non-blocking equivalent.
         """
         await self._executor.request_pause(defer)
 
@@ -1017,19 +1015,15 @@ class RunEngine:
 
         """
         # Announce on the calling thread, so the message arrives when the
-        # caller asked rather than whenever the loop gets to it.
-        self._session._announce_suspend()
-        # Suspenders trip on whichever thread their signal calls back on, so
-        # hop onto the loop before touching anything belonging to the plan.
-        self.loop.call_soon_threadsafe(
-            functools.partial(
-                self._session.request_suspend,
-                fut,
-                pre_plan=pre_plan,
-                post_plan=post_plan,
-                justification=justification,
-                announce=False,
-            )
+        # caller asked rather than whenever the loop gets to it. Then straight
+        # to the plan: going by way of the session would only find the
+        # executor this already has, and would announce it a second time.
+        announce_suspend()
+        asyncio.run_coroutine_threadsafe(
+            self._executor.request_suspend(
+                fut, pre_plan=pre_plan, post_plan=post_plan, justification=justification
+            ),
+            self.loop,
         )
 
     def abort(self, reason=""):

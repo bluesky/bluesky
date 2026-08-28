@@ -226,16 +226,28 @@ def announce_state_change(obj, old_value, value) -> None:
         obj.state_hook(value, old_value)
 
 
+def announce_suspend() -> None:
+    """Tell the user a suspension is starting.
+
+    Called by whichever entry point was asked, before it hands the work to
+    the loop, so that the message reaches the user when they asked rather
+    than whenever the loop gets to it. The ways in are disjoint -- a
+    `RunEngine` goes straight to its executor rather than by way of its
+    session -- so this is said once per suspension.
+    """
+    print("Suspending....To get prompt hit Ctrl-C twice to pause.")
+    print(f"Suspension occurred at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.")
+
+
 def _panicked_state() -> ProxyString:
     """The value `RunEngine.state` reports once the engine has panicked.
 
     A panicked RunEngine is not described by its session's state machine --
     the panic belongs to the engine, whose loop thread is wedged. But callers
-    ask a state for more than its text: every other state is a ProxyString, a
-    str subclass whose __getattr__ proxies to the machine, so `.is_running`
-    and its like have to keep working. Report a ProxyString over a machine
-    forced to 'panicked' rather than a bare str, which would answer none of
-    them.
+    ask a state for more than its text: `bluesky.suspenders` reads
+    ``RE.state.is_running``. So report a ProxyString over a machine forced to
+    'panicked', which answers every ``is_*`` correctly, rather than a bare str
+    which answers none of them.
     """
     machine = RunEngineStateMachine()
     machine.set_("panicked")
@@ -541,24 +553,18 @@ class PlanSession:
         for suspender in self.suspenders:
             self.remove_suspender(suspender)
 
-    def _announce_suspend(self):
-        """Tell the user a suspension is starting."""
-        print("Suspending....To get prompt hit Ctrl-C twice to pause.")
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Suspension occurred at {ts}.")
-
-    def request_suspend(self, fut, *, pre_plan=None, post_plan=None, justification=None, announce=True):
+    def request_suspend(self, fut, *, pre_plan=None, post_plan=None, justification=None):
         """Ask the plan in progress to suspend until ``fut`` is finished.
 
-        Must be called on the event loop; a `RunEngine` offers a thread-safe
-        version of this for callers that are not on it.
+        This is the entry point a `bluesky.suspenders.SuspenderBase` uses. It
+        must be called on the event loop: a suspender trips on whichever
+        thread its signal calls back on, and is the one that knows it is not
+        on the loop, so it does the hop itself.
 
-        ``announce`` is for callers that have already told the user, so that
-        the message reaches them when they asked rather than whenever the
-        loop gets to it.
+        Announces the suspension before handing it to the loop, so the user
+        hears about it when their signal tripped.
         """
-        if announce:
-            self._announce_suspend()
+        announce_suspend()
         self.loop.create_task(  # noqa: RUF006
             self.executor.request_suspend(fut, pre_plan=pre_plan, post_plan=post_plan, justification=justification)
         )
