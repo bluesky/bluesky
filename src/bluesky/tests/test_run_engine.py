@@ -69,11 +69,11 @@ def test_states():
 
 
 def test_panic_trap(RE):
-    RE._state = "panicked"
+    RE._session._state = "panicked"
     for k in RunEngineStateMachine.States.states():
         if k != "panicked":
             with pytest.raises(TransitionError):
-                RE._state = k
+                RE._session._state = k
 
 
 def test_panicked_state_answers_like_any_other_state(RE):

@@ -274,7 +274,7 @@ class RunEngine:
         # trumps whatever the plan's state machine last recorded.
         if self._is_panicked:
             return _PANICKED_STATE
-        return self._state
+        return self._session.state
 
     @property
     def deferred_pause_requested(self):
@@ -375,14 +375,6 @@ class RunEngine:
 
     # ------------------------------------------------------------------
     # Forwarded to the session, which owns everything that outlives a plan.
-
-    @property
-    def _state(self):
-        return self._session._state
-
-    @_state.setter
-    def _state(self, value):
-        self._session._state = value
 
     @property
     def log(self):
@@ -638,7 +630,7 @@ class RunEngine:
 
         Lossless subscriptions are not unsubscribed.
         """
-        if self._state != "idle":
+        if self._session.state != "idle":
             self.halt()
         self._new_executor()
         self.dispatcher.unsubscribe_all()
@@ -788,8 +780,8 @@ class RunEngine:
                 raise RuntimeError(text)
 
         # If we are in the wrong state, raise.
-        if not self._state.is_idle:
-            raise RuntimeError(f"The RunEngine is in a {self._state} state")
+        if not self._session.state.is_idle:
+            raise RuntimeError(f"The RunEngine is in a {self._session.state} state")
 
         futs = []
         tripped_justifications = []
@@ -857,9 +849,9 @@ class RunEngine:
             raise RuntimeError("The RunEngine is panicked and cannot be recovered. You must restart bluesky.")
 
         # The state machine does not capture the whole picture.
-        if not self._state.is_paused:
+        if not self._session.state.is_paused:
             raise TransitionError(
-                f"The RunEngine is the {self._state} state. You can only resume for the paused state."
+                f"The RunEngine is the {self._session.state} state. You can only resume for the paused state."
             )
 
         asyncio.run_coroutine_threadsafe(self._executor.prepare_resume(), self._loop).result()
@@ -922,7 +914,7 @@ class RunEngine:
                     # before giving up and putting the RE in a
                     # non-recoverable panicked state.
                     if not task_finished or num_threads != 1:
-                        old_state = self._state
+                        old_state = self._session.state
                         self._is_panicked = True
                         # The session's machine is untouched -- it belongs to
                         # the loop -- so announce the change by hand, so that
@@ -1113,7 +1105,7 @@ class RunEngine:
             task = self.loop.create_task(coro)
             task.add_done_callback(end_cb)
 
-        was_paused = self._state == "paused"
+        was_paused = self._session.state == "paused"
         self.loop.call_soon_threadsafe(start_task)
         coro_event.wait()
         # Re-raise anything the coroutine raised, e.g. a TransitionError.
