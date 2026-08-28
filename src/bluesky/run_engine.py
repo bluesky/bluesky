@@ -473,10 +473,6 @@ class RunEngine:
         self._session._require_stream_declaration = value
 
     @property
-    def _temp_callback_ids(self):
-        return self._executor._temp_callback_ids
-
-    @property
     def commands(self):
         """
         The list of commands available to Msg.
@@ -1136,14 +1132,18 @@ class RunEngine:
             return self._create_result(NO_PLAN_RETURN)
         return tuple(self._executor.run_start_uids)
 
+    # Emission belongs to the executor now, which hands a document to the
+    # session's subscribers and then to the plan's. Both of these are kept for
+    # callers written against the older pair. `emit` stays a coroutine while
+    # `PlanExecutor.emit` is not; awaiting it never suspended, because the body
+    # never awaited anything, so the difference costs nothing.
     def emit_sync(self, name, doc):
-        "Process blocking callbacks and schedule non-blocking callbacks."
-
-        # Process the doc, already validated against the schema in event-model
-        self.dispatcher.process(name, doc)
+        """Give a document to every subscriber."""
+        self._executor.emit(name, doc)
 
     async def emit(self, name, doc):
-        self.emit_sync(name, doc)
+        """Give a document to every subscriber."""
+        self._executor.emit(name, doc)
 
 
 # Names the RunEngine used to hold itself, which now belong to the executor for

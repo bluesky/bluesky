@@ -511,9 +511,8 @@ class PlanSession:
         """Build the executor for the next plan and adopt it as the current one.
 
         Replacing the executor is how the state of the previous plan is
-        cleared, so this is also where that plan's temporary subscriptions are
-        torn down: they last until the next plan starts, not until their own
-        finishes.
+        cleared, including its subscriptions: those live on the executor's own
+        dispatcher and are discarded with it.
 
         Parameters
         ----------
@@ -521,27 +520,8 @@ class PlanSession:
             Subscriptions that last only as long as the plan the new executor
             is about to run. Same forms as :meth:`RunEngine.__call__` accepts.
         """
-        if self.executor is not None:
-            self.executor.clear_temp_subscriptions()
-        self.executor = PlanExecutor(self)
-        for name, funcs in normalize_subs_input(subs).items():
-            for func in funcs:
-                self.executor.add_temp_subscription(self.subscribe(func, name))
+        self.executor = PlanExecutor(self, subs=subs)
         return self.executor
-
-    def emit_sync(self, name, doc):
-        """Give a document to every subscriber.
-
-        May be called from a thread that is not the event loop's: a sync ophyd
-        signal fires its monitor callback on the device's own thread, and that
-        path reaches here. Subscribers are therefore invoked on whichever
-        thread emitted, which is not always the loop.
-        """
-        self.dispatcher.process(name, doc)
-
-    async def emit(self, name, doc):
-        """Give a document to every subscriber. Awaitable form of `emit_sync`."""
-        self.emit_sync(name, doc)
 
     def _call_waiting_hook(self, *args, **kwargs):
         """Notify the waiting hook, if one is set."""
@@ -617,7 +597,7 @@ class PlanExecutor:
         the state machine. Many executors may share one session, in turn.
     """
 
-    def __init__(self, session: PlanSession):
+    def __init__(self, session: PlanSession, *, subs=None):
         self._session = session
 
         # When cleared, run() will pause until it is set again.
@@ -635,11 +615,18 @@ class PlanExecutor:
         # made this plan unrewindable, which is what `resumable` tests for.
         self._msg_cache: deque[typing.Any] | None = deque()
 
-        # Tokens for subscriptions that last only as long as this plan. They
-        # are tokens into the session's dispatcher, so that permanent and
-        # temporary callbacks stay in one registry, firing in one pass in
-        # subscription order; only the tokens belong to the plan.
-        self._temp_callback_ids: set[typing.Any] = set()
+        # Subscriptions that last only as long as this plan, in a dispatcher
+        # of their own. Making the lifetime structural means teardown is
+        # nothing more than dropping this executor, and it gives plan tokens a
+        # namespace of their own, so a plan cannot unsubscribe a session
+        # callback by guessing an integer.
+        self.dispatcher = Dispatcher()
+        # One setting, not two: RE.ignore_callback_exceptions is the session's,
+        # and a plan's subscribers must not behave differently from the rest.
+        self.dispatcher.ignore_exceptions = session.ignore_exceptions
+        for name, funcs in normalize_subs_input(subs).items():
+            for func in funcs:
+                self.dispatcher.subscribe(func, name)
 
         self._run_bundlers: dict[typing.Any, RunBundler] = {}  # open run -> bundler
         self._metadata_per_call: dict[typing.Any, typing.Any] = {}  # md for every run
@@ -663,20 +650,20 @@ class PlanExecutor:
         self.command_registry: dict[str, typing.Callable] = {}
         self.rebuild_command_registry()
 
-    def add_temp_subscription(self, token):
-        """Record a token as belonging to this plan."""
-        self._temp_callback_ids.add(token)
+    def emit(self, name, doc) -> None:
+        """Give a document to the session's subscribers, then to this plan's.
 
-    def drop_temp_subscription(self, token):
-        """Unsubscribe a temporary subscription and forget its token."""
-        self._session.unsubscribe(token)
-        self._temp_callback_ids.remove(token)
+        The session goes first so that subscriptions outliving the plan see a
+        document before the ones that arrived with it, which is the order a
+        single shared registry gave by construction.
 
-    def clear_temp_subscriptions(self):
-        """Unsubscribe every temporary subscription this plan made."""
-        for token in self._temp_callback_ids:
-            self._session.unsubscribe(token)
-        self._temp_callback_ids.clear()
+        May be called from a thread that is not the event loop's: a sync ophyd
+        signal fires its monitor callback on the device's own thread, and that
+        path reaches here. Subscribers are therefore invoked on whichever
+        thread emitted, which is not always the loop.
+        """
+        self._session.dispatcher.process(name, doc)
+        self.dispatcher.process(name, doc)
 
     @property
     def session(self) -> PlanSession:
@@ -1287,7 +1274,7 @@ class PlanExecutor:
         current_run = self._run_bundlers[run_key] = self._session.run_bundler_cls(
             validated,
             self._session.record_interruptions,
-            self._session.emit_sync,
+            self.emit,
             self._session.log,
             strict_pre_declare=self._session._require_stream_declaration,
         )
@@ -2044,8 +2031,7 @@ class PlanExecutor:
         """
         self._session.log.debug("Adding subscription %r", msg)
         _, obj, args, kwargs, _ = msg
-        token = self._session.subscribe(*args, **kwargs)
-        self.add_temp_subscription(token)
+        token = self.dispatcher.subscribe(*args, **kwargs)
         await self._reset_checkpoint_state_coro()
         return token
 
@@ -2065,7 +2051,7 @@ class PlanExecutor:
         _, obj, arg, kwargs, _ = msg
         if (token := kwargs.get("token", key_absence_sentinel := object())) is key_absence_sentinel:
             (token,) = arg
-        self.drop_temp_subscription(token)
+        self.dispatcher.unsubscribe(token)
         await self._reset_checkpoint_state_coro()
 
     async def _input(self, msg):
