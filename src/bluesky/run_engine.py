@@ -473,10 +473,6 @@ class RunEngine:
         self._session._require_stream_declaration = value
 
     @property
-    def _suspenders(self):
-        return self._session._suspenders
-
-    @property
     def _temp_callback_ids(self):
         return self._executor._temp_callback_ids
 
@@ -608,7 +604,7 @@ class RunEngine:
 
     @property
     def suspenders(self):
-        return tuple(self._suspenders)
+        return self._session.suspenders
 
     @property
     def verbose(self):
@@ -1150,40 +1146,52 @@ class RunEngine:
         self.emit_sync(name, doc)
 
 
-# Names the RunEngine used to hold itself, which now belong to the executor
-# for the plan being run. Mapped to the executor attribute they forward to.
+# Names the RunEngine used to hold itself, which now belong to the executor for
+# the plan being run. Mapped to the executor attribute they forward to.
 #
 # These are private, but they are read and written by tests and by downstream
-# code, so they keep working. Forwarding silently is deliberate: the test
-# suite turns warnings into errors, so a DeprecationWarning here would break
-# callers rather than warn them. One can be added once the ecosystem has
-# moved to reading RunEngine._executor, or to using a PlanExecutor directly.
-_EXECUTOR_FORWARDS = {
+# code, so they keep working. Forwarding silently is deliberate: the test suite
+# turns warnings into errors, so a DeprecationWarning here would break callers
+# rather than warn them. One can be added once the ecosystem has moved to
+# reading RunEngine._executor, or to using a PlanExecutor directly.
+
+# Forwards with a caller we can point at, inside bluesky or outside it.
+_FORWARDS_WITH_CALLERS = {
+    "_task": "_task",
+    "_run_bundlers": "_run_bundlers",
+    "_run_start_uids": "run_start_uids",
+    "_seen_wait_and_move_on_keys": "_seen_wait_and_move_on_keys",
+    "_deferred_pause_requested": "_deferred_pause_requested",
+    "_command_registry": "command_registry",
+}
+
+# Forwards with no caller we could find, carried as insurance rather than
+# because anything needs them. Searched across bluesky, its tests and docs,
+# bluesky-queueserver and blueapi when this was written; the pull request that
+# introduced this split records what was searched and what was found. Delete
+# this dict and its term in the union below if you would rather not carry them.
+_FORWARDS_WITHOUT_KNOWN_CALLERS = {
     "_run_permit": "_run_permit",
     "_pardon_failures": "_pardon_failures",
-    "_task": "_task",
     "_plan": "_plan",
     "_plan_stack": "_plan_stack",
     "_response_stack": "_response_stack",
     "_msg_cache": "_msg_cache",
     "_rewindable_flag": "rewindable_flag",
-    "_run_bundlers": "_run_bundlers",
     "_metadata_per_call": "_metadata_per_call",
-    "_run_start_uids": "run_start_uids",
     "_run_tracing_spans": "_run_tracing_spans",
     "_staged": "_staged",
     "_objs_seen": "_objs_seen",
     "_movable_objs_touched": "_movable_objs_touched",
     "_groups": "_groups",
     "_status_objs": "_status_objs",
-    "_seen_wait_and_move_on_keys": "_seen_wait_and_move_on_keys",
     "_exception": "exception",
     "_interrupted": "interrupted",
     "_exit_status": "exit_status",
     "_reason": "reason",
-    "_deferred_pause_requested": "_deferred_pause_requested",
-    "_command_registry": "command_registry",
 }
+
+_EXECUTOR_FORWARDS = _FORWARDS_WITH_CALLERS | _FORWARDS_WITHOUT_KNOWN_CALLERS
 
 
 def _forward_to_executor(name: str) -> property:
