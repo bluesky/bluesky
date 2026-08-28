@@ -12,6 +12,7 @@ import pytest
 
 from bluesky import Msg
 from bluesky.run_engine import PlanExecutor, PlanSession
+from bluesky.utils import RunEngineInterrupted
 
 THREADING_PRIMITIVES = (
     threading.Event,
@@ -181,3 +182,29 @@ def test_registered_commands_survive_a_new_executor(RE):
     RE.unregister_command("custom-command")
     with pytest.raises(KeyError):
         RE([Msg("custom-command")])
+
+
+def test_request_pause_coro_survives_for_queueserver(RE):
+    """bluesky-queueserver drives a non-blocking pause through this coroutine.
+
+    Its worker cannot call the public ``request_pause``, which blocks and
+    never returns if the loop is wedged, so it reaches for the private
+    coroutine instead. There is no public equivalent yet, so this has to keep
+    working.
+    """
+    import asyncio
+    import threading
+
+    def pause_from_another_thread():
+        asyncio.run_coroutine_threadsafe(RE._request_pause_coro(False), loop=RE.loop).result()
+
+    def plan():
+        yield Msg("checkpoint")
+        threading.Timer(0.1, pause_from_another_thread).start()
+        yield Msg("sleep", None, 2)
+        yield Msg("null")
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    assert RE.state == "paused"
+    RE.stop()
