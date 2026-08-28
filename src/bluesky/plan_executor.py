@@ -530,10 +530,17 @@ class PlanSession:
         return self.executor
 
     def emit_sync(self, name, doc):
-        "Process blocking callbacks and schedule non-blocking callbacks."
+        """Give a document to every subscriber.
+
+        May be called from a thread that is not the event loop's: a sync ophyd
+        signal fires its monitor callback on the device's own thread, and that
+        path reaches here. Subscribers are therefore invoked on whichever
+        thread emitted, which is not always the loop.
+        """
         self.dispatcher.process(name, doc)
 
     async def emit(self, name, doc):
+        """Give a document to every subscriber. Awaitable form of `emit_sync`."""
         self.emit_sync(name, doc)
 
     def _call_waiting_hook(self, *args, **kwargs):
@@ -1280,7 +1287,6 @@ class PlanExecutor:
         current_run = self._run_bundlers[run_key] = self._session.run_bundler_cls(
             validated,
             self._session.record_interruptions,
-            self._session.emit,
             self._session.emit_sync,
             self._session.log,
             strict_pre_declare=self._session._require_stream_declaration,

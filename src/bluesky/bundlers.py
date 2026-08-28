@@ -136,7 +136,6 @@ class RunBundler:
         md: dict | None,
         record_interruptions: bool,
         emit: Callable,
-        emit_sync: Callable,
         log: LoggerAdapter,
         *,
         strict_pre_declare: bool,
@@ -175,9 +174,9 @@ class RunBundler:
         # this is state on the RE, mirror it here rather than refer to
         # the parent
         self.record_interruptions = record_interruptions
-        # this is RE.emit, but lifted to this context
+        # Emits a document to every subscriber. Synchronous, and safe to call
+        # from a thread that is not the loop's -- monitor callbacks do.
         self.emit = emit
-        self.emit_sync = emit_sync
         self.log = log
         # Map of set of collect objects to list of stream names that they can be collected into
         self._declared_stream_names: dict[frozenset, list[str]] = {}
@@ -200,7 +199,7 @@ class RunBundler:
 
         self._describe_collect_cache.clear()
 
-        await self.emit(DocumentNames.start, doc)
+        self.emit(DocumentNames.start, doc)
         doc_logger.debug(
             "[start] document is emitted (run_uid=%r)",
             self._run_start_uid,
@@ -220,7 +219,7 @@ class RunBundler:
             )
             self._interruptions_desc = descriptor_bundle.descriptor_doc
             self._interruptions_compose_event = descriptor_bundle.compose_event
-            await self.emit(DocumentNames.descriptor, self._interruptions_desc)
+            self.emit(DocumentNames.descriptor, self._interruptions_desc)
 
         return self._run_start_uid
 
@@ -254,7 +253,7 @@ class RunBundler:
             exit_status=exit_status,
             reason=reason,
         )
-        await self.emit(DocumentNames.stop, doc)
+        self.emit(DocumentNames.stop, doc)
         doc_logger.debug(
             "[stop] document is emitted (run_uid=%r)",
             self._run_start_uid,
@@ -303,7 +302,7 @@ class RunBundler:
             object_keys=object_keys,
             object_classes=object_classes,
         )
-        await self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
+        self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
         doc_logger.debug(
             "[descriptor] document emitted with name %r containing data keys %r (run_uid=%r)",
             desc_key,
@@ -488,7 +487,7 @@ class RunBundler:
                 data=data,
                 timestamps=timestamps,
             )
-            self.emit_sync(DocumentNames.event, doc)
+            self.emit(DocumentNames.event, doc)
 
         def emit_event_for_subscribe(*args, **kwargs):
             # Ignore the inputs. Use this call as a signal to call read on the
@@ -528,7 +527,7 @@ class RunBundler:
                 timestamps={"interruption": ttime.time()},
             )
             self._interruptions_counter += 1
-            self.emit_sync(DocumentNames.event, doc)
+            self.emit(DocumentNames.event, doc)
 
     def rewind(self):
         self._sequence_counters.clear()
@@ -648,7 +647,7 @@ class RunBundler:
             timestamps=timestamps,
             filled=filled,
         )
-        await self.emit(DocumentNames.event, event_doc)
+        self.emit(DocumentNames.event, event_doc)
         doc_logger.debug(
             "[event] document emitted with data keys %r (run_uid=%r)",
             data.keys(),
@@ -943,7 +942,7 @@ class RunBundler:
                     "`resource`, `stream_resource`, `datum`, or `stream_datum`"
                 )
 
-            await self.emit(DocumentNames(name), doc)
+            self.emit(DocumentNames(name), doc)
 
             doc_logger.debug(
                 "[%s] document emitted %r",
@@ -1006,7 +1005,7 @@ class RunBundler:
             pages[objs_read].append(event)
 
         for event_list in pages.values():
-            await self.emit(DocumentNames.event_page, pack_event_page(*event_list))
+            self.emit(DocumentNames.event_page, pack_event_page(*event_list))
             doc_logger.debug(
                 "[event_page] document is emitted for descriptors (run_uid=%r)",
                 self._run_start_uid,
@@ -1051,7 +1050,7 @@ class RunBundler:
                 },
             )
 
-            await self.emit(DocumentNames.event_page, ev_page)
+            self.emit(DocumentNames.event_page, ev_page)
         return payload
 
     async def collect(self, msg: Msg):
