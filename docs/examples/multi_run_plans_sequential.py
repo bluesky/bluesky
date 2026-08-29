@@ -21,5 +21,5 @@ RE.subscribe(bec)
 def plan_sequential_runs(npts):
     # Single-run plans may be called consecutively. No special handling is required
     #   as long as the previous scan is closed before the next one is opened
-    yield from scan([hw.det1], hw.motor1, -1, 1, npts)
-    yield from rel_scan([hw.det1, hw.det2], hw.motor1, -1, 1, npts)
+    yield from scan([hw.det], hw.motor, -1, 1, npts)
+    yield from rel_scan([hw.det, hw.noisy_det], hw.motor, -1, 1, npts)
