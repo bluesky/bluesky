@@ -49,6 +49,7 @@ from bluesky.protocols import (
     SyncOrAsync,
     SyncOrAsyncIterator,
     T,
+    Watchable,
     WritesExternalAssets,
     WritesStreamAssets,
     check_supports,
@@ -1374,6 +1375,58 @@ def apply_to_dict_recursively(d, f):
             d[key] = apply_to_dict_recursively(d=val, f=f)
         d[key] = f(val)
     return d
+
+
+class PlanProgress(Watchable):
+    """A Watchable object for plan-driven progress reporting.
+
+    Implements ``watch()`` so it can be used with the existing
+    ``ProgressBarManager`` / ``TerminalProgressBar`` infrastructure.
+    Created by the ``declare_progress`` message and updated by
+    ``update_progress``.
+    """
+
+    def __init__(self, name: str, *, parent: "PlanProgress | None" = None):
+        self.name = name
+        self.parent = parent
+        self._done = False
+        self._watchers: list[Callable] = []
+
+    @property
+    def done(self) -> bool:
+        return self._done
+
+    def watch(self, func: Callable) -> None:
+        self._watchers.append(func)
+
+    def _notify(
+        self,
+        *,
+        current: Any = None,
+        initial: Any = None,
+        target: Any = None,
+        unit: str = "units",
+        precision: Any = None,
+        fraction: Any = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
+    ) -> None:
+        for watcher in self._watchers:
+            watcher(
+                name=self.name,
+                current=current,
+                initial=initial,
+                target=target,
+                unit=unit,
+                precision=precision,
+                fraction=fraction,
+                time_elapsed=time_elapsed,
+                time_remaining=time_remaining,
+            )
+
+    def finish(self) -> None:
+        self._done = True
+        self._notify(fraction=1.0)
 
 
 class ProgressBarBase(abc.ABC):  # noqa: B024
