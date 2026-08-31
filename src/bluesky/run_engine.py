@@ -57,6 +57,7 @@ from .utils import (
     Msg,
     NoReplayAllowed,
     PlanHalt,
+    PlanProgress,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
@@ -491,6 +492,7 @@ class RunEngine:
         self.msg_hook = None
         self.state_hook = None
         self.waiting_hook = None
+        self.progress_hook = None
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
         self.NO_PLAN_RETURN = object()
@@ -533,6 +535,10 @@ class RunEngine:
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the plan instance from __call__
         self._require_stream_declaration = False
+
+        # A mapping of progress status names to their corresponding PlanProgress objects.
+        self._progress_statuses: dict[str, PlanProgress] = {}
+
         self._command_registry = {
             "declare_stream": self._declare_stream,
             "create": self._create,
@@ -570,6 +576,8 @@ class RunEngine:
             "input": self._input,
             "install_suspender": self._install_suspender,
             "remove_suspender": self._remove_suspender,
+            "declare_progress": self._declare_progress,
+            "update_progress": self._update_progress,
         }
 
         # public dispatcher for callbacks
@@ -746,6 +754,12 @@ class RunEngine:
         self._pardon_failures = asyncio.Event(**self._loop_for_kwargs)
         self._plan = None
         self._interrupted = False
+
+        # Finish any open plan-driven progress statuses.
+        for status in self._progress_statuses.values():
+            if not status.done:
+                status.finish()
+        self._progress_statuses.clear()
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -1796,6 +1810,13 @@ class RunEngine:
                         self.log.error("Failed to close run %r.", current_run)
             self._run_bundlers.clear()
 
+            # Finish any open plan-driven progress statuses.
+            for status in self._progress_statuses.values():
+                if not status.done:
+                    status.finish()
+                    self._call_progress_hook(None)
+            self._progress_statuses.clear()
+
             for p in self._plan_stack:
                 try:
                     p.close()
@@ -2208,7 +2229,64 @@ class RunEngine:
 
         return await current_run.collect(msg)
 
-    async def _null(self, msg):
+    async def _declare_progress(self, msg: Msg):
+        """Declare a new plan-driven progress status.
+
+        Expected message object is:
+
+            Msg('declare_progress', name='scan', parent=None)
+        """
+        name = msg.kwargs["name"]
+        if name in self._progress_statuses:
+            raise IllegalMessageSequence(f"A progress status named {name!r} is already open.")
+        parent_name = msg.kwargs.get("parent")
+        parent = None
+        if parent_name is not None:
+            parent = self._progress_statuses.get(parent_name)
+            if parent is None:
+                raise IllegalMessageSequence(
+                    f"Parent progress {parent_name!r} does not exist. "
+                    "It must be declared before its children."
+                )
+        status = PlanProgress(name, parent=parent)
+        self._progress_statuses[name] = status
+        self._call_progress_hook({status})
+        return status
+
+    async def _update_progress(self, msg: Msg):
+        """Update a plan-driven progress status.
+
+        Expected message object is:
+
+            Msg('update_progress', name='scan', current=5, initial=0, target=10)
+            Msg('update_progress', name='scan', fraction=0.5)
+            Msg('update_progress', name='scan', done=True)
+        """
+        name = msg.kwargs["name"]
+        status = self._progress_statuses.get(name)
+        if status is None:
+            raise IllegalMessageSequence(
+                f"No progress status named {name!r} is open. "
+                "Use 'declare_progress' first."
+            )
+        done = msg.kwargs.get("done", False)
+        if done:
+            status.finish()
+            del self._progress_statuses[name]
+            self._call_progress_hook(None)
+        else:
+            status._notify(
+                current=msg.kwargs.get("current"),
+                initial=msg.kwargs.get("initial"),
+                target=msg.kwargs.get("target"),
+                unit=msg.kwargs.get("unit", "units"),
+                precision=msg.kwargs.get("precision"),
+                fraction=msg.kwargs.get("fraction"),
+                time_elapsed=msg.kwargs.get("time_elapsed"),
+                time_remaining=msg.kwargs.get("time_remaining"),
+            )
+
+    async def _null(self, msg: Msg):
         """
         A no-op message, mainly for debugging and testing.
         """
@@ -2266,6 +2344,10 @@ class RunEngine:
     def _call_waiting_hook(self, *args, **kwargs):
         if self.waiting_hook is not None:
             self.waiting_hook(*args, **kwargs)
+
+    def _call_progress_hook(self, *args, **kwargs):
+        if self.progress_hook is not None:
+            self.progress_hook(*args, **kwargs)
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
     async def _wait(self, msg: Msg) -> bool:
