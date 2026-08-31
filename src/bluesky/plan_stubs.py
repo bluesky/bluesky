@@ -1486,6 +1486,91 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
 
 
 @plan
+def declare_progress(name: str, *, parent: str | None = None) -> MsgGenerator:
+    """Declare a new plan-driven progress status.
+
+    Parameters
+    ----------
+    name : str
+        Display name for the progress indicator.
+    parent : str, optional
+        Name of an already-declared progress status to nest under.
+
+    Yields
+    ------
+    msg : Msg
+
+    Returns
+    -------
+    status : PlanProgress
+        A status-like object compatible with ``ProgressBarManager``.
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.update_progress`
+    """
+    return (yield Msg("declare_progress", name=name, parent=parent))
+
+
+@plan
+def update_progress(
+    name: str,
+    *,
+    current: Any = None,
+    initial: Any = None,
+    target: Any = None,
+    unit: str = "units",
+    precision: Any = None,
+    fraction: Any = None,
+    time_elapsed: float | None = None,
+    time_remaining: float | None = None,
+    done: bool = False,
+) -> MsgGenerator:
+    """Update a plan-driven progress status.
+
+    Parameters
+    ----------
+    name : str
+        Name of the progress status to update (must already be declared).
+    current, initial, target :
+        Position values for computing progress.
+    unit : str
+        Unit label, default ``'units'``.
+    precision :
+        Decimal precision for progress display.
+    fraction : float, optional
+        Explicit 0-1 progress fraction.
+    time_elapsed, time_remaining : float, optional
+        Timing information for display.
+    done : bool
+        If True, mark this progress status as finished.
+
+    Yields
+    ------
+    msg : Msg
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.declare_progress`
+    """
+    return (
+        yield Msg(
+            "update_progress",
+            name=name,
+            current=current,
+            initial=initial,
+            target=target,
+            unit=unit,
+            precision=precision,
+            fraction=fraction,
+            time_elapsed=time_elapsed,
+            time_remaining=time_remaining,
+            done=done,
+        )
+    )
+
+
+@plan
 def broadcast_msg(
     command: str,
     objs: Iterable[Any],
@@ -1748,6 +1833,8 @@ def repeat(
     plan: Callable[[], MsgGenerator],
     num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
+    progress_scope_name: str | None = None,
+    progress_units: str = "repeats"
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
@@ -1767,6 +1854,9 @@ def repeat(
         If None, capture data until canceled
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
+    progress_scope_name : str, optional
+        Name of an already-declared progress status to update after each
+        repetition. If None, no progress updates are emitted.
 
     Yields
     ------
@@ -1807,6 +1897,16 @@ def repeat(
             now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg("checkpoint")
             yield from ensure_generator(plan())
+            if progress_scope_name is not None and num is not None:
+                yield from update_progress(
+                    name=progress_scope_name,
+                    current=i + 1,
+                    target=num,
+                    initial=0,
+                    done=i + 1 == num,
+                    precision=0,
+                    unit=progress_units,
+                )
             try:
                 d = next(delay)
             except StopIteration as stop:
