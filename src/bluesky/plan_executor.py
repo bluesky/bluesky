@@ -88,6 +88,12 @@ __all__ = [
     "set_bluesky_event_loop",
 ]
 
+# Inaccurate since the split: these spans are emitted by the executor, which
+# runs plans with no RunEngine in the process. Held anyway, because span names
+# are the query surface -- renaming would silently stop every saved query and
+# dashboard built on the old ones from matching -- and because they are
+# documented in docs/otel-tracing.rst. See #2054 for the rename and the
+# deprecation story it needs.
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
 
@@ -97,7 +103,8 @@ class _NoPlanReturn:
     TODO: this class exists only to give the singleton below a type and a
     repr. Replace both with a ``typing_extensions.Sentinel`` (PEP 661), which
     ships today but which mypy does not yet narrow on; when it does, the
-    sentinel needs no companion class and this one goes away.
+    sentinel needs no companion class and this one goes away. Tracked by #2016,
+    which covers the rest of bluesky's sentinels too.
     """
 
     def __repr__(self) -> str:
@@ -585,10 +592,17 @@ class PlanExecutor:
     waited on. It is built for a plan and discarded after it, so clearing
     those caches is a matter of building a new one.
 
-    It lives entirely on its session's event loop. It holds no locks and no
-    threading primitives, and none of its methods may be called from another
-    thread; a `RunEngine` marshals everything the main thread asks for onto
-    the loop before it arrives here.
+    It lives on its session's event loop, and holds no locks and no threading
+    primitives. A `RunEngine` marshals everything the main thread asks for
+    onto the loop before it arrives here, and a sync ophyd ``Status`` object's
+    done-callback is trampolined onto the loop by
+    :meth:`_add_status_to_group`, so every method that touches this object's
+    state runs on the loop.
+
+    :meth:`emit` is the exception, and the only one: a sync ophyd signal fires
+    its monitor callback on the device's own thread, and that reaches ``emit``
+    directly. It touches no executor state, but it does mean a document can be
+    given to subscribers off the loop. See its docstring.
 
     Prefer :meth:`PlanSession.new_executor` to constructing one directly: the
     session records the executor it is currently running, and an executor
