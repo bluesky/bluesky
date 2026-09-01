@@ -360,8 +360,10 @@ class RunEngine:
         # executor. A new one is built for each __call__ and kept afterwards,
         # so that a paused plan can be resumed and a finished one inspected.
         # The forwarding properties installed at the bottom of this module
-        # keep RE._msg_cache, RE._task and the rest pointing at it.
-        self._executor = self._session.new_executor()
+        # keep RE._msg_cache, RE._task and the rest pointing at it. The session
+        # built one as it was constructed, so adopt that rather than replacing
+        # it with an identical one.
+        self._executor = self._session.executor
 
         # aliases for back-compatibility
         self.subscribe_lossless = self.dispatcher.subscribe
@@ -638,7 +640,7 @@ class RunEngine:
     @property
     def resumable(self):
         "i.e., can the plan in progress by rewound"
-        return self._executor._msg_cache is not None
+        return self._executor.resumable
 
     @property
     def ignore_callback_exceptions(self):
@@ -989,8 +991,7 @@ class RunEngine:
         :meth:`RunEngine.install_suspender`
         :meth:`RunEngine.remove_suspender`
         """
-        for sus in self.suspenders:
-            self.remove_suspender(sus)
+        self._session.clear_suspenders()
 
     def request_suspend(self, fut, *, pre_plan=None, post_plan=None, justification=None):
         """Request that the run suspend itself until the future is finished.
