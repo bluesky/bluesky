@@ -92,7 +92,13 @@ _SPAN_NAME_PREFIX = "Bluesky RunEngine"
 
 
 class _NoPlanReturn:
-    """The type of :data:`NO_PLAN_RETURN`."""
+    """The type of :data:`NO_PLAN_RETURN`.
+
+    TODO: this class exists only to give the singleton below a type and a
+    repr. Replace both with a ``typing_extensions.Sentinel`` (PEP 661), which
+    ships today but which mypy does not yet narrow on; when it does, the
+    sentinel needs no companion class and this one goes away.
+    """
 
     def __repr__(self) -> str:
         return "NO_PLAN_RETURN"
