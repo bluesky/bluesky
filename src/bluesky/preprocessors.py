@@ -1,9 +1,10 @@
 import uuid
 from collections import ChainMap, OrderedDict, deque
-from collections.abc import Iterable
+from collections.abc import Hashable, Iterable
 from functools import wraps
+from typing import TypeAlias, TypeVar
 
-from bluesky.protocols import Locatable
+from bluesky.protocols import Locatable, Stageable
 
 from .plan_stubs import (
     close_run,
@@ -17,6 +18,7 @@ from .plan_stubs import (
 )
 from .utils import (
     Msg,
+    MsgGenerator,
     RunEngineControlException,
     ensure_generator,
     get_hinted_fields,
@@ -28,6 +30,15 @@ from .utils import (
     single_gen,
 )
 from .utils import short_uid as _short_uid
+
+P = TypeVar("P")
+
+StageGroup: TypeAlias = Hashable | None
+StageDeviceTuple: TypeAlias = tuple[Stageable, StageGroup, StageGroup]
+StageDevices: TypeAlias = (
+    Iterable[Stageable]
+    | Iterable[StageDeviceTuple]
+)
 
 
 def plan_mutator(plan, msg_proc):
@@ -977,7 +988,10 @@ def lazily_stage_wrapper(plan):
     return (yield from finalize_wrapper(plan_mutator(plan, inner), inner_unstage_all()))
 
 
-def stage_wrapper(plan, devices):
+def stage_wrapper(
+    plan: MsgGenerator[P],
+    devices: StageDevices,
+) -> MsgGenerator[P]:
     """
     'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.
 
