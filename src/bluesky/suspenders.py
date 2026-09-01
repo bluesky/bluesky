@@ -71,8 +71,17 @@ class SuspenderBase(metaclass=ABCMeta):
         outlives any one plan and so cannot hold the executor running it, and
         because everything a suspender needs -- the loop, the state, and a way
         to ask the current plan to suspend -- belongs to the session.
+
+        Writable, because this was a plain attribute before the split and
+        assigning to it should keep working. A `RunEngine` may still be
+        assigned: it offers ``loop``, ``state`` and ``request_suspend`` too,
+        so a suspender given one goes on working.
         """
         return self.session
+
+    @RE.setter
+    def RE(self, value):
+        self.session = value
 
     def install(self, session, *, event_type=None):
         """Install callback on signal

@@ -126,6 +126,22 @@ def test_remove_without_install_does_not_need_a_loop():
     assert sig.threads == {}
 
 
+def test_RE_is_a_read_write_alias_of_session(RE):
+    """``RE`` was a plain attribute before the session existed, so reading and
+    writing it both have to keep working."""
+    susp = SuspendBoolHigh(_RecordingSignal())
+    assert susp.RE is susp.session is None
+
+    RE.install_suspender(susp)
+    assert susp.session is RE._session
+    assert susp.RE is RE._session
+
+    susp.RE = None
+    assert susp.session is None
+
+    RE.remove_suspender(susp)
+
+
 def _loop_thread_ident(RE):
     """The ident of the thread the RunEngine's event loop runs in."""
 
