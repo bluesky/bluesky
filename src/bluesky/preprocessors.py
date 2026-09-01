@@ -2,7 +2,7 @@ import uuid
 from collections import ChainMap, OrderedDict, deque
 from collections.abc import Hashable, Iterable
 from functools import wraps
-from typing import TypeAlias, TypeVar
+from typing import Any, TypeAlias, TypeVar
 
 from bluesky.protocols import Locatable, Stageable
 
@@ -26,7 +26,6 @@ from .utils import (
     merge_axis,
     normalize_subs_input,
     root_ancestor,
-    separate_devices,
     single_gen,
 )
 from .utils import short_uid as _short_uid
@@ -988,6 +987,28 @@ def lazily_stage_wrapper(plan):
     return (yield from finalize_wrapper(plan_mutator(plan, inner), inner_unstage_all()))
 
 
+def _normalize_stage_devices(devices: StageDevices) -> tuple[bool, list[Any]]:
+    seen_roots: list[Stageable] = []
+    normalized: list[Any] = []
+    is_grouped = False
+
+    for item in devices:
+        if isinstance(item, tuple):
+            is_grouped = True
+            dev, stage_group, unstage_group = item
+            root = root_ancestor(dev)
+            if root not in seen_roots:
+                seen_roots.append(root)
+                normalized.append((root, stage_group, unstage_group))
+        else:
+            root = root_ancestor(item)
+            if root not in seen_roots:
+                seen_roots.append(root)
+                normalized.append(root)
+
+    return is_grouped, normalized
+
+
 def stage_wrapper(
     plan: MsgGenerator[P],
     devices: StageDevices,
@@ -1013,13 +1034,13 @@ def stage_wrapper(
     :func:`bluesky.plans.stage`
     :func:`bluesky.plans.unstage`
     """
-    devices = separate_devices(root_ancestor(device) for device in devices)
+    is_grouped, normalized_devices = _normalize_stage_devices(devices)
 
     def stage_devices():
-        yield from stage_all(*devices)
+        yield from stage_all(*normalized_devices)
 
     def unstage_devices():
-        yield from unstage_all(*reversed(devices))
+        yield from unstage_all(*reversed(normalized_devices))
 
     def inner():
         yield from stage_devices()
