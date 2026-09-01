@@ -801,20 +801,21 @@ class RunEngine:
             print("Suspending... To get to the prompt, hit Ctrl-C twice to pause.")
 
         self._new_executor(subs)
-
-        self._executor.load_plan(
-            plan,
-            metadata=metadata_kw,
-            # Wait for any already-tripped suspenders before starting.
-            prologue=single_gen(Msg("wait_for", None, futs)) if futs else None,
-        )
         self.log.info("Executing plan %r", plan)
 
         def _build_task():
             # make sure _run will block at the top
             self._executor.block_run()
             self._blocking_event.clear()
-            self._task_fut = asyncio.run_coroutine_threadsafe(self._executor.run(), loop=self.loop)
+            self._task_fut = asyncio.run_coroutine_threadsafe(
+                self._executor.run(
+                    plan,
+                    metadata=metadata_kw,
+                    # Wait for any already-tripped suspenders before starting.
+                    prologue=single_gen(Msg("wait_for", None, futs)) if futs else None,
+                ),
+                loop=self.loop,
+            )
 
             def set_blocking_event(future):
                 self._blocking_event.set()

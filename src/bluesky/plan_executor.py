@@ -793,7 +793,7 @@ class PlanExecutor:
             registry.pop(name, None)
         self.command_registry = registry
 
-    def load_plan(self, plan, *, metadata=None, prologue=None):
+    def _load_plan(self, plan, *, metadata=None, prologue=None):
         """Put a plan on the stack, ready to be run.
 
         Parameters
@@ -875,8 +875,8 @@ class PlanExecutor:
             _span.set_attribute("exit_status", "aborted")
             _span.end()
 
-    async def run(self, plan=None, *, metadata=None):
-        """Execute ``plan``, or whatever has already been loaded.
+    async def run(self, plan, *, metadata=None, prologue=None):
+        """Execute ``plan``.
 
         Awaiting this is all that is needed to run a plan::
 
@@ -885,12 +885,13 @@ class PlanExecutor:
 
         Parameters
         ----------
-        plan : iterable of Msg, optional
-            The plan to execute. If omitted, whatever :meth:`load_plan` has
-            put on the stack is executed instead, which is how a `RunEngine`
-            uses this.
+        plan : iterable of Msg
+            The plan to execute. The session's preprocessors are applied to it.
         metadata : dict, optional
             Metadata for every run the plan opens.
+        prologue : iterable of Msg, optional
+            Messages to work off before the plan itself, used by a `RunEngine`
+            to wait for tripped suspenders before starting.
 
         Returns
         -------
@@ -908,8 +909,7 @@ class PlanExecutor:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        if plan is not None:
-            self.load_plan(plan, metadata=metadata)
+        self._load_plan(plan, metadata=metadata, prologue=prologue)
         await self._run_permit.wait()
         # grab the current task.  We need to do this here because the
         # object returned by `run_coroutine_threadsafe` is a future
