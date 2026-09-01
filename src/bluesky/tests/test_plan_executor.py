@@ -11,7 +11,7 @@ import threading
 import pytest
 
 from bluesky import Msg
-from bluesky.run_engine import PlanExecutor, PlanSession
+from bluesky.plan_executor import PlanExecutor, PlanSession
 from bluesky.utils import RunEngineInterrupted
 
 THREADING_PRIMITIVES = (
@@ -25,15 +25,33 @@ THREADING_PRIMITIVES = (
 )
 
 
-def test_executor_holds_no_threading_primitives():
+@pytest.fixture
+def idle_session():
+    """A session on a loop of its own, for tests that never run a plan."""
+    loop = asyncio.new_event_loop()
+    try:
+        yield PlanSession(loop=loop)
+    finally:
+        loop.close()
+
+
+def test_the_old_import_location_still_works():
+    """Both classes were defined in run_engine before they moved here, and it
+    goes on re-exporting them for code written against that."""
+    from bluesky import run_engine
+
+    assert run_engine.PlanSession is PlanSession
+    assert run_engine.PlanExecutor is PlanExecutor
+
+
+def test_executor_holds_no_threading_primitives(idle_session):
     """The executor is single threaded by construction.
 
     Everything it touches is reached from the event loop, so it needs no
     locks. If this fails, something that belongs to the RunEngine, which is
     the only thread-aware object of the three, has leaked down into it.
     """
-    session = PlanSession(loop=asyncio.new_event_loop())
-    executor = session.new_executor()
+    executor = idle_session.new_executor()
 
     offenders = {
         name: type(value).__name__
@@ -51,14 +69,12 @@ def test_source_takes_no_locks(cls):
         assert forbidden not in source, f"{cls.__name__} uses {forbidden}"
 
 
-def test_session_holds_no_threading_primitives():
+def test_session_holds_no_threading_primitives(idle_session):
     """The session is reachable from the main thread and from the loop, but
     everything that writes to it runs on the loop, so it needs no locks."""
-    session = PlanSession(loop=asyncio.new_event_loop())
-
     offenders = {
         name: type(value).__name__
-        for name, value in vars(session).items()
+        for name, value in vars(idle_session).items()
         if isinstance(value, THREADING_PRIMITIVES)
     }
     assert offenders == {}
@@ -192,8 +208,6 @@ def test_request_pause_coro_survives_for_queueserver(RE):
     coroutine instead. There is no public equivalent yet, so this has to keep
     working.
     """
-    import asyncio
-    import threading
 
     def pause_from_another_thread():
         asyncio.run_coroutine_threadsafe(RE._request_pause_coro(False), loop=RE.loop).result()
