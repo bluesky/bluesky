@@ -37,7 +37,7 @@ from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
 
-from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky.fsm import TransitionError
 from bluesky.protocols import (
     Asset,
     HasHints,
