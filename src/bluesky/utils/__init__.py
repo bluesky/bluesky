@@ -536,25 +536,35 @@ class _BoundMethodProxy:
     def __init__(self, cb):
         self._hash = hash(cb)
         self._destroy_callbacks = []
-        try:
-            # This branch is successful if 'cb' bound method and class method,
-            #   but destroy_callback mechanism works only for bound methods,
-            #   since cb.__self__ points to class instance only for
-            #   bound methods, not for class methods. Therefore destroy_callback
-            #   will not be called for class methods.
-            try:
-                self.inst = ref(cb.__self__, self._destroy)
-            except TypeError:
-                self.inst = None
-            self.func = cb.__func__
-            self.klass = cb.__self__.__class__
+        cb_self = getattr(cb, "__self__", None)
 
-        except AttributeError:
+        if cb_self is None:
             # 'cb' is a function, callable object or static method.
             # No weak reference is created, strong reference is stored instead.
             self.inst = None
             self.func = cb
             self.klass = None
+        elif isinstance(cb_self, type):
+            # 'cb' is a class method, so __self__ is the class rather than an
+            # instance of it. A class is weakly referenceable, so the branch below
+            # would succeed and then silently unsubscribe the callback when the
+            # class was collected -- and there is no instance whose death was
+            # supposed to mean anything. Hold it strongly, as for a plain function.
+            self.inst = None
+            self.func = cb
+            self.klass = cb_self
+        else:
+            try:
+                self.inst = ref(cb_self, self._destroy)
+            except TypeError:
+                # 'obj' cannot be weakly referenced, e.g. it uses __slots__ without
+                # __weakref__. Hold the bound method strongly rather than an unbound
+                # function that we would later call without its instance.
+                self.inst = None
+                self.func = cb
+            else:
+                self.func = cb.__func__
+            self.klass = cb_self.__class__
 
     def add_destroy_callback(self, callback):
         self._destroy_callbacks.append(_BoundMethodProxy(callback))
