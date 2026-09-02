@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import operator
 import time
 import warnings
@@ -377,6 +378,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
         # Now delete all the callable objects one by one
         for n in range(len(obj_to_delete)):
             obj_to_delete[n] = None  # Overwriting the reference deletes the object
+            # Collect now, rather than leaving it to whenever the cyclic collector
+            # next runs. Without this the assertions below turn on collection
+            # timing rather than on what the registry holds: the class method
+            # cases passed for years while asserting the opposite of what the
+            # registry did, because the collector happened not to run in between.
+            gc.collect()
 
             # Check the function composition
             if callable_type in [
@@ -439,6 +446,78 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                     f"Incorrect number of callbacks for '{sig_name}'"
                 )
             _process_each_signal(n_start_check=n + 1)
+
+
+def test_CallbackRegistry_class_method_survives_collection_of_its_class():
+    """A class method callback is held strongly, so collecting the class is not enough.
+
+    ``__self__`` of a class method is the class itself, which is weakly
+    referenceable. Taking a weak reference to it would unsubscribe the callback
+    once the class was collected -- invisible for a class defined in a module,
+    which never is, but not for one created dynamically.
+    """
+
+    def make_instance():
+        class C:
+            @classmethod
+            def cb(cls, out):
+                out.append("called")
+
+        return C()
+
+    reg = CallbackRegistry()
+    instance = make_instance()
+    reg.connect("sig", instance.cb)
+
+    # Drop every reference the caller holds, to the instance and so to the class.
+    instance = None
+    gc.collect()
+
+    assert len(reg.callbacks["sig"]) == 1
+    out = []
+    reg.process("sig", out)
+    assert out == ["called"]
+
+
+def test_CallbackRegistry_callback_on_unweakreferenceable_instance():
+    """An instance that cannot be weakly referenced keeps a working callback.
+
+    ``__slots__`` without ``__weakref__`` makes ``ref()`` raise, and the fallback
+    used to keep the *unbound* function, which then got called without its
+    instance -- at process time, long after connect had reported success.
+    """
+
+    class Slotted:
+        __slots__ = ()
+
+        def cb(self, out):
+            out.append("called")
+
+    reg = CallbackRegistry()
+    instance = Slotted()
+    reg.connect("sig", instance.cb)
+
+    out = []
+    reg.process("sig", out)
+    assert out == ["called"]
+
+
+def test_CallbackRegistry_bound_method_still_unsubscribes_on_death():
+    """The weak reference an ordinary bound method relies on is unchanged."""
+
+    class C:
+        def cb(self, out):
+            out.append("called")
+
+    reg = CallbackRegistry()
+    instance = C()
+    reg.connect("sig", instance.cb)
+    assert len(reg.callbacks["sig"]) == 1
+
+    instance = None
+    gc.collect()
+
+    assert "sig" not in reg.callbacks
 
 
 def test_CallbackRegistry_2():
