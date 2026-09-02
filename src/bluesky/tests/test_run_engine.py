@@ -1020,18 +1020,16 @@ def test_single_sigint_no_carry_over(RE):
         os.kill(pid, signal.SIGINT)
 
     def test_plan():
-        first = False
         for _ in range(5):
             yield Msg("null")
-            if first:
-                deferred_pause_done.wait()
-                first = False
 
     # Single SIGINT defers a pause but plan finishes anyway
     sigint_thread = threading.Thread(target=send_sigint, daemon=True)
     sigint_thread.start()
     RE(test_plan())
     sigint_thread.join(timeout=0.1)
+
+    assert deferred_pause_done.wait(timeout=5)
 
     def checkpoint_plan():
         for _ in range(10):
