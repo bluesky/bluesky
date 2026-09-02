@@ -807,7 +807,7 @@ class PlanExecutor:
             registry.pop(name, None)
         self.command_registry = registry
 
-    def _load_plan(self, plan, *, metadata=None, prologue=None):
+    def _load_plan(self, plan, *, metadata=None):
         """Put a plan on the stack, ready to be run.
 
         Parameters
@@ -816,9 +816,6 @@ class PlanExecutor:
             The plan to execute. The session's preprocessors are applied to it.
         metadata : dict, optional
             Metadata for every run this plan opens.
-        prologue : iterable of Msg, optional
-            Messages to work off before the plan itself, used to wait for
-            tripped suspenders before starting.
         """
         self._plan = plan  # this ref is just used for metadata introspection
         if metadata:
@@ -830,9 +827,6 @@ class PlanExecutor:
 
         self._plan_stack.append(gen)
         self._response_stack.append(None)
-        if prologue is not None:
-            self._plan_stack.append(prologue)
-            self._response_stack.append(None)
 
     async def prepare_resume(self):
         """Get ready to resume from a pause. Must be called on the loop."""
@@ -845,6 +839,19 @@ class PlanExecutor:
         for obj in self._objs_seen:
             if isinstance(obj, Pausable):
                 await maybe_await(obj.resume())
+
+    def _push_suspend(self, fut, *, pre_plan=None, post_plan=None, justification=None):
+        """Push the ``_start_suspender`` machinery onto the plan stack.
+
+        Shared by :meth:`request_suspend`, for a suspender that trips mid-plan,
+        and by :meth:`run`, for one already tripped before the plan starts.
+        Pushing onto the stack -- so that it is worked off before whatever is
+        beneath it -- is all the two cases have in common. Interrupting
+        whatever is currently running is left to the caller: at plan start
+        there is nothing running yet to interrupt.
+        """
+        self._plan_stack.append(single_gen(Msg("_start_suspender", None, pre_plan, post_plan, justification, fut)))
+        self._response_stack.append(None)
 
     async def request_suspend(self, fut, *, pre_plan=None, post_plan=None, justification=None):
         """Suspend until ``fut`` is finished. Must be called on the loop."""
@@ -860,9 +867,7 @@ class PlanExecutor:
         if justification is not None:
             print(f"Justification for this suspension:\n{justification}")
 
-        # add starting the suspender logic to the stack
-        self._plan_stack.append(single_gen(Msg("_start_suspender", None, pre_plan, post_plan, justification, fut)))
-        self._response_stack.append(None)
+        self._push_suspend(fut, pre_plan=pre_plan, post_plan=post_plan, justification=justification)
 
         # The event loop is still running. The pre_plan will be processed,
         # and then the executor will be hung up on processing the
@@ -871,6 +876,43 @@ class PlanExecutor:
             self.state = "suspending"
             # bump the run task out of what ever it is awaiting
             self._task.cancel()
+
+    def _queue_tripped_suspenders(self):
+        """Wait for any suspender that is already tripped before the plan starts.
+
+        ``RunEngine.__call__`` used to build this as a bespoke 'prologue'
+        generator, pushed directly onto the stack ahead of the plan and
+        containing nothing but a single ``wait_for``. It goes instead through
+        the same ``_start_suspender`` machinery a mid-plan suspension uses --
+        one push per tripped suspender, via :meth:`_push_suspend` -- rather
+        than a second copy of the suspend logic to keep in sync with the
+        first.
+
+        Not :meth:`request_suspend` itself: that also stashes an interrupt
+        exception and cancels the in-progress task, which is right when a
+        suspender trips while a plan is already running. Here there is no
+        task yet -- this runs before `run` reaches the line that sets
+        ``self._task`` -- and nothing to interrupt.
+        """
+        tripped = []
+        for sup in self._session.suspenders:
+            futs, justification = sup.get_futures()
+            if futs:
+                tripped.append((futs[0], justification))
+
+        if not tripped:
+            return
+
+        print(
+            "At least one suspender has tripped. The plan will begin when all suspenders are ready. Justification:"
+        )
+        for i, (_, justification) in enumerate(tripped):
+            print(f"    {i + 1}. {justification}")
+        print()
+        print("Suspending... To get to the prompt, hit Ctrl-C twice to pause.")
+
+        for fut, justification in tripped:
+            self._push_suspend(fut, justification=justification)
 
     async def _stop_movable_objects(self, *, success=True):
         "Call obj.stop() for all objects we have moved. Log any exceptions."
@@ -889,7 +931,7 @@ class PlanExecutor:
             _span.set_attribute("exit_status", "aborted")
             _span.end()
 
-    async def run(self, plan, *, metadata=None, prologue=None):
+    async def run(self, plan, *, metadata=None):
         """Execute ``plan``.
 
         Awaiting this is all that is needed to run a plan::
@@ -903,9 +945,6 @@ class PlanExecutor:
             The plan to execute. The session's preprocessors are applied to it.
         metadata : dict, optional
             Metadata for every run the plan opens.
-        prologue : iterable of Msg, optional
-            Messages to work off before the plan itself, used by a `RunEngine`
-            to wait for tripped suspenders before starting.
 
         Returns
         -------
@@ -923,7 +962,8 @@ class PlanExecutor:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        self._load_plan(plan, metadata=metadata, prologue=prologue)
+        self._load_plan(plan, metadata=metadata)
+        self._queue_tripped_suspenders()
         await self._run_permit.wait()
         # grab the current task.  We need to do this here because the
         # object returned by `run_coroutine_threadsafe` is a future

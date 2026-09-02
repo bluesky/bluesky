@@ -54,7 +54,6 @@ from .utils import (
     RunEngineInterrupted,
     SigintHandler,
     Subscribers,
-    single_gen,
 )
 
 # What this module defines, plus the names it has always passed through from
@@ -783,25 +782,6 @@ class RunEngine:
         if not self._session.state.is_idle:
             raise RuntimeError(f"The RunEngine is in a {self._session.state} state")
 
-        futs = []
-        tripped_justifications = []
-        for sup in self.suspenders:
-            f_lst, justification = sup.get_futures()
-            if f_lst:
-                futs.extend(f_lst)
-                tripped_justifications.append(justification)
-
-        if tripped_justifications:
-            print(
-                "At least one suspender has tripped. The plan will begin "
-                "when all suspenders are ready. Justification:"
-            )
-            for i, justification in enumerate(tripped_justifications):
-                print(f"    {i + 1}. {justification}")
-
-            print()
-            print("Suspending... To get to the prompt, hit Ctrl-C twice to pause.")
-
         self._new_executor(subs)
         self.log.info("Executing plan %r", plan)
 
@@ -810,12 +790,7 @@ class RunEngine:
             self._executor.block_run()
             self._blocking_event.clear()
             self._task_fut = asyncio.run_coroutine_threadsafe(
-                self._executor.run(
-                    plan,
-                    metadata=metadata_kw,
-                    # Wait for any already-tripped suspenders before starting.
-                    prologue=single_gen(Msg("wait_for", None, futs)) if futs else None,
-                ),
+                self._executor.run(plan, metadata=metadata_kw),
                 loop=self.loop,
             )
 

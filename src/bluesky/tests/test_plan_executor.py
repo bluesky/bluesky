@@ -222,3 +222,11 @@ def test_request_pause_coro_survives_for_queueserver(RE):
         RE(plan())
     assert RE.state == "paused"
     RE.stop()
+
+
+def test_run_no_longer_takes_a_prologue():
+    """prologue used to be how a RunEngine had run() wait for already-tripped
+    suspenders before starting the plan proper. That is now expressed through
+    the same _start_suspender machinery a mid-plan suspend uses (see
+    test_suspenders.py::test_pretripped), so run() has no more use for it."""
+    assert "prologue" not in inspect.signature(PlanExecutor.run).parameters

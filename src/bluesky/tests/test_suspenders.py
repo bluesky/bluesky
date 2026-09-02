@@ -254,8 +254,42 @@ def test_pretripped(RE, hw):
     RE.msg_hook = accum
     RE(scan)
 
-    assert len(msg_lst) == 2
-    assert ["wait_for", "checkpoint"] == [m[0] for m in msg_lst]
+    # Waiting for an already-tripped suspender goes through the same
+    # _start_suspender machinery as a mid-plan suspend (see
+    # test_pre_suspend_plan), rather than a single bespoke 'wait_for', so the
+    # msg_hook sees that machinery's messages ahead of the plan's own.
+    assert [
+        "_start_suspender",
+        "rewindable",
+        "wait_for",
+        "_resume_from_suspender",
+        "rewindable",
+        "checkpoint",
+    ] == [m[0] for m in msg_lst]
+    assert RE.state == "idle"
+
+
+def test_pretripped_plan_runs_to_completion_after_release(RE, hw):
+    """A suspender already tripped when RE(plan) is called holds the plan back
+    until it clears, then the plan's own messages run in order and the
+    RunEngine ends idle -- the behaviour prologue used to provide."""
+    sig = hw.bool_sig
+    scan = [Msg("open_run"), Msg("close_run")]
+    msg_lst = []
+    sig.put(0)
+
+    susp = SuspendBoolLow(sig, sleep=0)
+    RE.install_suspender(susp)
+    RE.msg_hook = lambda msg: msg_lst.append(msg.command)
+    threading.Timer(0.5, sig.put, (1,)).start()
+
+    start = ttime.time()
+    RE(scan)
+    stop = ttime.time()
+
+    assert stop - start > 0.5
+    assert [m for m in msg_lst if m in ("open_run", "close_run")] == ["open_run", "close_run"]
+    assert RE.state == "idle"
 
 
 def test_suspender_wrapper(RE, hw):
@@ -399,9 +433,20 @@ def test_pause_from_suspend(RE, hw):
     RE.msg_hook = accum
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
-    assert [m[0] for m in msg_lst] == ["wait_for"]
+    # Waiting for the already-tripped suspender goes through _start_suspender,
+    # same as a mid-plan suspend (see test_pretripped), so the pause catches
+    # it still inside that machinery rather than at a bare 'wait_for'.
+    assert [m[0] for m in msg_lst] == ["_start_suspender", "rewindable", "wait_for"]
     RE.resume()
-    assert ["wait_for", "wait_for", "checkpoint"] == [m[0] for m in msg_lst]
+    assert [
+        "_start_suspender",
+        "rewindable",
+        "wait_for",
+        "rewindable",
+        "_resume_from_suspender",
+        "rewindable",
+        "checkpoint",
+    ] == [m[0] for m in msg_lst]
 
 
 def test_suspend_when_changed_preserves_falsy_expected_value(hw):
@@ -448,9 +493,26 @@ def test_deferred_pause_from_suspend(RE, hw):
     RE.msg_hook = accum
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
-    assert [m[0] for m in msg_lst] == ["wait_for", "checkpoint"]
+    # See test_pretripped: waiting for the already-tripped suspender goes
+    # through _start_suspender, same as a mid-plan suspend.
+    assert [m[0] for m in msg_lst] == [
+        "_start_suspender",
+        "rewindable",
+        "wait_for",
+        "_resume_from_suspender",
+        "rewindable",
+        "checkpoint",
+    ]
     RE.resume()
-    assert ["wait_for", "checkpoint", "null"] == [m[0] for m in msg_lst]
+    assert [
+        "_start_suspender",
+        "rewindable",
+        "wait_for",
+        "_resume_from_suspender",
+        "rewindable",
+        "checkpoint",
+        "null",
+    ] == [m[0] for m in msg_lst]
 
 
 def test_unresumable_suspend_fail(RE):
