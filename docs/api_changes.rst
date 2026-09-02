@@ -2,6 +2,18 @@
  Release History
 =================
 
+v1.15.2 (yyyy-mm-dd)
+====================
+
+Changed
+-------
+
+- ``collect()`` now chooses whether to ask a device for Events, EventPages or stream
+  assets based on what that device produced, rather than on the protocols it statically
+  obeys, so a single device may obey both ``WritesStreamAssets`` and
+  ``EventPageCollectable`` and decide which of them it uses when it is prepared.
+  Reporting both ways in the same run raises a ``RuntimeError``.
+
 v1.15.1 (2026-05-05)
 ====================
 

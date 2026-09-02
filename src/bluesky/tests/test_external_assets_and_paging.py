@@ -313,6 +313,63 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     get_index = get_index
 
 
+class StreamAssetsOrPagesCollectable(Named, EventPageCollectable, WritesStreamAssets):
+    """Produces either StreamResources and StreamDatums, or EventPages, or both.
+
+    ``ophyd_async.core.StandardDetector`` is a device of this shape: whether it writes
+    its data to an external file or reports it as EventPages is decided by its data
+    logics when it is prepared, so it satisfies both protocols but only uses one of
+    them in any given run.
+    """
+
+    get_index = get_index
+
+    def __init__(self, name: str, produces: str) -> None:
+        super().__init__(name)
+        # One of "stream_assets", "event_pages", "both" or "nothing"
+        self.produces = produces
+
+    def describe_collect(self) -> dict[str, DataKey]:
+        data_keys: dict[str, DataKey] = {}
+        if self.produces in ("stream_assets", "both"):
+            data_keys.update(describe_stream_datum(self))
+        if self.produces in ("event_pages", "both"):
+            data_keys.update(describe_collect_pv(self))
+        return data_keys
+
+    def collect_asset_docs(self, index: int | None = None) -> Iterator[StreamAsset]:
+        if self.produces in ("stream_assets", "both"):
+            yield from collect_asset_docs_stream_datum(self, index)
+
+    def collect_pages(self) -> Iterator[PartialEventPage]:
+        if self.produces in ("event_pages", "both"):
+            yield from collect_pages_pv(self)
+
+
+class DummyStatus:
+    def add_callback(self, *args, **kwargs): ...
+
+
+class FlyableStreamAssetsOrPagesCollectable(StreamAssetsOrPagesCollectable):
+    """The same device, but flyable, so it can be left uncollected at the end of a run"""
+
+    def kickoff(self) -> DummyStatus:
+        return DummyStatus()
+
+    def complete(self) -> DummyStatus:
+        return DummyStatus()
+
+
+class EmptyStreamDatumCollectable(Named, Collectable, WritesStreamAssets):
+    """Writes stream assets, but has no new frames to flush in this collect"""
+
+    describe_collect = describe_stream_datum
+    get_index = get_index
+
+    def collect_asset_docs(self, index: int | None = None) -> Iterator[StreamAsset]:
+        return iter(())
+
+
 def test_datum_readable_counts(RE):
     """Test that count-ing a datum-producing device results in expected documents."""
     det = DatumReadable(name="det")
@@ -557,6 +614,151 @@ def test_many_stream_datum_collectables(RE):
     assert set(docs["descriptor"][0]["data_keys"]) == set(data_keys)  # This only works in a set
     assert [d["data_key"] for d in docs["stream_resource"]] == data_keys
     assert all(d["descriptor"] == docs["descriptor"][0]["uid"] for d in docs["stream_datum"])
+
+
+def two_collect_plan(det, first, second, stream_name="main"):
+    """Declare a stream, then collect twice, changing what the device reports in between"""
+    yield from bps.open_run()
+    yield from bps.declare_stream(det, name=stream_name, collect=True)
+    det.produces = first
+    yield from bps.collect(det, name=stream_name)
+    det.produces = second
+    yield from bps.collect(det, name=stream_name)
+    yield from bps.close_run()
+
+
+def test_both_protocols_collectable_producing_event_pages(RE):
+    """A device that could write stream assets, but produced pages, emits those pages."""
+    det = StreamAssetsOrPagesCollectable(name="det", produces="event_pages")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=True, stream_name="main"), docs.append)
+    docs.assert_emitted(start=1, descriptor=1, event_page=1, stop=1)
+    assert docs["descriptor"][0]["name"] == "main"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-pv1", "det-pv2"]
+    assert docs["event_page"][0]["data"] == {"det-pv1": [0, 1], "det-pv2": [0, 1]}
+    assert docs["event_page"][0]["timestamps"] == {"det-pv1": [100, 101], "det-pv2": [100, 101]}
+    assert docs["event_page"][0]["seq_num"] == [1, 2]
+    assert docs["stop"][0]["num_events"] == {"main": 2}
+
+
+def test_both_protocols_collectable_producing_stream_assets(RE):
+    """A device that could produce pages, but wrote stream assets, emits just those."""
+    det = StreamAssetsOrPagesCollectable(name="det", produces="stream_assets")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=True, stream_name="main"), docs.append)
+    docs.assert_emitted(start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1)
+    assert docs["descriptor"][0]["name"] == "main"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
+    assert [d["data_key"] for d in docs["stream_resource"]] == ["det-sd1", "det-sd2"]
+    assert docs["stop"][0]["num_events"] == {"main": 1}
+
+
+def test_both_protocols_producing_stream_assets_matches_a_stream_only_device(RE):
+    """Writing stream assets from a both-protocol device is byte for byte the old path."""
+    both, stream_only = DocHolder(), DocHolder()
+    RE(
+        collect_plan(
+            StreamAssetsOrPagesCollectable(name="det", produces="stream_assets"),
+            pre_declare=True,
+            stream_name="main",
+        ),
+        both.append,
+    )
+    RE(
+        collect_plan(StreamDatumReadableCollectable(name="det"), pre_declare=True, stream_name="main"),
+        stream_only.append,
+    )
+    assert {name: len(d) for name, d in both.items()} == {name: len(d) for name, d in stream_only.items()}
+    assert [d["seq_nums"] for d in both["stream_datum"]] == [d["seq_nums"] for d in stream_only["stream_datum"]]
+    assert [d["indices"] for d in both["stream_datum"]] == [d["indices"] for d in stream_only["stream_datum"]]
+    assert both["stop"][0]["num_events"] == stream_only["stop"][0]["num_events"]
+
+
+def test_both_protocols_reporting_both_ways_in_one_run_raises(RE):
+    """Reporting pages and then stream assets in one run would count frames twice."""
+    det = StreamAssetsOrPagesCollectable(name="det", produces="both")
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Collect object 'det' reported Events or EventPages earlier in this run, but has now "
+            "reported stream assets."
+        ),
+    ):
+        RE(two_collect_plan(det, "event_pages", "stream_assets"))
+
+
+def test_both_protocols_reporting_stream_assets_stays_on_the_stream_asset_path(RE):
+    """Once a device has reported stream assets it is not asked for pages again.
+
+    A device with no new frames to flush reports no stream assets, which is not the same
+    as it having changed to producing pages, so the choice is pinned for the run.
+    """
+    det = StreamAssetsOrPagesCollectable(name="det", produces="both")
+    docs = DocHolder()
+    RE(two_collect_plan(det, "stream_assets", "event_pages"), docs.append)
+    docs.assert_emitted(start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1)
+
+
+def test_both_protocols_with_nothing_to_flush_is_not_pinned_to_pages(RE):
+    """A first collect that produced nothing leaves the device free to stream later."""
+    det = StreamAssetsOrPagesCollectable(name="det", produces="stream_assets")
+    docs = DocHolder()
+    RE(two_collect_plan(det, "nothing", "stream_assets"), docs.append)
+    docs.assert_emitted(start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1)
+    assert [d["seq_nums"] for d in docs["stream_datum"]] == [{"start": 1, "stop": 2}] * 2
+    assert docs["stop"][0]["num_events"] == {"main": 1}
+
+
+def test_stream_assets_only_device_with_nothing_to_flush(RE):
+    """A device that can only write stream assets never falls into the page branch."""
+    det = EmptyStreamDatumCollectable(name="det")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=True, stream_name="main"), docs.append)
+    docs.assert_emitted(start=1, descriptor=1, stop=1)
+    assert docs["stop"][0]["num_events"] == {"main": 0}
+
+
+def many_collectables_plan(det1, det2):
+    """Collect one device on its own, then collect it alongside another"""
+    yield from bps.open_run()
+    yield from bps.declare_stream(det1, name="main", collect=True)
+    yield from bps.collect(det1, name="main")
+    yield from bps.declare_stream(det1, det2, name="both", collect=True)
+    yield from bps.collect(det1, det2, name="both")
+    yield from bps.close_run()
+
+
+def test_page_collectable_alongside_other_collectables_raises(RE):
+    """collect() can only compose pages for one object, so don't drop the other's data."""
+    det1 = StreamAssetsOrPagesCollectable(name="det1", produces="event_pages")
+    det2 = StreamDatumReadableCollectable(name="det2")
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Collect object 'det1' reported Events or EventPages earlier in this run, so it "
+            "cannot be collected alongside other objects."
+        ),
+    ):
+        RE(many_collectables_plan(det1, det2))
+
+
+def uncollected_plan(det):
+    """Kick off a device, then leave the run open so backstop_collect() has to collect"""
+    yield from bps.open_run()
+    yield from bps.declare_stream(det, name="main", collect=True)
+    yield from bps.kickoff(det)
+
+
+@pytest.mark.parametrize("produces", ["stream_assets", "event_pages"])
+def test_backstop_collect_of_a_both_protocol_device(RE, produces):
+    """backstop_collect() picks the same verb as an explicit collect would."""
+    det = FlyableStreamAssetsOrPagesCollectable(name="det", produces=produces)
+    docs = DocHolder()
+    RE(uncollected_plan(det), docs.append)
+    if produces == "stream_assets":
+        docs.assert_emitted(start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1)
+    else:
+        docs.assert_emitted(start=1, descriptor=1, event_page=1, stop=1)
 
 
 def tomo_plan(*objs):
