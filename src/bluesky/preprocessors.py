@@ -12,8 +12,10 @@ from .plan_stubs import (
     mv,
     open_run,
     pause,
+    stage,
     stage_all,
     trigger_and_read,
+    unstage,
     unstage_all,
 )
 from .utils import (
@@ -34,10 +36,7 @@ P = TypeVar("P")
 
 StageGroup: TypeAlias = Hashable | None
 StageDeviceTuple: TypeAlias = tuple[Stageable, StageGroup, StageGroup]
-StageDevices: TypeAlias = (
-    Iterable[Stageable]
-    | Iterable[StageDeviceTuple]
-)
+StageDevices: TypeAlias = Iterable[Stageable] | Iterable[StageDeviceTuple]
 
 
 def plan_mutator(plan, msg_proc):
@@ -1036,11 +1035,23 @@ def stage_wrapper(
     """
     is_grouped, normalized_devices = _normalize_stage_devices(devices)
 
-    def stage_devices():
-        yield from stage_all(*normalized_devices)
+    if is_grouped:
 
-    def unstage_devices():
-        yield from unstage_all(*reversed(normalized_devices))
+        def stage_devices():
+            for dev, stage_group, _ in normalized_devices:
+                yield from stage(dev, group=stage_group)
+
+        def unstage_devices():
+            for dev, _, unstage_group in reversed(normalized_devices):
+                yield from unstage(dev, group=unstage_group)
+
+    else:
+
+        def stage_devices():
+            yield from stage_all(*normalized_devices)
+
+        def unstage_devices():
+            yield from unstage_all(*reversed(normalized_devices))
 
     def inner():
         yield from stage_devices()
