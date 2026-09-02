@@ -8,6 +8,7 @@ import types
 from collections import defaultdict
 from functools import partial
 from traceback import FrameSummary, extract_tb
+from typing import cast
 
 import pytest
 from event_model import DocumentNames
@@ -996,7 +997,7 @@ def test_single_sigint_no_carry_over(RE):
     pid = os.getpid()
 
     wait_for_reached = threading.Event()
-    deferred_pause_done = _fabricate_asycio_event(RE.loop)
+    deferred_pause_done = cast(asyncio.Event, _fabricate_asycio_event(RE.loop))
 
     def msg_hook(msg):
         if msg.command == "wait_for":
