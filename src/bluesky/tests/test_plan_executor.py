@@ -12,6 +12,7 @@ import pytest
 
 from bluesky import Msg
 from bluesky.plan_executor import PlanExecutor, PlanSession
+from bluesky.tests import requires_ophyd
 from bluesky.utils import RunEngineInterrupted
 
 THREADING_PRIMITIVES = (
@@ -63,8 +64,14 @@ def test_executor_holds_no_threading_primitives(idle_session):
 
 @pytest.mark.parametrize("cls", [PlanSession, PlanExecutor])
 def test_source_takes_no_locks(cls):
-    """Neither class ever blocks a thread, so neither may lock or join."""
-    source = inspect.getsource(cls)
+    """Neither class ever blocks a thread, so neither may lock or join.
+
+    ``threading.get_ident()`` is allowed: PlanExecutor.emit reads it to
+    decide whether it is already on the loop thread before optionally
+    marshalling onto it. Reading the current thread's id blocks nothing, so
+    it is exempted from the blanket "threading." ban below.
+    """
+    source = inspect.getsource(cls).replace("threading.get_ident(", "")
     for forbidden in ("threading.", "_state_lock", ".acquire(", ".join("):
         assert forbidden not in source, f"{cls.__name__} uses {forbidden}"
 
@@ -222,3 +229,134 @@ def test_request_pause_coro_survives_for_queueserver(RE):
         RE(plan())
     assert RE.state == "paused"
     RE.stop()
+
+
+# --- marshal_monitor_emission -----------------------------------------------
+#
+# A sync ophyd signal fires its monitor callback on whichever thread called
+# .put(), and PlanExecutor.emit's default behaviour is to invoke subscribers
+# on that same thread rather than the loop's. marshal_monitor_emission (a
+# PlanSession kwarg, falling back to the BLUESKY_MARSHAL_MONITOR_EMISSION
+# environment variable) turns that around. See bluesky#2050 for the tradeoffs;
+# this is off by default so today's behaviour is unchanged unless someone
+# opts in.
+
+
+def test_marshal_monitor_emission_defaults_to_off(monkeypatch):
+    """With no kwarg and no environment variable, the guard is off."""
+    monkeypatch.delenv("BLUESKY_MARSHAL_MONITOR_EMISSION", raising=False)
+    assert PlanSession().marshal_monitor_emission is False
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("1", True),
+        ("true", True),
+        ("True", True),
+        ("yes", True),
+        ("on", True),
+        ("0", False),
+        ("false", False),
+        ("False", False),
+        ("no", False),
+        ("off", False),
+        ("", False),
+    ],
+)
+def test_env_var_controls_marshal_monitor_emission(monkeypatch, value, expected):
+    """The environment variable is the rollout knob for when no kwarg is given."""
+    monkeypatch.setenv("BLUESKY_MARSHAL_MONITOR_EMISSION", value)
+    assert PlanSession().marshal_monitor_emission is expected
+
+
+def test_explicit_kwarg_overrides_the_env_var(monkeypatch):
+    """The keyword argument wins over the environment variable either way."""
+    monkeypatch.setenv("BLUESKY_MARSHAL_MONITOR_EMISSION", "1")
+    assert PlanSession(marshal_monitor_emission=False).marshal_monitor_emission is False
+
+    monkeypatch.delenv("BLUESKY_MARSHAL_MONITOR_EMISSION", raising=False)
+    assert PlanSession(marshal_monitor_emission=True).marshal_monitor_emission is True
+
+
+@requires_ophyd
+def test_monitor_subscriber_runs_on_the_device_thread_by_default(RE):
+    """Today's behaviour, pinned: a sync signal's monitor callback is invoked
+    on whichever thread called .put(), not the RunEngine's loop thread."""
+    import ophyd
+
+    sig = ophyd.Signal(name="sig", value=0)
+    seen_thread_ids = []
+    monitoring = threading.Event()
+
+    def collector(*args, **kwargs):
+        seen_thread_ids.append(threading.get_ident())
+
+    RE.subscribe(collector, "event")
+
+    putter_thread_id = {}
+
+    def putter():
+        assert monitoring.wait(timeout=5)
+        putter_thread_id["id"] = threading.get_ident()
+        sig.put(1)
+
+    thread = threading.Thread(target=putter)
+    thread.start()
+
+    def plan():
+        yield Msg("open_run")
+        yield Msg("monitor", sig)
+        monitoring.set()
+        yield Msg("sleep", None, 0.3)
+        yield Msg("unmonitor", sig)
+        yield Msg("close_run")
+
+    RE(plan())
+    thread.join(timeout=5)
+
+    assert seen_thread_ids, "the monitor callback never fired"
+    assert RE._th.ident != putter_thread_id["id"]
+    assert seen_thread_ids == [putter_thread_id["id"]]
+
+
+@requires_ophyd
+def test_monitor_subscriber_runs_on_the_loop_thread_when_marshalled(RE):
+    """With the guard on, the same subscriber runs on the loop thread instead."""
+    import ophyd
+
+    RE._session.marshal_monitor_emission = True
+
+    sig = ophyd.Signal(name="sig", value=0)
+    seen_thread_ids = []
+    monitoring = threading.Event()
+
+    def collector(*args, **kwargs):
+        seen_thread_ids.append(threading.get_ident())
+
+    RE.subscribe(collector, "event")
+
+    putter_thread_id = {}
+
+    def putter():
+        assert monitoring.wait(timeout=5)
+        putter_thread_id["id"] = threading.get_ident()
+        sig.put(1)
+
+    thread = threading.Thread(target=putter)
+    thread.start()
+
+    def plan():
+        yield Msg("open_run")
+        yield Msg("monitor", sig)
+        monitoring.set()
+        yield Msg("sleep", None, 0.3)
+        yield Msg("unmonitor", sig)
+        yield Msg("close_run")
+
+    RE(plan())
+    thread.join(timeout=5)
+
+    assert seen_thread_ids, "the monitor callback never fired"
+    assert putter_thread_id["id"] != RE._th.ident, "the put() itself should still be off the loop thread"
+    assert seen_thread_ids == [RE._th.ident], "the callback should have been marshalled onto the loop thread"

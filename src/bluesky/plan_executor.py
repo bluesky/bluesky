@@ -9,6 +9,7 @@ import concurrent
 import copy
 import functools
 import json
+import os
 import sys
 import threading
 import typing
@@ -115,6 +116,25 @@ class _NoPlanReturn:
 #: completion, and so never returned one. Distinguishable from a plan that
 #: completed and returned ``None``.
 NO_PLAN_RETURN = _NoPlanReturn()
+
+#: Environment variable that, when set to a truthy value, turns on monitor
+#: emission marshalling (see ``PlanSession``'s ``marshal_monitor_emission``
+#: parameter) without a code change. The keyword argument wins when given
+#: explicitly; this is the rollout knob for when it is not.
+MARSHAL_MONITOR_EMISSION_ENV_VAR = "BLUESKY_MARSHAL_MONITOR_EMISSION"
+
+
+def _env_var_is_truthy(name: str) -> bool:
+    """Return whether the named environment variable is set to a truthy value.
+
+    Unset, empty, or one of ``"0"``, ``"false"``, ``"no"``, ``"off"``
+    (case-insensitive) counts as false; anything else counts as true.
+    """
+    value = os.environ.get(name)
+    if value is None:
+        return False
+    return value.strip().lower() not in ("", "0", "false", "no", "off")
+
 
 #: Commands that must not be replayed when rewinding to a checkpoint, either
 #: because they act on the RunEngine itself or because they are not idempotent.
@@ -364,6 +384,19 @@ class PlanSession:
         What ``Msg('RE_class')`` reports. A `RunEngine` passes its own class;
         without one the executor answers for itself.
 
+    marshal_monitor_emission : bool, optional
+        Whether a monitored signal's documents are handed to subscribers on
+        the event loop rather than on whichever thread the signal fired its
+        callback on. Off by default, matching today's behaviour: a sync
+        ophyd signal's monitor callback reaches ``PlanExecutor.emit`` on the
+        device's own thread, so that is where subscribers currently run --
+        see :meth:`PlanExecutor.emit`. When not given explicitly, the
+        environment variable named by
+        :data:`MARSHAL_MONITOR_EMISSION_ENV_VAR`
+        (``BLUESKY_MARSHAL_MONITOR_EMISSION``) decides, so a deployment can
+        turn this on without a code change. This is a decision aid, not a
+        recommendation either way; see bluesky#2050 for the tradeoffs.
+
     Attributes
     ----------
     state
@@ -391,10 +424,25 @@ class PlanSession:
         on_pause: typing.Callable[[], None] | None = None,
         run_bundler_cls: type[RunBundler] = RunBundler,
         run_engine_cls: type | None = None,
+        marshal_monitor_emission: bool | None = None,
     ):
         if loop is None:
             loop = _default_event_loop()
         self._loop = loop
+
+        # Off by default: today's behaviour is that a sync ophyd signal's
+        # monitor callback reaches PlanExecutor.emit on the device's own
+        # thread, and subscribers are invoked there. See emit()'s docstring.
+        # The keyword wins when given; otherwise the environment variable
+        # allows rollout without a code change. Decided once, here, rather
+        # than read on every emit, so that changing the environment mid-run
+        # cannot change which thread a subscriber is invoked on partway
+        # through a plan.
+        self.marshal_monitor_emission: bool = (
+            marshal_monitor_emission
+            if marshal_monitor_emission is not None
+            else _env_var_is_truthy(MARSHAL_MONITOR_EMISSION_ENV_VAR)
+        )
 
         self.log = log if log is not None else ComposableLogAdapter(logger, {"RE": self})
 
@@ -699,8 +747,29 @@ class PlanExecutor:
 
         May be called from a thread that is not the event loop's: a sync ophyd
         signal fires its monitor callback on the device's own thread, and that
-        path reaches here. Subscribers are therefore invoked on whichever
-        thread emitted, which is not always the loop.
+        path reaches here. By default subscribers are therefore invoked on
+        whichever thread emitted, which is not always the loop -- see
+        bluesky#2050 for the arguments this asymmetry raised.
+
+        When ``self._session.marshal_monitor_emission`` is set, emission from
+        a foreign thread is marshalled onto the loop with
+        ``call_soon_threadsafe`` instead, so every subscriber runs on the
+        loop, like status callbacks already do (:meth:`_add_status_to_group`).
+        Emission from the loop thread itself always stays synchronous: were it
+        marshalled too, it would be reordered relative to whatever the run
+        loop does next, breaking the ordering guarantees plans rely on.
+        """
+        if self._session.marshal_monitor_emission:
+            loop = self._session.loop
+            if threading.get_ident() != getattr(loop, "_thread_id", None):
+                loop.call_soon_threadsafe(self._emit_now, name, doc)
+                return
+        self._emit_now(name, doc)
+
+    def _emit_now(self, name, doc) -> None:
+        """Give a document to the session's subscribers, then to this plan's.
+
+        Runs synchronously on whatever thread calls it. See :meth:`emit`.
         """
         self._session.dispatcher.process(name, doc)
         self.dispatcher.process(name, doc)
