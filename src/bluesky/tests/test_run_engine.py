@@ -995,12 +995,12 @@ def test_single_sigint_no_carry_over(RE):
     """A single SIGINT does not pause at the next plan's checkpoint"""
     pid = os.getpid()
 
-    running_event = threading.Event()
-    deferred_pause_done = threading.Event()
+    wait_for_reached = threading.Event()
+    deferred_pause_done = _fabricate_asycio_event(RE.loop)
 
     def msg_hook(msg):
-        if msg.command == "null":
-            running_event.set()
+        if msg.command == "wait_for":
+            wait_for_reached.set()
 
     RE.msg_hook = msg_hook
 
@@ -1009,27 +1009,26 @@ def test_single_sigint_no_carry_over(RE):
     def _tracked_request_pause(defer=False):
         result = _orig_request_pause(defer=defer)
         if defer:
-            deferred_pause_done.set()
+            RE.loop.call_soon_threadsafe(deferred_pause_done.set)
         return result
 
     RE.request_pause = _tracked_request_pause
 
     def send_sigint():
-        # Wait for event
-        running_event.wait()
-        os.kill(pid, signal.SIGINT)
+        if wait_for_reached.wait(timeout=5):
+            os.kill(pid, signal.SIGINT)
 
     def test_plan():
-        for _ in range(5):
-            yield Msg("null")
+        yield from wait_for([deferred_pause_done.wait], timeout=5)
 
     # Single SIGINT defers a pause but plan finishes anyway
     sigint_thread = threading.Thread(target=send_sigint, daemon=True)
     sigint_thread.start()
     RE(test_plan())
-    sigint_thread.join(timeout=0.1)
+    sigint_thread.join(timeout=5)
+    assert not sigint_thread.is_alive()
 
-    assert deferred_pause_done.wait(timeout=5)
+    assert deferred_pause_done.is_set()
 
     def checkpoint_plan():
         for _ in range(10):
