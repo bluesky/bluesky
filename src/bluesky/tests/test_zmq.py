@@ -3,6 +3,7 @@ import itertools
 import logging
 import os
 import signal
+import socket
 import sys
 import threading
 import time
@@ -22,6 +23,18 @@ from .conftest import ReadableSignal
 
 # ZMQ subscription propagation is slower on Windows CI runners
 _ZMQ_CONNECTION_TIMEOUT = 5.0 if sys.platform == "win32" else 0.5
+
+
+def _get_free_port() -> int:
+    """Ask the OS for an available TCP port on the loopback interface.
+
+    Binding to port 0 lets the kernel pick an unused port; we read it back
+    and immediately release it. Using a fresh port per test avoids conflicts
+    when tests run in parallel (e.g. under pytest-xdist).
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
 
 
 @pytest.fixture
@@ -77,33 +90,53 @@ def test_proxy_script():
 
 
 @pytest.fixture
-def proxy():
-    def start_proxy(ready_event):
-        p = Proxy(5567, 5568, in_bind=True, out_bind=True)
+def proxy_ports():
+    """Two distinct free ports for the proxy's in (publisher) and out (subscriber) sockets.
+
+    Generated in the test process so they can be shared between the proxy
+    subprocess and the publisher/dispatcher fixtures.
+    """
+    in_port = _get_free_port()
+    out_port = _get_free_port()
+    while out_port == in_port:
+        out_port = _get_free_port()
+    return in_port, out_port
+
+
+@pytest.fixture
+def proxy(proxy_ports):
+    in_port, out_port = proxy_ports
+
+    def start_proxy(in_port, out_port, ready_event):
+        p = Proxy(in_port, out_port, in_bind=True, out_bind=True)
         ready_event.set()  # Ports are bound after __init__ returns
         p.start()  # Blocks on zmq.device()
 
     ready_event = multiprocess.Event()
-    proc = multiprocess.Process(target=start_proxy, args=(ready_event,), daemon=True)
+    proc = multiprocess.Process(
+        target=start_proxy, args=(in_port, out_port, ready_event), daemon=True
+    )
     proc.start()
     ready_event.wait(timeout=5)
     assert ready_event.is_set()
-    yield
+    yield in_port, out_port
     proc.terminate()
     proc.join(timeout=5)
 
 
 @pytest.fixture
-def publisher():
-    p = Publisher("127.0.0.1:5567")
+def publisher(proxy):
+    in_port, _ = proxy
+    p = Publisher(f"127.0.0.1:{in_port}")
     # TODO: Replace sleep with handshake event wait
     time.sleep(_ZMQ_CONNECTION_TIMEOUT)
     return p
 
 
 @pytest.fixture
-def dispatcher():
+def dispatcher(proxy):
     """RemoteDispatcher fixture for tracking messages"""
+    _, out_port = proxy
 
     docs_received = []
     stop_event = threading.Event()
@@ -117,7 +150,7 @@ def dispatcher():
 
     # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
     loop = asyncio.SelectorEventLoop() if sys.platform == "win32" else None
-    d = RemoteDispatcher("127.0.0.1:5568", loop=loop)
+    d = RemoteDispatcher(f"127.0.0.1:{out_port}", loop=loop)
     d.subscribe(store_document)
     d.subscribe(stop_doc_watcher)
     threading.Thread(target=d.start, daemon=True).start()
@@ -232,10 +265,11 @@ def test_zmq_prefix(proxy, single_RE):
     to only one prefix and should only receive documents from that publisher.
     """
     RE = single_RE
+    in_port, out_port = proxy
 
     # Two publishers with different prefixes
-    pub_match = Publisher("127.0.0.1:5567", prefix=b"sb")
-    pub_other = Publisher("127.0.0.1:5567", prefix=b"not_sb")
+    pub_match = Publisher(f"127.0.0.1:{in_port}", prefix=b"sb")
+    pub_other = Publisher(f"127.0.0.1:{in_port}", prefix=b"not_sb")
     RE.subscribe(pub_match)
     RE.subscribe(pub_other)
 
@@ -251,7 +285,7 @@ def test_zmq_prefix(proxy, single_RE):
             stop_event.set()
 
     d = RemoteDispatcher(
-        "127.0.0.1:5568",
+        f"127.0.0.1:{out_port}",
         prefix=b"sb",
         # On Windows, zmq.asyncio requires SelectorEventLoop (not ProactorEventLoop)
         loop=asyncio.SelectorEventLoop() if sys.platform == "win32" else None,
