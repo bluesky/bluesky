@@ -11,23 +11,11 @@ from bluesky.preprocessors import (
     stage_decorator,
     stage_wrapper,
 )
-from bluesky.protocols import HasHints, HasParent, Movable, Stageable
+from bluesky.protocols import HasHints, HasParent, Movable, Stageable, Status
 from bluesky.run_engine import RequestStop, RunEngine
 
 
-class _StageableDevice:
-    def __init__(self, name, parent=None):
-        self.name = name
-        self.parent = parent
-
-    def stage(self):
-        return []
-
-    def unstage(self):
-        return []
-
-
-class _SuccessfulStatus:
+class _SuccessfulStatus(Status):
     def add_callback(self, callback):
         callback(self)
 
@@ -41,6 +29,18 @@ class _SuccessfulStatus:
     @property
     def success(self):
         return True
+
+
+class _StageableDevice(Stageable):
+    def __init__(self, name, parent=None):
+        self.name = name
+        self.parent = parent
+
+    def stage(self) -> Status:
+        return _SuccessfulStatus()
+
+    def unstage(self) -> Status:
+        return _SuccessfulStatus()
 
 
 def _collect_messages(plan, *, asynchronous_stage=False):
