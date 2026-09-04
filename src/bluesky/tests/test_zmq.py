@@ -16,7 +16,6 @@ from pytest_mock import MockerFixture
 
 from bluesky.callbacks.zmq import ClientCurve, Proxy, Publisher, RemoteDispatcher, ServerCurve, _normalize_address
 from bluesky.plans import count
-from bluesky.run_engine import RunEngine
 from bluesky.tests import uses_os_kill_sigint
 
 from .conftest import ReadableSignal
@@ -126,14 +125,14 @@ def dispatcher():
     return stop_event, docs_received
 
 
-def test_zmq_round_trip(proxy, publisher, dispatcher):
+def test_zmq_round_trip(proxy, publisher, dispatcher, single_RE):
     """
     Generate two documents. The Publisher will send them to the proxy
     device over 5567, and the proxy will send them to the
     RemoteDispatcher over 5568. The RemoteDispatcher will push them into
     the queue, where we can verify that they round-tripped.
     """
-    RE = RunEngine({})
+    RE = single_RE
     RE.subscribe(publisher)
 
     remote_stop_event, remote_docs = dispatcher
@@ -227,12 +226,12 @@ def test_dispatcher_custom_deserializer():
     assert docs_received == [("start", {"uid": "abc123"})]
 
 
-def test_zmq_prefix(proxy):
+def test_zmq_prefix(proxy, single_RE):
     """
     Two publishers send with different prefixes. The dispatcher subscribes
     to only one prefix and should only receive documents from that publisher.
     """
-    RE = RunEngine({})
+    RE = single_RE
 
     # Two publishers with different prefixes
     pub_match = Publisher("127.0.0.1:5567", prefix=b"sb")

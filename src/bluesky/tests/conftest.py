@@ -15,24 +15,64 @@ from bluesky.run_engine import RunEngine, TransitionError
 from bluesky.utils import SigintHandler
 
 
+def _clean_event_loop(RE, loop):
+    """Stop a RunEngine's background loop thread and close the loop.
+
+    Without this the ``_UnixSelectorEventLoop`` (and its AF_UNIX self-pipe
+    socketpair) is only released at interpreter shutdown, producing noisy
+    ``ResourceWarning: unclosed event loop`` / ``unclosed <socket.socket ...>``
+    messages.
+    """
+    if RE.state not in ("idle", "panicked"):
+        try:
+            RE.halt()
+        except TransitionError:
+            pass
+    loop.call_soon_threadsafe(loop.stop)
+    RE._th.join()
+    loop.close()
+
+
+@pytest.fixture(scope="function")
+def make_RE(request):
+    """Factory for ``RunEngine`` instances whose event loops are closed on teardown.
+
+    This underpins the ready-to-use ``RE`` / ``single_RE`` fixtures and is
+    only needed directly in the rare case where a test wants to construct several
+    engines or pass unusual constructor arguments.  Every engine created via the
+    returned factory has its background loop thread stopped and its event loop
+    closed during teardown.
+    """
+
+    def factory(*args, **kwargs):
+        loop = asyncio.new_event_loop()
+        loop.set_debug(True)
+        RE = RunEngine(*args, loop=loop, **kwargs)
+        request.addfinalizer(lambda: _clean_event_loop(RE, loop))
+        return RE
+
+    return factory
+
+
 @pytest.fixture(scope="function", params=[False, True])
-def RE(request):
-    loop = asyncio.new_event_loop()
-    loop.set_debug(True)
-    RE = RunEngine({}, call_returns_result=request.param, loop=loop)
+def RE(request, make_RE):
+    """A ready-to-use ``RunEngine`` parametrized over ``call_returns_result``.
 
-    def clean_event_loop():
-        if RE.state not in ("idle", "panicked"):
-            try:
-                RE.halt()
-            except TransitionError:
-                pass
-        loop.call_soon_threadsafe(loop.stop)
-        RE._th.join()
-        loop.close()
+    Tests using this fixture run twice, once with ``call_returns_result=False``
+    and once with ``True``.
+    """
+    return make_RE({}, call_returns_result=request.param)
 
-    request.addfinalizer(clean_event_loop)
-    return RE
+
+@pytest.fixture(scope="function")
+def single_RE(make_RE):
+    """A ready-to-use ``RunEngine`` that runs a test only once.
+
+    Like ``RE`` but without the ``call_returns_result`` parametrization, for
+    tests where running under both values adds no coverage.  ``call_returns_result``
+    is set to ``True`` so plan results are available.
+    """
+    return make_RE({}, call_returns_result=True)
 
 
 @pytest.fixture(scope="function")
