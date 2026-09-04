@@ -470,9 +470,10 @@ class RemoteDispatcher(Dispatcher):
         self._deserializer = deserializer
         self.address = _normalize_address(address)
 
-        if loop is None:
-            loop = asyncio.new_event_loop()
-        self.loop = loop
+        # The event loop is created lazily (see the ``loop`` property) so that a
+        # RemoteDispatcher which is constructed but never started does not leak an
+        # unclosed event loop (and its self-pipe socketpair) at interpreter exit.
+        self._loop = loop
         self._context = None
         self._socket = None
 
@@ -503,6 +504,13 @@ class RemoteDispatcher(Dispatcher):
         self.closed = False
         self._strict = strict
         super().__init__()
+
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        """The event loop the dispatcher runs on, created lazily on first use."""
+        if self._loop is None:
+            self._loop = asyncio.new_event_loop()
+        return self._loop
 
     async def _poll(self):
         our_prefix = self._prefix  # local var to save an attribute lookup
@@ -585,8 +593,8 @@ class RemoteDispatcher(Dispatcher):
         if self._context is not None:
             self._context.destroy()
             self._context = None
-        if not self.loop.is_closed():
-            self.loop.close()
+        if self._loop is not None and not self._loop.is_closed():
+            self._loop.close()
         self.closed = True
         self._stopped.set()
 
@@ -598,7 +606,7 @@ class RemoteDispatcher(Dispatcher):
         until :meth:`start` has torn the dispatcher down.
         """
 
-        if self.loop.is_running():
+        if self._loop is not None and self._loop.is_running():
             if self._task is not None:
-                self.loop.call_soon_threadsafe(self._task.cancel)
+                self._loop.call_soon_threadsafe(self._task.cancel)
             self._stopped.wait()

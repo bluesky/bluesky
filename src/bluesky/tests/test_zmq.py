@@ -304,6 +304,9 @@ def test_zmq_RD_ports_spec(host: str | tuple[str, int]):
     assert d._socket is None
     assert d._context is None
     assert not d.closed
+    # An unstarted dispatcher must not eagerly allocate an event loop, otherwise
+    # it leaks the loop (and its socketpair) at interpreter shutdown.
+    assert d._loop is None
     del d
 
 
