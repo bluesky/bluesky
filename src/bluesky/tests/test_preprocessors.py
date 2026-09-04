@@ -14,21 +14,7 @@ from bluesky.preprocessors import (
 from bluesky.protocols import HasHints, HasParent, Movable, Stageable, Status
 from bluesky.run_engine import RequestStop, RunEngine
 
-
-class _SuccessfulStatus(Status):
-    def add_callback(self, callback):
-        callback(self)
-
-    def exception(self, timeout=0.0):
-        return None
-
-    @property
-    def done(self):
-        return True
-
-    @property
-    def success(self):
-        return True
+from .conftest import AlwaysSuccessfulStatus
 
 
 class _StageableDevice(Stageable):
@@ -37,10 +23,10 @@ class _StageableDevice(Stageable):
         self.parent = parent
 
     def stage(self) -> Status:
-        return _SuccessfulStatus()
+        return AlwaysSuccessfulStatus()
 
     def unstage(self) -> Status:
-        return _SuccessfulStatus()
+        return AlwaysSuccessfulStatus()
 
 
 def _collect_messages(plan, *, asynchronous_stage=False):
@@ -53,7 +39,7 @@ def _collect_messages(plan, *, asynchronous_stage=False):
             return messages
         messages.append(msg)
         if asynchronous_stage and msg.command in {"stage", "unstage"}:
-            response = _SuccessfulStatus()
+            response = AlwaysSuccessfulStatus()
         else:
             response = None
 
