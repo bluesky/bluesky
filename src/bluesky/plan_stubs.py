@@ -6,10 +6,11 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from cycler import cycler
 
+from bluesky.env_vars import BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
 from bluesky.suspenders import SuspenderBase
 
 try:
@@ -147,25 +148,36 @@ def drop() -> MsgGenerator:
 
 
 @plan
-def read(obj: Readable) -> MsgGenerator[Reading]:
+def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
     """
-    Take a reading and add it to the current bundle of readings.
+    Read from devices and add to the current bundle of readings.
 
     Parameters
     ----------
-    obj : Device or Signal
+    objs : Readable objects.
 
     Yields
     ------
     msg : Msg
-        Msg('read', obj)
+        ``Msg('read', *objs)``
+
 
     Returns
     -------
-    reading :
+    reading:
         Reading object representing information recorded
     """
-    return (yield Msg("read", obj))
+
+    # If ``True`` then there will be one Msg per device, which means that
+    # asynchronous devices will not be gathered.;
+    if BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE:
+        reading = {}
+        for obj in objs:
+            partial_reading = yield Msg("read", obj)
+            reading.update(partial_reading)
+        return cast(Reading, reading)
+    else:
+        return (yield Msg("read", *objs))
 
 
 @typing.overload
@@ -576,7 +588,7 @@ def trigger(
     wait: bool = False,
 ) -> MsgGenerator[Status]:
     """
-    Trigger and acquisition. Optionally, wait for it to complete.
+    Trigger an acquisition. Optionally, wait for it to complete.
 
     Parameters
     ----------
@@ -1460,15 +1472,8 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
         # Skip 'wait' if none of the devices implemented a trigger method.
         if not no_wait:
             yield from wait(group=grp)
-        yield from create(name)
 
-        def read_plan():
-            ret = {}  # collect and return readings to give plan access to them
-            for obj in devices:
-                reading = yield from read(obj)
-                if reading is not None:
-                    ret.update(reading)
-            return ret
+        yield from create(name)
 
         def standard_path():
             yield from save()
@@ -1477,8 +1482,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
             yield from drop()
             raise exp
 
-        ret = yield from contingency_wrapper(read_plan(), except_plan=exception_path, else_plan=standard_path)
-        return ret
+        return (
+            yield from contingency_wrapper(read(*devices), except_plan=exception_path, else_plan=standard_path)
+        )
 
     from .preprocessors import rewindable_wrapper
 

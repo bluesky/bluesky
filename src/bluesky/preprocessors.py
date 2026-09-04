@@ -341,7 +341,8 @@ def print_summary_wrapper(plan):
         elif cmd == "create":
             read_cache = []
         elif cmd == "read":
-            read_cache.append(msg.obj.name)
+            devices = (msg.obj, *msg.args)
+            read_cache += [device.name for device in devices]
         elif cmd == "save":
             print(f"  Read {read_cache}")
         return msg
@@ -1135,18 +1136,21 @@ def relative_set_wrapper(plan, devices=None):
             return msg
 
     def insert_reads(msg):
+        if msg.command != "set":
+            return None, None
+
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
-        if (msg.command == "set") and eligible and not seen:
-            return (
-                pchain(
-                    __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
-                    single_gen(msg),
-                ),
-                None,
-            )
-        else:
+        if not eligible or seen:
             return None, None
+
+        return (
+            pchain(
+                __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
+                single_gen(msg),
+            ),
+            None,
+        )
 
     plan = plan_mutator(plan, insert_reads)
     plan = msg_mutator(plan, rewrite_pos)

@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from event_model import DocumentNames, compose_run
 
+import bluesky.callbacks.core as core_callbacks
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
@@ -697,7 +698,7 @@ def test_callbackclass_safe_logger(EvilBaseClass):
     assert logger.exception.call_count == len(DocumentNames)
 
 
-@pytest.mark.parametrize("strict", ["1", None])
+@pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.parametrize(
     "documents",
     (
@@ -708,10 +709,7 @@ def test_callbackclass_safe_logger(EvilBaseClass):
     ),
 )
 def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, strict):
-    if strict is not None:
-        monkeypatch.setenv("BLUESKY_DEBUG_CALLBACKS", strict)
-    else:
-        monkeypatch.delenv("BLUESKY_DEBUG_CALLBACKS", raising=False)
+    monkeypatch.setattr(core_callbacks, "BLUESKY_DEBUG_CALLBACKS", strict)
     logger = MagicMock()
 
     @make_class_safe(logger=logger, to_wrap=tuple(x.name for x in documents))

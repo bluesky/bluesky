@@ -408,50 +408,59 @@ class RunBundler:
 
         self._set_current_stream_cache(self._bundle_name)
 
-    async def read(self, msg, reading):
+    async def _bundle_single_read(self, msg, obj, reading):
         """
         Add a reading to the open event bundle.
 
-        Expected message object is::
-
-            Msg('read', obj)
+        This should be used in a read message.
         """
-        if self.bundling:
-            obj = msg.obj
-            # if the object is not in the _describe_cache, cache it
-            # Note: there is a race condition between the code here
-            # and in monitor() and collect(), so if you do them concurrently
-            # on the same device you make obj.describe() calls multiple times.
-            # As this is harmless and not an expected use case, we don't guard
-            # against it. Reading multiple devices concurrently works fine.
-            await self._current_stream_cache.ensure_cached(obj)
 
-            # check that current read collides with nothing else in
-            # current event
-            cur_keys = set(self._current_stream_cache.describe_cache[obj].keys())
-            for read_obj in self._objs_read:
-                # that is, field names
-                known_keys = self._current_stream_cache.describe_cache[read_obj].keys()
-                if set(known_keys) & cur_keys:
-                    raise ValueError(
-                        f"Data keys (field names) from {obj!r} "
-                        f"collide with those from {read_obj!r}. "
-                        f"The colliding keys are {set(known_keys) & cur_keys}"
-                    )
+        # if the object is not in the _describe_cache, cache it
+        # Note: there is a race condition between the code here
+        # and in monitor() and collect(), so if you do them concurrently
+        # on the same device you make obj.describe() calls multiple times.
+        # As this is harmless and not an expected use case, we don't guard
+        # against it. Reading multiple devices concurrently works fine.
+        await self._current_stream_cache.ensure_cached(obj)
 
-            # add this object to the cache of things we have read
-            self._objs_read.append(obj)
+        # check that current read collides with nothing else in
+        # current event
+        cur_keys = set(self._current_stream_cache.describe_cache[obj].keys())
+        for read_obj in self._objs_read:
+            # that is, field names
+            known_keys = self._current_stream_cache.describe_cache[read_obj].keys()
+            if set(known_keys) & cur_keys:
+                raise ValueError(
+                    f"Data keys (field names) from {obj!r} "
+                    f"collide with those from {read_obj!r}. "
+                    f"The colliding keys are {set(known_keys) & cur_keys}"
+                )
 
-            # Stash the results, which will be emitted the next time _save is
-            # called --- or never emitted if _drop is called instead.
-            self._current_stream_cache.read_cache.append(reading)
-            # Ask the object for any resource or datum documents is has cached
-            # and cache them as well. Likewise, these will be emitted if and
-            # when _save is called.
-            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
-            self._asset_docs_cache.extend(asset_docs_collected)
+        # add this object to the cache of things we have read
+        self._objs_read.append(obj)
+
+        # Stash the results, which will be emitted the next time _save is
+        # called --- or never emitted if _drop is called instead.
+        self._current_stream_cache.read_cache.append(reading)
+        # Ask the object for any resource or datum documents is has cached
+        # and cache them as well. Likewise, these will be emitted if and
+        # when _save is called.
+        asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj)]
+        self._asset_docs_cache.extend(asset_docs_collected)
 
         return reading
+
+    async def read(self, msg, objs_with_reading: list[tuple[object, dict]]):
+        """Add a reading to the open event bundle.
+
+        Expected message object is::
+
+            Msg('read', obj1, obj2, obj3, ...)
+        """
+        if self.bundling:
+            await asyncio.gather(
+                *[self._bundle_single_read(msg, obj, reading) for obj, reading in objs_with_reading]
+            )
 
     async def monitor(self, msg):
         """

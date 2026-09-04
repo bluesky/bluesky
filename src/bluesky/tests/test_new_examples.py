@@ -729,7 +729,10 @@ def test_trigger_and_read(hw):
         Msg("trigger", det),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="primary"),
-        Msg("read", det),
+        Msg(
+            "read",
+            det,
+        ),
         Msg("save"),
     ]
     for msg in msgs:
@@ -742,7 +745,10 @@ def test_trigger_and_read(hw):
         Msg("trigger", det),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="custom"),
-        Msg("read", det),
+        Msg(
+            "read",
+            det,
+        ),
         Msg("save"),
     ]
     for msg in msgs:

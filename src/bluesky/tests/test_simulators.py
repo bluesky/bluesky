@@ -266,7 +266,7 @@ def test_assert_message_and_return_remaining(hw):
         )
         msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "create")
         msgs = assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "read" and msg.obj.name == "det"
+            msgs, lambda msg: msg.command == "read" and msg.obj.name == "det" and msg.args == ()
         )
         msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "save")
     assert msgs[1].command == "close_run"
