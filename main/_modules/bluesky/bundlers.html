@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.bundlers &#8212; bluesky 1.15.2.dev77+g6a82217aa documentation</title>
+    <title>bluesky.bundlers &#8212; bluesky 1.15.2.dev100+gaf025bc9d documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=3a340ec3"></script>
+    <script src="../../_static/documentation_options.js?v=0641c4a0"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev77+g6a82217aa';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev100+gaf025bc9d';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev77+g6a82217aa" />
+  <meta name="docsearch:version" content="1.15.2.dev100+gaf025bc9d" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1399,7 +1399,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        where kwargs are passed through to ``obj.subscribe()``</span>
 <span class="sd">        """</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
         <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The 'monitor' Msg does not accept positional arguments."</span><span class="p">)</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
@@ -1412,21 +1412,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">stream_bundle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_stream</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="n">obj</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_stream_cache</span><span class="o">.</span><span class="n">describe_cache</span><span class="p">[</span><span class="n">obj</span><span class="p">]})</span>
         <span class="n">compose_event</span> <span class="o">=</span> <span class="n">stream_bundle</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">emit_event</span><span class="p">(</span><span class="n">readings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">readings</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># We were passed something we can use, but check no args or kwargs</span>
-                <span class="k">assert</span> <span class="ow">not</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">,</span> <span class="p">(</span>
-                    <span class="s2">"If subscribe callback called with readings, args and kwargs are not supported."</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># Ignore the inputs. Use this call as a signal to call read on the</span>
-                <span class="c1"># object, a crude way to be sure we get all the info we need.</span>
-                <span class="n">readable_obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-                <span class="n">readings</span> <span class="o">=</span> <span class="n">readable_obj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
-                <span class="k">assert</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isawaitable</span><span class="p">(</span><span class="n">readings</span><span class="p">),</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">readable_obj</span><span class="si">}</span><span class="s2"> has async read() method and the callback "</span>
-                    <span class="s2">"passed to subscribe() was not called with Dict[str, Reading]"</span>
-                <span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">emit_event_from_readings</span><span class="p">(</span><span class="n">readings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]):</span>
             <span class="n">data</span><span class="p">,</span> <span class="n">timestamps</span> <span class="o">=</span> <span class="n">_rearrange_into_parallel_dicts</span><span class="p">(</span><span class="n">readings</span><span class="p">)</span>
             <span class="n">doc</span> <span class="o">=</span> <span class="n">compose_event</span><span class="p">(</span>
                 <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
@@ -1434,9 +1420,29 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">emit_sync</span><span class="p">(</span><span class="n">DocumentNames</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">emit_event</span><span class="p">,</span> <span class="n">kwargs</span>
-        <span class="c1"># TODO: deprecate **kwargs when Ophyd.v2 is available</span>
-        <span class="n">obj</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">emit_event</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">def</span><span class="w"> </span><span class="nf">emit_event_for_subscribe</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="c1"># Ignore the inputs. Use this call as a signal to call read on the</span>
+            <span class="c1"># object, a crude way to be sure we get all the info we need.</span>
+            <span class="n">readable_obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)</span>
+            <span class="n">readings</span> <span class="o">=</span> <span class="n">readable_obj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isawaitable</span><span class="p">(</span><span class="n">readings</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">readable_obj</span><span class="si">}</span><span class="s2"> has a subscribe() method rather than a "</span>
+                    <span class="s2">"subscribe_readings() method and an async read() method. "</span>
+                    <span class="s2">"If using ophyd-async, make sure you are using at least v0.13.5."</span>
+                <span class="p">)</span>
+            <span class="n">emit_event_from_readings</span><span class="p">(</span><span class="n">readings</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">emit_event_from_readings</span><span class="p">,</span> <span class="n">kwargs</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">subscribe_reading</span><span class="p">(</span><span class="n">emit_event_from_readings</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"subscribe"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">emit_event_for_subscribe</span><span class="p">,</span> <span class="n">kwargs</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">emit_event_for_subscribe</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">"</span><span class="si">%s</span><span class="s2"> does not implement Subscribable protocol or adhere to ophyd subscription pattern."</span> <span class="o">%</span> <span class="n">obj</span>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RunBundler.record_interruption">
@@ -1486,7 +1492,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">            Msg('unmonitor', obj)</span>
 <span class="sd">        """</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"clear_sub"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">"</span><span class="si">%s</span><span class="s2"> does not implement Subscribable protocol or adhere to ophyd subscription pattern."</span> <span class="o">%</span> <span class="n">obj</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cannot 'unmonitor' </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">; it is not being monitored."</span><span class="p">)</span>
         <span class="n">cb</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_params</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
