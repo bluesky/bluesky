@@ -2,9 +2,16 @@ import asyncio
 import operator
 import threading
 from abc import ABCMeta, abstractmethod, abstractproperty
+from concurrent.futures import Future
 from datetime import datetime, timedelta
 from functools import partial
 from warnings import warn
+
+from bluesky.protocols import Subscribable
+
+# How long install() and remove() wait for the RunEngine's event loop to
+# subscribe to a Subscribable signal, or unsubscribe from it, before giving up.
+SUBSCRIPTION_TIMEOUT = 10
 
 
 class SuspenderBase(metaclass=ABCMeta):
@@ -13,7 +20,7 @@ class SuspenderBase(metaclass=ABCMeta):
 
     Parameters
     ----------
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -42,6 +49,8 @@ class SuspenderBase(metaclass=ABCMeta):
         self._sig = signal
         self._pre_plan = pre_plan
         self._post_plan = post_plan
+        self._last_value = None
+        self._implements_protocol = isinstance(signal, Subscribable)
 
     def __repr__(self):
         return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
@@ -69,14 +78,54 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         with self._lock:
             self.RE = RE
-        self._sig.subscribe(self, event_type=event_type, run=True)
+        if self._implements_protocol:
+            self.__on_loop(RE, partial(self._sig.subscribe_reading, self))
+        elif callable(getattr(self._sig, "subscribe", None)):
+            self._sig.subscribe(self, event_type=event_type, run=True)
+        else:
+            raise RuntimeError(
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % self._sig
+            )
+
+    def __on_loop(self, RE, func):
+        """Call ``func`` on the RunEngine's event loop, and wait for it.
+
+        Subscribing to a Subscribable signal, and unsubscribing from it, both
+        have to happen on the thread its event loop runs in: an EPICS channel
+        access monitor, for one, belongs to the loop that made it.
+
+        Waiting also gives ``install`` the same guarantee as ophyd's
+        ``subscribe(..., run=True)``, since ``subscribe_reading`` calls back
+        with the current reading: the suspender knows whether it is already
+        tripped by the time ``install`` returns.
+        """
+        if threading.get_ident() == getattr(RE._loop, "_thread_id", "unknown"):
+            func()
+            return
+
+        future: Future = Future()
+
+        def call():
+            try:
+                future.set_result(func())
+            except BaseException as exc:
+                future.set_exception(exc)
+
+        RE._loop.call_soon_threadsafe(call)
+        future.result(timeout=SUBSCRIPTION_TIMEOUT)
 
     def remove(self):
         """Disable the suspender
 
         Removes the callback at the pyepics level
         """
-        self._sig.clear_sub(self)
+        if self._implements_protocol:
+            # Nothing was subscribed if we were never installed, and there is
+            # no event loop to unsubscribe on either.
+            if self.RE is not None:
+                self.__on_loop(self.RE, partial(self._sig.clear_sub, self))
+        else:
+            self._sig.clear_sub(self)
         with self._lock:
             if self.RE is not None:
                 self.__set_event(self.RE._loop)
@@ -131,7 +180,10 @@ class SuspenderBase(metaclass=ABCMeta):
             if self.RE is None:
                 return
             loop = self.RE._loop
-
+            if self._implements_protocol:
+                # Subscribable calls back with {name: Reading}
+                value = value[self._sig.name]["value"]
+            self._last_value = value
             if self._should_suspend(value):
                 self._tripped = True
                 # this does dirty things with internal state
@@ -374,7 +426,7 @@ class SuspendFloor(_Threshold):
             return ""
 
         just = (
-            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            f"Signal {self._sig.name} = {self._last_value!r} "
             + f"fell below {self._suspend_thresh} "
             + f"and has not yet crossed above {self._resume_thresh}."
         )
@@ -429,7 +481,7 @@ class SuspendCeil(_Threshold):
             return ""
 
         just = (
-            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            f"Signal {self._sig.name} = {self._last_value!r} "
             + f"went above {self._suspend_thresh} "
             + f"and has not yet crossed below {self._resume_thresh}."
         )
@@ -490,7 +542,7 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
             return ""
 
         just = "Signal {} = {!r} is outside of the range ({}, {})".format(  # noqa: UP032
-            self._sig.name, self._sig.get(), self._bot, self._top
+            self._sig.name, self._last_value, self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
@@ -547,7 +599,7 @@ class SuspendOutBand(_SuspendBandBase):
             return ""
 
         just = "Signal {} = {!r} is inside of the range ({}, {})".format(  # noqa: UP032
-            self._sig.name, self._sig.get(), self._bot, self._top
+            self._sig.name, self._last_value, self._bot, self._top
         )
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
@@ -588,14 +640,16 @@ class SuspendWhenChanged(SuspenderBase):
     Parameters
     ----------
 
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
     expected_value : str, float, or int
         RunEngine operations will be suspended when signal deviates
         from this value.  If `None` (default), set to value of
-        ``signal`` when object is created.
+        ``signal`` when object is created.  A `~bluesky.protocols.Subscribable`
+        signal cannot be read synchronously, so for those it is instead set to
+        the first value received, when the object is installed on a RunEngine.
 
     allow_resume : bool
         Should RunEngine be allowed to resume once ``signal.value == expected``
@@ -667,13 +721,19 @@ class SuspendWhenChanged(SuspenderBase):
         tripped_message="",
         **kwargs,
     ):
-        self.expected_value = signal.value if expected_value is None else expected_value
+        if expected_value is None and not isinstance(signal, Subscribable):
+            expected_value = signal.value
+        self.expected_value = expected_value
         self.allow_resume = allow_resume
         super().__init__(
             signal, sleep=sleep, pre_plan=pre_plan, post_plan=post_plan, tripped_message=tripped_message, **kwargs
         )
 
     def _should_suspend(self, value):
+        if self.expected_value is None:
+            # A Subscribable signal cannot be read synchronously in __init__, so
+            # take the value it calls back with on install as the expected one.
+            self.expected_value = value
         return value != self.expected_value
 
     def _should_resume(self, value):
@@ -683,7 +743,7 @@ class SuspendWhenChanged(SuspenderBase):
         if not self.tripped:
             return ""
 
-        just = f'Signal {self._sig.name}, got "{self._sig.get()}", expected "{self.expected_value}"'
+        just = f'Signal {self._sig.name}, got "{self._last_value}", expected "{self.expected_value}"'
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
         return ": ".join(s for s in (just, self._tripped_message) if s)
