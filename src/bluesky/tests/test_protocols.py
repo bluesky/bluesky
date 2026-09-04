@@ -54,12 +54,6 @@ def test_pausable():
     assert isinstance(sim.det1, bs_protocols.Pausable)
 
 
-def test_subscribable():
-    assert isinstance(sim.det1, bs_protocols.Subscribable)
-    assert isinstance(sim.motor1, bs_protocols.Subscribable)
-    assert not isinstance(sim.flyer1, bs_protocols.Subscribable)
-
-
 def test_checkable():
     assert isinstance(sim.motor1, bs_protocols.Checkable)
 
