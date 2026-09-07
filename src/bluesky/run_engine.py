@@ -1895,7 +1895,7 @@ class RunEngine:
 
             Msg('close_run', None, exit_status=None, reason=None)
 
-        if *exit_stats* and *reason* are not provided, use the values
+        if *exit_status* and *reason* are not provided, use the values
         stashed on the RE.
         """
         # TODO extract this from the Msg
@@ -2795,7 +2795,7 @@ Your RunEngine is entering a paused state. These are your options for changing
 the state of the RunEngine:
 
 RE.resume()    Resume the plan.
-RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+RE.abort()     Perform cleanup, then kill plan. Mark exit_status='aborted'.
 RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
 RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 """
