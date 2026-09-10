@@ -14,7 +14,10 @@ Added
   and ``remove`` unsubscribes, on the RunEngine's event loop, since a
   subscription belongs to the loop that made it.  Passing a signal that is
   neither now raises a ``RuntimeError`` from ``install`` rather than an
-  ``AttributeError``.
+  ``AttributeError``.  Passing ``event_type`` alongside a ``Subscribable``
+  signal also raises, rather than being silently ignored: that style has no
+  event types, so a caller asking for one would otherwise get a suspender
+  watching something else with nothing said.
 
 Changed
 -------

@@ -204,6 +204,19 @@ def test_suspender_plans_async_signal(RE):
 
 
 @requires_ophyd_async
+def test_event_type_is_rejected_for_a_subscribable_signal(RE):
+    "A Subscribable signal has no event types, so asking for one must not be ignored"
+    sig = _connected_soft_signal(RE, 0)
+    susp = SuspendBoolHigh(sig)
+
+    with pytest.raises(RuntimeError, match="event_type"):
+        susp.install(RE, event_type="value")
+
+    # A rejected install leaves the suspender uninstalled.
+    assert susp.RE is None
+
+
+@requires_ophyd_async
 def test_suspend_when_changed_async_signal(RE):
     "expected_value cannot be read from a Subscribable signal until it is installed"
     sig = _connected_soft_signal(RE, 1)

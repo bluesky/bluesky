@@ -74,8 +74,16 @@ class SuspenderBase(metaclass=ABCMeta):
             The run engine instance this should work on
 
         event_type : str, optional
-            The event type (subscription type) to watch
+            The event type (subscription type) to watch. Only meaningful for a
+            signal following ophyd's subscription pattern; a `Subscribable` one
+            has no such notion, so passing it there is an error rather than
+            something to ignore.
         """
+        if self._implements_protocol and event_type is not None:
+            # Checked before anything is recorded, so a rejected install leaves
+            # the suspender uninstalled rather than holding an RE it never
+            # subscribed on.
+            raise RuntimeError(f"Can not specify non-None event_type {event_type=} with Subscribable protocol")
         with self._lock:
             self.RE = RE
         if self._implements_protocol:
