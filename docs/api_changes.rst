@@ -28,9 +28,14 @@ Changed
   synchronously, this reports the value that actually tripped the suspender
   rather than whatever it has since become.
 - ``SuspendWhenChanged`` defaults ``expected_value`` to the first value it is
-  called back with for a ``Subscribable`` signal, since one cannot be read
-  synchronously when the suspender is created.  The default for ophyd signals
-  is unchanged: the value of the signal at creation.
+  called back with, for every kind of signal, and so latches it when the
+  suspender is installed rather than when it is created.  Previously an ophyd
+  signal was read synchronously in ``__init__`` while a ``Subscribable`` one --
+  which cannot be -- latched on install, so *when* the default was captured
+  depended on which protocol the signal happened to implement.  Until the
+  suspender is installed ``expected_value`` is now ``None``; code reading it
+  between construction and installation, or constructing a suspender and then
+  changing the signal before installing it, will see the difference.
 - The ``bluesky.protocols.Subscribable`` protocol now requires a
   ``subscribe_reading`` method rather than a ``subscribe`` method.  The
   protocol did not match the implementation it was written to describe:

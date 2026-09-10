@@ -401,6 +401,24 @@ def test_pause_from_suspend(RE, hw):
     assert ["wait_for", "wait_for", "checkpoint"] == [m[0] for m in msg_lst]
 
 
+def test_suspend_when_changed_latches_expected_value_at_install(RE, hw):
+    "The default latches on install, whichever protocol the signal implements"
+    sig = hw.bool_sig
+    sig.put(1)
+
+    susp = SuspendWhenChanged(sig, allow_resume=True)
+    # __init__ does not read the signal.
+    assert susp.expected_value is None
+
+    RE.install_suspender(susp)
+    try:
+        # Latched from the reading install calls back with.
+        assert susp.expected_value == 1
+        assert not susp.tripped
+    finally:
+        RE.remove_suspender(susp)
+
+
 def test_suspend_when_changed_preserves_falsy_expected_value(hw):
     sig = hw.bool_sig
     sig.put(1)

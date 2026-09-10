@@ -654,10 +654,9 @@ class SuspendWhenChanged(SuspenderBase):
 
     expected_value : str, float, or int
         RunEngine operations will be suspended when signal deviates
-        from this value.  If `None` (default), set to value of
-        ``signal`` when object is created.  A `~bluesky.protocols.Subscribable`
-        signal cannot be read synchronously, so for those it is instead set to
-        the first value received, when the object is installed on a RunEngine.
+        from this value.  If `None` (default), set to the first value the
+        signal reports, when the object is installed on a RunEngine.  Until
+        then it stays `None`, whatever kind of signal this is watching.
 
     allow_resume : bool
         Should RunEngine be allowed to resume once ``signal.value == expected``
@@ -729,8 +728,6 @@ class SuspendWhenChanged(SuspenderBase):
         tripped_message="",
         **kwargs,
     ):
-        if expected_value is None and not isinstance(signal, Subscribable):
-            expected_value = signal.value
         self.expected_value = expected_value
         self.allow_resume = allow_resume
         super().__init__(
@@ -739,8 +736,10 @@ class SuspendWhenChanged(SuspenderBase):
 
     def _should_suspend(self, value):
         if self.expected_value is None:
-            # A Subscribable signal cannot be read synchronously in __init__, so
-            # take the value it calls back with on install as the expected one.
+            # Latched on install, from the reading both subscription styles call
+            # back with before `install` returns. Reading an ophyd signal in
+            # __init__ instead would make *when* the default is captured depend
+            # on which protocol the signal happens to implement.
             self.expected_value = value
         return value != self.expected_value
 
