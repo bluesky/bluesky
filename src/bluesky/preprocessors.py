@@ -1,9 +1,10 @@
 import uuid
 from collections import ChainMap, OrderedDict, deque
-from collections.abc import Iterable
+from collections.abc import Hashable, Iterable
 from functools import wraps
+from typing import Any, TypeAlias, TypeVar
 
-from bluesky.protocols import Locatable
+from bluesky.protocols import Locatable, Stageable
 
 from .plan_stubs import (
     close_run,
@@ -11,12 +12,15 @@ from .plan_stubs import (
     mv,
     open_run,
     pause,
+    stage,
     stage_all,
     trigger_and_read,
+    unstage,
     unstage_all,
 )
 from .utils import (
     Msg,
+    MsgGenerator,
     RunEngineControlException,
     ensure_generator,
     get_hinted_fields,
@@ -24,10 +28,15 @@ from .utils import (
     merge_axis,
     normalize_subs_input,
     root_ancestor,
-    separate_devices,
     single_gen,
 )
 from .utils import short_uid as _short_uid
+
+P = TypeVar("P")
+
+StageGroup: TypeAlias = Hashable | None
+StageDeviceTuple: TypeAlias = tuple[Stageable, StageGroup, StageGroup]
+StageDevices: TypeAlias = Iterable[Stageable] | Iterable[StageDeviceTuple]
 
 
 def plan_mutator(plan, msg_proc):
@@ -977,16 +986,61 @@ def lazily_stage_wrapper(plan):
     return (yield from finalize_wrapper(plan_mutator(plan, inner), inner_unstage_all()))
 
 
-def stage_wrapper(plan, devices):
+def _normalize_stage_devices(devices: StageDevices) -> tuple[bool, list[Any]]:
+    seen_roots: list[Stageable] = []
+    normalized: list[Any] = []
+    is_grouped = False
+
+    for item in devices:
+        if isinstance(item, tuple):
+            is_grouped = True
+            dev, stage_group, unstage_group = item
+            root = root_ancestor(dev)
+            if root not in seen_roots:
+                seen_roots.append(root)
+                normalized.append((root, stage_group, unstage_group))
+        else:
+            root = root_ancestor(item)
+            if root not in seen_roots:
+                seen_roots.append(root)
+                normalized.append(root)
+
+    return is_grouped, normalized
+
+
+def stage_wrapper(
+    plan: MsgGenerator[P],
+    devices: StageDevices,
+) -> MsgGenerator[P]:
     """
     'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.
+
+    Devices are staged in input order and unstaged in reverse order.
+
+    The ``devices`` argument supports two forms:
+
+    - A collection of devices (legacy form). Devices are staged via
+      :func:`~bluesky.plan_stubs.stage_all` on entrance and unstaged via
+      :func:`~bluesky.plan_stubs.unstage_all` on exit. This generates unique
+      group identifiers and inserts automatic ``wait`` barriers for devices
+      returning asynchronous :class:`~bluesky.protocols.Status` objects.
+    - A collection of three-tuples: ``(device, stage_group, unstage_group)``,
+      where each group is a ``Hashable | None``. Supplying tuples opts into
+      caller-managed synchronization: single-device
+      :func:`~bluesky.plan_stubs.stage` and
+      :func:`~bluesky.plan_stubs.unstage` messages are emitted with the
+      configured groups, and no automatic ``wait`` messages are inserted.
+      The plan (or an enclosing plan, for unstaging) decides where to issue
+      the matching ``wait`` messages.
 
     Parameters
     ----------
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
     devices : collection
-        list of devices to stage immediately on entrance and unstage on exit
+        A collection of devices to stage immediately on entrance and unstage
+        on exit, or a collection of ``(device, stage_group, unstage_group)``
+        tuples where each group is a ``Hashable`` or ``None``.
 
     Yields
     ------
@@ -998,14 +1052,48 @@ def stage_wrapper(plan, devices):
     :func:`bluesky.plans.lazily_stage_wrapper`
     :func:`bluesky.plans.stage`
     :func:`bluesky.plans.unstage`
+
+    Examples
+    --------
+    Using the tuple form to manage synchronization explicitly:
+
+    >>> import bluesky.plan_stubs as bps
+    >>> from bluesky.preprocessors import stage_wrapper
+
+    >>> def my_plan():
+    ...     # Device staging runs before this plan body starts.
+    ...     # Wait for the stage group when the device is first needed:
+    ...     yield from bps.wait(group="stage_det")
+    ...     yield from bps.trigger_and_read([det])
+
+    >>> def enclosing_plan():
+    ...     yield from stage_wrapper(
+    ...         my_plan(),
+    ...         [(det, "stage_det", "unstage_det")],
+    ...     )
+    ...     # Unstaging occurs during cleanup on exit from stage_wrapper.
+    ...     # The enclosing plan can wait for unstaging completion:
+    ...     yield from bps.wait(group="unstage_det")
     """
-    devices = separate_devices(root_ancestor(device) for device in devices)
+    is_grouped, normalized_devices = _normalize_stage_devices(devices)
 
-    def stage_devices():
-        yield from stage_all(*devices)
+    if is_grouped:
 
-    def unstage_devices():
-        yield from unstage_all(*reversed(devices))
+        def stage_devices():
+            for dev, stage_group, _ in normalized_devices:
+                yield from stage(dev, group=stage_group)
+
+        def unstage_devices():
+            for dev, _, unstage_group in reversed(normalized_devices):
+                yield from unstage(dev, group=unstage_group)
+
+    else:
+
+        def stage_devices():
+            yield from stage_all(*normalized_devices)
+
+        def unstage_devices():
+            yield from unstage_all(*reversed(normalized_devices))
 
     def inner():
         yield from stage_devices()
