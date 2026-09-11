@@ -5,9 +5,37 @@
 Unreleased
 ==========
 
+Added
+-----
+
+- Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
+  such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
+  subscription style from the signal.  For a ``Subscribable`` it subscribes,
+  and ``remove`` unsubscribes, on the RunEngine's event loop, since a
+  subscription belongs to the loop that made it.  Passing a signal that is
+  neither now raises a ``RuntimeError`` from ``install`` rather than an
+  ``AttributeError``.  Passing ``event_type`` alongside a ``Subscribable``
+  signal also raises, rather than being silently ignored: that style has no
+  event types, so a caller asking for one would otherwise get a suspender
+  watching something else with nothing said.
+
 Changed
 -------
 
+- Suspender justification messages report the last value the suspender was
+  called back with, rather than calling ``signal.get()`` when the message is
+  built.  As well as being readable for signals that cannot be read
+  synchronously, this reports the value that actually tripped the suspender
+  rather than whatever it has since become.
+- ``SuspendWhenChanged`` defaults ``expected_value`` to the first value it is
+  called back with, for every kind of signal, and so latches it when the
+  suspender is installed rather than when it is created.  Previously an ophyd
+  signal was read synchronously in ``__init__`` while a ``Subscribable`` one --
+  which cannot be -- latched on install, so *when* the default was captured
+  depended on which protocol the signal happened to implement.  Until the
+  suspender is installed ``expected_value`` is now ``None``; code reading it
+  between construction and installation, or constructing a suspender and then
+  changing the signal before installing it, will see the difference.
 - The ``bluesky.protocols.Subscribable`` protocol now requires a
   ``subscribe_reading`` method rather than a ``subscribe`` method.  The
   protocol did not match the implementation it was written to describe:
