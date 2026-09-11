@@ -23,17 +23,21 @@ from event_model.documents import EventDescriptor
 
 from .protocols import (
     Configurable,
+    Executable,
     Flyable,
     Locatable,
     Location,
     Movable,
+    P,
     PartialEvent,
     Preparable,
     Readable,
     Reading,
     Stageable,
     Status,
+    StatusWithResult,
     Stoppable,
+    T,
     Triggerable,
     check_supports,
 )
@@ -599,6 +603,20 @@ def trigger(
 
     """
     ret = yield Msg("trigger", obj, group=group)
+    if wait:
+        yield Msg("wait", None, group=group)
+    return ret
+
+
+@plan
+def execute(
+    obj: Executable[P, T],
+    group: Hashable | None = None,
+    wait: bool = False,
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> MsgGenerator[StatusWithResult[T]]:
+    ret = yield Msg("execute", obj, group=group, execute_args=args, execute_kwargs=kwargs)
     if wait:
         yield Msg("wait", None, group=group)
     return ret
