@@ -22,6 +22,7 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    Checkable,
     Configurable,
     Flyable,
     Locatable,
@@ -34,6 +35,7 @@ from .protocols import (
     Stageable,
     Status,
     Stoppable,
+    T_co,
     Triggerable,
     check_supports,
 )
@@ -259,6 +261,7 @@ def abs_set(
     *args: Any,
     group: Hashable | None = None,
     wait: bool = False,
+    check: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
     """
@@ -274,6 +277,9 @@ def abs_set(
     wait : boolean, optional
         If True, wait for completion before processing any more messages.
         False by default.
+    check : bool, optional
+        If True, check the value is acceptable before setting it,
+        if the device is `Checkable`. Default is False.
     kwargs :
         passed to obj.set()
 
@@ -293,6 +299,8 @@ def abs_set(
     :func:`bluesky.plan_stubs.wait`
     :func:`bluesky.plan_stubs.mv`
     """
+    if check:
+        yield from check_value(obj, args)
     if wait and group is None:
         group = str(uuid.uuid4())
     ret = yield Msg("set", obj, *args, group=group, **kwargs)
@@ -307,6 +315,7 @@ def rel_set(
     *args: Any,
     group: Hashable | None = None,
     wait: bool = False,
+    check: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
     """
@@ -322,6 +331,9 @@ def rel_set(
     wait : boolean, optional
         If True, wait for completion before processing any more messages.
         False by default.
+    check : bool, optional
+        If True, check the value is acceptable before setting it,
+        if the device is `Checkable`. Default is False.
     kwargs :
         passed to obj.set()
 
@@ -342,7 +354,7 @@ def rel_set(
     """
     from .preprocessors import relative_set_wrapper
 
-    return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
+    return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, check=check, **kwargs)))
 
 
 # The format (device1, value1, device2, value2, ...)
@@ -352,6 +364,7 @@ def mv(
     *args: Movable | Any,
     group: Hashable | None = None,
     timeout: float | None = None,
+    check: bool = False,
     **kwargs,
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
@@ -367,6 +380,9 @@ def mv(
         Used to mark these as a unit to be waited on.
     timeout : float, optional
         Specify a maximum time that the move(s) can be waited for.
+    check : bool, optional
+        If True, check the value is acceptable before setting,
+        if the device is `Checkable`. Default is False.
     kwargs :
         passed to obj.set()
 
@@ -389,6 +405,11 @@ def mv(
 
     cyl = reduce(operator.add, [cycler(obj, [val]) for obj, val in partition(2, args)])
     (step,) = merge_cycler(cyl)
+
+    if check:
+        for obj, val in step.items():
+            yield from check_value(obj, val)
+
     for obj, val in step.items():
         ret = yield Msg("set", obj, val, group=group, **kwargs)
         status_objects.append(ret)
@@ -401,7 +422,11 @@ mov = mv  # synonym
 
 @plan
 def mvr(
-    *args: Movable | Any, group: Hashable | None = None, timeout: float | None = None, **kwargs
+    *args: Movable | Any,
+    group: Hashable | None = None,
+    timeout: float | None = None,
+    check: bool = False,
+    **kwargs,
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -416,6 +441,9 @@ def mvr(
         Used to mark these as a unit to be waited on.
     timeout : float, optional
         Specify a maximum time that the move(s) can be waited for.
+    check : bool, optional
+        If True, check the value is acceptable before setting it,
+        if the device is `Checkable`. Default is False.
     kwargs :
         passed to obj.set()
 
@@ -434,14 +462,14 @@ def mvr(
     :func:`bluesky.plan_stubs.mv`
     """
     objs = []
-    for obj, val in partition(2, args):  # noqa: B007
+    for obj, _ in partition(2, args):  # noqa: B007
         objs.append(obj)
 
     from .preprocessors import relative_set_decorator
 
     @relative_set_decorator(objs)
     def inner_mvr():
-        return (yield from mv(*args, group=group, timeout=timeout, **kwargs))
+        return (yield from mv(*args, group=group, timeout=timeout, check=check, **kwargs))
 
     return (yield from inner_mvr())
 
@@ -1044,6 +1072,34 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None, 
     while not done:
         done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False, watch=watch)
         yield from collect(*dets, name=stream_name)
+
+
+@plan
+def check_value(obj: Checkable[T_co], value: T_co) -> MsgGenerator[None]:
+    """Check that a valid setpoint has been given.
+
+    Calls ``obj.check_value(value)``, routing the check
+    to the device implementation.
+
+    This plan should be used before calling ``set(value)``
+    to ensure that the value is acceptable for the device.
+
+    If the device is not `Checkable`, emits a warning.
+
+    Parameters
+    ----------
+    obj : Checkable[T_co]
+        The object to check.
+    value : T_co
+        The value to check.
+    """
+
+    if isinstance(obj, Checkable):
+        yield Msg("check_value", obj, value)
+    else:
+        warnings.warn(  # noqa: B028
+            f"{obj.name} has no check_value() method to check if {value} is acceptable."
+        )
 
 
 @plan
