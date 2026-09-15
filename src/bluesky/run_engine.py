@@ -1372,7 +1372,7 @@ class RunEngine:
         self._state = "stopping"
         if was_paused:
             with self._state_lock:
-                self._exception = RequestStop
+                self._exception = RequestStop()
         else:
             self._task.cancel()
 
@@ -1436,7 +1436,7 @@ class RunEngine:
         self._state = "halting"
         if was_paused:
             with self._state_lock:
-                self._exception = PlanHalt
+                self._exception = PlanHalt()
                 self._exit_status = "abort"
         else:
             self._task.cancel()
