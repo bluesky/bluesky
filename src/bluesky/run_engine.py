@@ -401,9 +401,9 @@ class RunEngine:
         loop: asyncio.AbstractEventLoop | None = None,
         preprocessors: list | None = None,
         context_managers: list | None = None,
-        md_validator: typing.Callable | None = None,
-        md_normalizer: typing.Callable | None = None,
-        scan_id_source: typing.Callable[[RunEngineMetadata], SyncOrAsync[int]] = default_scan_id_source,
+        md_validator: Callable | None = None,
+        md_normalizer: Callable | None = None,
+        scan_id_source: Callable[[RunEngineMetadata], SyncOrAsync[int]] = default_scan_id_source,
         during_task: DuringTask | None = None,
         call_returns_result: bool = False,
     ):
