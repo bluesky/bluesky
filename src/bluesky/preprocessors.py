@@ -107,6 +107,11 @@ def plan_mutator(plan, msg_proc):
                 # 'new_gen')
                 if id(exhausted_gen) in tail_result_cache:
                     ret = tail_result_cache.pop(id(exhausted_gen))
+                else:
+                    # No cached tail result for this generator, so there is no
+                    # value to hand back; use None instead of a stale value
+                    # left over from a prior loop iteration.
+                    ret = None
 
                 result_stack.append(ret)
 
