@@ -1223,6 +1223,7 @@ class RunEngine:
                 self._state = "aborting"
                 if not was_paused:
                     self._task.cancel()
+                return
             if justification is not None:
                 print(f"Justification for this suspension:\n{justification}")
 
