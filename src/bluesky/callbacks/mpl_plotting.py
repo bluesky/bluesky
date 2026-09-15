@@ -631,7 +631,7 @@ class LiveFitPlot(LivePlot):
             raise NotImplementedError("LiveFitPlot supports models with one independent variable only.")
         (self.__x_key,) = livefit.independent_vars.keys()  # this never changes
         (x,) = livefit.independent_vars.values()  # this may change
-        super().__init__(livefit.y, x, legend_keys=legend_keys, xlim=xlim, ylim=xlim, ax=ax, **kwargs)
+        super().__init__(livefit.y, x, legend_keys=legend_keys, xlim=xlim, ylim=ylim, ax=ax, **kwargs)
         self.num_points = num_points
         self._livefit = livefit
         self._xlim = xlim
