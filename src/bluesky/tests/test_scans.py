@@ -464,6 +464,18 @@ def test_adaptive_scan_accepts_tuple_detectors(RE, hw):
     assert np.all(np.diff(actual_traj) > 0)
 
 
+def test_adaptive_scan_missing_target_field_raises(RE, hw):
+    """A ``target_field`` that no device reports must fail with a clear error.
+
+    Regression test: the read loop left ``cur_I`` as ``None`` when
+    ``target_field`` was never found, silently bypassing the adaptive stepping
+    logic (``past_I`` stayed ``None`` so every step used the fixed initial
+    step) instead of surfacing the problem.
+    """
+    with pytest.raises(ValueError, match="was not found in the readings"):
+        RE(bp.adaptive_scan([hw.det], "NOT_A_REAL_FIELD", hw.motor, 0, 5, 0.1, 1, 0.1, False))
+
+
 def test_adaptive_dscan(RE, hw):
     scan1 = bp.rel_adaptive_scan([hw.det], "det", hw.motor, 0, 5, 0.1, 1, 0.1, True)
     scan2 = bp.rel_adaptive_scan([hw.det], "det", hw.motor, 0, 5, 0.1, 1, 0.2, True)

@@ -771,11 +771,21 @@ def adaptive_scan(
             for det in detectors:
                 yield Msg("trigger", det, group="B")
             yield Msg("wait", None, "B")
+            cur_I = None
+            target_field_found = False
+            all_fields: list[str] = []
             for det in devices:
                 cur_det = yield Msg("read", det)
+                all_fields.extend(cur_det)
                 if target_field in cur_det:
                     cur_I = cur_det[target_field]["value"]
+                    target_field_found = True
             yield Msg("save")
+            if not target_field_found:
+                raise ValueError(
+                    f"target_field {target_field!r} was not found in the readings of any of the "
+                    f"detectors or the motor. Available fields this step: {sorted(all_fields)}."
+                )
 
             # special case first first loop
             if past_I is None:
