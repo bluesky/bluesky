@@ -189,6 +189,38 @@ def test_multi_motor_list_scan(RE, hw):
     multi_traj_checker(RE, scan, expected_data)
 
 
+def test_list_scan_unequal_lengths_raises():
+    """``list_scan`` (inner product) requires equal-length position lists."""
+    from .conftest import MovableSignal, ReadableSignal
+
+    det = ReadableSignal("det")
+    m1 = MovableSignal(name="m1")
+    m2 = MovableSignal(name="m2")
+
+    with pytest.raises(ValueError, match="lengths of all lists"):
+        # Validation runs before the first yield.
+        next(bp.list_scan([det], m1, [1, 2, 3], m2, [10, 20]))
+
+
+def test_list_scan_duplicate_motor_name_raises():
+    """``list_scan`` must reject motors that share a name.
+
+    Regression test: motors are identified by name in the length bookkeeping
+    (a dict keyed by ``motor.name``) and downstream data keys, so a duplicate
+    name silently overwrote an entry and corrupted validation. Duplicate names
+    are invalid and must be rejected explicitly.
+    """
+    from .conftest import MovableSignal, ReadableSignal
+
+    det = ReadableSignal("det")
+    # Two distinct motors that happen to share a name.
+    m_a = MovableSignal(name="dup")
+    m_b = MovableSignal(name="dup")
+
+    with pytest.raises(ValueError, match="unique name"):
+        next(bp.list_scan([det], m_a, [1, 2, 3], m_b, [10, 20, 30]))
+
+
 def test_dscan(RE, hw):
     traj = np.array([1, 2, 3])
     hw.motor.set(-4)

@@ -181,6 +181,10 @@ def list_scan(
     length = None
     for motor, pos_list in partition(2, args):
         pos_list = list(pos_list)  # Ensure list (accepts any finite iterable).
+        # Motors are identified by name downstream (e.g. in the data keys and
+        # length bookkeeping below), so each must have a unique name.
+        if motor.name in lengths:
+            raise ValueError(f"Each motor must have a unique name, but {motor.name!r} was used more than once.")
         lengths[motor.name] = len(pos_list)
         if not length:
             length = len(pos_list)
