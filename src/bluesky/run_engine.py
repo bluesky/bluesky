@@ -1052,7 +1052,10 @@ class RunEngine:
             if init_func is not None:
                 init_func()
 
-            if self._task_fut is None or self._task_fut.done():
+            if self._task_fut is None:
+                # No task was ever started; nothing to wait on or return.
+                return self.NO_PLAN_RETURN
+            if self._task_fut.done():
                 try:
                     return self._task_fut.result()
                 except concurrent.futures.CancelledError:
