@@ -1126,9 +1126,7 @@ class RunBundler:
         # If there is not a stream then we should be using an old-style doubly nested
         # and we need to describe_collect and prepare the nested streams.
         if not stream_name:
-            if frozenset(collect_objects) not in self._local_descriptors or (
-                collect_objects[0] not in self._local_descriptors
-            ):
+            if collect_objects[0] not in self._local_descriptors:
                 if len(collect_objects) > 1:
                     raise IllegalMessageSequence(
                         "If collecting multiple objects you must predeclare a stream for all "
