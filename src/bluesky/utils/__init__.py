@@ -160,15 +160,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES: tuple[type, ...] = (types.GeneratorType,)
-try:
-    from types import CoroutineType
-except ImportError:
-    # < py35
-    pass
-else:
-    PLAN_TYPES = PLAN_TYPES + (CoroutineType,)
-    del CoroutineType
+PLAN_TYPES: tuple[type, ...] = (types.GeneratorType, types.CoroutineType)
 
 
 def ensure_generator(plan):
