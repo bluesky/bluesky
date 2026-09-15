@@ -450,6 +450,20 @@ def test_adaptive_ascan(RE, hw):
         RE(scan5)
 
 
+def test_adaptive_scan_accepts_tuple_detectors(RE, hw):
+    """``detectors`` may be a tuple (as documented), not only a list.
+
+    Regression test: ``adaptive_core`` did ``detectors + [motor]``, which raised
+    ``TypeError`` when ``detectors`` was a tuple.
+    """
+    actual_traj = []
+    col = collector("motor", actual_traj)
+    # Pass detectors as a tuple -- this used to raise ``TypeError: can only
+    # concatenate tuple (not "list") to tuple``.
+    RE(bp.adaptive_scan((hw.det,), "det", hw.motor, 0, 5, 0.1, 1, 0.1, False), {"event": col})
+    assert np.all(np.diff(actual_traj) > 0)
+
+
 def test_adaptive_dscan(RE, hw):
     scan1 = bp.rel_adaptive_scan([hw.det], "det", hw.motor, 0, 5, 0.1, 1, 0.1, True)
     scan2 = bp.rel_adaptive_scan([hw.det], "det", hw.motor, 0, 5, 0.1, 1, 0.2, True)

@@ -490,7 +490,7 @@ def _scan_1d(
 
     steps = np.linspace(**_md["plan_pattern_args"])
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def inner_scan():
         for step in steps:
@@ -616,7 +616,7 @@ def log_scan(
 
     steps = np.logspace(**_md["plan_pattern_args"])
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
         if predeclare:
@@ -749,7 +749,7 @@ def adaptive_scan(
     else:
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def adaptive_core():
         next_pos = start
@@ -761,7 +761,7 @@ def adaptive_scan(
             direction_sign = 1
         else:
             direction_sign = -1
-        devices = tuple(utils.separate_devices(detectors + [motor]))
+        devices = tuple(utils.separate_devices([*detectors, motor]))
         if os.environ.get("BLUESKY_PREDECLARE", False):
             yield from bps.declare_stream(*devices, name="primary")
         while next_pos * direction_sign < stop * direction_sign:
@@ -979,7 +979,7 @@ def tune_centroid(
     low_limit = min(start, stop)
     high_limit = max(start, stop)
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def _tune_core(start: float, stop: float, num: int, signal: str):
         next_pos = start
@@ -993,7 +993,7 @@ def tune_centroid(
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)  # type: ignore      # Movable
-            ret = yield from bps.trigger_and_read(list(detectors) + [motor])  # type: ignore
+            ret = yield from bps.trigger_and_read([*detectors, motor])  # type: ignore
             cur_I = ret[signal]["value"]
             sum_I += cur_I
             position = ret[motor_name]["value"]
