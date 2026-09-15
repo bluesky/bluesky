@@ -1099,7 +1099,7 @@ class RunBundler:
         # Warn for page collectable support
         for obj in collect_objects:
             if isinstance(obj, EventCollectable) and isinstance(obj, EventPageCollectable):
-                doc_logger.warn(
+                doc_logger.warning(
                     "collect() was called for a device %r which is both EventCollectable "
                     "and EventPageCollectable. Using device.collect_pages().",
                     obj.name,
