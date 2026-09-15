@@ -1890,7 +1890,7 @@ class RunEngine:
         # TODO extract this from the Msg
         run_key = msg.run
         if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object)
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
         ) is key_absence_sentinel:
             ims_msg = "A 'close_run' message was not received before the 'open_run' message"
             raise IllegalMessageSequence(ims_msg)
