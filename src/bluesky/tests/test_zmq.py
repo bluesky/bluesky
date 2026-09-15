@@ -373,6 +373,28 @@ def test_normlize_address_invalid_input():
         _normalize_address(123.0)
 
 
+@pytest.mark.parametrize(
+    "bad",
+    [
+        (),  # empty tuple
+        ("tcp",),  # protocol only, no host
+        ("ipc",),  # protocol only, no path
+        ("tcp", "host", 9, "extra"),  # too many tcp parts
+        ("host", 9, "extra"),  # too many implicit-tcp parts
+        ("ipc", "/tmp/a", "/tmp/b"),  # too many ipc parts
+    ],
+)
+def test_normalize_address_malformed_tuple(bad):
+    """Malformed address tuples must raise a clear ValueError.
+
+    Regression test: these previously raised opaque ``IndexError`` /
+    ``ValueError`` ("not enough/too many values to unpack") from unguarded
+    indexing and unpacking.
+    """
+    with pytest.raises(ValueError, match="address tuple|tuple may not be empty"):
+        _normalize_address(bad)
+
+
 @pytest.mark.parametrize("in_or_out", ["in", "out"])
 def test_specify_port_and_address_raises(in_or_out):
     err_msg = f"Cannot specify both '{in_or_out}_port' and '{in_or_out}_address'"
