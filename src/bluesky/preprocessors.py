@@ -1093,7 +1093,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
 
     # if we move a pseudo positioner also stash it's children
     if obj in coupled_parents:
-        for c, p in zip(obj.pseudo_positioners, setpoint):
+        for c, p in zip(obj.pseudo_positioners, setpoint, strict=True):
             initial_positions[c] = p
 
     # if we move a pseudo single, also stash it's parent and siblings
@@ -1101,7 +1101,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     if parent in coupled_parents and obj in parent.pseudo_positioners:
         parent_pos = parent.position
         initial_positions[parent] = parent_pos
-        for c, p in zip(parent.pseudo_positioners, parent_pos):
+        for c, p in zip(parent.pseudo_positioners, parent_pos, strict=True):
             initial_positions[c] = p
 
     # TODO forbid mixed pseudo / real motion
