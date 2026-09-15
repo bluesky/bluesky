@@ -9,6 +9,13 @@ on:
         type: string
         description: The runner to run this job on
         required: true
+      full-suite:
+        type: boolean
+        description: >-
+          Also run the RE fixture's call_returns_result=False variant
+          (roughly doubles the RE-based tests).
+        required: false
+        default: false
     secrets:
       CODECOV_TOKEN:
         required: true
@@ -67,7 +74,7 @@ jobs:
           pip-install: ".[dev]"
 
       - name: Run tests
-        run: tox -e tests
+        run: tox -e tests -- ${{ inputs.full-suite && '--include-call-returns-result-false' || '' }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

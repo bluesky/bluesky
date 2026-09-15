@@ -15,6 +15,21 @@ from bluesky.run_engine import RunEngine, TransitionError
 from bluesky.utils import SigintHandler
 
 
+CALL_RETURNS_RESULT_OPTION = "--include-call-returns-result-false"
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        CALL_RETURNS_RESULT_OPTION,
+        action="store_true",
+        default=False,
+        help=(
+            "Also run the RE fixture with call_returns_result=False. "
+            "By default only call_returns_result=True is exercised."
+        ),
+    )
+
+
 def _clean_event_loop(RE, loop):
     """Stop a RunEngine's background loop thread and close the loop.
 
@@ -54,12 +69,29 @@ def make_RE(request):
     return factory
 
 
-@pytest.fixture(scope="function", params=[False, True])
+def pytest_generate_tests(metafunc):
+    """Parametrize the ``RE`` fixture over ``call_returns_result``.
+
+    A fixture cannot both declare ``params`` and be re-parametrized by a hook,
+    so the parametrization lives here (the only place that can see the
+    command-line option): ``call_returns_result=True`` always runs, and the
+    ``False`` variant is added only when ``--include-call-returns-result-false``
+    is passed, doubling the ``RE``-based tests.
+    """
+    if RE.__name__ in metafunc.fixturenames:
+        call_returns_result = [True]
+        if metafunc.config.getoption(CALL_RETURNS_RESULT_OPTION):
+            call_returns_result = [False, True]
+        metafunc.parametrize(RE.__name__, call_returns_result, indirect=True)
+
+
+@pytest.fixture(scope="function")
 def RE(request, make_RE):
     """A ready-to-use ``RunEngine`` parametrized over ``call_returns_result``.
 
-    Tests using this fixture run twice, once with ``call_returns_result=False``
-    and once with ``True``.
+    Parametrization is supplied by :func:`pytest_generate_tests`: by default the
+    fixture only runs with ``call_returns_result=True``. Pass
+    ``--include-call-returns-result-false`` to also run the ``False`` variant.
     """
     return make_RE({}, call_returns_result=request.param)
 
