@@ -29,6 +29,9 @@ from .utils import (
 )
 from .utils import short_uid as _short_uid
 
+# Commands whose object should be lazily staged before the message is processed.
+_LAZY_STAGE_COMMANDS = {"read", "set", "trigger", "kickoff"}
+
 
 def plan_mutator(plan, msg_proc):
     """
@@ -952,12 +955,11 @@ def lazily_stage_wrapper(plan):
         messages from plan with 'stage' messages inserted and 'unstage'
         messages appended
     """
-    COMMANDS = set(["read", "set", "trigger", "kickoff"])  # noqa: C405
     # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
 
     def inner(msg):
-        if msg.command in COMMANDS:
+        if msg.command in _LAZY_STAGE_COMMANDS:
             root = root_ancestor(msg.obj)
             if root not in devices_staged:
 
