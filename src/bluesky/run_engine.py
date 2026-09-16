@@ -13,7 +13,6 @@ from collections.abc import Callable, MutableMapping
 from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
 from inspect import iscoroutine
 from itertools import count
 from warnings import warn
@@ -23,12 +22,9 @@ from event_model import DocumentNames
 from opentelemetry import trace
 from opentelemetry.trace import Span
 
-from bluesky._vendor.super_state_machine.errors import TransitionError
-from bluesky._vendor.super_state_machine.extras import PropertyMachine
-from bluesky._vendor.super_state_machine.machines import StateMachine
-
 from .bundlers import RunBundler, maybe_await
-from .log import ComposableLogAdapter, logger, msg_logger, state_logger
+from .fsm import MachineDescriptor, RunEngineStateMachine, TransitionError
+from .log import ComposableLogAdapter, logger, msg_logger
 from .protocols import (
     Flyable,
     Locatable,
@@ -114,90 +110,6 @@ class RunEngineResult:
     interrupted: bool
     reason: str
     exception: Exception | None
-
-
-class RunEngineStateMachine(StateMachine):
-    """
-
-    Attributes
-    ----------
-    is_idle
-        State machine is in its idle state
-    is_running
-        State machine is in its running state
-    is_paused
-        State machine is paused.
-    """
-
-    class States(Enum):
-        """state.name = state.value"""
-
-        IDLE = "idle"
-
-        RUNNING = "running"
-
-        PAUSING = "pausing"
-        PAUSED = "paused"
-
-        HALTING = "halting"
-        STOPPING = "stopping"
-        ABORTING = "aborting"
-
-        SUSPENDING = "suspending"
-
-        PANICKED = "panicked"
-
-        @classmethod
-        def states(cls):
-            return [state.value for state in cls]
-
-    class Meta:
-        allow_empty = False
-        initial_state = "idle"
-        transitions = {
-            # Notice that 'transitions' and 'named_transitions' have
-            # opposite to <--> from structure.
-            # from_state : [valid_to_states]
-            "idle": ["running", "panicked"],
-            "running": ["idle", "pausing", "halting", "stopping", "aborting", "suspending", "panicked"],
-            "pausing": ["paused", "idle", "halting", "aborting", "panicked"],
-            "suspending": ["running", "halting", "aborting", "panicked"],
-            "paused": ["idle", "running", "halting", "stopping", "aborting", "panicked"],
-            "halting": ["idle", "panicked"],
-            "stopping": ["idle", "panicked"],
-            "aborting": ["idle", "panicked"],
-            "panicked": [],
-        }
-        named_checkers = [
-            ("can_pause", "pausing"),
-        ]
-
-
-class LoggingPropertyMachine(PropertyMachine):
-    """expects object to have a `log` attribute
-    and a `state_hook` attribute that is ``None`` or a callable with signature
-    ``f(value, old_value)``"""
-
-    def __init__(self, machine_type):
-        super().__init__(machine_type)
-
-    def __set__(self, obj, value):
-        own = type(obj)
-        old_value = self.__get__(obj, own)
-        with obj._state_lock:
-            super().__set__(obj, value)
-        value = self.__get__(obj, own)
-        tags = {"old_state": old_value, "new_state": value, "RE": self}
-
-        state_logger.info("Change state on %r from %r -> %r", obj, old_value, value, extra=tags)
-        if obj.state_hook is not None:
-            obj.state_hook(value, old_value)
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return super().__get__(instance, owner)
-        with instance._state_lock:
-            return super().__get__(instance, owner)
 
 
 RunEngineMetadata = MutableMapping[str, typing.Any]
@@ -366,7 +278,8 @@ class RunEngine:
 
     """
 
-    _state = LoggingPropertyMachine(RunEngineStateMachine)
+    _state = MachineDescriptor(RunEngineStateMachine)
+
     _UNCACHEABLE_COMMANDS = [
         "pause",
         "subscribe",
