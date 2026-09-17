@@ -545,6 +545,25 @@ def test_many_collectables_fails(RE, cls1, cls2):
         RE(collect_plan(det1, det2, pre_declare=False))
 
 
+def test_collect_all_return_payload(RE):
+    """collect_all returns None when return_payload is False, else a list of events."""
+    results: dict[str, object] = {}
+
+    def plan(det, return_payload):
+        yield from bps.open_run()
+        yield from bps.declare_stream(det, name="main", collect=True)
+        results["ret"] = yield from bps.collect_all(det, name="main", return_payload=return_payload)
+        yield from bps.close_run()
+
+    RE(plan(PvCollectable(name="det"), return_payload=False))
+    assert results["ret"] is None
+
+    RE(plan(PvCollectable(name="det"), return_payload=True))
+    assert isinstance(results["ret"], list)
+    assert len(results["ret"]) == 2
+    assert all(isinstance(event, dict) for event in results["ret"])
+
+
 def test_many_stream_datum_collectables(RE):
     """Test collecting from multiple StreamDatum-producing devices."""
     det1 = StreamDatumReadableCollectable(name="det1")

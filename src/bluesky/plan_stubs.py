@@ -978,7 +978,7 @@ def complete_all(*args, group: Hashable | None = None, wait: bool = False, **kwa
 @plan
 def collect(
     obj: Collectable, *args, stream: bool = False, return_payload: bool = True, name: str | None = None
-) -> MsgGenerator[list[PartialEvent]]:
+) -> MsgGenerator[list[PartialEvent] | None]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
 
@@ -1014,7 +1014,7 @@ def collect(
 @plan
 def collect_all(
     *args, stream: bool = False, return_payload: bool = True, name: str | None = None
-) -> MsgGenerator[list[list[PartialEvent]] | list[PartialEvent] | None]:
+) -> MsgGenerator[list[PartialEvent] | None]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
 
@@ -1048,8 +1048,9 @@ def collect_all(
         collections = []
         for obj in objs:
             ret = yield from collect(obj, stream=stream, return_payload=return_payload, name=name)
-            collections.append(ret)
-        return collections
+            if ret is not None:
+                collections.extend(ret)
+        return collections if collections else None
 
 
 @plan
