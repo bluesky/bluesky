@@ -89,7 +89,7 @@ P = TypeVar("P")
 MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
-CustomPlanMetadata = dict[str, Any]
+CustomPlanMetadata = collections.abc.MutableMapping[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
 ScalarOrIterableFloat: TypeAlias = float | TypingIterable[float]
@@ -536,25 +536,35 @@ class _BoundMethodProxy:
     def __init__(self, cb):
         self._hash = hash(cb)
         self._destroy_callbacks = []
-        try:
-            # This branch is successful if 'cb' bound method and class method,
-            #   but destroy_callback mechanism works only for bound methods,
-            #   since cb.__self__ points to class instance only for
-            #   bound methods, not for class methods. Therefore destroy_callback
-            #   will not be called for class methods.
-            try:
-                self.inst = ref(cb.__self__, self._destroy)
-            except TypeError:
-                self.inst = None
-            self.func = cb.__func__
-            self.klass = cb.__self__.__class__
+        cb_self = getattr(cb, "__self__", None)
 
-        except AttributeError:
+        if cb_self is None:
             # 'cb' is a function, callable object or static method.
             # No weak reference is created, strong reference is stored instead.
             self.inst = None
             self.func = cb
             self.klass = None
+        elif isinstance(cb_self, type):
+            # 'cb' is a class method, so __self__ is the class rather than an
+            # instance of it. A class is weakly referenceable, so the branch below
+            # would succeed and then silently unsubscribe the callback when the
+            # class was collected -- and there is no instance whose death was
+            # supposed to mean anything. Hold it strongly, as for a plain function.
+            self.inst = None
+            self.func = cb
+            self.klass = cb_self
+        else:
+            try:
+                self.inst = ref(cb_self, self._destroy)
+            except TypeError:
+                # 'obj' cannot be weakly referenced, e.g. it uses __slots__ without
+                # __weakref__. Hold the bound method strongly rather than an unbound
+                # function that we would later call without its instance.
+                self.inst = None
+                self.func = cb
+            else:
+                self.func = cb.__func__
+            self.klass = cb_self.__class__
 
     def add_destroy_callback(self, callback):
         self._destroy_callbacks.append(_BoundMethodProxy(callback))
@@ -1995,12 +2005,16 @@ def maybe_update_hints(hints: dict[str, Hints], obj):
         hints[obj.name] = obj.hints
 
 
+def _isasyncgen(iterator: SyncOrAsyncIterator[T]) -> TypeIs[AsyncIterator[T]]:
+    return inspect.isasyncgen(iterator)
+
+
 async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator[T]:
-    if inspect.isasyncgen(iterator):
+    if _isasyncgen(iterator):
         async for v in iterator:
             yield v
     else:
-        for v in iterator:  # type: ignore
+        for v in iterator:
             yield v
 
 
@@ -2106,22 +2120,3 @@ def is_plan(bs_plan):
     """
 
     return inspect.isgeneratorfunction(bs_plan) or getattr(bs_plan, "_is_plan_", False)
-
-
-def truncate_json_overflow(data):
-    """Truncate large numerical values to avoid overflow issues when serializing as JSON.
-
-    This preemptively truncates large integers and floats with zero fractional part to fit within
-    the JSON limits for integers, i.e. (-2^53, 2^53 - 1], in case the values are implicitly
-    converted during serialization.
-    """
-    if isinstance(data, collections.abc.Mapping):
-        return {k: truncate_json_overflow(v) for k, v in data.items()}
-    elif isinstance(data, collections.abc.Iterable) and not isinstance(data, str):
-        # Handle lists, tuples, arrays, etc., but not strings
-        return [truncate_json_overflow(item) for item in data]
-    elif isinstance(data, (int, float)) and not (data % 1) and not (1 - 2**53 <= data <= 2**53 - 1):
-        return min(max(data, 1 - 2**53), 2**53 - 1)  # Truncate integers to fit in JSON (53 bits max)
-    elif isinstance(data, float) and (data < -1.7976e308 or data > 1.7976e308):
-        return min(max(data, -1.7976e308), 1.7976e308)  # (Approx.) truncate floats to fit in JSON to avoid inf
-    return data

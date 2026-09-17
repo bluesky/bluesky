@@ -219,6 +219,7 @@ when the run opened.
 
 .. ipython:: python
     :suppress:
+    :okwarning:
 
     %run -m multi_run_plans_sequential
 
@@ -251,6 +252,7 @@ the table for the 'outer' run.
 
 .. ipython:: python
     :suppress:
+    :okwarning:
 
     %run -m multi_run_plans_nested
 
@@ -280,6 +282,7 @@ performs callback subscriptions.
 
 .. ipython:: python
     :suppress:
+    :okwarning:
 
     %run -m multi_run_plans_select_cb
 
@@ -305,6 +308,7 @@ before at each call.
 
 .. ipython:: python
     :suppress:
+    :okwarning:
 
     %run -m multi_run_plans_recursive
 

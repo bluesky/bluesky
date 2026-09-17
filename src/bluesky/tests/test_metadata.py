@@ -1,3 +1,5 @@
+from collections.abc import MutableMapping
+
 import event_model
 import ophyd
 
@@ -73,3 +75,46 @@ def test_md_mormalizer(RE):
     assert "test" in start_doc
     assert start_doc["test"] == 1
     assert start_doc["a"]["b"]["c"] is not metadata["a"]["b"]["c"]
+
+
+class CustomMapping(MutableMapping):
+    """A MutableMapping subclass to test that RE.md accepts non-dict mappings."""
+
+    def __init__(self, *args, **kwargs):
+        self._store = dict(*args, **kwargs)
+
+    def __getitem__(self, key):
+        return self._store[key]
+
+    def __setitem__(self, key, value):
+        self._store[key] = value
+
+    def __delitem__(self, key):
+        del self._store[key]
+
+    def __iter__(self):
+        return iter(self._store)
+
+    def __len__(self):
+        return len(self._store)
+
+
+def test_mutable_mapping_as_md(RE):
+    """Test that RE.md works with a MutableMapping subclass instead of dict."""
+    md = CustomMapping({"project": "test_project", "sample": "sample_1"})
+    RE.md = md
+    RE.md.setdefault("versions", {})
+
+    assert RE.md["project"] == "test_project"
+    assert RE.md["sample"] == "sample_1"
+
+    start_doc = None
+
+    def test_callback(name, doc):
+        nonlocal start_doc
+        if name == "start":
+            start_doc = doc
+
+    RE(count([]), test_callback)
+    assert start_doc["project"] == "test_project"
+    assert start_doc["sample"] == "sample_1"

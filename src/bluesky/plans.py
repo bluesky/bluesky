@@ -131,7 +131,7 @@ def count(
 
 def list_scan(
     detectors: Sequence[Readable],
-    *args: tuple[Movable | Any, list[Any]],
+    *args: Movable[Any] | Sequence[Any],
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:

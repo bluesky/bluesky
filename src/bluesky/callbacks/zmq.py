@@ -16,6 +16,7 @@ import asyncio
 import copy
 import logging
 import pickle
+import threading
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -498,6 +499,7 @@ class RemoteDispatcher(Dispatcher):
 
         self.__factory = __finish_setup
         self._task = None
+        self._stopped = threading.Event()
         self.closed = False
         self._strict = strict
         super().__init__()
@@ -567,14 +569,36 @@ class RemoteDispatcher(Dispatcher):
             if task_exception is not None:
                 raise task_exception
         finally:
-            self.stop()
+            # The loop has stopped, so tear everything down here and signal
+            # any thread blocked in ``stop`` that cleanup is complete.
+            self._cleanup()
 
-    def stop(self):
+    def _cleanup(self):
+        # Release the task, socket, context and loop. Safe to call only once
+        # the loop has stopped; closing a running loop raises RuntimeError.
         if self._task is not None:
             self._task.cancel()
+            self._task = None
         if self._socket is not None:
             self._socket.close()
+            self._socket = None
         if self._context is not None:
             self._context.destroy()
-        self.loop.close()
+            self._context = None
+        if not self.loop.is_closed():
+            self.loop.close()
         self.closed = True
+        self._stopped.set()
+
+    def stop(self):
+        """Stop the dispatcher and wait for it to finish.
+
+        When called from a thread other than the one running the event loop,
+        task cancellation is scheduled on the loop and this method blocks
+        until :meth:`start` has torn the dispatcher down.
+        """
+
+        if self.loop.is_running():
+            if self._task is not None:
+                self.loop.call_soon_threadsafe(self._task.cancel)
+            self._stopped.wait()

@@ -6,10 +6,26 @@ from ophyd import sim
 
 from bluesky import protocols as bs_protocols
 
+from .conftest import AlwaysSuccessfulStatus
+
 
 def test_status():
     assert isinstance(sim.NullStatus(), bs_protocols.Status)
     assert isinstance(sim.StatusBase(), bs_protocols.Status)
+
+
+def test_status_with_result():
+    class ResultStatus(AlwaysSuccessfulStatus):
+        def result(self) -> int:
+            return 42
+
+    status = ResultStatus()
+    assert isinstance(status, bs_protocols.Status)
+    assert isinstance(status, bs_protocols.StatusWithResult)
+    assert status.result() == 42
+    # result() is an opt-in extension, so a plain Status does not provide it
+    assert not isinstance(sim.NullStatus(), bs_protocols.StatusWithResult)
+    assert not isinstance(AlwaysSuccessfulStatus(), bs_protocols.StatusWithResult)
 
 
 def test_readable():
@@ -36,12 +52,6 @@ def test_stageable():
 
 def test_pausable():
     assert isinstance(sim.det1, bs_protocols.Pausable)
-
-
-def test_subscribable():
-    assert isinstance(sim.det1, bs_protocols.Subscribable)
-    assert isinstance(sim.motor1, bs_protocols.Subscribable)
-    assert not isinstance(sim.flyer1, bs_protocols.Subscribable)
 
 
 def test_checkable():

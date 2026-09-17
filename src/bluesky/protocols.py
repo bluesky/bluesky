@@ -31,6 +31,7 @@ class ReadingOptional(TypedDict, total=False):
 
 T = TypeVar("T")
 P = ParamSpec("P")
+R_co = TypeVar("R_co", covariant=True)
 
 
 class Reading(Generic[T], ReadingOptional):
@@ -80,6 +81,25 @@ class Status(Protocol):
     @abstractmethod
     def success(self) -> bool:
         """If done return whether the operation was successful."""
+        ...
+
+
+@runtime_checkable
+class StatusWithResult(Status, Protocol[R_co]):
+    @abstractmethod
+    def result(self) -> R_co:
+        """Return whatever result the Status is meant to produce when it is done.
+
+        It replicates the behavior of :py:meth:`asyncio.Future.result`.
+
+        If a result is not available yet, it should raise
+        :py:exc:`asyncio.InvalidStateError` (or a subclass of it).
+
+        Returns
+        -------
+        R_co
+            The result of the operation when it is done.
+        """
         ...
 
 
@@ -422,7 +442,7 @@ class Pausable(Protocol):
 @runtime_checkable
 class Stoppable(Protocol):
     @abstractmethod
-    def stop(self, success=True) -> SyncOrAsync[None]:
+    def stop(self, *, success: bool = False) -> SyncOrAsync[None]:
         """Safely stop a device that may or may not be in motion.
 
         The argument ``success`` is a boolean.
@@ -442,7 +462,7 @@ Callback = Callable[[dict[str, Reading[T]]], None]
 @runtime_checkable
 class Subscribable(HasName, Protocol[T]):
     @abstractmethod
-    def subscribe(self, function: Callback[T]) -> None:
+    def subscribe_reading(self, function: Callback[T]) -> None:
         """Subscribe to updates in value of a device.
 
         When the device has a new value ready, it should call ``function``

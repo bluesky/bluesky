@@ -12,6 +12,7 @@ from event_model import DocumentNames, compose_run
 
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
+from bluesky import RunEngine
 from bluesky.callbacks import CallbackBase, CallbackCounter, LiveFit, LiveTable
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.core import make_callback_safe, make_class_safe
@@ -21,6 +22,8 @@ from bluesky.plans import count, grid_scan, inner_product_scan, scan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.tests.utils import DocCollector, MsgCollector, _print_redirect
+
+from .conftest import MovableSignal, ReadableSignal
 
 
 # copied from examples.py to avoid import
@@ -729,16 +732,16 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, stri
     assert logger.exception.call_count == len(documents)
 
 
-def test_in_plan_qt_callback(RE, hw):
+def test_in_plan_qt_callback():
     from bluesky.callbacks.mpl_plotting import _get_teleporter
 
     _get_teleporter()
 
-    def my_plan():
-        motor = hw.motor
-        det = hw.det
+    RE = RunEngine({})
 
-        motor.delay = 1
+    def my_plan():
+        motor = MovableSignal(name="motor")
+        det = ReadableSignal(name="det")
 
         plan = bp.scan([det], motor, -5, 5, 25)
         plan = subs_wrapper(bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name))

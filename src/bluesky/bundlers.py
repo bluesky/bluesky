@@ -274,6 +274,7 @@ class RunBundler:
         data_keys = {}
         config = {}
         object_keys = {}
+        object_classes = {}
         hints: dict[str, Any] = {}
 
         for obj, dks in objs_dks.items():
@@ -282,6 +283,11 @@ class RunBundler:
             object_keys[obj.name] = list(dks)
             for key in dks.keys():
                 dks[key]["object_name"] = obj.name
+            if isinstance(obj, type):
+                obj_t = obj  # To handle static readables
+            else:
+                obj_t = type(obj)  # type: ignore
+            object_classes[obj.name] = f"{obj_t.__module__}.{obj_t.__qualname__}"
             data_keys.update(dks)
             config[obj.name] = {
                 "data": self._current_stream_cache.config_values_cache[obj],
@@ -295,6 +301,7 @@ class RunBundler:
             configuration=config,
             hints=hints,
             object_keys=object_keys,
+            object_classes=object_classes,
         )
         await self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
         doc_logger.debug(
@@ -462,7 +469,7 @@ class RunBundler:
 
         where kwargs are passed through to ``obj.subscribe()``
         """
-        obj = check_supports(msg.obj, Subscribable)
+        obj = msg.obj
         if msg.args:
             raise ValueError("The 'monitor' Msg does not accept positional arguments.")
         kwargs = dict(msg.kwargs)
@@ -475,21 +482,7 @@ class RunBundler:
         stream_bundle = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
         compose_event = stream_bundle[1]
 
-        def emit_event(readings: dict[str, Reading] | None = None, *args, **kwargs):
-            if readings is not None:
-                # We were passed something we can use, but check no args or kwargs
-                assert not args and not kwargs, (
-                    "If subscribe callback called with readings, args and kwargs are not supported."
-                )
-            else:
-                # Ignore the inputs. Use this call as a signal to call read on the
-                # object, a crude way to be sure we get all the info we need.
-                readable_obj = check_supports(obj, Readable)  # type: ignore
-                readings = readable_obj.read()  # type: ignore
-                assert not inspect.isawaitable(readings), (
-                    f"{readable_obj} has async read() method and the callback "
-                    "passed to subscribe() was not called with Dict[str, Reading]"
-                )
+        def emit_event_from_readings(readings: dict[str, Reading]):
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
@@ -497,9 +490,29 @@ class RunBundler:
             )
             self.emit_sync(DocumentNames.event, doc)
 
-        self._monitor_params[obj] = emit_event, kwargs
-        # TODO: deprecate **kwargs when Ophyd.v2 is available
-        obj.subscribe(emit_event, **kwargs)
+        def emit_event_for_subscribe(*args, **kwargs):
+            # Ignore the inputs. Use this call as a signal to call read on the
+            # object, a crude way to be sure we get all the info we need.
+            readable_obj = check_supports(obj, Readable)
+            readings = readable_obj.read()
+            if inspect.isawaitable(readings):
+                raise RuntimeError(
+                    f"{readable_obj} has a subscribe() method rather than a "
+                    "subscribe_readings() method and an async read() method. "
+                    "If using ophyd-async, make sure you are using at least v0.13.5."
+                )
+            emit_event_from_readings(readings)
+
+        if isinstance(obj, Subscribable):
+            self._monitor_params[obj] = emit_event_from_readings, kwargs
+            obj.subscribe_reading(emit_event_from_readings)
+        elif callable(getattr(obj, "subscribe", None)):
+            self._monitor_params[obj] = emit_event_for_subscribe, kwargs
+            obj.subscribe(emit_event_for_subscribe, **kwargs)
+        else:
+            raise RuntimeError(
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
 
     def record_interruption(self, content):
         """
@@ -540,7 +553,11 @@ class RunBundler:
 
             Msg('unmonitor', obj)
         """
-        obj = check_supports(msg.obj, Subscribable)
+        obj = msg.obj
+        if not callable(getattr(obj, "clear_sub", None)):
+            raise RuntimeError(
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
         if obj not in self._monitor_params:
             raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not being monitored.")
         cb, kwargs = self._monitor_params[obj]
@@ -1217,11 +1234,13 @@ class RunBundler:
                 await self._prepare_stream(name, obj_set)
                 continue
 
-    async def _cache_describe_collect(self, obj):
+    async def _cache_describe_collect(self, obj: Flyable):
         "Read the object's describe_collect and cache it."
         if obj not in self._describe_collect_cache:
-            obj = check_supports(obj, Collectable)
-            c: dict[str, DataKey] | dict[str, dict[str, DataKey]] = await maybe_await(obj.describe_collect())
+            collectable_obj = cast(Collectable, check_supports(obj, Collectable))
+            c: dict[str, DataKey] | dict[str, dict[str, DataKey]] = await maybe_await(
+                collectable_obj.describe_collect()
+            )
             self._describe_collect_cache[obj] = c
 
     async def _ensure_cached(self, obj, collect: bool = False):

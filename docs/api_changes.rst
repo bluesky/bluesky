@@ -2,6 +2,56 @@
  Release History
 =================
 
+Unreleased
+==========
+
+Added
+-----
+
+- Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
+  such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
+  subscription style from the signal.  For a ``Subscribable`` it subscribes,
+  and ``remove`` unsubscribes, on the RunEngine's event loop, since a
+  subscription belongs to the loop that made it.  Passing a signal that is
+  neither now raises a ``RuntimeError`` from ``install`` rather than an
+  ``AttributeError``.  Passing ``event_type`` alongside a ``Subscribable``
+  signal also raises, rather than being silently ignored: that style has no
+  event types, so a caller asking for one would otherwise get a suspender
+  watching something else with nothing said.
+
+Changed
+-------
+
+- Suspender justification messages report the last value the suspender was
+  called back with, rather than calling ``signal.get()`` when the message is
+  built.  As well as being readable for signals that cannot be read
+  synchronously, this reports the value that actually tripped the suspender
+  rather than whatever it has since become.
+- ``SuspendWhenChanged`` defaults ``expected_value`` to the first value it is
+  called back with, for every kind of signal, and so latches it when the
+  suspender is installed rather than when it is created.  Previously an ophyd
+  signal was read synchronously in ``__init__`` while a ``Subscribable`` one --
+  which cannot be -- latched on install, so *when* the default was captured
+  depended on which protocol the signal happened to implement.  Until the
+  suspender is installed ``expected_value`` is now ``None``; code reading it
+  between construction and installation, or constructing a suspender and then
+  changing the signal before installing it, will see the difference.
+- The ``bluesky.protocols.Subscribable`` protocol now requires a
+  ``subscribe_reading`` method rather than a ``subscribe`` method.  The
+  protocol did not match the implementation it was written to describe:
+  ophyd's ``subscribe`` calls back with the ``obj`` that changed, whereas
+  ``Subscribable`` documented a callback taking a mapping of
+  ``{name: Reading}``.  Renaming makes the two subscription styles
+  distinct, so an object can implement either (or both) unambiguously.
+- ophyd objects therefore no longer satisfy
+  ``isinstance(obj, Subscribable)``.  The ``monitor`` and ``unmonitor``
+  messages still support them: ``monitor`` calls ``subscribe_reading`` if
+  the object implements ``Subscribable``, and otherwise falls back to
+  calling ``subscribe`` and reading the object back in the callback.
+  Devices that implemented the old ``Subscribable`` protocol should rename
+  ``subscribe`` to ``subscribe_reading``; users of ophyd-async need at
+  least v0.13.5.
+
 v1.15.1 (2026-05-05)
 ====================
 
@@ -42,9 +92,6 @@ Changed
 
 v1.14.6 (2025-10-08)
 ====================
-
-Added
------
 
 Fixed
 -----
@@ -100,7 +147,37 @@ Fixed
 v1.14.2 (2025-06-10)
 ====================
 
-TO DO
+Added
+-----
+
+- ``bluesky.callbacks.buffer.BufferingWrapper``, which runs a wrapped
+  callback on its own thread behind a queue so that slow consumers do not
+  block the ``RunEngine``.  It raises if the queue fills up rather than
+  growing without bound.
+- ``bluesky.callbacks.json_writer.JSONWriter`` and ``JSONLinesWriter``,
+  which serialize a run's documents to JSON and JSONLines respectively.
+- ``TiledWriter`` accepts ``spec_to_mimetype`` to extend or override the
+  mapping used when converting legacy ``Resource`` documents to
+  ``StreamResource``, and ``patches`` to fix up documents before they are
+  normalized.
+- ``TiledWriter`` accepts ``backup_directory``; runs that fail to be
+  written to Tiled are written there in JSONLines format for recovery.
+- ``TiledWriter`` accepts ``batch_size``, the number of ``Event`` or
+  ``StreamDatum`` documents to collect before writing.  Larger values cut
+  down the number of write operations for bulk work such as database
+  migration; for streaming use, keep it at ``<= 1``.
+
+Changed
+-------
+
+- The document normalizer used by ``TiledWriter`` is now public as
+  ``bluesky.callbacks.tiled_writer.RunNormalizer`` (was
+  ``_RunNormalizer``), so it can be reused to feed updated documents to
+  other consumers.
+- ``MIMETYPE_LOOKUP`` moved from ``bluesky.callbacks.core`` to
+  ``bluesky.callbacks.tiled_writer``.
+- ``StreamResource`` documents are now emitted in the current
+  event-model schema.
 
 v1.14.1 (2025-05-21)
 ====================
