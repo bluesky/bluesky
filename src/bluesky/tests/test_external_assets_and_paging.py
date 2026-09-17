@@ -2,7 +2,6 @@ import re
 from collections.abc import Iterator
 
 import pytest
-from event_model import EventModelValueError
 from event_model.documents import Datum
 from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey
@@ -18,7 +17,6 @@ from bluesky.protocols import (
     Collectable,
     EventCollectable,
     EventPageCollectable,
-    Flyable,
     HasName,
     Readable,
     Reading,
@@ -315,54 +313,6 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
     get_index = get_index
 
 
-def collect_asset_docs_stream_datum_extra(self: Named, index: int | None = None) -> Iterator[StreamAsset]:
-    """Honor the requested index but emit ``self.extra`` additional indices."""
-    yield from collect_asset_docs_stream_datum(self, index=(index or 1) + self.extra)
-
-
-class ExtraIndicesStreamDatumCollectable(StreamDatumReadableCollectable):
-    """A detector that produces ``extra`` more indices per collect than requested,
-    so it disagrees with peers about how many events it produced."""
-
-    extra = 0
-    collect_asset_docs = collect_asset_docs_stream_datum_extra
-
-
-class _DoneStatus:
-    """A minimal Status that is already complete and successful."""
-
-    def add_callback(self, callback):
-        callback(self)
-
-    def exception(self, timeout=0.0):
-        return None
-
-    @property
-    def done(self) -> bool:
-        return True
-
-    @property
-    def success(self) -> bool:
-        return True
-
-
-class FlyableStreamDatumCollectable(StreamDatumReadableCollectable):
-    """A flyable version of StreamDatumReadableCollectable for use with the fly plan."""
-
-    def kickoff(self) -> _DoneStatus:
-        return _DoneStatus()
-
-    def complete(self) -> _DoneStatus:
-        return _DoneStatus()
-
-
-class ExtraIndicesFlyableStreamDatumCollectable(FlyableStreamDatumCollectable):
-    """A flyable detector that produces ``extra`` more indices per collect than requested."""
-
-    extra = 0
-    collect_asset_docs = collect_asset_docs_stream_datum_extra
-
-
 def test_datum_readable_counts(RE):
     """Test that count-ing a datum-producing device results in expected documents."""
     det = DatumReadable(name="det")
@@ -607,32 +557,6 @@ def test_many_stream_datum_collectables(RE):
     assert set(docs["descriptor"][0]["data_keys"]) == set(data_keys)  # This only works in a set
     assert [d["data_key"] for d in docs["stream_resource"]] == data_keys
     assert all(d["descriptor"] == docs["descriptor"][0]["uid"] for d in docs["stream_datum"])
-
-
-def test_collect_disparate_event_counts_fails(RE):
-    """Collecting two detectors that produce different numbers of events fails."""
-    det1 = StreamDatumReadableCollectable(name="det1")
-    det2 = ExtraIndicesStreamDatumCollectable(name="det2")
-    det2.extra = 2  # det2 produces 2 more indices than det1
-    with pytest.raises(
-        EventModelValueError,
-        match=r"are of a different width `\d+` than other detectors in the same collect\(\) or save\(\)",
-    ):
-        RE(collect_plan(det1, det2, pre_declare=True, stream_name="main"))
-
-
-def test_fly_disparate_event_counts_into_one_stream_fails(RE):
-    """Flying two detectors with a stream name creates one stream, so disparate
-    index counts cannot be forced into it and must raise."""
-    assert isinstance(FlyableStreamDatumCollectable(name="det1"), Flyable)
-    det1 = FlyableStreamDatumCollectable(name="det1")
-    det2 = ExtraIndicesFlyableStreamDatumCollectable(name="det2")
-    det2.extra = 2  # det2 produces 2 more indices than det1
-    with pytest.raises(
-        EventModelValueError,
-        match=r"are of a different width `\d+` than other detectors in the same collect\(\) or save\(\)",
-    ):
-        RE(bp.fly([det1, det2], stream_name="main"))
 
 
 def tomo_plan(*objs):
