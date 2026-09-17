@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.utils &#8212; bluesky 1.15.2.dev156+gb3361f5c2 documentation</title>
+    <title>bluesky.utils &#8212; bluesky 1.15.2.dev161+gbcd71796f documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=0ab755a2"></script>
+    <script src="../../_static/documentation_options.js?v=bf2aa069"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev156+gb3361f5c2';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev161+gbcd71796f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev156+gb3361f5c2" />
+  <meta name="docsearch:version" content="1.15.2.dev161+gbcd71796f" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1263,6 +1263,24 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_released</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_restore_and_reraise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Hand SIGINT back to the disposition installed before ``__enter__``.</span>
+
+<span class="sd">        Re-install ``self._original_handler`` and re-deliver the signal so</span>
+<span class="sd">        that disposition handles it. This works uniformly whether</span>
+<span class="sd">        ``_original_handler`` is a callable, ``signal.SIG_DFL``,</span>
+<span class="sd">        ``signal.SIG_IGN``, or ``None`` (a handler installed from C that is</span>
+<span class="sd">        not representable in Python), avoiding the ``TypeError`` that calling</span>
+<span class="sd">        a non-callable disposition directly would raise.</span>
+
+<span class="sd">        Swap is performed *before* the re-raise so the re-delivered signal is</span>
+<span class="sd">        dispatched to the original disposition rather than back into this</span>
+<span class="sd">        closure. Re-installing the same handler is idempotent, so a later</span>
+<span class="sd">        ``signal.signal`` in ``__exit__`` is harmless.</span>
+<span class="sd">        """</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_handler</span><span class="p">)</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">raise_signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_watch_request</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_released</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span> <span class="o">==</span> <span class="n">PauseRequest</span><span class="o">.</span><span class="n">SOFT</span><span class="p">:</span>
@@ -1309,7 +1327,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            acceptable.</span>
 <span class="sd">            """</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_released</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_original_handler</span><span class="p">(</span><span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_restore_and_reraise</span><span class="p">(</span><span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+                <span class="k">return</span>
             <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
             <span class="n">time_diff</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_sigint_time</span>
 
@@ -1329,7 +1348,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_released</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_request_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_original_handler</span><span class="p">(</span><span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_restore_and_reraise</span><span class="p">(</span><span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
 
         <span class="c1"># Install handler callback</span>
         <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">handler</span><span class="p">)</span>
@@ -1337,9 +1356,8 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">tb</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_handler</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_released</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_released</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_request_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_released</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CallbackRegistry</span><span class="p">:</span>
