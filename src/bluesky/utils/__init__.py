@@ -328,7 +328,6 @@ class SigintHandler:
         closure. Re-installing the same handler is idempotent, so a later
         ``signal.signal`` in ``__exit__`` is harmless.
         """
-        self._released = True
         signal.signal(signal.SIGINT, self._original_handler)
         signal.raise_signal(signal.SIGINT)
 
@@ -397,6 +396,7 @@ class SigintHandler:
                     self._request = PauseRequest.HARD
                     self._request_event.set()
                 else:
+                    self._released = True
                     self._request_event.set()
                     self._restore_and_reraise(signum, frame)
 
@@ -406,9 +406,8 @@ class SigintHandler:
 
     def __exit__(self, type, value, tb) -> None:
         signal.signal(signal.SIGINT, self._original_handler)
-        if not self._released:
-            self._released = True
-            self._request_event.set()
+        self._released = True
+        self._request_event.set()
 
 
 class CallbackRegistry:
