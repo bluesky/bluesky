@@ -68,6 +68,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "pytest-faulthandler",
+    "pytest-xdist>=3.8.0",
     "pyyaml",
     "pyzmq",
     "requests",
@@ -126,7 +127,7 @@ exclude = ["src/bluesky/_vendor/"]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 # Don't collect the interactive directory which is intended for manual execution
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore src/bluesky/tests/interactive
+    --tb=native --doctest-modules --doctest-glob="*.rst" --ignore src/bluesky/tests/interactive
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
@@ -211,6 +212,6 @@ allowlist_externals =
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: mypy src {posargs}
-    tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
+    tests: pytest -n 2 --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """

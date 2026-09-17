@@ -27,14 +27,18 @@ jobs:
           - runs-on: "windows-latest"
             python-version: "3.14"
         include:
-          # Include one that runs in the dev environment
+          # Include one that runs in the dev environment. This job also runs
+          # the full suite (the RE call_returns_result=False variant) so that
+          # branch is exercised at least once per CI run.
           - runs-on: "ubuntu-latest"
             python-version: "dev"
+            full-suite: true
       fail-fast: false
     uses: ./.github/workflows/_test.yml
     with:
       runs-on: ${{ matrix.runs-on }}
       python-version: ${{ matrix.python-version }}
+      full-suite: ${{ matrix.full-suite || false }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

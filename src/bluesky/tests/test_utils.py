@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from cycler import cycler
 
-from bluesky import RunEngine, RunEngineInterrupted
+from bluesky import RunEngineInterrupted
 from bluesky.plan_stubs import complete_all, mv
 from bluesky.preprocessors import pchain
 from bluesky.run_engine import WaitForTimeoutError
@@ -612,9 +612,9 @@ def non_iterating_plan():
 
 
 @pytest.mark.parametrize("gen_func, iterated", [(iterating_plan, True), (non_iterating_plan, False)])
-def test_warning_behavior(gen_func, iterated):
+def test_warning_behavior(gen_func, iterated, single_RE):
     """Test that warnings are issued correctly based on iteration."""
-    RE = RunEngine()
+    RE = single_RE
     if iterated:
         with warnings.catch_warnings(record=True) as record:
             warnings.simplefilter("always")
@@ -633,8 +633,8 @@ def pchain_plan():
     yield from pchain(sample_plan(), pause_plan(), sample_plan())
 
 
-def test_warnings_with_interruption():
-    RE = RunEngine()
+def test_warnings_with_interruption(single_RE):
+    RE = single_RE
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
         with pytest.raises(RunEngineInterrupted):
