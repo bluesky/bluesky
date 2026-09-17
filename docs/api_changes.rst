@@ -19,6 +19,15 @@ Added
   event types, so a caller asking for one would otherwise get a suspender
   watching something else with nothing said.
 
+Fixed
+-----
+- A suspension no longer duplicates the documents from a monitored signal.
+  Resuming from one re-subscribed every monitor, having never unsubscribed
+  them: monitors run throughout a suspension, and only a *pause* stops them.
+  One suspension therefore left each monitored signal subscribed twice, and
+  every Event it produced afterwards was emitted twice, compounding with each
+  further suspension.
+
 Changed
 -------
 

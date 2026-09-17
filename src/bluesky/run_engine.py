@@ -2405,23 +2405,25 @@ class RunEngine:
         """
         await self._request_pause_coro(*msg.args, **msg.kwargs)
 
-    async def _resume(self, msg):
-        """Request the run engine to resume
-
-        Expected message object is:
-
-            Msg('resume', defer=False, name=None, callback=None)
-
-        See RunEngine.resume() docstring for explanation of the three
-        keyword arguments in the `Msg` signature
-        """
-        # Re-instate monitoring callbacks.
-        for current_run in self._run_bundlers.values():
-            await current_run.restore_monitors()
-        # Notify Devices of the resume in case they want to clean up.
+    async def _resume_objects(self):
+        """The plan is moving again: tell the devices, so they can prepare."""
         for obj in self._objs_seen:
             if isinstance(obj, Pausable):
                 await maybe_await(obj.resume())
+
+    async def _resume(self, msg):
+        """The suspension is over: tell the devices.
+
+        Expected message object is:
+
+            Msg('_resume_from_suspender')
+
+        Sent by the helper plan `_start_suspender` pushes, between the hold and
+        the post-plan. Nothing to do with `RunEngine.resume`.
+
+        Monitors are untouched: a suspension never stopped them.
+        """
+        await self._resume_objects()
 
     async def _checkpoint(self, msg):
         """Instruct the RunEngine to create a checkpoint so that we can rewind
