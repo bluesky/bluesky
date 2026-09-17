@@ -14,7 +14,6 @@ from bluesky.protocols import HasHints, HasParent, Hints, NamedMovable, Readable
 from bluesky.run_engine import RunEngine, TransitionError
 from bluesky.utils import SigintHandler
 
-
 CALL_RETURNS_RESULT_OPTION = "--include-call-returns-result-false"
 
 
