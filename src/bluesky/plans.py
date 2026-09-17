@@ -2323,6 +2323,9 @@ def fly(
         If set, will use `collect_while_completing` with the given flush period
     stream_name : str, optional
         If set, will declare a stream with the given name for all flyers
+    watch: set of watch groups, optional
+        Additional groups to monitor while collecting from flyers.
+        Will only be used if `collect_flush_period` is set.
 
     Yields
     ------
@@ -2339,8 +2342,8 @@ def fly(
     # Extract list of collectable detectors from flyers
     dets = [flyer for flyer in flyers if isinstance(flyer, Collectable)]
 
-    # If provided, attempt to declare single stream for all flyers
-    # note that if set, all flyers must produce the same number of events.
+    # If provided, attempt to declare single stream for all collectable detectors
+    # note that if set, all detectors must produce the same number of events.
     if stream_name is not None:
         yield from bps.declare_stream(*dets, name=stream_name)
 
