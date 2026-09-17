@@ -55,7 +55,7 @@ dev = [
     "numpydoc",
     "opentelemetry-sdk",
     "ophyd",
-    "ophyd-async;python_version>='3.11'",
+    "ophyd-async>=0.13.5;python_version>='3.11'", # for async suspenders
     "orjson",
     "packaging",
     "pandas",
