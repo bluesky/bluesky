@@ -113,9 +113,7 @@ def proxy(proxy_ports):
         p.start()  # Blocks on zmq.device()
 
     ready_event = multiprocess.Event()
-    proc = multiprocess.Process(
-        target=start_proxy, args=(in_port, out_port, ready_event), daemon=True
-    )
+    proc = multiprocess.Process(target=start_proxy, args=(in_port, out_port, ready_event), daemon=True)
     proc.start()
     ready_event.wait(timeout=5)
     assert ready_event.is_set()
