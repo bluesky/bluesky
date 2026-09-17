@@ -70,7 +70,6 @@ def test_fly_plan_no_flush_period(RE):
     slow_flyer = SlowFlyer(name="slow_flyer")
 
     RE(fly([slow_flyer], stream_name="stream_name"))
-    print(slow_flyer.call_counts)
 
     assert slow_flyer.call_counts["complete"] == 1
     assert slow_flyer.call_counts["collect_asset_docs"] == 1
