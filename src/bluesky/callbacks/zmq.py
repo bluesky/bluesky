@@ -69,9 +69,7 @@ def _normalize_address(inp: str | tuple | int | None):
             elif len(rest) == 1:
                 (rest_str,) = rest
             else:
-                raise ValueError(
-                    f"tcp address tuple must be (host,) or (host, port), got {inp!r}."
-                )
+                raise ValueError(f"tcp address tuple must be (host,) or (host, port), got {inp!r}.")
         else:
             if len(rest) != 1:
                 raise ValueError(f"ipc address tuple must be (path,), got {inp!r}.")
