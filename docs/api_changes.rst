@@ -19,6 +19,15 @@ Added
   event types, so a caller asking for one would otherwise get a suspender
   watching something else with nothing said.
 
+Fixed
+-----
+- A device is told a suspension has started only if it satisfies
+  `bluesky.protocols.Pausable`.  A suspension used to call ``pause()`` on
+  anything that had the attribute, where ``RunEngine.pause`` has always required
+  the protocol -- and ``Pausable`` requires ``resume`` as well, so a device with
+  only ``pause`` was told a suspension had begun and never told it had ended.
+  Both paths now ask the same question.
+
 Changed
 -------
 
