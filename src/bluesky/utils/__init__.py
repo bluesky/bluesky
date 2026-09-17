@@ -313,6 +313,24 @@ class SigintHandler:
         self._released = True
         self._request_event = threading.Event()
 
+    def _restore_and_reraise(self, signum, frame) -> None:
+        """Hand SIGINT back to the disposition installed before ``__enter__``.
+
+        Re-install ``self._original_handler`` and re-deliver the signal so
+        that disposition handles it. This works uniformly whether
+        ``_original_handler`` is a callable, ``signal.SIG_DFL``,
+        ``signal.SIG_IGN``, or ``None`` (a handler installed from C that is
+        not representable in Python), avoiding the ``TypeError`` that calling
+        a non-callable disposition directly would raise.
+
+        Swap is performed *before* the re-raise so the re-delivered signal is
+        dispatched to the original disposition rather than back into this
+        closure. Re-installing the same handler is idempotent, so a later
+        ``signal.signal`` in ``__exit__`` is harmless.
+        """
+        signal.signal(signal.SIGINT, self._original_handler)
+        signal.raise_signal(signal.SIGINT)
+
     def _watch_request(self) -> None:
         while not self._released:
             if self._request == PauseRequest.SOFT:
@@ -359,7 +377,8 @@ class SigintHandler:
             acceptable.
             """
             if self._released:
-                self._original_handler(signum, frame)
+                self._restore_and_reraise(signum, frame)
+                return
             now = time.monotonic()
             time_diff = now - self._last_sigint_time
 
@@ -379,7 +398,7 @@ class SigintHandler:
                 else:
                     self._released = True
                     self._request_event.set()
-                    self._original_handler(signum, frame)
+                    self._restore_and_reraise(signum, frame)
 
         # Install handler callback
         signal.signal(signal.SIGINT, handler)
@@ -387,9 +406,8 @@ class SigintHandler:
 
     def __exit__(self, type, value, tb) -> None:
         signal.signal(signal.SIGINT, self._original_handler)
-        if not self._released:
-            self._released = True
-            self._request_event.set()
+        self._released = True
+        self._request_event.set()
 
 
 class CallbackRegistry:
