@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.callbacks.best_effort &#8212; bluesky 1.15.2.dev161+gbcd71796f documentation</title>
+    <title>bluesky.callbacks.best_effort &#8212; bluesky 1.15.2.dev167+gd44c7e06f documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../../_static/documentation_options.js?v=bf2aa069"></script>
+    <script src="../../../_static/documentation_options.js?v=913f91da"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev161+gbcd71796f';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev167+gd44c7e06f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev161+gbcd71796f" />
+  <meta name="docsearch:version" content="1.15.2.dev167+gd44c7e06f" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1090,12 +1090,10 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># Print heading.</span>
         <span class="n">tt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="p">[</span><span class="s2">"time"</span><span class="p">])</span><span class="o">.</span><span class="n">utctimetuple</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heading_enabled</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="s2">"</span><span class="se">\n\n</span><span class="s2">Transient Scan ID: </span><span class="si">{0}</span><span class="s2">     Time: </span><span class="si">{1}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP030</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"scan_id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S"</span><span class="p">,</span> <span class="n">tt</span><span class="p">)</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">"Persistent Unique Scan ID: '</span><span class="si">{0}</span><span class="s2">'"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">]))</span>  <span class="c1"># noqa: UP030</span>
+            <span class="n">scan_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"scan_id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+            <span class="n">scan_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S"</span><span class="p">,</span> <span class="n">tt</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">Transient Scan ID: </span><span class="si">{</span><span class="n">scan_id</span><span class="si">}</span><span class="s2">     Time: </span><span class="si">{</span><span class="n">scan_time</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Persistent Unique Scan ID: '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_doc</span><span class="p">[</span><span class="s1">'uid'</span><span class="p">]</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_set_up_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">"""Using the descriptor doc"""</span>
