@@ -1384,7 +1384,7 @@ def test_sigint_handler_original_sig_ign(RE):
             # these may raise TypeError.
             handler_ctx._last_sigint_time = ttime.monotonic()
             handler_ctx._count = 0
-            for i in range(11):
+            for _i in range(11):
                 # Space invocations past the 0.1s debounce using the real clock.
                 handler_ctx._last_sigint_time -= 0.2
                 installed(signal.SIGINT, None)
