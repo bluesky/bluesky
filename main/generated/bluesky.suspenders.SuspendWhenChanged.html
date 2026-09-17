@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>bluesky.suspenders.SuspendWhenChanged &#8212; bluesky 1.15.2.dev114+g868907779 documentation</title>
+    <title>bluesky.suspenders.SuspendWhenChanged &#8212; bluesky 1.15.2.dev124+ga66005a61 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=c10e08e9"></script>
+    <script src="../_static/documentation_options.js?v=68b1877e"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/bluesky.suspenders.SuspendWhenChanged';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev114+g868907779';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev124+ga66005a61';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="bluesky.suspenders.SuspendWhenOutsideBand" href="bluesky.suspenders.SuspendWhenOutsideBand.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev114+g868907779" />
+  <meta name="docsearch:version" content="1.15.2.dev124+ga66005a61" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -607,12 +607,13 @@
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
-<dt><strong>signal</strong><span class="classifier"><cite>ophyd.Signal</cite></span></dt><dd><p>The signal to watch for changes to determine if the
+<dt><strong>signal</strong><span class="classifier"><cite>ophyd.Signal</cite> or <cite>bluesky.protocols.Subscribable</cite></span></dt><dd><p>The signal to watch for changes to determine if the
 scan should be suspended</p>
 </dd>
 <dt><strong>expected_value</strong><span class="classifier">str, float, or int</span></dt><dd><p>RunEngine operations will be suspended when signal deviates
-from this value.  If <cite>None</cite> (default), set to value of
-<code class="docutils literal notranslate"><span class="pre">signal</span></code> when object is created.</p>
+from this value.  If <cite>None</cite> (default), set to the first value the
+signal reports, when the object is installed on a RunEngine.  Until
+then it stays <cite>None</cite>, whatever kind of signal this is watching.</p>
 </dd>
 <dt><strong>allow_resume</strong><span class="classifier">bool</span></dt><dd><p>Should RunEngine be allowed to resume once <code class="docutils literal notranslate"><span class="pre">signal.value</span> <span class="pre">==</span> <span class="pre">expected</span></code>
 again?  Default value of <code class="docutils literal notranslate"><span class="pre">False</span></code> is expected for intended use case.</p>
@@ -776,7 +777,7 @@ useful in other contexts of instrument control beyond the realm of bluesky.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev114+g868907779/docs/generated/bluesky.suspenders.SuspendWhenChanged.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev124+ga66005a61/docs/generated/bluesky.suspenders.SuspendWhenChanged.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

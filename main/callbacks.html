@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Live Visualization and Processing &#8212; bluesky 1.15.2.dev114+g868907779 documentation</title>
+    <title>Live Visualization and Processing &#8212; bluesky 1.15.2.dev124+ga66005a61 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=c10e08e9"></script>
+    <script src="_static/documentation_options.js?v=68b1877e"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'callbacks';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev114+g868907779';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev124+ga66005a61';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Recording Metadata" href="metadata.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev114+g868907779" />
+  <meta name="docsearch:version" content="1.15.2.dev124+ga66005a61" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -772,16 +772,16 @@ row is added to the table. Demo:</p>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 09:05:31.2 |      1.000 |      0.607 |</span>
-<span class="go">|         2 | 09:05:31.2 |      2.000 |      0.135 |</span>
-<span class="go">|         3 | 09:05:31.2 |      3.000 |      0.011 |</span>
-<span class="go">|         4 | 09:05:31.2 |      4.000 |      0.000 |</span>
-<span class="go">|         5 | 09:05:31.2 |      5.000 |      0.000 |</span>
+<span class="go">|         1 | 04:23:57.5 |      1.000 |      0.607 |</span>
+<span class="go">|         2 | 04:23:57.5 |      2.000 |      0.135 |</span>
+<span class="go">|         3 | 04:23:57.5 |      3.000 |      0.011 |</span>
+<span class="go">|         4 | 04:23:57.5 |      4.000 |      0.000 |</span>
+<span class="go">|         5 | 04:23:57.5 |      5.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan ['2557af93'] (scan num: 1)</span>
+<span class="go">generator scan ['d40afdb3'] (scan num: 1)</span>
 
 
-<span class="gh">Out[4]: </span><span class="go">('2557af93-4dd0-4673-97c8-9502810b3d9e',)</span>
+<span class="gh">Out[4]: </span><span class="go">('d40afdb3-ade7-483a-a578-5f4fab98fb76',)</span>
 </pre></div>
 </div>
 <p>Pass an empty list of columns to show simply ‘time’ and ‘seq_num’ (sequence
@@ -1018,7 +1018,7 @@ t=0 is 1 Jan 1970 (“the UNIX epoch”). Default is ‘run’.</p>
 </dd>
 <dt><strong>fs: Registry instance</strong></dt><dd><p>The Registry instance to pull the data from</p>
 </dd>
-<dt><strong>cmap</strong><span class="classifier">str,  colormap, or None</span></dt><dd><p>color map to use.  Defaults to gray</p>
+<dt><strong>cmap</strong><span class="classifier">str, colormap, or None</span></dt><dd><p>color map to use.  Defaults to gray</p>
 </dd>
 <dt><strong>norm</strong><span class="classifier">Normalize or None</span></dt><dd><p>Normalization function to use</p>
 </dd>
@@ -1071,9 +1071,9 @@ pixel to fill in.</p>
 </dd>
 <dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x and y axis</p>
 </dd>
-<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.11.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>extent</strong><span class="classifier">scalars (left, right, bottom, top), optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.11.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
-<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.11.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
+<dt><strong>aspect</strong><span class="classifier">str or float, optional</span></dt><dd><p>Passed through to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow" title="(in Matplotlib v3.11.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">matplotlib.axes.Axes.imshow()</span></code></a></p>
 </dd>
 <dt><strong>ax</strong><span class="classifier">Axes, optional</span></dt><dd><p>matplotib Axes; if none specified, new figure and axes are made.</p>
 </dd>
@@ -1448,23 +1448,23 @@ plans in <code class="xref py py-mod docutils literal notranslate"><span class="
 <span class="gp">In [9]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>  <span class="c1"># automatically prints table, shows plot</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2026-09-11 09:05:49</span>
-<span class="go">Persistent Unique Scan ID: '0eb49bb6-4253-4ac5-a903-ee185b9b95d2'</span>
+<span class="go">Transient Scan ID: 2     Time: 2026-09-17 04:24:15</span>
+<span class="go">Persistent Unique Scan ID: 'baa854e8-4c13-49a8-a5db-9289b42c85c3'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 09:05:49.7 |      1.000 |      0.000 |      0.271 |</span>
-<span class="go">|         2 | 09:05:49.9 |      2.000 |      0.000 |      0.271 |</span>
-<span class="go">|         3 | 09:05:50.1 |      3.000 |      0.000 |      0.271 |</span>
-<span class="go">|         4 | 09:05:50.3 |      4.000 |      0.000 |      0.271 |</span>
-<span class="go">|         5 | 09:05:50.5 |      5.000 |      0.000 |      0.271 |</span>
+<span class="go">|         1 | 04:24:15.6 |      1.000 |      0.000 |      0.271 |</span>
+<span class="go">|         2 | 04:24:15.8 |      2.000 |      0.000 |      0.271 |</span>
+<span class="go">|         3 | 04:24:16.0 |      3.000 |      0.000 |      0.271 |</span>
+<span class="go">|         4 | 04:24:16.1 |      4.000 |      0.000 |      0.271 |</span>
+<span class="go">|         5 | 04:24:16.3 |      5.000 |      0.000 |      0.271 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan ['0eb49bb6'] (scan num: 2)</span>
+<span class="go">generator scan ['baa854e8'] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">('0eb49bb6-4253-4ac5-a903-ee185b9b95d2',)</span>
+<span class="gh">Out[9]: </span><span class="go">('baa854e8-4c13-49a8-a5db-9289b42c85c3',)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1922,20 +1922,20 @@ We are setting up a <em>subscription</em>.</p>
 <span class="gp">In [13]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="p">{</span><span class="s1">'event'</span><span class="p">:</span> <span class="n">print_data</span><span class="p">})</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2026-09-11 09:05:51</span>
-<span class="go">Persistent Unique Scan ID: 'b4df4ff4-40de-40f9-bf9d-7362780082dd'</span>
+<span class="go">Transient Scan ID: 3     Time: 2026-09-17 04:24:17</span>
+<span class="go">Persistent Unique Scan ID: '2e0fcfee-afe5-415f-a684-45a201c41f66'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 09:05:51.7 |      0.000 |</span>
+<span class="go">|         1 | 04:24:17.4 |      0.000 |</span>
 <span class="go">Measured: {'det': np.float64(3.726653172078671e-06)}</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count ['b4df4ff4'] (scan num: 3)</span>
+<span class="go">generator count ['2e0fcfee'] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[13]: </span><span class="go">('b4df4ff4-40de-40f9-bf9d-7362780082dd',)</span>
+<span class="gh">Out[13]: </span><span class="go">('2e0fcfee-afe5-415f-a684-45a201c41f66',)</span>
 </pre></div>
 </div>
 <p>Each time the RunEngine generates a new Event Document (i.e., data point)
@@ -2102,7 +2102,7 @@ RemoteDispatcher should print the documents generated by this plan.</p>
 <h3>Publisher / RemoteDispatcher API<a class="headerlink" href="#publisher-remotedispatcher-api" title="Link to this heading">#</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.callbacks.zmq.Proxy">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_curve</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ServerCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ClientCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_curve</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ServerCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ClientCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_bind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_bind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.callbacks.zmq.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_curve</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ServerCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ClientCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_curve</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ServerCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ClientCurve</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_bind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_bind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/callbacks/zmq.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.callbacks.zmq.Proxy" title="Link to this definition">#</a></dt>
 <dd><p>Start a 0MQ proxy on the local host.</p>
 <p>The addresses can be specified flexibly.  It is best to use
 a domain_socket (available on unix):</p>
@@ -2584,7 +2584,7 @@ anywhere.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev114+g868907779/docs/callbacks.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev124+ga66005a61/docs/callbacks.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

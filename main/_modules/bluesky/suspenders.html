@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.suspenders &#8212; bluesky 1.15.2.dev114+g868907779 documentation</title>
+    <title>bluesky.suspenders &#8212; bluesky 1.15.2.dev124+ga66005a61 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=c10e08e9"></script>
+    <script src="../../_static/documentation_options.js?v=68b1877e"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev114+g868907779';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev124+ga66005a61';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev114+g868907779" />
+  <meta name="docsearch:version" content="1.15.2.dev124+ga66005a61" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -913,9 +913,16 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">operator</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span><span class="p">,</span> <span class="n">abstractproperty</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Subscribable</span>
+
+<span class="c1"># How long install() and remove() wait for the RunEngine's event loop to</span>
+<span class="c1"># subscribe to a Subscribable signal, or unsubscribe from it, before giving up.</span>
+<span class="n">SUBSCRIPTION_TIMEOUT</span> <span class="o">=</span> <span class="mi">10</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">SuspenderBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
@@ -924,7 +931,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    signal : `ophyd.Signal`</span>
+<span class="sd">    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`</span>
 <span class="sd">        The signal to watch for changes to determine if the</span>
 <span class="sd">        scan should be suspended</span>
 
@@ -953,6 +960,8 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span> <span class="o">=</span> <span class="n">signal</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pre_plan</span> <span class="o">=</span> <span class="n">pre_plan</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_post_plan</span> <span class="o">=</span> <span class="n">post_plan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_implements_protocol</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">Subscribable</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">"</span><span class="si">{}</span><span class="s2">(</span><span class="si">{!r}</span><span class="s2">, sleep=</span><span class="si">{}</span><span class="s2">, pre_plan=</span><span class="si">{}</span><span class="s2">, post_plan=</span><span class="si">{}</span><span class="s2">, tripped_message=</span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
@@ -976,18 +985,66 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            The run engine instance this should work on</span>
 
 <span class="sd">        event_type : str, optional</span>
-<span class="sd">            The event type (subscription type) to watch</span>
+<span class="sd">            The event type (subscription type) to watch. Only meaningful for a</span>
+<span class="sd">            signal following ophyd's subscription pattern; a `Subscribable` one</span>
+<span class="sd">            has no such notion, so passing it there is an error rather than</span>
+<span class="sd">            something to ignore.</span>
 <span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implements_protocol</span> <span class="ow">and</span> <span class="n">event_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Checked before anything is recorded, so a rejected install leaves</span>
+            <span class="c1"># the suspender uninstalled rather than holding an RE it never</span>
+            <span class="c1"># subscribed on.</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Can not specify non-None event_type </span><span class="si">{</span><span class="n">event_type</span><span class="si">=}</span><span class="s2"> with Subscribable protocol"</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="o">=</span> <span class="n">RE</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="o">=</span><span class="n">event_type</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implements_protocol</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__on_loop</span><span class="p">(</span><span class="n">RE</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">subscribe_reading</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="p">,</span> <span class="s2">"subscribe"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="o">=</span><span class="n">event_type</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">"</span><span class="si">%s</span><span class="s2"> does not implement Subscribable protocol or adhere to ophyd subscription pattern."</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__on_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">RE</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Call ``func`` on the RunEngine's event loop, and wait for it.</span>
+
+<span class="sd">        Subscribing to a Subscribable signal, and unsubscribing from it, both</span>
+<span class="sd">        have to happen on the thread its event loop runs in: an EPICS channel</span>
+<span class="sd">        access monitor, for one, belongs to the loop that made it.</span>
+
+<span class="sd">        Waiting also gives ``install`` the same guarantee as ophyd's</span>
+<span class="sd">        ``subscribe(..., run=True)``, since ``subscribe_reading`` calls back</span>
+<span class="sd">        with the current reading: the suspender knows whether it is already</span>
+<span class="sd">        tripped by the time ``install`` returns.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">threading</span><span class="o">.</span><span class="n">get_ident</span><span class="p">()</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">RE</span><span class="o">.</span><span class="n">_loop</span><span class="p">,</span> <span class="s2">"_thread_id"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">):</span>
+            <span class="n">func</span><span class="p">()</span>
+            <span class="k">return</span>
+
+        <span class="n">future</span><span class="p">:</span> <span class="n">Future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">func</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">future</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+        <span class="n">RE</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">call_soon_threadsafe</span><span class="p">(</span><span class="n">call</span><span class="p">)</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">SUBSCRIPTION_TIMEOUT</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Disable the suspender</span>
 
 <span class="sd">        Removes the callback at the pyepics level</span>
 <span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implements_protocol</span><span class="p">:</span>
+            <span class="c1"># Nothing was subscribed if we were never installed, and there is</span>
+            <span class="c1"># no event loop to unsubscribe on either.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__on_loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">clear_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">__set_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">_loop</span><span class="p">)</span>
@@ -1042,7 +1099,10 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">return</span>
             <span class="n">loop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">RE</span><span class="o">.</span><span class="n">_loop</span>
-
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implements_protocol</span><span class="p">:</span>
+                <span class="c1"># Subscribable calls back with {name: Reading}</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"value"</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_suspend</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_tripped</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="c1"># this does dirty things with internal state</span>
@@ -1293,7 +1353,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="s2">""</span>
 
         <span class="n">just</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">!r}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span><span class="si">!r}</span><span class="s2"> "</span>
             <span class="o">+</span> <span class="sa">f</span><span class="s2">"fell below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2"> "</span>
             <span class="o">+</span> <span class="sa">f</span><span class="s2">"and has not yet crossed above </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
@@ -1351,7 +1411,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="s2">""</span>
 
         <span class="n">just</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">!r}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span><span class="si">!r}</span><span class="s2"> "</span>
             <span class="o">+</span> <span class="sa">f</span><span class="s2">"went above </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_suspend_thresh</span><span class="si">}</span><span class="s2"> "</span>
             <span class="o">+</span> <span class="sa">f</span><span class="s2">"and has not yet crossed below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resume_thresh</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
@@ -1415,7 +1475,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="s2">""</span>
 
         <span class="n">just</span> <span class="o">=</span> <span class="s2">"Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is outside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
 
@@ -1473,7 +1533,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="s2">""</span>
 
         <span class="n">just</span> <span class="o">=</span> <span class="s2">"Signal </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{!r}</span><span class="s2"> is inside of the range (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>  <span class="c1"># noqa: UP032</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span>
 
@@ -1516,14 +1576,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    signal : `ophyd.Signal`</span>
+<span class="sd">    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`</span>
 <span class="sd">        The signal to watch for changes to determine if the</span>
 <span class="sd">        scan should be suspended</span>
 
 <span class="sd">    expected_value : str, float, or int</span>
 <span class="sd">        RunEngine operations will be suspended when signal deviates</span>
-<span class="sd">        from this value.  If `None` (default), set to value of</span>
-<span class="sd">        ``signal`` when object is created.</span>
+<span class="sd">        from this value.  If `None` (default), set to the first value the</span>
+<span class="sd">        signal reports, when the object is installed on a RunEngine.  Until</span>
+<span class="sd">        then it stays `None`, whatever kind of signal this is watching.</span>
 
 <span class="sd">    allow_resume : bool</span>
 <span class="sd">        Should RunEngine be allowed to resume once ``signal.value == expected``</span>
@@ -1597,7 +1658,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">tripped_message</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="n">expected_value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">expected_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span> <span class="o">=</span> <span class="n">expected_value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">allow_resume</span> <span class="o">=</span> <span class="n">allow_resume</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">signal</span><span class="p">,</span> <span class="n">sleep</span><span class="o">=</span><span class="n">sleep</span><span class="p">,</span> <span class="n">pre_plan</span><span class="o">=</span><span class="n">pre_plan</span><span class="p">,</span> <span class="n">post_plan</span><span class="o">=</span><span class="n">post_plan</span><span class="p">,</span> <span class="n">tripped_message</span><span class="o">=</span><span class="n">tripped_message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
@@ -1605,6 +1666,12 @@ window.runMermaid = runMermaid;</script>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Latched on install, from the reading both subscription styles call</span>
+            <span class="c1"># back with before `install` returns. Reading an ophyd signal in</span>
+            <span class="c1"># __init__ instead would make *when* the default is captured depend</span>
+            <span class="c1"># on which protocol the signal happens to implement.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span> <span class="o">=</span> <span class="n">value</span>
         <span class="k">return</span> <span class="n">value</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_should_resume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
@@ -1614,7 +1681,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tripped</span><span class="p">:</span>
             <span class="k">return</span> <span class="s2">""</span>
 
-        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">, got "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s1">", expected "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span><span class="si">}</span><span class="s1">"'</span>
+        <span class="n">just</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'Signal </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sig</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">, got "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_value</span><span class="si">}</span><span class="s1">", expected "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_value</span><span class="si">}</span><span class="s1">"'</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_resume</span><span class="p">:</span>
             <span class="n">just</span> <span class="o">+=</span> <span class="s1">'.  "RE.abort()" and then restart session to use new configuration.'</span>
         <span class="k">return</span> <span class="s2">": "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">just</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tripped_message</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="p">)</span></div>
