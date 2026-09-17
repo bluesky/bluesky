@@ -160,15 +160,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES: tuple[type, ...] = (types.GeneratorType,)
-try:
-    from types import CoroutineType
-except ImportError:
-    # < py35
-    pass
-else:
-    PLAN_TYPES = PLAN_TYPES + (CoroutineType,)
-    del CoroutineType
+PLAN_TYPES: tuple[type, ...] = (types.GeneratorType, types.CoroutineType)
 
 
 def ensure_generator(plan):
@@ -703,7 +695,7 @@ def normalize_subs_input(subs):
     elif hasattr(subs, "items"):
         for key, funcs in list(subs.items()):
             if key not in SUBS_NAMES:
-                raise KeyError(f"Keys must be one of {SUBS_NAMES!r:0}")
+                raise KeyError(f"Keys must be one of {SUBS_NAMES!r}")
             if callable(funcs):
                 normalized[key].append(funcs)
             else:

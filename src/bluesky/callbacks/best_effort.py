@@ -150,12 +150,10 @@ class BestEffortCallback(QtAwareCallback):
         # Print heading.
         tt = datetime.fromtimestamp(self._start_doc["time"]).utctimetuple()
         if self._heading_enabled:
-            print(
-                "\n\nTransient Scan ID: {0}     Time: {1}".format(  # noqa: UP030
-                    self._start_doc.get("scan_id", ""), time.strftime("%Y-%m-%d %H:%M:%S", tt)
-                )
-            )
-            print("Persistent Unique Scan ID: '{0}'".format(self._start_doc["uid"]))  # noqa: UP030
+            scan_id = self._start_doc.get("scan_id", "")
+            scan_time = time.strftime("%Y-%m-%d %H:%M:%S", tt)
+            print(f"\n\nTransient Scan ID: {scan_id}     Time: {scan_time}")
+            print(f"Persistent Unique Scan ID: '{self._start_doc['uid']}'")
 
     def _set_up_plots(self, doc, stream_name, columns: list[Any]):
         """Using the descriptor doc"""
