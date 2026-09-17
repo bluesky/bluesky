@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev127+gdcee22fe8 documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev156+gb3361f5c2 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=a072cb5a"></script>
+    <script src="../../_static/documentation_options.js?v=0ab755a2"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev127+gdcee22fe8';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev156+gb3361f5c2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev127+gdcee22fe8" />
+  <meta name="docsearch:version" content="1.15.2.dev156+gb3361f5c2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -933,6 +933,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDescriptor</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Collectable</span><span class="p">,</span>
     <span class="n">Configurable</span><span class="p">,</span>
     <span class="n">Flyable</span><span class="p">,</span>
     <span class="n">Locatable</span><span class="p">,</span>
@@ -946,6 +947,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">Status</span><span class="p">,</span>
     <span class="n">Stoppable</span><span class="p">,</span>
     <span class="n">Triggerable</span><span class="p">,</span>
+    <span class="n">WritesStreamAssets</span><span class="p">,</span>
     <span class="n">check_supports</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1963,14 +1965,14 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.collect.html#bluesky.plan_stubs.collect">[docs]</a>
 <span class="nd">@plan</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">collect</span><span class="p">(</span>
-    <span class="n">obj</span><span class="p">:</span> <span class="n">Flyable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]]:</span>
+    <span class="n">obj</span><span class="p">:</span> <span class="n">Collectable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Collect data cached by one or more fly-scanning devices and emit documents.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    obj : A device with 'kickoff', 'complete', and 'collect' methods.</span>
+<span class="sd">    obj : A device with a 'collect' method.</span>
 <span class="sd">    stream : boolean, optional</span>
 <span class="sd">        If False (default), emit Event documents in one bulk dump. If True,</span>
 <span class="sd">        emit events one at time.</span>
@@ -1996,6 +1998,48 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"collect"</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span> <span class="n">return_payload</span><span class="o">=</span><span class="n">return_payload</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span></div>
 
+
+
+<span class="nd">@plan</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">collect_all</span><span class="p">(</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_payload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">PartialEvent</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Collect data cached by one or more fly-scanning devices and emit documents.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    *args : Device(s) with a 'collect' method.</span>
+<span class="sd">    stream : boolean, optional</span>
+<span class="sd">        If False (default), emit Event documents in one bulk dump. If True,</span>
+<span class="sd">        emit events one at time.</span>
+<span class="sd">    return_payload: boolean, optional</span>
+<span class="sd">        If True (default), return the collected Events. If False, return None.</span>
+<span class="sd">        Using ``stream=True`` and ``return_payload=False`` together avoids</span>
+<span class="sd">        accumulating the documents in memory: they are emitted as they are</span>
+<span class="sd">        collected, and they are not accumulated.</span>
+<span class="sd">    name: str, optional</span>
+<span class="sd">        If not None, will collect for the named string specifically, else collect will be performed</span>
+<span class="sd">        on all streams.</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Only collectable objects should be passed in</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_supports</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Collectable</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]</span>
+
+    <span class="c1"># If we provide a stream name, attempt to collect all objects with that stream name.</span>
+    <span class="c1"># This is only supported if all the objects support the WritesStreamAssets protocol,</span>
+    <span class="c1"># so check for that. If not all objects support the protocol, fall back to collecting</span>
+    <span class="c1"># from each object separately.</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">WritesStreamAssets</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">collect</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span> <span class="n">return_payload</span><span class="o">=</span><span class="n">return_payload</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Otherwise, we need to collect from each object separately and combine the results.</span>
+        <span class="n">collections</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">collect</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span> <span class="n">return_payload</span><span class="o">=</span><span class="n">return_payload</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">collections</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">collections</span> <span class="k">if</span> <span class="n">collections</span> <span class="k">else</span> <span class="kc">None</span>
 
 
 <div class="viewcode-block" id="collect_while_completing">
@@ -2034,7 +2078,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
         <span class="n">done</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">flush_period</span><span class="p">,</span> <span class="n">error_on_timeout</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">watch</span><span class="o">=</span><span class="n">watch</span><span class="p">)</span>
-        <span class="k">yield from</span> <span class="n">collect</span><span class="p">(</span><span class="o">*</span><span class="n">dets</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span></div>
+        <span class="k">yield from</span> <span class="n">collect_all</span><span class="p">(</span><span class="o">*</span><span class="n">dets</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span></div>
 
 
 
