@@ -751,11 +751,13 @@ def test_sigint_three_hits(RE, hw, deterministic_sigint):
             for _ in range(3):
                 sigint.send()
 
-        threading.Thread(target=sim_kill, daemon=True).start()
+        killer = threading.Thread(target=sim_kill, daemon=True)
+        killer.start()
         start_time = ttime.time()
         with pytest.raises(RunEngineInterrupted):
             RE(finalize_wrapper(self_sig_int_plan(), abs_set(motor, 0, wait=True)))
         end_time = ttime.time()
+        killer.join(timeout=5)
 
     # not enough time for motor to cleanup, but long enough to start
     assert end_time - start_time < 0.4
@@ -784,10 +786,12 @@ def test_sigint_many_hits_pln(RE, deterministic_sigint):
             for _ in range(11):
                 sigint.send()
 
-        threading.Thread(target=sim_kill, daemon=True).start()
+        killer = threading.Thread(target=sim_kill, daemon=True)
+        killer.start()
         start_time = ttime.time()
         with pytest.raises(RunEngineInterrupted):
             RE(hanging_plan())
+        killer.join(timeout=5)
 
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 5
@@ -829,9 +833,11 @@ def test_sigint_many_hits_panic(RE, deterministic_sigint):
             for _ in range(11):
                 sigint.send()
 
-        threading.Thread(target=sim_kill, daemon=True).start()
+        killer = threading.Thread(target=sim_kill, daemon=True)
+        killer.start()
         with pytest.raises(RunEngineInterrupted):
             RE(hanging_plan())
+        killer.join(timeout=5)
 
     # The KeyboardInterrupt but because we could not shut down, panic!
     assert RE.state == "panicked"
@@ -878,10 +884,12 @@ def test_sigint_many_hits_cb(RE, deterministic_sigint):
             for _ in range(11):
                 sigint.send()
 
-        threading.Thread(target=sim_kill, daemon=True).start()
+        killer = threading.Thread(target=sim_kill, daemon=True)
+        killer.start()
         start_time = ttime.time()
         with pytest.raises(RunEngineInterrupted):
             RE(infinite_plan(), {"start": hanging_callback})
+        killer.join(timeout=5)
 
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 5
