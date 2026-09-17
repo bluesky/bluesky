@@ -88,7 +88,7 @@ def test_progress_hook_called(RE):
         yield Msg("update_progress", name="scan", done=True)
 
     RE(plan())
-    # First call: {status}, second call: None (cleanup)
+    # declare: {status} (first, no prior to clear); done: None (clear), no active
     assert len(hook_calls) == 2
     assert isinstance(hook_calls[0], set)
     (status,) = hook_calls[0]

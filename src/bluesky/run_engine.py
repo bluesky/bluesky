@@ -538,6 +538,7 @@ class RunEngine:
 
         # A mapping of progress status names to their corresponding PlanProgress objects.
         self._progress_statuses: dict[str, PlanProgress] = {}
+        self._progress_hook_active = False
 
         self._command_registry = {
             "declare_stream": self._declare_stream,
@@ -760,6 +761,7 @@ class RunEngine:
             if not status.done:
                 status.finish()
         self._progress_statuses.clear()
+        self._progress_hook_active = False
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -1816,6 +1818,7 @@ class RunEngine:
                     status.finish()
                     self._call_progress_hook(None)
             self._progress_statuses.clear()
+            self._progress_hook_active = False
 
             for p in self._plan_stack:
                 try:
@@ -2250,8 +2253,20 @@ class RunEngine:
                 )
         status = PlanProgress(name, parent=parent)
         self._progress_statuses[name] = status
-        self._call_progress_hook({status})
+        self._rebuild_progress_hook()
         return status
+
+    def _rebuild_progress_hook(self):
+        """Clear and rebuild the progress display with all active statuses."""
+        if self.progress_hook is not None:
+            active = {s for s in self._progress_statuses.values() if not s.done}
+            if self._progress_hook_active:
+                self.progress_hook(None)
+            if active:
+                self.progress_hook(active)
+                self._progress_hook_active = True
+            else:
+                self._progress_hook_active = False
 
     async def _update_progress(self, msg: Msg):
         """Update a plan-driven progress status.
@@ -2273,7 +2288,7 @@ class RunEngine:
         if done:
             status.finish()
             del self._progress_statuses[name]
-            self._call_progress_hook(None)
+            self._rebuild_progress_hook()
         else:
             status._notify(
                 current=msg.kwargs.get("current"),

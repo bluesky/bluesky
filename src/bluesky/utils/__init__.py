@@ -1391,6 +1391,7 @@ class PlanProgress(Watchable):
         self.parent = parent
         self._done = False
         self._watchers: list[Callable] = []
+        self._last_state: dict | None = None
 
     @property
     def done(self) -> bool:
@@ -1398,6 +1399,9 @@ class PlanProgress(Watchable):
 
     def watch(self, func: Callable) -> None:
         self._watchers.append(func)
+        # Replay last known state so the watcher can display immediately.
+        if self._last_state is not None:
+            func(**self._last_state)
 
     def _notify(
         self,
@@ -1411,18 +1415,25 @@ class PlanProgress(Watchable):
         time_elapsed: float | None = None,
         time_remaining: float | None = None,
     ) -> None:
+        # TerminalProgressBar needs current/initial/target to show a bar.
+        # Synthesize them from fraction if not provided.
+        if fraction is not None and current is None and initial is None and target is None:
+            current = fraction
+            initial = 0
+            target = 1
+        self._last_state = dict(
+            name=self.name,
+            current=current,
+            initial=initial,
+            target=target,
+            unit=unit,
+            precision=precision,
+            fraction=fraction,
+            time_elapsed=time_elapsed,
+            time_remaining=time_remaining,
+        )
         for watcher in self._watchers:
-            watcher(
-                name=self.name,
-                current=current,
-                initial=initial,
-                target=target,
-                unit=unit,
-                precision=precision,
-                fraction=fraction,
-                time_elapsed=time_elapsed,
-                time_remaining=time_remaining,
-            )
+            watcher(**self._last_state)
 
     def finish(self) -> None:
         self._done = True
