@@ -1,9 +1,11 @@
 import abc
 import asyncio
 import collections.abc
+import dataclasses
 import datetime
 import inspect
 import itertools
+import math
 import operator
 import os
 import signal
@@ -61,6 +63,40 @@ except ImportError:
     from toolz import groupby
 
 
+def _coerce_float(value: float) -> float | str | None:
+    """Make a float JSON-safe: NaN -> None, +/-inf -> 'Infinity'/'-Infinity'."""
+    if math.isnan(value):
+        return None
+    if math.isinf(value):
+        return "Infinity" if value > 0 else "-Infinity"
+    return float(value)
+
+
+def _serialize_component(value: Any) -> list | dict | str | float | int | bool | None:
+    """Recursively convert a value into a json-safe structure.
+    """
+    if isinstance(value, Enum):
+        return _serialize_component(value.value)
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, float):
+        return _coerce_float(value)
+    if isinstance(value, np.generic):
+        return _serialize_component(value.item())
+    if isinstance(value, np.ndarray):
+        return _serialize_component(value.tolist())
+    if isinstance(value, (list, tuple, set)):
+        return [_serialize_component(v) for v in value]
+    if isinstance(value, dict):
+        return {str(k): _serialize_component(v) for k, v in value.items()}
+    if dataclasses.is_dataclass(value):
+        return _serialize_component(dataclasses.asdict(value))
+    try:
+        return str(value)
+    except Exception:
+        return None
+
+
 class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     """Namedtuple sub-class to encapsulate a message from the plan to the RE.
 
@@ -80,6 +116,21 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
 
     def __repr__(self):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
+
+
+    def serialize(self) -> dict[str, Any]:
+        """Return a JSON-safe dict of this message.
+
+        Devices, enums, numpy scalars and other values in ``obj``/``args``/``kwargs``/
+        ``run`` that are not natively JSON-serializable are coerced to JSON-safe forms.
+        """
+        return {
+            "command": self.command,
+            "obj": _serialize_component(self.obj),
+            "args": [_serialize_component(a) for a in self.args],
+            "kwargs": {str(k): _serialize_component(v) for k, v in self.kwargs.items()},
+            "run": _serialize_component(self.run),
+        }
 
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
