@@ -2797,3 +2797,27 @@ def test_abs_set_fails(RE, wait):
 
     with pytest.raises(FailedStatus):
         RE(abs_set(device, 10, wait=wait))
+
+
+def test_aborting_a_plan_parked_in_wait_for_cancels_what_it_waits_on(RE):
+    """The tasks a `wait_for` built are the RunEngine's to cancel.
+
+    Nothing else holds a reference to them, and `asyncio.wait` does not cancel
+    what it was waiting on when it is itself cancelled, so they outlived the
+    plan on a loop about to be closed.
+    """
+    cancelled = threading.Event()
+
+    async def never():
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    threading.Timer(0.2, RE.request_pause).start()
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg("wait_for", None, [never])])
+    RE.abort()
+
+    assert cancelled.wait(5)
