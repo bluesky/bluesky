@@ -2793,7 +2793,18 @@ def x2x_scan(
     _md.update(md or {})
     return (
         yield from relative_inner_product_scan(
-            detectors, num, motor1, start, stop, motor2, start / 2, stop / 2, per_step=per_step, md=_md, progress_scope=progress_scope, parent_progress_scope=parent_progress_scope
+            detectors,
+            num,
+            motor1,
+            start,
+            stop,
+            motor2,
+            start / 2,
+            stop / 2,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
         )
     )
 
