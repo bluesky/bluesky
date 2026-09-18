@@ -238,6 +238,31 @@ def test_count_emits_progress_messages(RE, hw):
     assert updates[-1].kwargs["done"] is True
 
 
+def test_tune_centroid_emits_progress_messages(RE, hw):
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+    RE(bp.tune_centroid([hw.det], "det", hw.motor, -1.5, 1.5, 0.05, num=10, progress_scope="tune"))
+
+    declares = [m for m in msgs if m.command == "declare_progress"]
+    updates = [m for m in msgs if m.command == "update_progress"]
+    assert len(declares) == 1
+    assert declares[0].kwargs["name"] == "tune"
+    assert declares[0].kwargs["parent"] is None
+
+    steps = [m for m in updates if not m.kwargs.get("done")]
+    # The adaptive plan has no fixed point count, so progress is a fraction.
+    fractions = [m.kwargs["fraction"] for m in steps]
+    assert fractions[0] == 0.0
+    assert all(0.0 <= f <= 1.0 for f in fractions)
+    assert all(b >= a for a, b in zip(fractions, fractions[1:]))
+    assert fractions[-1] == pytest.approx(1.0)
+    assert all(m.kwargs["unit"] == "step" for m in steps)
+
+    dones = [m for m in updates if m.kwargs.get("done")]
+    assert len(dones) == 1
+    assert updates[-1].kwargs["done"] is True
+
+
 def test_progress_elapsed_measured_on_status():
     """time_elapsed is measured on the status so rate/ETA survive bar rebuilds."""
     status = PlanProgress("scan")

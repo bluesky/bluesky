@@ -1021,6 +1021,8 @@ def tune_centroid(
     snake: bool = False,
     *,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
@@ -1125,6 +1127,18 @@ def tune_centroid(
         sum_xI = 0
         if os.environ.get("BLUESKY_PREDECLARE", False):
             yield from bps.declare_stream(motor, *detectors, name="primary")  # type: ignore
+
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, fraction=0.0, unit="step")
+
+        # tune_centroid converges by shrinking the step each pass until it
+        # reaches min_step, so progress is the fraction of that shrink (on a
+        # log scale) completed, interpolated by the points done in the pass.
+        initial_step = abs(step)
+        total_reduction = np.log(initial_step / min_step) if initial_step > min_step else 0.0
+        points_in_pass = 0
+
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)  # type: ignore      # Movable
@@ -1133,12 +1147,22 @@ def tune_centroid(
             sum_I += cur_I
             position = ret[motor_name]["value"]
             sum_xI += position * cur_I
+            points_in_pass += 1
+
+            if progress_scope is not None and total_reduction > 0:
+                completed = np.log(initial_step / abs(step))
+                frac = (completed + min(points_in_pass / num, 1.0) * np.log(step_factor)) / total_reduction
+                yield from bps.update_progress(
+                    progress_scope, fraction=float(np.clip(frac, 0.0, 1.0)), unit="step"
+                )
 
             next_pos += step
             in_range = min(start, stop) <= next_pos <= max(start, stop)
 
             if not in_range:
                 if sum_I == 0:
+                    if progress_scope is not None:
+                        yield from bps.update_progress(progress_scope, done=True)
                     return
                 peak_position = sum_xI / sum_I  # centroid
                 sum_I, sum_xI = 0, 0  # reset for next pass
@@ -1149,6 +1173,7 @@ def tune_centroid(
                     start, stop = stop, start
                 step = (stop - start) / (num - 1)
                 next_pos = start
+                points_in_pass = 0
                 # print("peak position = {}".format(peak_position))
                 # print("start = {}".format(start))
                 # print("stop = {}".format(stop))
@@ -1158,6 +1183,9 @@ def tune_centroid(
             # improvement: report final peak_position
             # print("final position = {}".format(peak_position))
             yield from bps.mv(motor, peak_position)  # type: ignore      # Movable
+
+        if progress_scope is not None:
+            yield from bps.update_progress(progress_scope, done=True)
 
     return (yield from _tune_core(start, stop, num, signal))
 
@@ -2716,6 +2744,8 @@ def x2x_scan(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio
@@ -2763,7 +2793,7 @@ def x2x_scan(
     _md.update(md or {})
     return (
         yield from relative_inner_product_scan(
-            detectors, num, motor1, start, stop, motor2, start / 2, stop / 2, per_step=per_step, md=_md
+            detectors, num, motor1, start, stop, motor2, start / 2, stop / 2, per_step=per_step, md=_md, progress_scope=progress_scope, parent_progress_scope=parent_progress_scope
         )
     )
 

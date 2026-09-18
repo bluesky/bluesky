@@ -1694,7 +1694,30 @@ class _BottomAnchorProxy:
                 self.real.flush()
             return len(s)
 
+    def _drain(self) -> None:
+        """Emit any buffered partial line, reflowing around an active bar."""
+        manager = self._manager
+        with manager._lock:
+            if not self._buffer:
+                return
+            text = self._buffer
+            self._buffer = ""
+            pbar = manager.pbar
+            if not isinstance(pbar, TerminalProgressBar) or pbar.done or not pbar.drawn:
+                self.real.write(text)
+                return
+            with pbar.lock:
+                pbar._erase()
+                self.real.write(text)
+                pbar.draw()
+
+    def detach(self) -> None:
+        """Flush pending text before this proxy is removed from ``sys.stdout``."""
+        self._drain()
+        self.real.flush()
+
     def flush(self) -> None:
+        self._drain()
         self.real.flush()
 
     def __getattr__(self, name: str) -> Any:
@@ -1824,6 +1847,8 @@ class ProgressBarManager:
     def _remove_proxy(self):
         if self._proxy is None:
             return
+        # Drain any buffered partial line so it is not lost on teardown/rebuild.
+        self._proxy.detach()
         if sys.stdout is self._proxy:
             sys.stdout = self._proxy.real
         self._proxy = None

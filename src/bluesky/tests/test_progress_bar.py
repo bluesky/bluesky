@@ -1,4 +1,5 @@
 import io
+import sys
 import time
 
 from bluesky.plan_stubs import mv
@@ -212,3 +213,57 @@ def test_bottom_anchor_proxy_passthrough_when_no_bar():
     proxy = _BottomAnchorProxy(real, manager)
     assert proxy.write("hello") == len("hello")
     assert real.getvalue() == "hello"
+
+
+def test_bottom_anchor_proxy_flush_emits_buffered_partial_line(monkeypatch):
+    """flush() must drain a buffered partial line, not just flush the real stream."""
+    real = io.StringIO()
+    manager = ProgressBarManager()
+    pbar = TerminalProgressBar([_FakeStatus()], delay_draw=0)
+    pbar.fp = real
+    pbar.drawn = True
+    pbar.done = False
+    manager.pbar = pbar
+
+    calls = []
+    monkeypatch.setattr(pbar, "_erase", lambda: calls.append("erase"))
+    monkeypatch.setattr(pbar, "draw", lambda: calls.append("draw"))
+
+    proxy = _BottomAnchorProxy(real, manager)
+
+    # A newline-less write is buffered and would otherwise be lost on flush.
+    proxy.write("message")
+    assert "message" not in real.getvalue()
+
+    proxy.flush()
+    assert calls == ["erase", "draw"]
+    assert "message" in real.getvalue()
+
+
+def test_bottom_anchor_proxy_teardown_emits_buffered_partial_line():
+    """Removing the proxy must flush buffered text instead of discarding it."""
+    real = io.StringIO()
+    manager = ProgressBarManager()
+
+    pbar = TerminalProgressBar([_FakeStatus()], delay_draw=0)
+    pbar.fp = real
+    pbar.drawn = True
+    pbar.done = False
+    manager.pbar = pbar
+
+    proxy = _BottomAnchorProxy(real, manager)
+    manager._proxy = proxy
+    saved_stdout = sys.stdout
+    sys.stdout = proxy
+    try:
+        proxy.write("buffered")
+        assert "buffered" not in real.getvalue()
+
+        # Tearing down the proxy (as _rebuild does) must emit the buffered text.
+        manager.pbar = None
+        manager._remove_proxy()
+        assert "buffered" in real.getvalue()
+        assert manager._proxy is None
+        assert sys.stdout is real
+    finally:
+        sys.stdout = saved_stdout
