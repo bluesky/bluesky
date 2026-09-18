@@ -1999,7 +1999,7 @@ already_warned: dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
-    if args or kwargs and not already_warned.get(msg.command):
+    if (args or kwargs) and not already_warned.get(msg.command):
         already_warned[msg.command] = True
         error_msg = f"""\
 About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
@@ -2007,7 +2007,7 @@ In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("{msg.command}") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg)  # noqa: B028
+        warnings.warn(error_msg, stacklevel=4)
 
 
 def maybe_update_hints(hints: dict[str, Hints], obj):

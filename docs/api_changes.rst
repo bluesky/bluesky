@@ -21,12 +21,20 @@ Added
 
 Fixed
 -----
+
 - A plan aborted while parked in a ``wait_for`` cancels the tasks that wait was
   running.  Nothing else held a reference to them, and ``asyncio.wait`` does not
   cancel what it was waiting on when it is itself cancelled, so they outlived
   the plan and asyncio reported them as destroyed-while-pending at some
   unrelated later moment.  A ``wait`` that times out still leaves them alone, so
   waiting on the same group again finds them in flight.
+  
+- A device is told a suspension has started only if it satisfies
+  `bluesky.protocols.Pausable`.  A suspension used to call ``pause()`` on
+  anything that had the attribute, where ``RunEngine.pause`` has always required
+  the protocol -- and ``Pausable`` requires ``resume`` as well, so a device with
+  only ``pause`` was told a suspension had begun and never told it had ended.
+  Both paths now ask the same question.
 
 - ``RunEngine.verbose`` reports whether the engine logs, and turning it off
   stops it.  It read ``disabled`` from the log adapter, which has no such

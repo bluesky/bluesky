@@ -56,6 +56,8 @@ def _normalize_address(inp: str | tuple | int | None):
             protocol = "tcp"
             rest_str = inp
     elif isinstance(inp, tuple):
+        if not inp:
+            raise ValueError("Address tuple may not be empty.")
         if inp[0] in ["tcp", "ipc"]:
             protocol, *rest = inp
         else:
@@ -64,9 +66,13 @@ def _normalize_address(inp: str | tuple | int | None):
         if protocol == "tcp":
             if len(rest) == 2:
                 rest_str = ":".join(str(r) for r in rest)
-            else:
+            elif len(rest) == 1:
                 (rest_str,) = rest
+            else:
+                raise ValueError(f"tcp address tuple must be (host,) or (host, port), got {inp!r}.")
         else:
+            if len(rest) != 1:
+                raise ValueError(f"ipc address tuple must be (path,), got {inp!r}.")
             (rest_str,) = rest
     elif isinstance(inp, int):
         protocol = "tcp"

@@ -173,7 +173,10 @@ select = [
     "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
 ignore = [
-    "UP031", # Ignore %-format strings until #1848 is done
+    # UP031/UP032 only rewrite string formatting (%-format / str.format to
+    # f-strings); enforcing them is pure code churn with no behavior change.
+    "UP031", # %-format strings
+    "UP032", # .format() -> f-string
     "B905",  # adding strict=False to every zip call is just noise
 ]
 
