@@ -7,6 +7,7 @@ import bluesky.plans as bp
 from bluesky import Msg
 from bluesky.utils import IllegalMessageSequence, PlanProgress
 
+
 def test_declare_progress_returns_status(RE):
     statuses = []
 
@@ -195,8 +196,14 @@ def test_grid_scan_emits_progress_messages(RE, hw):
     RE(
         bp.grid_scan(
             [hw.det],
-            hw.motor1, -1, 1, 2,
-            hw.motor2, -1, 1, 3,
+            hw.motor1,
+            -1,
+            1,
+            2,
+            hw.motor2,
+            -1,
+            1,
+            3,
             progress_scope="grid",
         )
     )

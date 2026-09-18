@@ -2250,8 +2250,7 @@ class RunEngine:
             parent = self._progress_statuses.get(parent_name)
             if parent is None:
                 raise IllegalMessageSequence(
-                    f"Parent progress {parent_name!r} does not exist. "
-                    "It must be declared before its children."
+                    f"Parent progress {parent_name!r} does not exist. It must be declared before its children."
                 )
         status = PlanProgress(name, parent=parent)
         self._progress_statuses[name] = status
@@ -2299,8 +2298,7 @@ class RunEngine:
         status = self._progress_statuses.get(name)
         if status is None:
             raise IllegalMessageSequence(
-                f"No progress status named {name!r} is open. "
-                "Use 'declare_progress' first."
+                f"No progress status named {name!r} is open. Use 'declare_progress' first."
             )
         done = msg.kwargs.get("done", False)
         if done:

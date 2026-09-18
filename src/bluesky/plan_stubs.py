@@ -1880,7 +1880,7 @@ def repeat(
     num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
     progress_scope: str | None = None,
-    progress_units: str = "repeat"
+    progress_units: str = "repeat",
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.

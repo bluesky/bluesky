@@ -46,7 +46,6 @@ from bluesky.protocols import (
     Hints,
     Movable,
     Readable,
-    Status,
     StreamAsset,
     SyncOrAsync,
     SyncOrAsyncIterator,
@@ -1449,17 +1448,17 @@ class PlanProgress(Watchable):
             target = 1
         if time_elapsed is None:
             time_elapsed = time.time() - self._start_time
-        self._last_state = dict(
-            name=self.name,
-            current=current,
-            initial=initial,
-            target=target,
-            unit=unit,
-            precision=precision,
-            fraction=fraction,
-            time_elapsed=time_elapsed,
-            time_remaining=time_remaining,
-        )
+        self._last_state = {
+            "name": self.name,
+            "current": current,
+            "initial": initial,
+            "target": target,
+            "unit": unit,
+            "precision": precision,
+            "fraction": fraction,
+            "time_elapsed": time_elapsed,
+            "time_remaining": time_remaining,
+        }
         for watcher in self._watchers:
             watcher(**self._last_state)
 

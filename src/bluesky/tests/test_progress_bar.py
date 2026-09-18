@@ -10,6 +10,7 @@ from bluesky.utils import (
     _BottomAnchorProxy,
 )
 
+
 @requires_ophyd
 def test_status_without_watch():
     from ophyd.sim import NullStatus
