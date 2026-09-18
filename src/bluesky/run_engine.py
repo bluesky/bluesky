@@ -2259,9 +2259,25 @@ class RunEngine:
         return status
 
     def _rebuild_progress_hook(self):
-        """Clear and rebuild the progress display with all active statuses."""
+        """Clear and rebuild the progress display with all active statuses.
+
+        Statuses are ordered parents-before-children (by ancestor depth, then
+        declaration order) so consumers of the updates receive them in a
+        consistent and predictable order.
+        """
         if self.progress_hook is not None:
-            active = {s for s in self._progress_statuses.values() if not s.done}
+
+            def _depth(status: PlanProgress):
+                depth = 0
+                parent = status.parent
+                while parent is not None:
+                    depth += 1
+                    parent = parent.parent
+                return depth
+
+            # Stable sort preserves declaration order within each depth level.
+            active = [s for s in self._progress_statuses.values() if not s.done]
+            active.sort(key=_depth)
             if self._progress_hook_active:
                 self.progress_hook(None)
             if active:

@@ -88,12 +88,35 @@ def test_progress_hook_called(RE):
         yield Msg("update_progress", name="scan", done=True)
 
     RE(plan())
-    # declare: {status} (first, no prior to clear); done: None (clear), no active
+    # declare: [status] (first, no prior to clear); done: None (clear), no active
     assert len(hook_calls) == 2
-    assert isinstance(hook_calls[0], set)
+    assert isinstance(hook_calls[0], list)
     (status,) = hook_calls[0]
     assert isinstance(status, PlanProgress)
     assert hook_calls[1] is None
+
+
+def test_progress_hook_orders_parents_before_children(RE):
+    hook_calls = []
+    RE.progress_hook = lambda x: hook_calls.append(x)
+
+    def plan():
+        yield Msg("declare_progress", name="outer")
+        yield Msg("declare_progress", name="child_a", parent="outer")
+        yield Msg("update_progress", name="child_a", done=True)
+        yield Msg("declare_progress", name="child_b", parent="outer")
+        yield Msg("update_progress", name="child_b", done=True)
+        yield Msg("update_progress", name="outer", done=True)
+
+    RE(plan())
+    # Every non-None rebuild must list the parent before any of its children.
+    for call in hook_calls:
+        if call:
+            names = [s.name for s in call]
+            assert names[0] == "outer"
+            for child in ("child_a", "child_b"):
+                if child in names:
+                    assert names.index("outer") < names.index(child)
 
 
 def test_progress_auto_cleanup_on_run_end(RE):
