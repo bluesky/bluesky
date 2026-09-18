@@ -1737,7 +1737,7 @@ def rel_grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    per_dimension_progress: bool = False,
+    per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh relative to current position.
@@ -1795,7 +1795,7 @@ def rel_grid_scan(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
-                per_dimension_progress=per_dimension_progress,
+                per_dim_progress=per_dim_progress,
             )
         )
 
