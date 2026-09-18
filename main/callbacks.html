@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Live Visualization and Processing &#8212; bluesky 1.15.2.dev181+gd8ca89825 documentation</title>
+    <title>Live Visualization and Processing &#8212; bluesky 1.15.2.dev204+g221a12862 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=80024644"></script>
+    <script src="_static/documentation_options.js?v=0269abb1"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'callbacks';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev181+gd8ca89825';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev204+g221a12862';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Recording Metadata" href="metadata.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev181+gd8ca89825" />
+  <meta name="docsearch:version" content="1.15.2.dev204+g221a12862" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -772,16 +772,16 @@ row is added to the table. Demo:</p>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |        det |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 13:15:11.0 |      1.000 |      0.607 |</span>
-<span class="go">|         2 | 13:15:11.0 |      2.000 |      0.135 |</span>
-<span class="go">|         3 | 13:15:11.0 |      3.000 |      0.011 |</span>
-<span class="go">|         4 | 13:15:11.0 |      4.000 |      0.000 |</span>
-<span class="go">|         5 | 13:15:11.0 |      5.000 |      0.000 |</span>
+<span class="go">|         1 | 13:44:20.5 |      1.000 |      0.607 |</span>
+<span class="go">|         2 | 13:44:20.5 |      2.000 |      0.135 |</span>
+<span class="go">|         3 | 13:44:20.5 |      3.000 |      0.011 |</span>
+<span class="go">|         4 | 13:44:20.5 |      4.000 |      0.000 |</span>
+<span class="go">|         5 | 13:44:20.5 |      5.000 |      0.000 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan ['4cb277fa'] (scan num: 1)</span>
+<span class="go">generator scan ['cdc96e1b'] (scan num: 1)</span>
 
 
-<span class="gh">Out[4]: </span><span class="go">('4cb277fa-1373-40c1-8eed-d2a5db102ce1',)</span>
+<span class="gh">Out[4]: </span><span class="go">('cdc96e1b-9364-479b-81d2-cd078b0a4c3f',)</span>
 </pre></div>
 </div>
 <p>Pass an empty list of columns to show simply ‘time’ and ‘seq_num’ (sequence
@@ -1448,23 +1448,23 @@ plans in <code class="xref py py-mod docutils literal notranslate"><span class="
 <span class="gp">In [9]: </span><span class="n">RE</span><span class="p">(</span><span class="n">scan</span><span class="p">(</span><span class="n">dets</span><span class="p">,</span> <span class="n">motor</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>  <span class="c1"># automatically prints table, shows plot</span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2026-09-18 13:15:25</span>
-<span class="go">Persistent Unique Scan ID: '3a32df5e-546a-4b6b-a302-d7d8fe6f30e0'</span>
+<span class="go">Transient Scan ID: 2     Time: 2026-09-18 13:44:37</span>
+<span class="go">Persistent Unique Scan ID: 'd68fc4ce-99ef-4c70-86e0-f37c6156a463'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |      motor |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 13:15:25.6 |      1.000 |      0.000 |      0.271 |</span>
-<span class="go">|         2 | 13:15:25.7 |      2.000 |      0.000 |      0.271 |</span>
-<span class="go">|         3 | 13:15:25.8 |      3.000 |      0.000 |      0.271 |</span>
-<span class="go">|         4 | 13:15:25.9 |      4.000 |      0.000 |      0.271 |</span>
-<span class="go">|         5 | 13:15:26.0 |      5.000 |      0.000 |      0.271 |</span>
+<span class="go">|         1 | 13:44:37.8 |      1.000 |      0.000 |      0.271 |</span>
+<span class="go">|         2 | 13:44:38.0 |      2.000 |      0.000 |      0.271 |</span>
+<span class="go">|         3 | 13:44:38.1 |      3.000 |      0.000 |      0.271 |</span>
+<span class="go">|         4 | 13:44:38.3 |      4.000 |      0.000 |      0.271 |</span>
+<span class="go">|         5 | 13:44:38.4 |      5.000 |      0.000 |      0.271 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator scan ['3a32df5e'] (scan num: 2)</span>
+<span class="go">generator scan ['d68fc4ce'] (scan num: 2)</span>
 
 
 
-<span class="gh">Out[9]: </span><span class="go">('3a32df5e-546a-4b6b-a302-d7d8fe6f30e0',)</span>
+<span class="gh">Out[9]: </span><span class="go">('d68fc4ce-99ef-4c70-86e0-f37c6156a463',)</span>
 </pre></div>
 </div>
 <figure class="align-default">
@@ -1922,20 +1922,20 @@ We are setting up a <em>subscription</em>.</p>
 <span class="gp">In [13]: </span><span class="n">RE</span><span class="p">(</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">]),</span> <span class="p">{</span><span class="s1">'event'</span><span class="p">:</span> <span class="n">print_data</span><span class="p">})</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2026-09-18 13:15:26</span>
-<span class="go">Persistent Unique Scan ID: '4f0b1383-3ab4-43ec-9ccc-8f4132c1807a'</span>
+<span class="go">Transient Scan ID: 3     Time: 2026-09-18 13:44:39</span>
+<span class="go">Persistent Unique Scan ID: 'bdf431ba-7b79-49cf-81b1-2c2ba4426a5c'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+</span>
 <span class="go">|   seq_num |       time |        det |</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">|         1 | 13:15:26.9 |      0.000 |</span>
+<span class="go">|         1 | 13:44:39.6 |      0.000 |</span>
 <span class="go">Measured: {'det': np.float64(3.726653172078671e-06)}</span>
 <span class="go">+-----------+------------+------------+</span>
-<span class="go">generator count ['4f0b1383'] (scan num: 3)</span>
+<span class="go">generator count ['bdf431ba'] (scan num: 3)</span>
 
 
 
-<span class="gh">Out[13]: </span><span class="go">('4f0b1383-3ab4-43ec-9ccc-8f4132c1807a',)</span>
+<span class="gh">Out[13]: </span><span class="go">('bdf431ba-7b79-49cf-81b1-2c2ba4426a5c',)</span>
 </pre></div>
 </div>
 <p>Each time the RunEngine generates a new Event Document (i.e., data point)
@@ -2584,7 +2584,7 @@ anywhere.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev181+gd8ca89825/docs/callbacks.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev204+g221a12862/docs/callbacks.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

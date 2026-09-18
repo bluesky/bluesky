@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.preprocessors &#8212; bluesky 1.15.2.dev181+gd8ca89825 documentation</title>
+    <title>bluesky.preprocessors &#8212; bluesky 1.15.2.dev204+g221a12862 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=80024644"></script>
+    <script src="../../_static/documentation_options.js?v=0269abb1"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev181+gd8ca89825';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev204+g221a12862';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev181+gd8ca89825" />
+  <meta name="docsearch:version" content="1.15.2.dev204+g221a12862" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -940,6 +940,9 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">short_uid</span> <span class="k">as</span> <span class="n">_short_uid</span>
 
+<span class="c1"># Commands whose object should be lazily staged before the message is processed.</span>
+<span class="n">_LAZY_STAGE_COMMANDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"set"</span><span class="p">,</span> <span class="s2">"trigger"</span><span class="p">,</span> <span class="s2">"kickoff"</span><span class="p">}</span>
+
 
 <div class="viewcode-block" id="plan_mutator">
 <a class="viewcode-back" href="../../generated/bluesky.preprocessors.plan_mutator.html#bluesky.preprocessors.plan_mutator">[docs]</a>
@@ -1020,6 +1023,11 @@ window.runMermaid = runMermaid;</script>
                 <span class="c1"># 'new_gen')</span>
                 <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tail_result_cache</span><span class="p">:</span>
                     <span class="n">ret</span> <span class="o">=</span> <span class="n">tail_result_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">exhausted_gen</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># No cached tail result for this generator, so there is no</span>
+                    <span class="c1"># value to hand back; use None instead of a stale value</span>
+                    <span class="c1"># left over from a prior loop iteration.</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
 
                 <span class="n">result_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
 
@@ -1896,12 +1904,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        messages from plan with 'stage' messages inserted and 'unstage'</span>
 <span class="sd">        messages appended</span>
 <span class="sd">    """</span>
-    <span class="n">COMMANDS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"set"</span><span class="p">,</span> <span class="s2">"trigger"</span><span class="p">,</span> <span class="s2">"kickoff"</span><span class="p">])</span>  <span class="c1"># noqa: C405</span>
     <span class="c1"># Cache devices in the order they are staged; then unstage in reverse.</span>
     <span class="n">devices_staged</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="ow">in</span> <span class="n">COMMANDS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">command</span> <span class="ow">in</span> <span class="n">_LAZY_STAGE_COMMANDS</span><span class="p">:</span>
             <span class="n">root</span> <span class="o">=</span> <span class="n">root_ancestor</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">devices_staged</span><span class="p">:</span>
 
@@ -2041,7 +2048,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="c1"># if we move a pseudo positioner also stash it's children</span>
     <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">coupled_parents</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">,</span> <span class="n">setpoint</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">,</span> <span class="n">setpoint</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="n">initial_positions</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
 
     <span class="c1"># if we move a pseudo single, also stash it's parent and siblings</span>
@@ -2049,7 +2056,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">coupled_parents</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">parent</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">:</span>
         <span class="n">parent_pos</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">position</span>
         <span class="n">initial_positions</span><span class="p">[</span><span class="n">parent</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent_pos</span>
-        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">,</span> <span class="n">parent_pos</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">pseudo_positioners</span><span class="p">,</span> <span class="n">parent_pos</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="n">initial_positions</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
 
     <span class="c1"># TODO forbid mixed pseudo / real motion</span>

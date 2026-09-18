@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.callbacks.zmq &#8212; bluesky 1.15.2.dev181+gd8ca89825 documentation</title>
+    <title>bluesky.callbacks.zmq &#8212; bluesky 1.15.2.dev204+g221a12862 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../../_static/documentation_options.js?v=80024644"></script>
+    <script src="../../../_static/documentation_options.js?v=0269abb1"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev181+gd8ca89825';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev204+g221a12862';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev181+gd8ca89825" />
+  <meta name="docsearch:version" content="1.15.2.dev204+g221a12862" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -967,6 +967,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">protocol</span> <span class="o">=</span> <span class="s2">"tcp"</span>
             <span class="n">rest_str</span> <span class="o">=</span> <span class="n">inp</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inp</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Address tuple may not be empty."</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"tcp"</span><span class="p">,</span> <span class="s2">"ipc"</span><span class="p">]:</span>
             <span class="n">protocol</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span> <span class="o">=</span> <span class="n">inp</span>
         <span class="k">else</span><span class="p">:</span>
@@ -975,9 +977,13 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">protocol</span> <span class="o">==</span> <span class="s2">"tcp"</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="n">rest_str</span> <span class="o">=</span> <span class="s2">":"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rest</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="p">(</span><span class="n">rest_str</span><span class="p">,)</span> <span class="o">=</span> <span class="n">rest</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tcp address tuple must be (host,) or (host, port), got </span><span class="si">{</span><span class="n">inp</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ipc address tuple must be (path,), got </span><span class="si">{</span><span class="n">inp</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
             <span class="p">(</span><span class="n">rest_str</span><span class="p">,)</span> <span class="o">=</span> <span class="n">rest</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="n">protocol</span> <span class="o">=</span> <span class="s2">"tcp"</span>
