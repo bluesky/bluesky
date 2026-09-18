@@ -41,6 +41,7 @@ from bluesky.run_engine import (
     FailedStatus,
     IllegalMessageSequence,
     NoReplayAllowed,
+    PlanHalt,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
@@ -2246,6 +2247,32 @@ def test_force_stop_exit_status(bail_func, status, RE):
     assert d.start[0]["uid"] == uid
     assert len(d.stop) == 1
     assert d.stop[uid]["exit_status"] == status
+
+
+@pytest.mark.parametrize(
+    "bail_func,exc_type",
+    [("stop", RequestStop), ("abort", RequestAbort), ("halt", PlanHalt)],
+)
+def test_paused_bail_exception_is_instance(bail_func, exc_type):
+    """``RunEngineResult.exception`` must be an exception *instance*, not a class.
+
+    Regression test: when paused, ``stop()``/``halt()`` set
+    ``self._exception`` to the exception *class* (``RequestStop`` / ``PlanHalt``)
+    rather than an instance, unlike ``abort()`` which uses ``RequestAbort()``.
+    """
+    RE = RunEngine({}, call_returns_result=True)
+
+    @run_decorator()
+    def bad_plan():
+        yield Msg("pause")
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(bad_plan())
+
+    rs = getattr(RE, bail_func)()
+    assert isinstance(rs.exception, exc_type)
+    # Guard against the class being stored instead of an instance.
+    assert not isinstance(rs.exception, type)
 
 
 def test_exceptions_exit_status(RE):

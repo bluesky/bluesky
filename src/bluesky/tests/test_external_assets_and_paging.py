@@ -12,6 +12,7 @@ from event_model.documents.stream_resource import StreamResource
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
+from bluesky.bundlers import RunBundler
 from bluesky.protocols import (
     Asset,
     Collectable,
@@ -460,6 +461,37 @@ def test_old_datum_collectable(RE):
     assert docs["event_page"][0]["data"] == {"det-datum": ["RESOURCEUID/1"]}
     assert docs["event_page"][0]["timestamps"] == {"det-datum": [456]}
     assert docs["event_page"][0]["filled"] == {"det-datum": [False]}
+
+
+def test_repeated_old_style_collect_describes_once(RE, mocker):
+    """An old-style (doubly-nested) device is described only on the first collect.
+
+    Regression test for a dead membership check in ``RunBundler.collect``: it
+    tested ``frozenset(collect_objects) not in self._local_descriptors``, but
+    ``_local_descriptors`` is keyed by individual objects, so that clause was
+    always True and ``_describe_collect`` was re-run on every repeat collect of
+    the same object instead of being skipped once the object was described.
+    """
+    spy = mocker.spy(RunBundler, "_describe_collect")
+
+    det = OldDatumCollectable(name="det")
+    docs = DocHolder()
+
+    def plan():
+        yield from bps.open_run()
+        yield from bps.collect(det)
+        yield from bps.collect(det)
+        yield from bps.close_run()
+
+    RE(plan(), docs.append)
+
+    # The object is described exactly once, on the first collect.
+    assert spy.call_count == 1
+    # The emitted documents are unchanged: one descriptor, one event_page per
+    # collect (two total), and matching external assets.
+    docs.assert_emitted(start=1, descriptor=1, resource=2, datum=2, event_page=2, stop=1)
+    # Sequence numbers advance across the two collects.
+    assert [ep["seq_num"] for ep in docs["event_page"]] == [[1], [2]]
 
 
 def test_old_datum_and_pv_collectable(RE):

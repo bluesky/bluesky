@@ -499,7 +499,7 @@ class LiveGrid(QtAwareCallback):
             ax.set_ylabel(ylabel)
             ax.set_aspect(aspect)
             self.ax = ax
-            self._Idata = np.ones(raster_shape) * np.nan
+            self._Idata = np.full(raster_shape, np.nan)
             self._norm = mcolors.Normalize()
             if clim is not None:
                 self._norm.vmin, self._norm.vmax = clim
@@ -519,7 +519,7 @@ class LiveGrid(QtAwareCallback):
         self.__setup()
         if self.im is not None:
             raise RuntimeError("Can not re-use LiveGrid")
-        self._Idata = np.ones(self.raster_shape) * np.nan
+        self._Idata = np.full(self.raster_shape, np.nan)
         # The user can control origin by specific 'extent'.
         extent = self.extent
         # origin must be 'lower' for the plot to fill in correctly
@@ -631,7 +631,7 @@ class LiveFitPlot(LivePlot):
             raise NotImplementedError("LiveFitPlot supports models with one independent variable only.")
         (self.__x_key,) = livefit.independent_vars.keys()  # this never changes
         (x,) = livefit.independent_vars.values()  # this may change
-        super().__init__(livefit.y, x, legend_keys=legend_keys, xlim=xlim, ylim=xlim, ax=ax, **kwargs)
+        super().__init__(livefit.y, x, legend_keys=legend_keys, xlim=xlim, ylim=ylim, ax=ax, **kwargs)
         self.num_points = num_points
         self._livefit = livefit
         self._xlim = xlim

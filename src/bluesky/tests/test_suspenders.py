@@ -8,6 +8,7 @@ import pytest
 
 from bluesky import Msg
 from bluesky.preprocessors import suspend_wrapper
+from bluesky.protocols import Pausable
 from bluesky.run_engine import RunEngineInterrupted
 from bluesky.suspenders import (
     SuspendBoolHigh,
@@ -530,6 +531,58 @@ def test_suspender_plans(RE, hw):
     stop = ttime.time()
     delta = stop - start
     assert delta < 0.9
+
+
+def test_a_suspension_holds_only_devices_that_can_be_released(RE, hw):
+    """A device is told a suspension began only if it can be told it ended.
+
+    `bluesky.protocols.Pausable` requires ``resume`` as well as ``pause``, and
+    the suspension path used to ask only for the attribute.
+    """
+
+    class PauseOnly:
+        name = "pause_only"
+
+        def __init__(self):
+            self.paused = 0
+
+        def pause(self):
+            self.paused += 1
+
+    class PauseAndResume(PauseOnly):
+        name = "pause_and_resume"
+
+        def __init__(self):
+            super().__init__()
+            self.resumed = 0
+
+        def resume(self):
+            self.resumed += 1
+
+    pause_only = PauseOnly()
+    pausable = PauseAndResume()
+    assert not isinstance(pause_only, Pausable)
+    assert isinstance(pausable, Pausable)
+
+    sig = hw.bool_sig
+    sig.put(0)
+    RE.install_suspender(SuspendBoolHigh(sig, sleep=0.1))
+
+    plan = [
+        Msg("null", pause_only),
+        Msg("null", pausable),
+        Msg("checkpoint"),
+        Msg("sleep", None, 0.2),
+    ]
+    threading.Timer(0.05, sig.put, (1,)).start()
+    threading.Timer(0.3, sig.put, (0,)).start()
+    RE(plan)
+
+    # Told a hold began, and told it ended.
+    assert pausable.paused == 1
+    assert pausable.resumed == 1
+    # Never told anything, because it could not have been told it was over.
+    assert pause_only.paused == 0
 
 
 def test_a_suspension_does_not_duplicate_a_monitored_signals_documents(RE, hw):
