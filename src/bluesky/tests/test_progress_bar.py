@@ -114,7 +114,7 @@ class _FakeStatus:
 
 
 def test_progress_bar_manager_merges_streams():
-    """A single manager registered on two hooks merges both streams."""
+    """A single manager driving two hook streams stacks both streams."""
     built = []
 
     def factory(statuses):
@@ -126,32 +126,54 @@ def test_progress_bar_manager_merges_streams():
         return FakeBar()
 
     manager = ProgressBarManager(pbar_factory=factory)
+    waiting = manager.new_stream()
+    progress = manager.new_stream()
     a, b = _FakeStatus(), _FakeStatus()
 
-    manager([a])  # e.g. waiting_hook stream
-    manager([b])  # e.g. progress_hook stream
+    waiting([a])
+    progress([b])
     assert manager._statuses == [a, b]
 
-    # Re-sending a known status does not duplicate it or rebuild.
+    # Re-sending a stream's unchanged status does not rebuild.
     rebuilds = len(built)
-    manager([a])
+    waiting([a])
     assert manager._statuses == [a, b]
     assert len(built) == rebuilds
 
     # Finished statuses are pruned from the merged display.
     a.done = True
-    manager([a])
+    waiting([a])
     assert manager._statuses == [b]
 
-    # None from a stream keeps the remaining live statuses.
-    manager(None)
-    assert manager._statuses == [b]
+    # None from a stream keeps the other stream's live statuses.
+    progress_still = manager._statuses
+    waiting(None)
+    assert manager._statuses == progress_still == [b]
 
-    # When every status is done the bar is torn down.
-    b.done = True
-    manager(None)
+    # When every stream has ended the bar is torn down.
+    progress(None)
     assert manager._statuses == []
     assert manager.pbar is None
+
+
+def test_progress_bar_manager_none_clears_pending_stream():
+    """A stream's None removes its still-pending statuses, not just the done ones."""
+    manager = ProgressBarManager(pbar_factory=lambda statuses: None)
+    waiting = manager.new_stream()
+    progress = manager.new_stream()
+
+    pending_wait = _FakeStatus()  # never marked done (e.g. a timed-out wait)
+    plan_status = _FakeStatus()
+
+    waiting([pending_wait])
+    progress([plan_status])
+    assert manager._statuses == [pending_wait, plan_status]
+
+    # waiting_hook(None) on a timeout must drop the still-pending wait status
+    # while leaving the progress stream untouched.
+    waiting(None)
+    assert pending_wait.done is False
+    assert manager._statuses == [plan_status]
 
 
 def test_bottom_anchor_proxy_reflows_bars(monkeypatch):

@@ -51,7 +51,6 @@ from bluesky.protocols import (
     SyncOrAsyncIterator,
     T,
     Watchable,
-    WatchableStatus,
     WritesExternalAssets,
     WritesStreamAssets,
     check_supports,
@@ -1710,12 +1709,19 @@ class ProgressBarManager:
         """
         Manages creation and tearing down of progress bars.
 
-        A single instance can be registered with more than one RunEngine hook
-        (e.g. both ``waiting_hook`` and ``progress_hook``). Status objects from
-        every stream are merged so the streams stack together instead of
-        overpainting one another. A stream signals that its statuses are
-        finished by calling with ``None``; completed statuses are
-        dropped and the remaining live statuses keep rendering.
+        A single instance can drive more than one RunEngine hook (e.g. both
+        ``waiting_hook`` and ``progress_hook``) so their status objects stack
+        into one display instead of overpainting each other. Give each hook its
+        own stream via :meth:`new_stream` so that one stream ending (its hook
+        called with ``None``) removes only that stream's statuses -- even if
+        they are still pending -- while the other stream keeps rendering::
+
+            manager = ProgressBarManager()
+            RE.waiting_hook = manager.new_stream()
+            RE.progress_hook = manager.new_stream()
+
+        Calling the instance directly uses a single default stream, which is
+        all that is needed when registering on just one hook.
 
         Parameters
         ----------
@@ -1726,33 +1732,69 @@ class ProgressBarManager:
 
         self.pbar_factory = pbar_factory
         self.pbar = None
-        self._statuses: list[WatchableStatus] = []
+        # Each hook stream keeps its own list of statuses so that a stream
+        # ending (None) removes exactly that stream's statuses, pending or not.
+        self._streams: dict[int, list[Watchable]] = {}
+        self._stream_counter = 0
         self._current_key: tuple = ()
         self._lock = threading.RLock()
         self._proxy: _BottomAnchorProxy | None = None
 
-    def __call__(self, status_objs_or_none: Iterable[WatchableStatus] | None) -> None:
+    @property
+    def _statuses(self) -> list[Watchable]:
+        """All live statuses across every stream, in stream order, deduplicated."""
+        merged: list[Watchable] = []
+        for statuses in self._streams.values():
+            for st in statuses:
+                if not any(st is m for m in merged):
+                    merged.append(st)
+        return merged
+
+    def new_stream(self) -> "Callable[[Iterable[Watchable] | None], None]":
+        """Return a hook callable that owns an independent progress stream.
+
+        Register a distinct stream on each RunEngine hook so that one hook
+        signalling completion with ``None`` clears only its own statuses while
+        any other stream keeps rendering.
         """
-        Merge a stream's status objects into the shared progress bar.
+        self._stream_counter += 1
+        token = self._stream_counter
+
+        def hook(status_objs_or_none: "Iterable[Watchable] | None") -> None:
+            self._update_stream(token, status_objs_or_none)
+
+        return hook
+
+    def __call__(self, status_objs_or_none: Iterable[Watchable] | None) -> None:
+        """
+        Update the default stream's status objects.
 
         This is registered with RunEngine.waiting_hook and/or
-        RunEngine.progress_hook.
+        RunEngine.progress_hook. To drive more than one hook from a single
+        manager, use :meth:`new_stream` for each hook instead.
 
         Parameters
         ----------
-        status_objs_or_none : Iterable[WatchableStatus], optional
+        status_objs_or_none : Iterable[Watchable], optional
             Status objects that are now active for this stream, or ``None`` to
             signal that this stream's statuses have finished.
         """
+        self._update_stream(0, status_objs_or_none)
 
+    def _update_stream(self, token: int, status_objs_or_none: "Iterable[Watchable] | None") -> None:
         with self._lock:
-            if status_objs_or_none is not None:
+            if status_objs_or_none is None:
+                # The stream ended: drop all of its statuses, pending or not.
+                self._streams.pop(token, None)
+            else:
+                live: list[Watchable] = []
                 for st in status_objs_or_none:
-                    if not any(st is known for known in self._statuses):
-                        self._statuses.append(st)
-            # A finished status leaves the display; this is how both a completed
-            # wait and a completed plan-progress scope are removed.
-            self._statuses = [st for st in self._statuses if not st.done]
+                    if not st.done and not any(st is known for known in live):
+                        live.append(st)
+                if live:
+                    self._streams[token] = live
+                else:
+                    self._streams.pop(token, None)
             self._rebuild()
 
     def _rebuild(self):
