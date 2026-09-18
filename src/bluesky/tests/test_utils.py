@@ -3,6 +3,7 @@ import gc
 import operator
 import time
 import warnings
+from enum import Enum
 from functools import reduce
 from unittest.mock import patch
 
@@ -23,6 +24,7 @@ from bluesky.utils import (
     is_movable,
     is_plan,
     merge_cycler,
+    msg_to_json_safe_dict,
     plan,
     warn_if_msg_args_or_kwargs,
 )
@@ -743,3 +745,105 @@ def test_async_input_does_not_block_event_loop(RE, capsys):
             pytest.fail("Should have timed out waiting for input")
 
     RE(plan())
+
+
+class _NamedDevice:
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return f"_NamedDevice(name={self.name!r})"
+
+
+class _Color(Enum):
+    RED = "red"
+    ANSWER = 42
+
+
+def test_serialize_basic_message():
+    msg = Msg("set", None, 5, group="g1")
+    assert msg_to_json_safe_dict(msg) == {
+        "command": "set",
+        "obj": None,
+        "args": [5],
+        "kwargs": {"group": "g1"},
+        "run": None,
+    }
+
+
+def test_serialize_returns_json_safe_dict():
+    import json
+
+    device = _NamedDevice("det1")
+    msg = Msg("trigger", device, np.int64(3), value=np.float64(1.5))
+    doc = msg_to_json_safe_dict(msg)
+    # Round-trips through json without raising.
+    assert json.loads(json.dumps(doc)) == doc
+
+
+def test_serialize_coerces_device_to_repr():
+    device = _NamedDevice("motor")
+    msg = Msg("set", device, 1)
+    assert msg_to_json_safe_dict(msg)["obj"] == repr(device)
+
+
+def test_serialize_coerces_enum_to_value():
+    msg = Msg("set", None, _Color.RED, answer=_Color.ANSWER)
+    doc = msg_to_json_safe_dict(msg)
+    assert doc["args"] == ["red"]
+    assert doc["kwargs"] == {"answer": 42}
+
+
+def test_serialize_coerces_numpy_scalars_and_arrays():
+    msg = Msg(
+        "set",
+        None,
+        np.int64(7),
+        np.float64(2.5),
+        np.array([1, 2, 3]),
+    )
+    assert msg_to_json_safe_dict(msg)["args"] == [7, 2.5, [1, 2, 3]]
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (float("nan"), None),
+        (float("inf"), "Infinity"),
+        (float("-inf"), "-Infinity"),
+        (np.float64("nan"), None),
+        (np.float64("inf"), "Infinity"),
+    ],
+)
+def test_serialize_coerces_non_finite_floats(value, expected):
+    msg = Msg("set", None, value)
+    assert msg_to_json_safe_dict(msg)["args"] == [expected]
+
+
+def test_serialize_recurses_into_containers():
+    device = _NamedDevice("det")
+    msg = Msg(
+        "configure",
+        None,
+        [1, _Color.RED, device],
+        mapping={"a": np.int64(1), "b": (float("inf"),)},
+    )
+    doc = msg_to_json_safe_dict(msg)
+    assert doc["args"] == [[1, "red", repr(device)]]
+    assert doc["kwargs"] == {"mapping": {"a": 1, "b": ["Infinity"]}}
+
+
+def test_serialize_coerces_dict_keys_to_str():
+    msg = Msg("set", None, run=1)
+    doc = msg_to_json_safe_dict(msg)
+    assert doc["run"] == 1
+    msg = Msg("configure", None, data={1: "one"})
+    assert msg_to_json_safe_dict(msg)["kwargs"] == {"data": {"1": "one"}}
+
+
+def test_serialize_bool_preserved():
+    msg = Msg("set", None, True, flag=False)
+    serialized = msg_to_json_safe_dict(msg)
+    assert serialized["args"] == [True]
+    assert serialized["kwargs"] == {"flag": False}
+    assert isinstance(serialized["args"][0], bool)

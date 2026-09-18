@@ -1,9 +1,11 @@
 import abc
 import asyncio
 import collections.abc
+import dataclasses
 import datetime
 import inspect
 import itertools
+import math
 import operator
 import os
 import signal
@@ -80,6 +82,63 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
 
     def __repr__(self):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
+
+
+def _to_json_safe(value: Any) -> list | dict | str | float | int | bool | None:
+    """Recursively convert a value into a json-safe structure."""
+
+    match value:
+        case Enum():
+            return _to_json_safe(value.value)
+        case None | bool() | int() | str():
+            return value
+        case float():
+            if math.isnan(value):
+                return None
+            if math.isinf(value):
+                return "Infinity" if value > 0 else "-Infinity"
+            return float(value)
+        case np.generic():
+            return _to_json_safe(value.item())
+        case np.ndarray():
+            return _to_json_safe(value.tolist())
+        case list() | tuple() | set():
+            return [_to_json_safe(v) for v in value]
+        case dict():
+            return {str(k): _to_json_safe(v) for k, v in value.items()}
+        case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
+            return _to_json_safe(dataclasses.asdict(value))
+        case _:
+            try:
+                return str(value)
+            except Exception:
+                return None
+
+
+def msg_to_json_safe_dict(msg: Msg) -> dict[str, Any]:
+    """Return a JSON-safe dictionary representation of this message.
+
+    Devices, enums, numpy scalars and other values in ``obj``/``args``/``kwargs``/
+    ``run`` that are not natively JSON-serializable are coerced to JSON-safe forms.
+
+    Parameters
+    ----------
+    msg : Msg
+        The message to be converted to a JSON-safe dictionary.
+
+    Returns
+    -------
+    dict[str, Any]
+        A JSON-safe dictionary representation of the message.
+    """
+
+    return {
+        "command": msg.command,
+        "obj": _to_json_safe(msg.obj),
+        "args": [_to_json_safe(a) for a in msg.args],
+        "kwargs": {str(k): _to_json_safe(v) for k, v in msg.kwargs.items()},
+        "run": _to_json_safe(msg.run),
+    }
 
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
