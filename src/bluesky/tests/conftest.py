@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import os
 import signal
 import threading
@@ -227,7 +228,8 @@ class DeterministicSigint:
     so no signal can outlive the block and reach pytest.
     """
 
-    def __init__(self):
+    def __init__(self, fake_clock=True):
+        self._fake_clock = fake_clock
         self._fake_time = 0.0
         self._handler_done = threading.Event()
         self._senders: list[threading.Thread] = []
@@ -241,14 +243,20 @@ class DeterministicSigint:
     def _monotonic(self):
         return self._fake_time
 
+    def _clock(self):
+        """Patch the handler's clock, or leave the real one alone."""
+        if self._fake_clock:
+            return patch("bluesky.utils.time.monotonic", self._monotonic)
+        return contextlib.nullcontext()
+
     def _patched_enter(self, sigint_handler):
-        with patch("bluesky.utils.time.monotonic", self._monotonic):
+        with self._clock():
             result = self._orig_enter(sigint_handler)
         installed = signal.getsignal(signal.SIGINT)
 
         def synced_handler(signum, frame):
             try:
-                with patch("bluesky.utils.time.monotonic", self._monotonic):
+                with self._clock():
                     installed(signum, frame)
             finally:
                 self.delivered += 1
@@ -294,7 +302,15 @@ class DeterministicSigint:
             for _ in range(count):
                 self.send()
 
-        thread = threading.Thread(target=sim_kill, daemon=True)
+        return self.background(sim_kill)
+
+    def background(self, func):
+        """Run ``func`` in a thread joined before SIGINT is handed back.
+
+        For senders that interleave waits between hits, where ``send_after``
+        does not fit.
+        """
+        thread = threading.Thread(target=func, daemon=True)
         self._senders.append(thread)
         thread.start()
         return thread
@@ -313,6 +329,21 @@ class DeterministicSigint:
             self._exit_patcher.stop()
             self._enter_patcher.stop()
             signal.signal(signal.SIGINT, self._true_original)
+
+
+@pytest.fixture
+def sigint():
+    """An entered ``DeterministicSigint`` on the real clock.
+
+    For the tests that exercise the signal handler's own timing -- its 100 ms
+    debounce and 10 s carry-over -- where a faked clock would test nothing.
+    They still get the SIGINT ownership: hits arriving after the RunEngine has
+    let go are absorbed rather than reaching pytest, and sender threads are
+    joined before the real disposition is restored.  Entered for the whole
+    test, so that ownership survives a failing assertion.
+    """
+    with DeterministicSigint(fake_clock=False) as sigint:
+        yield sigint
 
 
 @pytest.fixture
