@@ -524,8 +524,8 @@ class RunEngine:
         self._plan: typing.Iterable[Msg] | None = None  # the plan instance from __call__
         self._require_stream_declaration = False
 
-        # A mapping of progress status names to their corresponding PlanProgress objects.
-        self._progress_statuses: dict[str, PlanProgress] = {}
+        # A mapping of progress scope names to their corresponding PlanProgress objects.
+        self._progress_scopes: dict[str, PlanProgress] = {}
         self._progress_hook_active = False
 
         self._command_registry = {
@@ -750,11 +750,11 @@ class RunEngine:
         self._plan = None
         self._interrupted = False
 
-        # Finish any open plan-driven progress statuses.
-        for status in self._progress_statuses.values():
+        # Finish any open plan-driven progress scopes.
+        for status in self._progress_scopes.values():
             if not status.done:
                 status.finish()
-        self._progress_statuses.clear()
+        self._progress_scopes.clear()
         self._progress_hook_active = False
 
         # Unsubscribe for per-run callbacks.
@@ -1814,12 +1814,12 @@ class RunEngine:
                         self.log.error("Failed to close run %r.", current_run)
             self._run_bundlers.clear()
 
-            # Finish any open plan-driven progress statuses.
-            for status in self._progress_statuses.values():
+            # Finish any open plan-driven progress scopes.
+            for status in self._progress_scopes.values():
                 if not status.done:
                     status.finish()
                     self._call_progress_hook(None)
-            self._progress_statuses.clear()
+            self._progress_scopes.clear()
             self._progress_hook_active = False
 
             for p in self._plan_stack:
@@ -2235,33 +2235,33 @@ class RunEngine:
         return await current_run.collect(msg)
 
     async def _declare_progress(self, msg: Msg):
-        """Declare a new plan-driven progress status.
+        """Declare a new plan-driven progress scope.
 
         Expected message object is:
 
             Msg('declare_progress', name='scan', parent=None)
         """
         name = msg.kwargs["name"]
-        if name in self._progress_statuses:
-            raise IllegalMessageSequence(f"A progress status named {name!r} is already open.")
+        if name in self._progress_scopes:
+            raise IllegalMessageSequence(f"A progress scope named {name!r} is already open.")
         parent_name = msg.kwargs.get("parent")
         parent = None
         if parent_name is not None:
-            parent = self._progress_statuses.get(parent_name)
+            parent = self._progress_scopes.get(parent_name)
             if parent is None:
                 raise IllegalMessageSequence(
-                    f"Parent progress {parent_name!r} does not exist. It must be declared before its children."
+                    f"Parent progress scope {parent_name!r} does not exist. It must be declared before its children."
                 )
         status = PlanProgress(name, parent=parent)
-        self._progress_statuses[name] = status
+        self._progress_scopes[name] = status
         self._rebuild_progress_hook()
         return status
 
     def _rebuild_progress_hook(self):
-        """Clear and rebuild the progress display with all active statuses.
+        """Clear and rebuild the progress display with all active progress scopes.
 
-        Statuses are ordered parents-before-children (by ancestor depth, then
-        declaration order) so consumers of the updates receive them in a
+        Progress scopes are ordered parents-before-children (by ancestor depth, then
+        declaration order) so consumers of the progress updates receive them in a
         consistent and predictable order.
         """
         if self.progress_hook is not None:
@@ -2275,7 +2275,7 @@ class RunEngine:
                 return depth
 
             # Stable sort preserves declaration order within each depth level.
-            active = [s for s in self._progress_statuses.values() if not s.done]
+            active = [s for s in self._progress_scopes.values() if not s.done]
             active.sort(key=_depth)
             if self._progress_hook_active:
                 self.progress_hook(None)
@@ -2286,7 +2286,7 @@ class RunEngine:
                 self._progress_hook_active = False
 
     async def _update_progress(self, msg: Msg):
-        """Update a plan-driven progress status.
+        """Update a plan-driven progress scope.
 
         Expected message object is:
 
@@ -2295,15 +2295,15 @@ class RunEngine:
             Msg('update_progress', name='scan', done=True)
         """
         name = msg.kwargs["name"]
-        status = self._progress_statuses.get(name)
+        status = self._progress_scopes.get(name)
         if status is None:
             raise IllegalMessageSequence(
-                f"No progress status named {name!r} is open. Use 'declare_progress' first."
+                f"No progress scope named {name!r} is open. Use 'declare_progress' first."
             )
         done = msg.kwargs.get("done", False)
         if done:
             status.finish()
-            del self._progress_statuses[name]
+            del self._progress_scopes[name]
             self._rebuild_progress_hook()
         else:
             status._notify(
