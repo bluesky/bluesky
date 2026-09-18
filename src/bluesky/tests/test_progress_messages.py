@@ -47,7 +47,7 @@ def test_update_progress_invalid_name(RE):
     def plan():
         yield Msg("update_progress", name="nonexistent", fraction=0.5)
 
-    with pytest.raises(IllegalMessageSequence, match="No progress status named 'nonexistent'"):
+    with pytest.raises(IllegalMessageSequence, match="No progress scope named 'nonexistent'"):
         RE(plan())
 
 
@@ -138,7 +138,7 @@ def test_progress_auto_cleanup_on_run_end(RE):
 
 
 def test_reuse_name_after_done(RE):
-    """After finishing a progress status, the same name can be reused."""
+    """After closing a progress scope, the same name can be reused."""
 
     def plan():
         yield Msg("declare_progress", name="step")

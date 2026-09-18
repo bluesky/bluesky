@@ -2250,7 +2250,8 @@ class RunEngine:
             parent = self._progress_scopes.get(parent_name)
             if parent is None:
                 raise IllegalMessageSequence(
-                    f"Parent progress scope {parent_name!r} does not exist. It must be declared before its children."
+                    f"Parent progress scope {parent_name!r} does not exist. "
+                    f"It must be declared before its children."
                 )
         status = PlanProgress(name, parent=parent)
         self._progress_scopes[name] = status
