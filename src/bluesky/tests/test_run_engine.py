@@ -53,6 +53,7 @@ from bluesky.tests import requires_ophyd, uses_os_kill_sigint
 from bluesky.tests.utils import DocCollector, MsgCollector
 from bluesky.utils import SigintHandler
 
+from .conftest import _error_on_unclosed_tasks
 from .utils import _careful_event_set, _fabricate_asycio_event
 
 
@@ -2822,8 +2823,8 @@ def test_aborting_a_plan_parked_in_wait_for_cancels_what_it_waits_on(RE):
     RE.abort()
 
     assert cancelled.wait(5)
-    
-    
+
+
 def test_verbose_round_trips_and_actually_silences(RE):
     """``RE.verbose`` reports the logger, and setting it really silences.
 
@@ -2841,3 +2842,50 @@ def test_verbose_round_trips_and_actually_silences(RE):
         RE.verbose = True
     assert RE.verbose is True
     assert RE.log.isEnabledFor(logging.ERROR)
+
+
+def test_the_leak_check_objects_to_a_task_left_running():
+    """The `RE` fixture's own check, tested directly.
+
+    Its body runs only when something leaks, which is never in a green suite,
+    so nothing would otherwise exercise it until the day it matters.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+
+        async def forever():
+            await asyncio.Event().wait()
+
+        task = loop.create_task(forever())
+
+        with pytest.raises(RuntimeError, match="Tasks still running"):
+            _error_on_unclosed_tasks(loop, "a_test_that_leaked")
+
+        # Cancelled, not merely complained about: the point of the check is
+        # that the next test does not inherit the task.
+        assert task.cancelled()
+    finally:
+        loop.close()
+
+
+def test_the_leak_check_stays_quiet_about_a_loop_that_stopped_answering():
+    """A panicked RunEngine is the one case that is not a leak.
+
+    Its loop has stopped running callbacks, so work left on it could never
+    have been finished or cancelled by the code under test. Objecting would be
+    objecting to the premise of `test_sigint_many_hits_panic`.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+
+        async def forever():
+            await asyncio.Event().wait()
+
+        task = loop.create_task(forever())
+
+        _error_on_unclosed_tasks(loop, "a_panicked_test", loop_answered=False)
+
+        # Tidied up just the same; only the objection is withheld.
+        assert task.cancelled()
+    finally:
+        loop.close()
