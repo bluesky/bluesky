@@ -31,7 +31,7 @@ print('done')
 from bluesky.plans import mv
 from bluesky import RunEngine
 RE = RunEngine({})
-RE.waiting_hook = ProgressBarManager(delay_draw=0.2)
+RE.waiting_hook = ProgressBarManager()
 RE(mv(m1, 0, m2, 0))
  
 

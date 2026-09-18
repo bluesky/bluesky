@@ -70,6 +70,8 @@ def count(
     *,
     per_shot: PerShot | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
@@ -93,6 +95,8 @@ def count(
 
     md : dict, optional
         metadata
+    parent_progress_scope : str, optional
+        name of a parent progress scope to nest under
 
     Notes
     -----
@@ -124,7 +128,20 @@ def count(
     def inner_count() -> MsgGenerator[str]:
         if predeclare:
             yield from bps.declare_stream(*detectors, name="primary")
-        return (yield from bps.repeat(partial(msg_per_step, detectors), num=num, delay=delay))
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            if num is not None:
+                yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="event")
+
+        return (
+            yield from bps.repeat(
+                partial(msg_per_step, detectors),
+                num=num,
+                delay=delay,
+                progress_scope=progress_scope,
+                progress_units="event",
+            )
+        )
 
     return (yield from inner_count())
 
@@ -134,6 +151,8 @@ def list_scan(
     *args: Movable[Any] | Sequence[Any],
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one or more variables in steps simultaneously (inner product).
@@ -223,7 +242,16 @@ def list_scan(
 
     full_cycler = plan_patterns.inner_list_product(args)
 
-    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
+    return (
+        yield from scan_nd(
+            detectors,
+            full_cycler,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
+        )
+    )
 
 
 def rel_list_scan(
@@ -231,6 +259,8 @@ def rel_list_scan(
     *args: Movable | Any,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in steps relative to current position.
@@ -278,7 +308,16 @@ def rel_list_scan(
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_relative_list_scan():
-        return (yield from list_scan(detectors, *args, per_step=per_step, md=_md))
+        return (
+            yield from list_scan(
+                detectors,
+                *args,
+                per_step=per_step,
+                md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
+            )
+        )
 
     return (yield from inner_relative_list_scan())
 
@@ -289,6 +328,8 @@ def list_grid_scan(
     snake_axes: bool = False,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -357,7 +398,16 @@ def list_grid_scan(
     except (AttributeError, KeyError):
         ...
 
-    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
+    return (
+        yield from scan_nd(
+            detectors,
+            full_cycler,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
+        )
+    )
 
 
 def rel_list_grid_scan(
@@ -366,6 +416,8 @@ def rel_list_grid_scan(
     snake_axes: bool = False,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory. Each point is
@@ -417,7 +469,17 @@ def rel_list_grid_scan(
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_relative_list_grid_scan():
-        return (yield from list_grid_scan(detectors, *args, snake_axes=snake_axes, per_step=per_step, md=_md))
+        return (
+            yield from list_grid_scan(
+                detectors,
+                *args,
+                snake_axes=snake_axes,
+                per_step=per_step,
+                md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
+            )
+        )
 
     return (yield from inner_relative_list_grid_scan())
 
@@ -431,6 +493,8 @@ def _scan_1d(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps.
@@ -493,8 +557,15 @@ def _scan_1d(
     @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def inner_scan():
-        for step in steps:
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="step")
+        for i, step in enumerate(steps):
             yield from per_step(detectors, motor, step)
+            if progress_scope is not None:
+                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="step")
+        if progress_scope is not None:
+            yield from bps.update_progress(progress_scope, done=True)
 
     return (yield from inner_scan())
 
@@ -508,6 +579,8 @@ def _rel_scan_1d(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps relative to current positon.
@@ -541,7 +614,19 @@ def _rel_scan_1d(
     @bpp.reset_positions_decorator([motor])
     @bpp.relative_set_decorator([motor])
     def inner_relative_scan():
-        return (yield from _scan_1d(detectors, motor, start, stop, num, per_step=per_step, md=_md))
+        return (
+            yield from _scan_1d(
+                detectors,
+                motor,
+                start,
+                stop,
+                num,
+                per_step=per_step,
+                md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
+            )
+        )
 
     return (yield from inner_relative_scan())
 
@@ -555,6 +640,8 @@ def log_scan(
     *,
     per_step=None,
     md=None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
@@ -621,8 +708,15 @@ def log_scan(
     def inner_log_scan():
         if predeclare:
             yield from bps.declare_stream(motor, *detectors, name="primary")
-        for step in steps:
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="step")
+        for i, step in enumerate(steps):
             yield from per_step(detectors, motor, step)
+            if progress_scope is not None:
+                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="step")
+        if progress_scope is not None:
+            yield from bps.update_progress(progress_scope, done=True)
 
     return (yield from inner_log_scan())
 
@@ -636,6 +730,8 @@ def rel_log_scan(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps relative to current position.
@@ -669,7 +765,19 @@ def rel_log_scan(
     @bpp.reset_positions_decorator([motor])
     @bpp.relative_set_decorator([motor])
     def inner_relative_log_scan():
-        return (yield from log_scan(detectors, motor, start, stop, num, per_step=per_step, md=_md))
+        return (
+            yield from log_scan(
+                detectors,
+                motor,
+                start,
+                stop,
+                num,
+                per_step=per_step,
+                md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
+            )
+        )
 
     return (yield from inner_relative_log_scan())
 
@@ -687,6 +795,8 @@ def adaptive_scan(
     threshold: float | None = 0.8,
     *,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable with adaptively tuned step size.
@@ -764,6 +874,8 @@ def adaptive_scan(
         devices = tuple(utils.separate_devices([*detectors, motor]))
         if os.environ.get("BLUESKY_PREDECLARE", False):
             yield from bps.declare_stream(*devices, name="primary")
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
         while next_pos * direction_sign < stop * direction_sign:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)
@@ -781,6 +893,13 @@ def adaptive_scan(
                     cur_I = cur_det[target_field]["value"]
                     target_field_found = True
             yield Msg("save")
+            if progress_scope is not None:
+                yield from bps.update_progress(
+                    progress_scope,
+                    current=next_pos,
+                    initial=start,
+                    target=stop,
+                )
             if not target_field_found:
                 raise ValueError(
                     f"target_field {target_field!r} was not found in the readings of any of the "
@@ -809,6 +928,8 @@ def adaptive_scan(
                 past_I = cur_I
                 step = 0.2 * new_step + 0.8 * step
             next_pos += step * direction_sign
+        if progress_scope is not None:
+            yield from bps.update_progress(progress_scope, done=True)
 
     return (yield from adaptive_core())
 
@@ -826,6 +947,8 @@ def rel_adaptive_scan(
     threshold: float | None = 0.8,
     *,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Relative scan over one variable with adaptively tuned step size.
@@ -878,6 +1001,8 @@ def rel_adaptive_scan(
                 backstep,
                 threshold,
                 md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
             )
         )
 
@@ -896,6 +1021,8 @@ def tune_centroid(
     snake: bool = False,
     *,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
@@ -1000,6 +1127,18 @@ def tune_centroid(
         sum_xI = 0
         if os.environ.get("BLUESKY_PREDECLARE", False):
             yield from bps.declare_stream(motor, *detectors, name="primary")  # type: ignore
+
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, fraction=0.0, unit="step")
+
+        # tune_centroid converges by shrinking the step each pass until it
+        # reaches min_step, so progress is the fraction of that shrink (on a
+        # log scale) completed, interpolated by the points done in the pass.
+        initial_step = abs(step)
+        total_reduction = np.log(initial_step / min_step) if initial_step > min_step else 0.0
+        points_in_pass = 0
+
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)  # type: ignore      # Movable
@@ -1008,12 +1147,22 @@ def tune_centroid(
             sum_I += cur_I
             position = ret[motor_name]["value"]
             sum_xI += position * cur_I
+            points_in_pass += 1
+
+            if progress_scope is not None and total_reduction > 0:
+                completed = np.log(initial_step / abs(step))
+                frac = (completed + min(points_in_pass / num, 1.0) * np.log(step_factor)) / total_reduction
+                yield from bps.update_progress(
+                    progress_scope, fraction=float(np.clip(frac, 0.0, 1.0)), unit="step"
+                )
 
             next_pos += step
             in_range = min(start, stop) <= next_pos <= max(start, stop)
 
             if not in_range:
                 if sum_I == 0:
+                    if progress_scope is not None:
+                        yield from bps.update_progress(progress_scope, done=True)
                     return
                 peak_position = sum_xI / sum_I  # centroid
                 sum_I, sum_xI = 0, 0  # reset for next pass
@@ -1024,6 +1173,7 @@ def tune_centroid(
                     start, stop = stop, start
                 step = (stop - start) / (num - 1)
                 next_pos = start
+                points_in_pass = 0
                 # print("peak position = {}".format(peak_position))
                 # print("start = {}".format(start))
                 # print("stop = {}".format(stop))
@@ -1034,6 +1184,9 @@ def tune_centroid(
             # print("final position = {}".format(peak_position))
             yield from bps.mv(motor, peak_position)  # type: ignore      # Movable
 
+        if progress_scope is not None:
+            yield from bps.update_progress(progress_scope, done=True)
+
     return (yield from _tune_core(start, stop, num, signal))
 
 
@@ -1043,6 +1196,8 @@ def scan_nd(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over an arbitrary N-dimensional trajectory.
@@ -1105,7 +1260,7 @@ def scan_nd(
         # Ensure that the user-defined per-step has the expected signature.
         sig = inspect.signature(per_step)
 
-        def _verify_1d_step(sig):
+        def _verify_1d_step(sig: inspect.Signature):
             if len(sig.parameters) < 3:
                 return False
             for name, (p_name, p) in zip_longest(["detectors", "motor", "step"], sig.parameters.items()):
@@ -1122,7 +1277,7 @@ def scan_nd(
 
             return True
 
-        def _verify_nd_step(sig):
+        def _verify_nd_step(sig: inspect.Signature):
             if len(sig.parameters) < 3:
                 return False
             for name, (p_name, p) in zip_longest(["detectors", "step", "pos_cache"], sig.parameters.items()):
@@ -1176,8 +1331,18 @@ def scan_nd(
     def inner_scan_nd():
         if predeclare:
             yield from bps.declare_stream(*motors, *detectors, name="primary")
-        for step in list(cycler):
+        num_steps = len(cycler)
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num_steps, unit="step")
+        for i, step in enumerate(cycler):
             yield from per_step(detectors, step, pos_cache)
+            if progress_scope is not None:
+                yield from bps.update_progress(
+                    progress_scope, current=i + 1, initial=0, target=num_steps, unit="step"
+                )
+        if progress_scope is not None:
+            yield from bps.update_progress(progress_scope, done=True)
 
     return (yield from inner_scan_nd())
 
@@ -1188,12 +1353,22 @@ def inner_product_scan(
     *args: Movable | Any,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[None]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
     md.setdefault("plan_name", "inner_product_scan")
-    yield from scan(detectors, *args, num, per_step=None, md=md)
+    yield from scan(
+        detectors,
+        *args,
+        num,
+        per_step=None,
+        md=md,
+        progress_scope=progress_scope,
+        parent_progress_scope=parent_progress_scope,
+    )
 
 
 def scan(
@@ -1202,6 +1377,8 @@ def scan(
     num: int | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory.
@@ -1302,7 +1479,16 @@ def scan(
 
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
-    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
+    return (
+        yield from scan_nd(
+            detectors,
+            full_cycler,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
+        )
+    )
 
 
 def grid_scan(
@@ -1311,6 +1497,9 @@ def grid_scan(
     snake_axes: Iterable | bool | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
+    per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -1342,6 +1531,12 @@ def grid_scan(
         for details.
     md: dict, optional
         metadata
+    progress_scope: str, optional
+        the name to use for progress updates for this scan.
+    parent_progress_scope: str, optional
+        the name of the parent progress scope, if any.
+    per_dim_progress: bool, optional
+        whether to show progress for each dimension separately, in addition to overall progress.
 
     See Also
     --------
@@ -1479,7 +1674,86 @@ def grid_scan(
     except (AttributeError, KeyError):
         ...
 
-    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
+    if per_dim_progress and progress_scope is not None:
+        dim_counts = [num for motor, start, stop, num, snake in chunk_args]
+        dim_names = [motor.name for motor, start, stop, num, snake in chunk_args]
+        total_steps = len(full_cycler)
+
+        def _per_dim_wrapper(inner_per_step):
+            """Wrap per_step to update per-dimension progress bars."""
+            flat_index = 0
+
+            def wrapped(detectors, step, pos_cache):
+                nonlocal flat_index
+                yield from inner_per_step(detectors, step, pos_cache)
+                flat_index += 1
+                yield from bps.update_progress(
+                    progress_scope,
+                    current=flat_index,
+                    initial=0,
+                    target=total_steps,
+                    unit="step",
+                )
+                remaining = flat_index - 1  # zero-based index of the point just completed
+                for dim_i, (name, count) in enumerate(zip(dim_names, dim_counts)):
+                    suffix = int(np.prod(dim_counts[dim_i + 1 :])) if dim_i + 1 < len(dim_counts) else 1
+                    dim_pos = (remaining // suffix) % count
+                    # Only update if this dimension ticked over
+                    yield from bps.update_progress(
+                        f"{progress_scope}/{name}",
+                        current=dim_pos + 1
+                        if flat_index % suffix == 0 or dim_i == len(dim_counts) - 1
+                        else dim_pos,
+                        initial=0,
+                        target=count,
+                        unit="step",
+                    )
+
+            return wrapped
+
+        def _setup_dim_progress():
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(
+                progress_scope,
+                current=0,
+                initial=0,
+                target=total_steps,
+                unit="step",
+            )
+            for name, count in zip(dim_names, dim_counts):
+                yield from bps.declare_progress(name=f"{progress_scope}/{name}", parent=progress_scope)
+                yield from bps.update_progress(
+                    f"{progress_scope}/{name}",
+                    current=0,
+                    initial=0,
+                    target=count,
+                    unit="step",
+                )
+
+        def _teardown_dim_progress():
+            for name in reversed(dim_names):
+                yield from bps.update_progress(f"{progress_scope}/{name}", done=True)
+            yield from bps.update_progress(progress_scope, done=True)
+
+        wrapped_per_step = _per_dim_wrapper(per_step or bps.one_nd_step)
+
+        def _grid_with_dim_progress():
+            yield from _setup_dim_progress()
+            yield from scan_nd(detectors, full_cycler, per_step=wrapped_per_step, md=_md)
+            yield from _teardown_dim_progress()
+
+        return (yield from _grid_with_dim_progress())
+
+    return (
+        yield from scan_nd(
+            detectors,
+            full_cycler,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
+        )
+    )
 
 
 def rel_grid_scan(
@@ -1488,6 +1762,9 @@ def rel_grid_scan(
     snake_axes: Iterable | bool | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
+    per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh relative to current position.
@@ -1536,7 +1813,18 @@ def rel_grid_scan(
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_rel_grid_scan():
-        return (yield from grid_scan(detectors, *args, snake_axes=snake_axes, per_step=per_step, md=_md))
+        return (
+            yield from grid_scan(
+                detectors,
+                *args,
+                snake_axes=snake_axes,
+                per_step=per_step,
+                md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
+                per_dim_progress=per_dim_progress,
+            )
+        )
 
     return (yield from inner_rel_grid_scan())
 
@@ -1547,12 +1835,22 @@ def relative_inner_product_scan(  # type: ignore
     *args: Movable | Any,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
     md.setdefault("plan_name", "relative_inner_product_scan")
-    yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
+    yield from rel_scan(
+        detectors,
+        *args,
+        num,
+        per_step=per_step,
+        md=md,
+        progress_scope=progress_scope,
+        parent_progress_scope=parent_progress_scope,
+    )
 
 
 def rel_scan(
@@ -1561,6 +1859,8 @@ def rel_scan(
     num=None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory relative to current position.
@@ -1605,7 +1905,17 @@ def rel_scan(
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_rel_scan():
-        return (yield from scan(detectors, *args, num=num, per_step=per_step, md=_md))
+        return (
+            yield from scan(
+                detectors,
+                *args,
+                num=num,
+                per_step=per_step,
+                md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
+            )
+        )
 
     return (yield from inner_rel_scan())
 
@@ -1711,6 +2021,8 @@ def spiral_fermat(
     tilt: float | None = 0.0,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """Absolute fermat spiral scan, centered around (x_start, y_start)
 
@@ -1799,7 +2111,16 @@ def spiral_fermat(
         _md["hints"].update({"dimensions": dimensions})  # type: ignore
     _md.update(md or {})
 
-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
+    return (
+        yield from scan_nd(
+            detectors,
+            cyc,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
+        )
+    )
 
 
 def rel_spiral_fermat(
@@ -1815,6 +2136,8 @@ def rel_spiral_fermat(
     tilt: float | None = 0.0,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """Relative fermat spiral scan
 
@@ -1873,6 +2196,8 @@ def rel_spiral_fermat(
                 tilt=tilt,
                 per_step=per_step,
                 md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
             )
         )
 
@@ -1894,6 +2219,8 @@ def spiral(
     tilt: float | None = 0.0,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """Spiral scan, centered around (x_start, y_start)
 
@@ -1980,7 +2307,16 @@ def spiral(
         _md["hints"].update({"dimensions": dimensions})  # type: ignore
     _md.update(md or {})  # type: ignore
 
-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
+    return (
+        yield from scan_nd(
+            detectors,
+            cyc,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
+        )
+    )
 
 
 def rel_spiral(
@@ -1996,6 +2332,8 @@ def rel_spiral(
     tilt: float = 0.0,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """Relative spiral scan
 
@@ -2051,6 +2389,8 @@ def rel_spiral(
                 tilt=tilt,
                 per_step=per_step,
                 md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
             )
         )
 
@@ -2070,6 +2410,8 @@ def spiral_square(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """Absolute square spiral scan, centered around (x_center, y_center)
 
@@ -2152,7 +2494,16 @@ def spiral_square(
     except (AttributeError, KeyError):
         ...
 
-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
+    return (
+        yield from scan_nd(
+            detectors,
+            cyc,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
+        )
+    )
 
 
 def rel_spiral_square(
@@ -2166,6 +2517,8 @@ def rel_spiral_square(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """Relative square spiral scan, centered around current (x, y) position.
 
@@ -2219,6 +2572,8 @@ def rel_spiral_square(
                 y_num,
                 per_step=per_step,
                 md=_md,
+                progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
             )
         )
 
@@ -2388,6 +2743,8 @@ def x2x_scan(
     *,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
 ) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio
@@ -2435,7 +2792,18 @@ def x2x_scan(
     _md.update(md or {})
     return (
         yield from relative_inner_product_scan(
-            detectors, num, motor1, start, stop, motor2, start / 2, stop / 2, per_step=per_step, md=_md
+            detectors,
+            num,
+            motor1,
+            start,
+            stop,
+            motor2,
+            start / 2,
+            stop / 2,
+            per_step=per_step,
+            md=_md,
+            progress_scope=progress_scope,
+            parent_progress_scope=parent_progress_scope,
         )
     )
 
