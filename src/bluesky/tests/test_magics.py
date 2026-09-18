@@ -206,16 +206,9 @@ def test_interrupted(deterministic_sigint):
 
     sm.RE.msg_hook = hook
 
-    def send_interrupts(sigint):
-        running.wait(timeout=5)
-        sigint.send()
-        sigint.send()
-
     with deterministic_sigint() as sigint:
-        t = threading.Thread(target=send_interrupts, args=(sigint,), daemon=True)
-        t.start()
+        sigint.send_after(running, 2)
         sm.mov("motor 1")
-        t.join(timeout=5)
 
     assert sm.RE.state == "idle"
 

@@ -217,14 +217,26 @@ class DeterministicSigint:
     The fake clock advances by 0.2s per ``send()`` call, and each call blocks
     until the signal handler has finished, so ``_count`` increments reliably
     regardless of real wall-clock jitter.
+
+    SIGINT belongs to this object for the whole ``with`` block.  While the
+    RunEngine holds it, signals go to the RunEngine's handler and are counted
+    in ``delivered``; once the RunEngine gives it back, they are counted in
+    ``absorbed`` and discarded, the way an interactive prompt would swallow a
+    Ctrl+C typed after a plan has already stopped.  Sender threads are started
+    through ``send_after`` and joined before the real disposition is restored,
+    so no signal can outlive the block and reach pytest.
     """
 
     def __init__(self):
         self._fake_time = 0.0
         self._handler_done = threading.Event()
-        self._pid = os.getpid()
+        self._senders: list[threading.Thread] = []
+        self.delivered = 0
+        self.absorbed = 0
         self._orig_enter = SigintHandler.__enter__
-        self._patcher = patch.object(SigintHandler, "__enter__", self._patched_enter)
+        self._orig_exit = SigintHandler.__exit__
+        self._enter_patcher = patch.object(SigintHandler, "__enter__", self._patched_enter)
+        self._exit_patcher = patch.object(SigintHandler, "__exit__", self._patched_exit)
 
     def _monotonic(self):
         return self._fake_time
@@ -239,24 +251,97 @@ class DeterministicSigint:
                 with patch("bluesky.utils.time.monotonic", self._monotonic):
                     installed(signum, frame)
             finally:
+                self.delivered += 1
                 self._handler_done.set()
 
         signal.signal(signal.SIGINT, synced_handler)
         return result
 
+    def _patched_exit(self, sigint_handler, exc_type, exc, tb):
+        result = self._orig_exit(sigint_handler, exc_type, exc, tb)
+        signal.signal(signal.SIGINT, self._absorb)
+        return result
+
+    def _absorb(self, signum, frame):
+        """Record a signal that arrived after the RunEngine released SIGINT.
+
+        Only ever installed by ``_patched_exit``: installing it earlier would
+        make it the disposition ``SigintHandler`` captures as
+        ``_original_handler``, and the escape hatch would have nothing to
+        raise ``KeyboardInterrupt`` into.
+        """
+        self.absorbed += 1
+        self._handler_done.set()
+
     def send(self):
-        """Send one SIGINT and wait for the handler to finish."""
+        """Send one SIGINT to the main thread and wait for the handler to finish."""
         self._handler_done.clear()
         self._fake_time += 0.2
-        os.kill(self._pid, signal.SIGINT)
-        self._handler_done.wait()
+        # Sent to the main thread rather than to the process: if a
+        # process-directed signal arrives just as the main thread is entering
+        # the untimed wait in DuringTask.block, the C-level handler sets the
+        # flag but nothing interrupts the wait, and the Python-level handler
+        # does not run until the plan ends for some other reason.
+        signal.pthread_kill(threading.main_thread().ident, signal.SIGINT)
+        if not self._handler_done.wait(timeout=10):
+            raise RuntimeError("SIGINT was never handled")
+
+    def send_after(self, event, count, timeout=5):
+        """Send ``count`` SIGINTs from a background thread once ``event`` is set."""
+
+        def sim_kill():
+            event.wait(timeout=timeout)
+            for _ in range(count):
+                self.send()
+
+        thread = threading.Thread(target=sim_kill, daemon=True)
+        self._senders.append(thread)
+        thread.start()
+        return thread
 
     def __enter__(self):
-        self._patcher.start()
+        self._true_original = signal.getsignal(signal.SIGINT)
+        self._enter_patcher.start()
+        self._exit_patcher.start()
         return self
 
     def __exit__(self, *exc):
-        self._patcher.stop()
+        try:
+            for thread in self._senders:
+                thread.join(timeout=30)
+        finally:
+            self._exit_patcher.stop()
+            self._enter_patcher.stop()
+            signal.signal(signal.SIGINT, self._true_original)
+
+
+@pytest.fixture
+def blocking_motor():
+    """A Movable whose sets stay in flight until ``status`` is finished.
+
+    Every set returns the same ``Status``, so finishing it once releases the
+    set the plan is waiting on and lets any later cleanup set complete.  The
+    timer finishes it regardless, so that a test whose signals go astray fails
+    rather than blocking forever.
+    """
+    from ophyd import StatusBase
+
+    class BlockingMovable:
+        def __init__(self):
+            self.set_values = []
+            self.set_called = threading.Event()
+            self.status = StatusBase()
+
+        def set(self, value):
+            self.set_values.append(value)
+            self.set_called.set()
+            return self.status
+
+    motor = BlockingMovable()
+    unblock = threading.Timer(10, motor.status.set_finished)
+    unblock.start()
+    yield motor
+    unblock.cancel()
 
 
 @pytest.fixture

@@ -728,44 +728,28 @@ def test_exit_raise(RE, unpause_func, excp):
 
 
 @uses_os_kill_sigint
-def test_sigint_three_hits(RE, hw, deterministic_sigint):
-    motor = hw.motor
-    motor.delay = 0.5
-
-    event = threading.Event()
-
-    def msg_hook(msg):
-        if msg.command == "set":
-            event.set()
-
-    RE.msg_hook = msg_hook
-
-    lp = RE.loop
-    motor.loop = lp
-
+@requires_ophyd
+def test_sigint_three_hits(RE, deterministic_sigint, blocking_motor):
     def self_sig_int_plan():
-        yield from abs_set(motor, 1, wait=True)
+        yield from abs_set(blocking_motor, 1, wait=True)
 
     with deterministic_sigint() as sigint:
-
-        def sim_kill():
-            event.wait(timeout=5)
-            for _ in range(3):
-                sigint.send()
-
-        threading.Thread(target=sim_kill, daemon=True).start()
-        start_time = ttime.time()
+        # the set never finishes on its own, so all three hits land while the
+        # plan is in flight however the threads are scheduled
+        sigint.send_after(blocking_motor.set_called, 3)
         with pytest.raises(RunEngineInterrupted):
-            RE(finalize_wrapper(self_sig_int_plan(), abs_set(motor, 0, wait=True)))
-        end_time = ttime.time()
+            RE(finalize_wrapper(self_sig_int_plan(), abs_set(blocking_motor, 0, wait=True)))
 
-    # not enough time for motor to cleanup, but long enough to start
-    assert end_time - start_time < 0.4
+    # three Ctrl+C leave the RunEngine paused rather than killing it, with the
+    # cleanup set not yet run
+    assert RE.state == "paused"
+    assert blocking_motor.set_values == [1]
+
+    blocking_motor.status.set_finished()
     RE.abort()  # now cleanup
 
-    done_cleanup_time = ttime.time()
-    # this should be 0.5 (the motor.delay) above, leave sloppy for CI
-    assert 0.4 < done_cleanup_time - end_time < 0.6
+    assert RE.state == "idle"
+    assert blocking_motor.set_values == [1, 0]
 
 
 @uses_os_kill_sigint
@@ -780,13 +764,7 @@ def test_sigint_many_hits_pln(RE, deterministic_sigint):
         yield Msg("null")
 
     with deterministic_sigint() as sigint:
-
-        def sim_kill():
-            plan_started.wait(timeout=5)
-            for _ in range(11):
-                sigint.send()
-
-        threading.Thread(target=sim_kill, daemon=True).start()
+        sigint.send_after(plan_started, 11)
         start_time = ttime.time()
         with pytest.raises(RunEngineInterrupted):
             RE(hanging_plan())
@@ -825,13 +803,7 @@ def test_sigint_many_hits_panic(RE, deterministic_sigint):
         yield Msg("null")
 
     with deterministic_sigint() as sigint:
-
-        def sim_kill():
-            event.wait(timeout=5)
-            for _ in range(11):
-                sigint.send()
-
-        threading.Thread(target=sim_kill, daemon=True).start()
+        sigint.send_after(event, 11)
         with pytest.raises(RunEngineInterrupted):
             RE(hanging_plan())
 
@@ -874,13 +846,7 @@ def test_sigint_many_hits_cb(RE, deterministic_sigint):
             ttime.sleep(0.1)
 
     with deterministic_sigint() as sigint:
-
-        def sim_kill():
-            cb_started.wait(timeout=5)
-            for _ in range(11):
-                sigint.send()
-
-        threading.Thread(target=sim_kill, daemon=True).start()
+        sigint.send_after(cb_started, 11)
         start_time = ttime.time()
         with pytest.raises(RunEngineInterrupted):
             RE(infinite_plan(), {"start": hanging_callback})
