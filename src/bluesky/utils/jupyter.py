@@ -57,7 +57,7 @@ class NotebookProgressBar(ProgressBarBase):
         current: Any = None,
         initial: Any = None,
         target: Any = None,
-        unit: str = "units",
+        unit: str = "unit",
         precision: Any = None,
         fraction: Any = None,
         time_elapsed: float | None = None,

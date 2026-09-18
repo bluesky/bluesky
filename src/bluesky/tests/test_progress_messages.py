@@ -1,8 +1,11 @@
+import time
+
 import pytest
 
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
 from bluesky import Msg
 from bluesky.utils import IllegalMessageSequence, PlanProgress
-
 
 def test_declare_progress_returns_status(RE):
     statuses = []
@@ -35,8 +38,8 @@ def test_update_progress_notifies_watchers(RE):
     assert updates[0]["target"] == 10
     assert updates[0]["unit"] == "mm"
     assert updates[1]["fraction"] == 0.8
-    # finish() sends a final notification with fraction=1.0
-    assert updates[2]["fraction"] == 1.0
+    # finish() replays the last state at 100% (current == target)
+    assert updates[2]["current"] == updates[2]["target"] == 1
 
 
 def test_update_progress_invalid_name(RE):
@@ -143,3 +146,112 @@ def test_reuse_name_after_done(RE):
         yield Msg("update_progress", name="step", done=True)
 
     RE(plan())  # should not raise
+
+
+def test_plan_stub_progress_wrappers(RE):
+    """The declare_progress/update_progress plan stubs emit the right messages."""
+    updates = []
+
+    def plan():
+        status = yield from bps.declare_progress("scope")
+        status.watch(lambda **kw: updates.append(kw))
+        yield from bps.update_progress("scope", current=1, initial=0, target=2, unit="mm")
+        yield from bps.update_progress("scope", done=True)
+
+    RE(plan())
+    assert len(updates) == 2
+    assert updates[0]["current"] == 1
+    assert updates[0]["target"] == 2
+    assert updates[0]["unit"] == "mm"
+    # finish() replays the last state at 100% (current == target)
+    assert updates[1]["current"] == updates[1]["target"] == 2
+    assert updates[1]["unit"] == "mm"
+
+
+def test_scan_emits_progress_messages(RE, hw):
+    """bp.scan threads progress_scope through scan_nd."""
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+    RE(bp.scan([hw.det], hw.motor, -1, 1, 5, progress_scope="scan"))
+
+    declares = [m for m in msgs if m.command == "declare_progress"]
+    updates = [m for m in msgs if m.command == "update_progress"]
+    assert len(declares) == 1
+    assert declares[0].kwargs["name"] == "scan"
+    assert declares[0].kwargs["parent"] is None
+
+    steps = [m for m in updates if not m.kwargs.get("done")]
+    assert len(steps) == 6  # initial 0% + 5 points
+    assert steps[0].kwargs["current"] == 0
+    assert steps[-1].kwargs["current"] == 5
+    assert steps[-1].kwargs["target"] == 5
+    assert updates[-1].kwargs["done"] is True
+
+
+def test_grid_scan_emits_progress_messages(RE, hw):
+    """bp.grid_scan threads progress_scope through scan_nd with a 2D cycler."""
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+    RE(
+        bp.grid_scan(
+            [hw.det],
+            hw.motor1, -1, 1, 2,
+            hw.motor2, -1, 1, 3,
+            progress_scope="grid",
+        )
+    )
+
+    declares = [m for m in msgs if m.command == "declare_progress"]
+    updates = [m for m in msgs if m.command == "update_progress"]
+    assert len(declares) == 1
+    assert declares[0].kwargs["name"] == "grid"
+
+    steps = [m for m in updates if not m.kwargs.get("done")]
+    assert len(steps) == 7  # initial 0% + (2 x 3 grid)
+    assert steps[0].kwargs["current"] == 0
+    assert steps[-1].kwargs["target"] == 6
+    assert updates[-1].kwargs["done"] is True
+
+
+def test_count_emits_progress_messages(RE, hw):
+    """bp.count threads progress_scope through repeat."""
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+    RE(bp.count([hw.det], num=3, progress_scope="count"))
+
+    declares = [m for m in msgs if m.command == "declare_progress"]
+    updates = [m for m in msgs if m.command == "update_progress"]
+    assert len(declares) == 1
+    assert declares[0].kwargs["name"] == "count"
+
+    assert len(updates) == 4  # initial 0% + 3 points
+    assert updates[0].kwargs["current"] == 0
+    assert updates[-1].kwargs["current"] == 3
+    assert updates[-1].kwargs["target"] == 3
+    assert updates[-1].kwargs["done"] is True
+
+
+def test_progress_elapsed_measured_on_status():
+    """time_elapsed is measured on the status so rate/ETA survive bar rebuilds."""
+    status = PlanProgress("scan")
+    time.sleep(0.05)
+    states = []
+    status.watch(lambda **kw: states.append(kw))
+    status._notify(current=1, initial=0, target=10, unit="step")
+
+    # Elapsed reflects the status age, not a per-notification reset to ~0.
+    assert states[-1]["time_elapsed"] is not None
+    assert states[-1]["time_elapsed"] >= 0.05
+
+
+def test_finish_preserves_scale_and_unit():
+    """finish() completes the bar at the last-known scale/unit, not a bare fraction."""
+    status = PlanProgress("scan")
+    states = []
+    status.watch(lambda **kw: states.append(kw))
+    status._notify(current=3, initial=0, target=10, unit="step")
+    status.finish()
+
+    assert status.done is True
+    assert states[-1]["current"] == states[-1]["target"] == 10
+    assert states[-1]["unit"] == "step"

@@ -131,8 +131,10 @@ def count(
             yield from bps.declare_stream(*detectors, name="primary")
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            if num is not None:
+                yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="event")
 
-        return (yield from bps.repeat(partial(msg_per_step, detectors), num=num, delay=delay, progress_scope=progress_scope, progress_units="events"))
+        return (yield from bps.repeat(partial(msg_per_step, detectors), num=num, delay=delay, progress_scope=progress_scope, progress_units="event"))
 
     return (yield from inner_count())
 
@@ -513,10 +515,11 @@ def _scan_1d(
     def inner_scan():
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="step")
         for i, step in enumerate(steps):
             yield from per_step(detectors, motor, step)
             if progress_scope is not None:
-                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="steps")
+                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="step")
         if progress_scope is not None:
             yield from bps.update_progress(progress_scope, done=True)
 
@@ -651,10 +654,11 @@ def log_scan(
             yield from bps.declare_stream(motor, *detectors, name="primary")
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="step")
         for i, step in enumerate(steps):
             yield from per_step(detectors, motor, step)
             if progress_scope is not None:
-                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="steps")
+                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="step")
         if progress_scope is not None:
             yield from bps.update_progress(progress_scope, done=True)
 
@@ -1228,14 +1232,15 @@ def scan_nd(
     def inner_scan_nd():
         if predeclare:
             yield from bps.declare_stream(*motors, *detectors, name="primary")
-        if progress_scope is not None:
-            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
         steps = list(cycler)
         num_steps = len(steps)
+        if progress_scope is not None:
+            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num_steps, unit="step")
         for i, step in enumerate(steps):
             yield from per_step(detectors, step, pos_cache)
             if progress_scope is not None:
-                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num_steps, unit="steps")
+                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num_steps, unit="step")
         if progress_scope is not None:
             yield from bps.update_progress(progress_scope, done=True)
 
@@ -1377,7 +1382,7 @@ def grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    per_dimension_progress: bool = False,
+    per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -1409,6 +1414,12 @@ def grid_scan(
         for details.
     md: dict, optional
         metadata
+    progress_scope: str, optional
+        the name to use for progress updates for this scan.
+    parent_progress_scope: str, optional
+        the name of the parent progress scope, if any.
+    per_dim_progress: bool, optional
+        whether to show progress for each dimension separately, in addition to overall progress.
 
     See Also
     --------
@@ -1546,7 +1557,7 @@ def grid_scan(
     except (AttributeError, KeyError):
         ...
 
-    if per_dimension_progress and progress_scope is not None:
+    if per_dim_progress and progress_scope is not None:
         dim_counts = [num for motor, start, stop, num, snake in chunk_args]
         dim_names = [motor.name for motor, start, stop, num, snake in chunk_args]
         total_steps = len(full_cycler)
@@ -1560,7 +1571,7 @@ def grid_scan(
                 yield from inner_per_step(detectors, step, pos_cache)
                 flat_index += 1
                 yield from bps.update_progress(
-                    progress_scope, current=flat_index, initial=0, target=total_steps, unit="steps",
+                    progress_scope, current=flat_index, initial=0, target=total_steps, unit="step",
                 )
                 remaining = flat_index
                 for dim_i, (name, count) in enumerate(zip(dim_names, dim_counts)):
@@ -1570,7 +1581,7 @@ def grid_scan(
                     yield from bps.update_progress(
                         f"{progress_scope}/{name}",
                         current=dim_pos + 1 if flat_index % suffix == 0 or dim_i == len(dim_counts) - 1 else dim_pos,
-                        initial=0, target=count, unit="steps",
+                        initial=0, target=count, unit="step",
                     )
 
             return wrapped
@@ -1578,12 +1589,12 @@ def grid_scan(
         def _setup_dim_progress():
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
             yield from bps.update_progress(
-                progress_scope, current=0, initial=0, target=total_steps, unit="steps",
+                progress_scope, current=0, initial=0, target=total_steps, unit="step",
             )
             for name, count in zip(dim_names, dim_counts):
                 yield from bps.declare_progress(name=f"{progress_scope}/{name}", parent=progress_scope)
                 yield from bps.update_progress(
-                    f"{progress_scope}/{name}", current=0, initial=0, target=count, unit="steps",
+                    f"{progress_scope}/{name}", current=0, initial=0, target=count, unit="step",
                 )
 
         def _teardown_dim_progress():

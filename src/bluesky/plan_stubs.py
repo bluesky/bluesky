@@ -1564,7 +1564,7 @@ def update_progress(
     current: Any = None,
     initial: Any = None,
     target: Any = None,
-    unit: str = "units",
+    unit: str = "unit",
     precision: int | None = None,
     fraction: float | None = None,
     time_elapsed: float | None = None,
@@ -1580,7 +1580,7 @@ def update_progress(
     current, initial, target :
         Position values for computing progress.
     unit : str
-        Unit label, default ``'units'``.
+        Unit label, default ``'unit'``.
     precision :
         Decimal precision for progress display.
     fraction : float, optional
@@ -1879,8 +1879,8 @@ def repeat(
     plan: Callable[[], MsgGenerator],
     num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
-    progress_scope_name: str | None = None,
-    progress_units: str = "repeats"
+    progress_scope: str | None = None,
+    progress_units: str = "repeat"
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
@@ -1900,7 +1900,7 @@ def repeat(
         If None, capture data until canceled
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
-    progress_scope_name : str, optional
+    progress_scope : str, optional
         Name of an already-declared progress status to update after each
         repetition. If None, no progress updates are emitted.
 
@@ -1943,9 +1943,9 @@ def repeat(
             now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg("checkpoint")
             yield from ensure_generator(plan())
-            if progress_scope_name is not None and num is not None:
+            if progress_scope is not None and num is not None:
                 yield from update_progress(
-                    name=progress_scope_name,
+                    name=progress_scope,
                     current=i + 1,
                     target=num,
                     initial=0,

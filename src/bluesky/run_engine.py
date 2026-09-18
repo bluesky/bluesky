@@ -2312,7 +2312,7 @@ class RunEngine:
                 current=msg.kwargs.get("current"),
                 initial=msg.kwargs.get("initial"),
                 target=msg.kwargs.get("target"),
-                unit=msg.kwargs.get("unit", "units"),
+                unit=msg.kwargs.get("unit", "unit"),
                 precision=msg.kwargs.get("precision"),
                 fraction=msg.kwargs.get("fraction"),
                 time_elapsed=msg.kwargs.get("time_elapsed"),

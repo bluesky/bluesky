@@ -1,9 +1,14 @@
+import io
 import time
 
 from bluesky.plan_stubs import mv
 from bluesky.tests import requires_ophyd
-from bluesky.utils import ProgressBar, ProgressBarManager
-
+from bluesky.utils import (
+    ProgressBar,
+    ProgressBarManager,
+    TerminalProgressBar,
+    _BottomAnchorProxy,
+)
 
 @requires_ophyd
 def test_status_without_watch():
@@ -98,3 +103,89 @@ def test_draw_before_update():
     # Test that the default meter placeholder is valid to draw.
     pbar = ProgressBar([Status()])
     pbar.draw()
+
+
+class _FakeStatus:
+    def __init__(self):
+        self.done = False
+
+    def watch(self, func): ...
+
+
+def test_progress_bar_manager_merges_streams():
+    """A single manager registered on two hooks merges both streams."""
+    built = []
+
+    def factory(statuses):
+        built.append(list(statuses))
+
+        class FakeBar:
+            def clear(self): ...
+
+        return FakeBar()
+
+    manager = ProgressBarManager(pbar_factory=factory)
+    a, b = _FakeStatus(), _FakeStatus()
+
+    manager([a])  # e.g. waiting_hook stream
+    manager([b])  # e.g. progress_hook stream
+    assert manager._statuses == [a, b]
+
+    # Re-sending a known status does not duplicate it or rebuild.
+    rebuilds = len(built)
+    manager([a])
+    assert manager._statuses == [a, b]
+    assert len(built) == rebuilds
+
+    # Finished statuses are pruned from the merged display.
+    a.done = True
+    manager([a])
+    assert manager._statuses == [b]
+
+    # None from a stream keeps the remaining live statuses.
+    manager(None)
+    assert manager._statuses == [b]
+
+    # When every status is done the bar is torn down.
+    b.done = True
+    manager(None)
+    assert manager._statuses == []
+    assert manager.pbar is None
+
+
+def test_bottom_anchor_proxy_reflows_bars(monkeypatch):
+    """The proxy erases the bars, prints external text, then redraws them."""
+    real = io.StringIO()
+    manager = ProgressBarManager()
+    pbar = TerminalProgressBar([_FakeStatus()], delay_draw=0)
+    pbar.fp = real
+    pbar.drawn = True
+    pbar.done = False
+    manager.pbar = pbar
+
+    calls = []
+    monkeypatch.setattr(pbar, "_erase", lambda: calls.append("erase"))
+    monkeypatch.setattr(pbar, "draw", lambda: calls.append("draw"))
+
+    proxy = _BottomAnchorProxy(real, manager)
+
+    # A partial line is buffered; no reflow happens until the line completes.
+    assert proxy.write("partial") == len("partial")
+    assert calls == []
+    assert "partial" not in real.getvalue()
+
+    # Completing the line triggers erase -> write text -> draw.
+    proxy.write(" line\n")
+    assert calls == ["erase", "draw"]
+    assert "partial line\n" in real.getvalue()
+
+
+def test_bottom_anchor_proxy_passthrough_when_no_bar():
+    """With no drawn terminal bar the proxy writes straight through."""
+    real = io.StringIO()
+    manager = ProgressBarManager()
+    manager.pbar = None
+
+    proxy = _BottomAnchorProxy(real, manager)
+    assert proxy.write("hello") == len("hello")
+    assert real.getvalue() == "hello"

@@ -1415,6 +1415,9 @@ class PlanProgress(Watchable):
         self._done = False
         self._watchers: list[Callable] = []
         self._last_state: dict | None = None
+        # Measured on the status, not the transient TerminalProgressBar, so the
+        # rate/ETA survive progress-bar rebuilds instead of resetting to ~0.
+        self._start_time = time.time()
 
     @property
     def done(self) -> bool:
@@ -1432,7 +1435,7 @@ class PlanProgress(Watchable):
         current: Any = None,
         initial: Any = None,
         target: Any = None,
-        unit: str = "units",
+        unit: str = "unit",
         precision: Any = None,
         fraction: Any = None,
         time_elapsed: float | None = None,
@@ -1444,6 +1447,8 @@ class PlanProgress(Watchable):
             current = fraction
             initial = 0
             target = 1
+        if time_elapsed is None:
+            time_elapsed = time.time() - self._start_time
         self._last_state = dict(
             name=self.name,
             current=current,
@@ -1460,7 +1465,19 @@ class PlanProgress(Watchable):
 
     def finish(self) -> None:
         self._done = True
-        self._notify(fraction=1.0)
+        # Preserve the last-known scale/unit so the completed bar reports the
+        # real rate (e.g. steps/s) instead of collapsing to a 1.0/1.0 fraction.
+        ls = self._last_state
+        if ls is not None and ls.get("target") is not None:
+            self._notify(
+                current=ls["target"],
+                initial=ls["initial"],
+                target=ls["target"],
+                unit=ls["unit"],
+                precision=ls["precision"],
+            )
+        else:
+            self._notify(fraction=1.0)
 
 
 class ProgressBarBase(abc.ABC):  # noqa: B024
@@ -1543,7 +1560,7 @@ class TerminalProgressBar(ProgressBarBase):
         current=None,
         initial=None,
         target=None,
-        unit="units",
+        unit="unit",
         precision=None,
         fraction=None,
         time_elapsed=None,
