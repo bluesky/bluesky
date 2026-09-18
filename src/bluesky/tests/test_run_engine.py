@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import signal
 import sys
@@ -2821,3 +2822,22 @@ def test_aborting_a_plan_parked_in_wait_for_cancels_what_it_waits_on(RE):
     RE.abort()
 
     assert cancelled.wait(5)
+    
+    
+def test_verbose_round_trips_and_actually_silences(RE):
+    """``RE.verbose`` reports the logger, and setting it really silences.
+
+    Both halves go to the logger the adapter wraps: a `logging.LoggerAdapter`
+    has no ``disabled`` of its own, and nothing consults one if given it.
+    """
+    assert RE.verbose is True
+    assert RE.log.isEnabledFor(logging.ERROR)
+    try:
+        RE.verbose = False
+        assert RE.verbose is False
+        # And it is really quiet.
+        assert not RE.log.isEnabledFor(logging.ERROR)
+    finally:
+        RE.verbose = True
+    assert RE.verbose is True
+    assert RE.log.isEnabledFor(logging.ERROR)
