@@ -1331,12 +1331,11 @@ def scan_nd(
     def inner_scan_nd():
         if predeclare:
             yield from bps.declare_stream(*motors, *detectors, name="primary")
-        steps = list(cycler)
-        num_steps = len(steps)
+        num_steps = len(cycler)
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
             yield from bps.update_progress(progress_scope, current=0, initial=0, target=num_steps, unit="step")
-        for i, step in enumerate(steps):
+        for i, step in enumerate(cycler):
             yield from per_step(detectors, step, pos_cache)
             if progress_scope is not None:
                 yield from bps.update_progress(
