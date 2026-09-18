@@ -22,6 +22,7 @@ from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
     Any,
+    TextIO,
     TypeAlias,
     TypedDict,
     TypeVar,
@@ -45,11 +46,13 @@ from bluesky.protocols import (
     Hints,
     Movable,
     Readable,
+    Status,
     StreamAsset,
     SyncOrAsync,
     SyncOrAsyncIterator,
     T,
     Watchable,
+    WatchableStatus,
     WritesExternalAssets,
     WritesStreamAssets,
     check_supports,
@@ -1502,6 +1505,9 @@ class TerminalProgressBar(ProgressBarBase):
         self.delay_draw = delay_draw
         self.drawn = False
         self.done = False
+        # Bypasses the delay_draw suppression for a display that is a
+        # continuation of one already on screen (see below).
+        self._force_draw = False
         self.lock = threading.RLock()
 
         # If the ProgressBar is not finished before the delay_draw time but
@@ -1519,6 +1525,15 @@ class TerminalProgressBar(ProgressBarBase):
                     self.meters.append("")
                     self.status_objs.append(st)
                     st.watch(partial(self.update, pos))
+
+        # A status that replayed previously-shown state on watch() populated its
+        # meter during construction, meaning this display continues one already
+        # on screen (e.g. a parent bar persisting as child bars come and go).
+        # Draw it right away so it does not blank out during delay_draw.
+        with self.lock:
+            if any(self.meters):
+                self._force_draw = True
+                self.draw()
 
     def update(
         self,
@@ -1577,7 +1592,7 @@ class TerminalProgressBar(ProgressBarBase):
         Clear the display
         """
         with self.lock:
-            if (time.time() - self.creation_time) < self.delay_draw:
+            if not self._force_draw and (time.time() - self.creation_time) < self.delay_draw:
                 return
             if self.done:
                 return
@@ -1594,16 +1609,23 @@ class TerminalProgressBar(ProgressBarBase):
             if (not self.done) and (not self.drawn):
                 self.draw()
 
+    def _erase(self):
+        # Blank the drawn meter lines and return the cursor to the top of the
+        # block, without marking the bar done so it can be redrawn afterwards.
+        with self.lock:
+            if not self.drawn:
+                return
+            for meter in self.meters:  # noqa: B007
+                self.fp.write("\r")
+                self.fp.write(" " * self.ncols)
+                self.fp.write("\r")
+                self.fp.write("\n")
+            self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+
     def clear(self):
         with self.lock:
             self.done = True
-            if self.drawn:
-                for meter in self.meters:  # noqa: B007
-                    self.fp.write("\r")
-                    self.fp.write(" " * self.ncols)
-                    self.fp.write("\r")
-                    self.fp.write("\n")
-                self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+            self._erase()
 
 
 class ProgressBar(TerminalProgressBar):
@@ -1618,6 +1640,52 @@ def default_progress_bar(status_objs_or_none) -> ProgressBarBase:
     return TerminalProgressBar(status_objs_or_none, delay_draw=0.2)
 
 
+class _BottomAnchorProxy:
+    """A ``sys.stdout`` wrapper that keeps terminal progress bars pinned below.
+
+    While a :class:`TerminalProgressBar` is on screen it parks the cursor at the
+    top of its block so it can redraw in place. Any other writer (e.g. a
+    ``LiveTable`` printing rows) would print into that block and leave torn
+    fragments of the bars behind. This proxy intercepts those external writes,
+    erases the bars, prints the text above them, then redraws the bars so they
+    stay anchored at the bottom.
+    """
+
+    _is_bluesky_pbar_proxy = True
+
+    def __init__(self, real: TextIO, manager: "ProgressBarManager") -> None:
+        self.real = real
+        self._manager = manager
+        self._buffer = ""
+
+    def write(self, s: str) -> int:
+        manager = self._manager
+        with manager._lock:
+            pbar = manager.pbar
+            if not isinstance(pbar, TerminalProgressBar) or pbar.done or not pbar.drawn:
+                return self.real.write(s)
+            # Buffer partial lines; only reflow the bars on complete lines so we
+            # never redraw them in the middle of someone else's output.
+            self._buffer += s
+            split = self._buffer.rfind("\n")
+            if split == -1:
+                return len(s)
+            text = self._buffer[: split + 1]
+            self._buffer = self._buffer[split + 1 :]
+            with pbar.lock:
+                pbar._erase()
+                self.real.write(text)
+                pbar.draw()
+                self.real.flush()
+            return len(s)
+
+    def flush(self) -> None:
+        self.real.flush()
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.real, name)
+
+
 class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
     pbar: ProgressBarBase | None
@@ -1625,6 +1693,13 @@ class ProgressBarManager:
     def __init__(self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
         Manages creation and tearing down of progress bars.
+
+        A single instance can be registered with more than one RunEngine hook
+        (e.g. both ``waiting_hook`` and ``progress_hook``). Status objects from
+        every stream are merged so the streams stack together instead of
+        overpainting one another. A stream signals that its statuses are
+        finished by calling with ``None``; completed statuses are
+        dropped and the remaining live statuses keep rendering.
 
         Parameters
         ----------
@@ -1635,32 +1710,65 @@ class ProgressBarManager:
 
         self.pbar_factory = pbar_factory
         self.pbar = None
+        self._statuses: list[WatchableStatus] = []
+        self._current_key: tuple = ()
+        self._lock = threading.RLock()
+        self._proxy: _BottomAnchorProxy | None = None
 
-    def __call__(self, status_objs_or_none):
+    def __call__(self, status_objs_or_none: Iterable[WatchableStatus] | None) -> None:
         """
-        Updates the manager with a new set of status, creates a new progress bar and
-        cleans up the old one if needed.
-        This is registered with RunEngine.waiting_hook.
+        Merge a stream's status objects into the shared progress bar.
+
+        This is registered with RunEngine.waiting_hook and/or
+        RunEngine.progress_hook.
 
         Parameters
         ----------
-        status_objs_or_none : Set[Status], optional
-            Optional list of status objects to be passed to the factory.
+        status_objs_or_none : Iterable[WatchableStatus], optional
+            Status objects that are now active for this stream, or ``None`` to
+            signal that this stream's statuses have finished.
         """
 
-        if status_objs_or_none is not None:
-            # Start a new ProgressBar.
+        with self._lock:
+            if status_objs_or_none is not None:
+                for st in status_objs_or_none:
+                    if not any(st is known for known in self._statuses):
+                        self._statuses.append(st)
+            # A finished status leaves the display; this is how both a completed
+            # wait and a completed plan-progress scope are removed.
+            self._statuses = [st for st in self._statuses if not st.done]
+            self._rebuild()
+
+    def _rebuild(self):
+        with self._lock:
+            key = tuple(id(st) for st in self._statuses)
+            if key == self._current_key and (self.pbar is not None) == bool(self._statuses):
+                return
+            self._current_key = key
             if self.pbar is not None:
-                warnings.warn("Previous ProgressBar never competed.")  # noqa: B028
-                self.pbar.clear()
-            self.pbar = self.pbar_factory(status_objs_or_none)
-        else:
-            # Clean up an old one.
-            if self.pbar is None:
-                warnings.warn("There is no Progress bar to clean up.")  # noqa: B028
-            else:
                 self.pbar.clear()
                 self.pbar = None
+            if self._statuses:
+                # Build the bar while sys.stdout is the real terminal so it
+                # captures the real stream, then anchor external output beneath.
+                self._remove_proxy()
+                self.pbar = self.pbar_factory(list(self._statuses))
+                self._install_proxy()
+            else:
+                self._remove_proxy()
+
+    def _install_proxy(self):
+        if self._proxy is not None or not isinstance(self.pbar, TerminalProgressBar):
+            return
+        self._proxy = _BottomAnchorProxy(sys.stdout, self)
+        sys.stdout = self._proxy
+
+    def _remove_proxy(self):
+        if self._proxy is None:
+            return
+        if sys.stdout is self._proxy:
+            sys.stdout = self._proxy.real
+        self._proxy = None
 
 
 def _L2norm(x, y):
