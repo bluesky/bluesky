@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Release History &#8212; bluesky 1.15.2.dev204+g221a12862 documentation</title>
+    <title>Release History &#8212; bluesky 1.15.2.dev207+gfa98c29ad documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=0269abb1"></script>
+    <script src="_static/documentation_options.js?v=539f8958"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api_changes';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev204+g221a12862';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev207+gfa98c29ad';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="The RunEngine run loop" href="run_engine.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev204+g221a12862" />
+  <meta name="docsearch:version" content="1.15.2.dev207+gfa98c29ad" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -600,6 +600,12 @@ watching something else with nothing said.</p></li>
 <section id="fixed">
 <h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>A device is told a suspension has started only if it satisfies
+<cite>bluesky.protocols.Pausable</cite>.  A suspension used to call <code class="docutils literal notranslate"><span class="pre">pause()</span></code> on
+anything that had the attribute, where <code class="docutils literal notranslate"><span class="pre">RunEngine.pause</span></code> has always required
+the protocol – and <code class="docutils literal notranslate"><span class="pre">Pausable</span></code> requires <code class="docutils literal notranslate"><span class="pre">resume</span></code> as well, so a device with
+only <code class="docutils literal notranslate"><span class="pre">pause</span></code> was told a suspension had begun and never told it had ended.
+Both paths now ask the same question.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">RunEngine.verbose</span></code> reports whether the engine logs, and turning it off
 stops it.  It read <code class="docutils literal notranslate"><span class="pre">disabled</span></code> from the log adapter, which has no such
 attribute, so reading raised <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code> until something had assigned
@@ -3027,7 +3033,7 @@ not have any effect on user code.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev204+g221a12862/docs/api_changes.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev207+gfa98c29ad/docs/api_changes.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
