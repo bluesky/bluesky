@@ -12,6 +12,7 @@ from event_model.documents.stream_resource import StreamResource
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
+from bluesky.bundlers import RunBundler
 from bluesky.protocols import (
     Asset,
     Collectable,
@@ -462,6 +463,37 @@ def test_old_datum_collectable(RE):
     assert docs["event_page"][0]["filled"] == {"det-datum": [False]}
 
 
+def test_repeated_old_style_collect_describes_once(RE, mocker):
+    """An old-style (doubly-nested) device is described only on the first collect.
+
+    Regression test for a dead membership check in ``RunBundler.collect``: it
+    tested ``frozenset(collect_objects) not in self._local_descriptors``, but
+    ``_local_descriptors`` is keyed by individual objects, so that clause was
+    always True and ``_describe_collect`` was re-run on every repeat collect of
+    the same object instead of being skipped once the object was described.
+    """
+    spy = mocker.spy(RunBundler, "_describe_collect")
+
+    det = OldDatumCollectable(name="det")
+    docs = DocHolder()
+
+    def plan():
+        yield from bps.open_run()
+        yield from bps.collect(det)
+        yield from bps.collect(det)
+        yield from bps.close_run()
+
+    RE(plan(), docs.append)
+
+    # The object is described exactly once, on the first collect.
+    assert spy.call_count == 1
+    # The emitted documents are unchanged: one descriptor, one event_page per
+    # collect (two total), and matching external assets.
+    docs.assert_emitted(start=1, descriptor=1, resource=2, datum=2, event_page=2, stop=1)
+    # Sequence numbers advance across the two collects.
+    assert [ep["seq_num"] for ep in docs["event_page"]] == [[1], [2]]
+
+
 def test_old_datum_and_pv_collectable(RE):
     det = OldPvAndDatumCollectable(name="det")
     docs = DocHolder()
@@ -543,6 +575,25 @@ def test_many_collectables_fails(RE, cls1, cls2):
         match=re.escape("does not implement all WritesStreamAssets methods"),
     ):
         RE(collect_plan(det1, det2, pre_declare=False))
+
+
+def test_collect_all_return_payload(RE):
+    """collect_all returns None when return_payload is False, else a list of events."""
+    results: dict[str, object] = {}
+
+    def plan(det, return_payload):
+        yield from bps.open_run()
+        yield from bps.declare_stream(det, name="main", collect=True)
+        results["ret"] = yield from bps.collect_all(det, name="main", return_payload=return_payload)
+        yield from bps.close_run()
+
+    RE(plan(PvCollectable(name="det"), return_payload=False))
+    assert results["ret"] is None
+
+    RE(plan(PvCollectable(name="det"), return_payload=True))
+    assert isinstance(results["ret"], list)
+    assert len(results["ret"]) == 2
+    assert all(isinstance(event, dict) for event in results["ret"])
 
 
 def test_many_stream_datum_collectables(RE):

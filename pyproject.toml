@@ -55,6 +55,7 @@ dev = [
     "numpydoc",
     "opentelemetry-sdk",
     "ophyd",
+    "ophyd-async>=0.13.5;python_version>='3.11'", # for async suspenders
     "orjson",
     "packaging",
     "pandas",
@@ -67,6 +68,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "pytest-faulthandler",
+    "pytest-xdist>=3.8.0",
     "pyyaml",
     "pyzmq",
     "requests",
@@ -125,7 +127,7 @@ exclude = ["src/bluesky/_vendor/"]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 # Don't collect the interactive directory which is intended for manual execution
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore src/bluesky/tests/interactive
+    --tb=native --doctest-modules --doctest-glob="*.rst" --ignore src/bluesky/tests/interactive
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [
@@ -171,7 +173,10 @@ select = [
     "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
 ignore = [
-    "UP031", # Ignore %-format strings until #1848 is done
+    # UP031/UP032 only rewrite string formatting (%-format / str.format to
+    # f-strings); enforcing them is pure code churn with no behavior change.
+    "UP031", # %-format strings
+    "UP032", # .format() -> f-string
     "B905",  # adding strict=False to every zip call is just noise
 ]
 
@@ -210,6 +215,6 @@ allowlist_externals =
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: mypy src {posargs}
-    tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
+    tests: pytest -n 2 --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """

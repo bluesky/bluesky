@@ -161,15 +161,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES: tuple[type, ...] = (types.GeneratorType,)
-try:
-    from types import CoroutineType
-except ImportError:
-    # < py35
-    pass
-else:
-    PLAN_TYPES = PLAN_TYPES + (CoroutineType,)
-    del CoroutineType
+PLAN_TYPES: tuple[type, ...] = (types.GeneratorType, types.CoroutineType)
 
 
 def ensure_generator(plan):
@@ -314,6 +306,24 @@ class SigintHandler:
         self._released = True
         self._request_event = threading.Event()
 
+    def _restore_and_reraise(self, signum, frame) -> None:
+        """Hand SIGINT back to the disposition installed before ``__enter__``.
+
+        Re-install ``self._original_handler`` and re-deliver the signal so
+        that disposition handles it. This works uniformly whether
+        ``_original_handler`` is a callable, ``signal.SIG_DFL``,
+        ``signal.SIG_IGN``, or ``None`` (a handler installed from C that is
+        not representable in Python), avoiding the ``TypeError`` that calling
+        a non-callable disposition directly would raise.
+
+        Swap is performed *before* the re-raise so the re-delivered signal is
+        dispatched to the original disposition rather than back into this
+        closure. Re-installing the same handler is idempotent, so a later
+        ``signal.signal`` in ``__exit__`` is harmless.
+        """
+        signal.signal(signal.SIGINT, self._original_handler)
+        signal.raise_signal(signal.SIGINT)
+
     def _watch_request(self) -> None:
         while not self._released:
             if self._request == PauseRequest.SOFT:
@@ -360,7 +370,8 @@ class SigintHandler:
             acceptable.
             """
             if self._released:
-                self._original_handler(signum, frame)
+                self._restore_and_reraise(signum, frame)
+                return
             now = time.monotonic()
             time_diff = now - self._last_sigint_time
 
@@ -380,7 +391,7 @@ class SigintHandler:
                 else:
                     self._released = True
                     self._request_event.set()
-                    self._original_handler(signum, frame)
+                    self._restore_and_reraise(signum, frame)
 
         # Install handler callback
         signal.signal(signal.SIGINT, handler)
@@ -388,9 +399,8 @@ class SigintHandler:
 
     def __exit__(self, type, value, tb) -> None:
         signal.signal(signal.SIGINT, self._original_handler)
-        if not self._released:
-            self._released = True
-            self._request_event.set()
+        self._released = True
+        self._request_event.set()
 
 
 class CallbackRegistry:
@@ -537,25 +547,35 @@ class _BoundMethodProxy:
     def __init__(self, cb):
         self._hash = hash(cb)
         self._destroy_callbacks = []
-        try:
-            # This branch is successful if 'cb' bound method and class method,
-            #   but destroy_callback mechanism works only for bound methods,
-            #   since cb.__self__ points to class instance only for
-            #   bound methods, not for class methods. Therefore destroy_callback
-            #   will not be called for class methods.
-            try:
-                self.inst = ref(cb.__self__, self._destroy)
-            except TypeError:
-                self.inst = None
-            self.func = cb.__func__
-            self.klass = cb.__self__.__class__
+        cb_self = getattr(cb, "__self__", None)
 
-        except AttributeError:
+        if cb_self is None:
             # 'cb' is a function, callable object or static method.
             # No weak reference is created, strong reference is stored instead.
             self.inst = None
             self.func = cb
             self.klass = None
+        elif isinstance(cb_self, type):
+            # 'cb' is a class method, so __self__ is the class rather than an
+            # instance of it. A class is weakly referenceable, so the branch below
+            # would succeed and then silently unsubscribe the callback when the
+            # class was collected -- and there is no instance whose death was
+            # supposed to mean anything. Hold it strongly, as for a plain function.
+            self.inst = None
+            self.func = cb
+            self.klass = cb_self
+        else:
+            try:
+                self.inst = ref(cb_self, self._destroy)
+            except TypeError:
+                # 'obj' cannot be weakly referenced, e.g. it uses __slots__ without
+                # __weakref__. Hold the bound method strongly rather than an unbound
+                # function that we would later call without its instance.
+                self.inst = None
+                self.func = cb
+            else:
+                self.func = cb.__func__
+            self.klass = cb_self.__class__
 
     def add_destroy_callback(self, callback):
         self._destroy_callbacks.append(_BoundMethodProxy(callback))
@@ -676,7 +696,7 @@ def normalize_subs_input(subs):
     elif hasattr(subs, "items"):
         for key, funcs in list(subs.items()):
             if key not in SUBS_NAMES:
-                raise KeyError(f"Keys must be one of {SUBS_NAMES!r:0}")
+                raise KeyError(f"Keys must be one of {SUBS_NAMES!r}")
             if callable(funcs):
                 normalized[key].append(funcs)
             else:
@@ -2043,7 +2063,7 @@ already_warned: dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
-    if args or kwargs and not already_warned.get(msg.command):
+    if (args or kwargs) and not already_warned.get(msg.command):
         already_warned[msg.command] = True
         error_msg = f"""\
 About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
@@ -2051,7 +2071,7 @@ In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("{msg.command}") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg)  # noqa: B028
+        warnings.warn(error_msg, stacklevel=4)
 
 
 def maybe_update_hints(hints: dict[str, Hints], obj):
