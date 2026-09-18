@@ -583,3 +583,72 @@ def test_a_suspension_holds_only_devices_that_can_be_released(RE, hw):
     assert pausable.resumed == 1
     # Never told anything, because it could not have been told it was over.
     assert pause_only.paused == 0
+
+
+def test_a_suspension_does_not_duplicate_a_monitored_signals_documents(RE, hw):
+    """Resuming from a suspension must not re-subscribe a monitor.
+
+    Monitors run throughout a suspension -- only a *pause* stops them -- so
+    restoring them afterwards subscribed a second time, and every Event the
+    signal produced after that was emitted twice.
+    """
+
+    class FakeMonitored:
+        name = "fake_monitored"
+        parent = None
+
+        def __init__(self):
+            self.cbs = []
+            self.subscriptions = 0
+            self.fires = 0
+
+        def read(self):
+            return {self.name: {"value": 1.0, "timestamp": 0.0}}
+
+        def describe(self):
+            return {self.name: {"source": "fake", "dtype": "number", "shape": []}}
+
+        def read_configuration(self):
+            return {}
+
+        def describe_configuration(self):
+            return {}
+
+        def subscribe(self, cb, **kwargs):
+            self.subscriptions += 1
+            self.cbs.append(cb)
+
+        def clear_sub(self, cb):
+            self.cbs.remove(cb)
+
+        def fire(self):
+            self.fires += 1
+            for cb in list(self.cbs):
+                cb()
+
+    dev = FakeMonitored()
+    events = []
+    RE.subscribe(lambda name, doc: events.append(doc), "event")
+
+    sig = hw.bool_sig
+    sig.put(0)
+    RE.install_suspender(SuspendBoolHigh(sig, sleep=0.1))
+
+    def plan():
+        yield Msg("open_run")
+        yield Msg("monitor", dev, name="mon")
+        yield Msg("checkpoint")
+        yield Msg("sleep", None, 0.2)
+        dev.fire()
+        yield Msg("close_run")
+
+    threading.Timer(0.05, sig.put, (1,)).start()
+    threading.Timer(0.3, sig.put, (0,)).start()
+    RE(plan())
+
+    # One subscription, made once and taken off at close_run.
+    assert dev.subscriptions == 1
+    assert dev.cbs == []
+    # And so one Event per reading, not one per subscription per reading.
+    assert dev.fires > 0
+    assert len(events) == dev.fires
