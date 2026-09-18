@@ -530,3 +530,42 @@ def test_suspender_plans(RE, hw):
     stop = ttime.time()
     delta = stop - start
     assert delta < 0.9
+
+
+def test_suspender_trips_while_run_engine_loop_is_blocked(RE, hw):
+    """A slow plan must not prevent a device thread from tripping a suspender."""
+    sig = hw.bool_sig
+    sig.put(0)
+    loop_blocked = threading.Event()
+    callback_started = threading.Event()
+
+    class NotifyingSuspendBoolHigh(SuspendBoolHigh):
+        def _should_suspend(self, value):
+            callback_started.set()
+            return super()._should_suspend(value)
+
+    susp = NotifyingSuspendBoolHigh(sig, pre_plan=[Msg("null")])
+    RE.install_suspender(susp)
+
+    def trip_and_resume():
+        assert loop_blocked.wait(timeout=5)
+        sig.put(1)
+        time.sleep(0.4)
+        sig.put(0)
+
+    def blocking_plan():
+        loop_blocked.set()
+        assert callback_started.wait(timeout=5)
+        time.sleep(0.2)
+        yield Msg("checkpoint")
+        yield Msg("sleep", None, 0.2)
+
+    messages = []
+    RE.msg_hook = messages.append
+    signal_thread = threading.Thread(target=trip_and_resume)
+    signal_thread.start()
+    RE(blocking_plan())
+    signal_thread.join(timeout=5)
+
+    assert not signal_thread.is_alive()
+    assert "_start_suspender" in [message.command for message in messages]
