@@ -28,6 +28,13 @@ Fixed
   every Event it produced afterwards was emitted twice, compounding with each
   further suspension.
 
+- ``RunEngine.verbose`` reports whether the engine logs, and turning it off
+  stops it.  It read ``disabled`` from the log adapter, which has no such
+  attribute, so reading raised ``AttributeError`` until something had assigned
+  one -- and assigning put it on the adapter, where the logging machinery never
+  looks, so turning it off silenced nothing.  Both halves now go to the logger
+  the adapter wraps.
+
 Changed
 -------
 

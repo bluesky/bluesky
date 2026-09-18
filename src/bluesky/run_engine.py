@@ -697,11 +697,17 @@ class RunEngine:
 
     @property
     def verbose(self):
-        return not self.log.disabled
+        # The adapter, not the logger, was asked here and written to below.
+        # `logging.LoggerAdapter` has no `disabled` of its own, so reading it
+        # raised until a write had made one, and a write silenced nothing:
+        # every level check logging makes goes to `self.logger.disabled`.
+        # Disabling reaches the whole `bluesky` logger, which is what it has
+        # always claimed to do -- the adapter is per-engine, the logger is not.
+        return not self.log.logger.disabled
 
     @verbose.setter
     def verbose(self, value):
-        self.log.disabled = not value
+        self.log.logger.disabled = not value
 
     @property
     def call_returns_result(self):
