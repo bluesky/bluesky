@@ -220,6 +220,37 @@ def test_grid_scan_emits_progress_messages(RE, hw):
     assert updates[-1].kwargs["done"] is True
 
 
+def test_grid_scan_per_dim_progress_positions(RE, hw):
+    """per_dim_progress reports each axis position zero-based-decoded from a 1-based count."""
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+    RE(
+        bp.grid_scan(
+            [hw.det],
+            hw.motor1,
+            -1,
+            1,
+            2,
+            hw.motor2,
+            -1,
+            1,
+            3,
+            progress_scope="grid",
+            per_dim_progress=True,
+        )
+    )
+
+    updates = [m for m in msgs if m.command == "update_progress" and not m.kwargs.get("done")]
+    outer = [m.kwargs["current"] for m in updates if m.kwargs["name"] == f"grid/{hw.motor1.name}"]
+    inner = [m.kwargs["current"] for m in updates if m.kwargs["name"] == f"grid/{hw.motor2.name}"]
+
+    # Leading 0 is the initial 0% setup update for each axis.
+    # Inner axis cycles 1,2,3 per outer step; outer axis ticks over after each
+    # full inner sweep. A one-based decomposition would shift the inner sequence.
+    assert inner == [0, 1, 2, 3, 1, 2, 3]
+    assert outer == [0, 0, 0, 1, 1, 1, 2]
+
+
 def test_count_emits_progress_messages(RE, hw):
     """bp.count threads progress_scope through repeat."""
     msgs = []

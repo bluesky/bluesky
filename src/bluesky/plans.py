@@ -1695,7 +1695,7 @@ def grid_scan(
                     target=total_steps,
                     unit="step",
                 )
-                remaining = flat_index
+                remaining = flat_index - 1  # zero-based index of the point just completed
                 for dim_i, (name, count) in enumerate(zip(dim_names, dim_counts)):
                     suffix = int(np.prod(dim_counts[dim_i + 1 :])) if dim_i + 1 < len(dim_counts) else 1
                     dim_pos = (remaining // suffix) % count
