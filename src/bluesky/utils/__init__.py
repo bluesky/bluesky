@@ -63,40 +63,6 @@ except ImportError:
     from toolz import groupby
 
 
-def _coerce_float(value: float) -> float | str | None:
-    """Make a float JSON-safe: NaN -> None, +/-inf -> 'Infinity'/'-Infinity'."""
-    if math.isnan(value):
-        return None
-    if math.isinf(value):
-        return "Infinity" if value > 0 else "-Infinity"
-    return float(value)
-
-
-def _serialize_component(value: Any) -> list | dict | str | float | int | bool | None:
-    """Recursively convert a value into a json-safe structure.
-    """
-    if isinstance(value, Enum):
-        return _serialize_component(value.value)
-    if value is None or isinstance(value, (str, int, bool)):
-        return value
-    if isinstance(value, float):
-        return _coerce_float(value)
-    if isinstance(value, np.generic):
-        return _serialize_component(value.item())
-    if isinstance(value, np.ndarray):
-        return _serialize_component(value.tolist())
-    if isinstance(value, (list, tuple, set)):
-        return [_serialize_component(v) for v in value]
-    if isinstance(value, dict):
-        return {str(k): _serialize_component(v) for k, v in value.items()}
-    if dataclasses.is_dataclass(value):
-        return _serialize_component(dataclasses.asdict(value))
-    try:
-        return str(value)
-    except Exception:
-        return None
-
-
 class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     """Namedtuple sub-class to encapsulate a message from the plan to the RE.
 
@@ -118,19 +84,59 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
-    def serialize(self) -> dict[str, Any]:
-        """Return a JSON-safe dict of this message.
+def _to_json_safe(value: Any) -> list | dict | str | float | int | bool | None:
+    """Recursively convert a value into a json-safe structure."""
+    if isinstance(value, Enum):
+        return _to_json_safe(value.value)
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, float):
+        if math.isnan(value):
+            return None
+        if math.isinf(value):
+            return "Infinity" if value > 0 else "-Infinity"
+        return float(value)
 
-        Devices, enums, numpy scalars and other values in ``obj``/``args``/``kwargs``/
-        ``run`` that are not natively JSON-serializable are coerced to JSON-safe forms.
-        """
-        return {
-            "command": self.command,
-            "obj": _serialize_component(self.obj),
-            "args": [_serialize_component(a) for a in self.args],
-            "kwargs": {str(k): _serialize_component(v) for k, v in self.kwargs.items()},
-            "run": _serialize_component(self.run),
-        }
+    if isinstance(value, np.generic):
+        return _to_json_safe(value.item())
+    if isinstance(value, np.ndarray):
+        return _to_json_safe(value.tolist())
+    if isinstance(value, (list, tuple, set)):
+        return [_to_json_safe(v) for v in value]
+    if isinstance(value, dict):
+        return {str(k): _to_json_safe(v) for k, v in value.items()}
+    if dataclasses.is_dataclass(value):
+        return _to_json_safe(dataclasses.asdict(value))
+    try:
+        return str(value)
+    except Exception:
+        return None
+
+
+def msg_to_json_safe_dict(msg: Msg) -> dict[str, Any]:
+    """Return a JSON-safe dictionary representation of this message.
+
+    Devices, enums, numpy scalars and other values in ``obj``/``args``/``kwargs``/
+    ``run`` that are not natively JSON-serializable are coerced to JSON-safe forms.
+
+    Parameters
+    ----------
+    msg : Msg
+        The message to be converted to a JSON-safe dictionary.
+
+    Returns
+    -------
+    dict[str, Any]
+        A JSON-safe dictionary representation of the message.
+    """
+
+    return {
+        "command": msg.command,
+        "obj": _to_json_safe(msg.obj),
+        "args": [_to_json_safe(a) for a in msg.args],
+        "kwargs": {str(k): _to_json_safe(v) for k, v in msg.kwargs.items()},
+        "run": _to_json_safe(msg.run),
+    }
 
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
