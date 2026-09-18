@@ -23,9 +23,9 @@ from bluesky.utils import (
     is_movable,
     is_plan,
     merge_cycler,
+    msg_to_json_safe_dict,
     plan,
     warn_if_msg_args_or_kwargs,
-    msg_to_json_safe_dict,
 )
 
 

@@ -106,7 +106,7 @@ def _to_json_safe(value: Any) -> list | dict | str | float | int | bool | None:
             return [_to_json_safe(v) for v in value]
         case dict():
             return {str(k): _to_json_safe(v) for k, v in value.items()}
-        case _ if dataclasses.is_dataclass(value):
+        case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
             return _to_json_safe(dataclasses.asdict(value))
         case _:
             try:
