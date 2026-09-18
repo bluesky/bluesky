@@ -1058,7 +1058,10 @@ class RunEngine:
             if init_func is not None:
                 init_func()
 
-            if self._task_fut is None or self._task_fut.done():
+            if self._task_fut is None:
+                # No task was ever started; nothing to wait on or return.
+                return self.NO_PLAN_RETURN
+            if self._task_fut.done():
                 try:
                     return self._task_fut.result()
                 except concurrent.futures.CancelledError:
@@ -1229,6 +1232,7 @@ class RunEngine:
                 self._state = "aborting"
                 if not was_paused:
                     self._task.cancel()
+                return
             if justification is not None:
                 print(f"Justification for this suspension:\n{justification}")
 
@@ -1377,7 +1381,7 @@ class RunEngine:
         self._state = "stopping"
         if was_paused:
             with self._state_lock:
-                self._exception = RequestStop
+                self._exception = RequestStop()
         else:
             self._task.cancel()
 
@@ -1441,7 +1445,7 @@ class RunEngine:
         self._state = "halting"
         if was_paused:
             with self._state_lock:
-                self._exception = PlanHalt
+                self._exception = PlanHalt()
                 self._exit_status = "abort"
         else:
             self._task.cancel()
@@ -1895,7 +1899,7 @@ class RunEngine:
         # TODO extract this from the Msg
         run_key = msg.run
         if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object)
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
         ) is key_absence_sentinel:
             ims_msg = "A 'close_run' message was not received before the 'open_run' message"
             raise IllegalMessageSequence(ims_msg)

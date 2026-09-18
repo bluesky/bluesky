@@ -18,6 +18,7 @@ from bluesky.utils import (
     AsyncInput,
     CallbackRegistry,
     Msg,
+    already_warned,
     ensure_generator,
     is_movable,
     is_plan,
@@ -595,6 +596,36 @@ https://github.com/bluesky/bluesky/issues"""
     # Called without kwargs doesn't warn
     warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {})
     assert len(recwarn) == 0
+
+
+def test_msg_args_only_warns_once():
+    """The warn-once dedupe must also apply when only positional args are passed.
+
+    Regression test for an operator-precedence bug where
+    ``args or kwargs and not already_warned.get(...)`` parsed as
+    ``args or (kwargs and ...)``. With that precedence a truthy ``args`` short
+    circuits before ``already_warned`` is ever consulted *or* recorded, so the
+    dedupe flag is never set and every call re-warns.
+    """
+
+    class MyDevice:
+        def kickoff(self, *args, **kwargs):
+            pass
+
+    device = MyDevice()
+    msg = Msg("kickoff-args-only")
+    # Ensure a clean dedupe state for this command.
+    already_warned.pop(msg.command, None)
+
+    # A call with positional args must record the dedupe flag.
+    with pytest.warns(UserWarning):
+        warn_if_msg_args_or_kwargs(msg, device.kickoff, ("positional",), {})
+    assert already_warned.get(msg.command) is True
+
+    # Second call with args must be deduped: no warning is emitted.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # any warning would raise
+        warn_if_msg_args_or_kwargs(msg, device.kickoff, ("positional",), {})
 
 
 @plan
