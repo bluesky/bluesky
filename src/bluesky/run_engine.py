@@ -1252,6 +1252,20 @@ class RunEngine:
 
         self.loop.call_soon_threadsafe(self.loop.create_task, _request_suspend(pre_plan, post_plan, justification))
 
+    async def _pause_objects(self):
+        """Tell every object the plan has touched that it is being held.
+
+        `bluesky.protocols.Pausable` and not ``hasattr(obj, "pause")``: the
+        protocol requires ``resume`` too, and something told a hold has begun
+        must be something that can be told it has ended.
+        """
+        for obj in self._objs_seen:
+            if isinstance(obj, Pausable):
+                try:
+                    await maybe_await(obj.pause())
+                except NoReplayAllowed:
+                    self._reset_checkpoint_state_meth()
+
     async def _start_suspender(self, msg):
         """
         An internal message to do the initial work of starting a suspender
@@ -1263,12 +1277,7 @@ class RunEngine:
         # every object we ever set().
         await self._stop_movable_objects(success=True)
         # Notify Devices of the pause in case they want to clean up.
-        for obj in self._objs_seen:
-            if hasattr(obj, "pause"):
-                try:
-                    await maybe_await(obj.pause())
-                except NoReplayAllowed:
-                    self._reset_checkpoint_state_meth()
+        await self._pause_objects()
         # rewind to the last checkpoint
         rewind_plan = self._rewind()
         was_rewindable = self.rewindable
@@ -1526,12 +1535,7 @@ class RunEngine:
                     await self._stop_movable_objects(success=True)
                     # Notify Devices of the pause in case they want to
                     # clean up.
-                    for obj in self._objs_seen:
-                        if isinstance(obj, Pausable):
-                            try:
-                                await maybe_await(obj.pause())
-                            except NoReplayAllowed:
-                                self._reset_checkpoint_state_meth()
+                    await self._pause_objects()
                     self._state = "paused"
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
