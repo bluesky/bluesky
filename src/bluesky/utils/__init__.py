@@ -86,31 +86,33 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
 
 def _to_json_safe(value: Any) -> list | dict | str | float | int | bool | None:
     """Recursively convert a value into a json-safe structure."""
-    if isinstance(value, Enum):
-        return _to_json_safe(value.value)
-    if value is None or isinstance(value, (str, int, bool)):
-        return value
-    if isinstance(value, float):
-        if math.isnan(value):
-            return None
-        if math.isinf(value):
-            return "Infinity" if value > 0 else "-Infinity"
-        return float(value)
 
-    if isinstance(value, np.generic):
-        return _to_json_safe(value.item())
-    if isinstance(value, np.ndarray):
-        return _to_json_safe(value.tolist())
-    if isinstance(value, (list, tuple, set)):
-        return [_to_json_safe(v) for v in value]
-    if isinstance(value, dict):
-        return {str(k): _to_json_safe(v) for k, v in value.items()}
-    if dataclasses.is_dataclass(value):
-        return _to_json_safe(dataclasses.asdict(value))
-    try:
-        return str(value)
-    except Exception:
-        return None
+    match value:
+        case Enum():
+            return _to_json_safe(value.value)
+        case None | bool() | int() | str():
+            return value
+        case float():
+            if math.isnan(value):
+                return None
+            if math.isinf(value):
+                return "Infinity" if value > 0 else "-Infinity"
+            return float(value)
+        case np.generic():
+            return _to_json_safe(value.item())
+        case np.ndarray():
+            return _to_json_safe(value.tolist())
+        case list() | tuple() | set():
+            return [_to_json_safe(v) for v in value]
+        case dict():
+            return {str(k): _to_json_safe(v) for k, v in value.items()}
+        case _ if dataclasses.is_dataclass(value):
+            return _to_json_safe(dataclasses.asdict(value))
+        case _:
+            try:
+                return str(value)
+            except Exception:
+                return None
 
 
 def msg_to_json_safe_dict(msg: Msg) -> dict[str, Any]:
