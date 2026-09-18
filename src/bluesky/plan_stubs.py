@@ -1543,6 +1543,7 @@ def declare_progress(name: str, *, parent: str | None = None) -> MsgGenerator:
     Yields
     ------
     msg : Msg
+        A message with command ``declare_progress``.
 
     Returns
     -------
@@ -1564,8 +1565,8 @@ def update_progress(
     initial: Any = None,
     target: Any = None,
     unit: str = "units",
-    precision: Any = None,
-    fraction: Any = None,
+    precision: int | None = None,
+    fraction: float | None = None,
     time_elapsed: float | None = None,
     time_remaining: float | None = None,
     done: bool = False,
@@ -1592,6 +1593,7 @@ def update_progress(
     Yields
     ------
     msg : Msg
+        A message with command ``update_progress``.
 
     See Also
     --------
