@@ -6,6 +6,7 @@
 # ip.register_magics(BlueskyMagics)
 
 import asyncio
+import atexit
 import collections
 import warnings
 from operator import attrgetter
@@ -223,6 +224,22 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                 # children).
                 _print_devices(devices, prefix=" " * 2)
                 print()  # blank line
+
+
+@atexit.register
+def _shutdown_magics_run_engine():
+    # ``BlueskyMagics.RE`` is created at import time and runs its event loop
+    # forever on a daemon thread.  Close that loop on interpreter exit so it does
+    # not leak (ResourceWarning: unclosed event loop / socket) at shutdown.
+    RE = BlueskyMagics.RE
+    loop = RE._loop
+    if loop.is_closed():
+        return
+    if RE.state not in ("idle", "panicked"):
+        RE.halt()
+    loop.call_soon_threadsafe(loop.stop)
+    RE._th.join()
+    loop.close()
 
 
 def _print_devices(devices, prefix=""):

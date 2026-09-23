@@ -29,6 +29,9 @@ from .utils import (
 )
 from .utils import short_uid as _short_uid
 
+# Commands whose object should be lazily staged before the message is processed.
+_LAZY_STAGE_COMMANDS = {"read", "set", "trigger", "kickoff"}
+
 
 def plan_mutator(plan, msg_proc):
     """
@@ -107,6 +110,11 @@ def plan_mutator(plan, msg_proc):
                 # 'new_gen')
                 if id(exhausted_gen) in tail_result_cache:
                     ret = tail_result_cache.pop(id(exhausted_gen))
+                else:
+                    # No cached tail result for this generator, so there is no
+                    # value to hand back; use None instead of a stale value
+                    # left over from a prior loop iteration.
+                    ret = None
 
                 result_stack.append(ret)
 
@@ -947,12 +955,11 @@ def lazily_stage_wrapper(plan):
         messages from plan with 'stage' messages inserted and 'unstage'
         messages appended
     """
-    COMMANDS = set(["read", "set", "trigger", "kickoff"])  # noqa: C405
     # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
 
     def inner(msg):
-        if msg.command in COMMANDS:
+        if msg.command in _LAZY_STAGE_COMMANDS:
             root = root_ancestor(msg.obj)
             if root not in devices_staged:
 
@@ -1088,7 +1095,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
 
     # if we move a pseudo positioner also stash it's children
     if obj in coupled_parents:
-        for c, p in zip(obj.pseudo_positioners, setpoint):
+        for c, p in zip(obj.pseudo_positioners, setpoint, strict=True):
             initial_positions[c] = p
 
     # if we move a pseudo single, also stash it's parent and siblings
@@ -1096,7 +1103,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     if parent in coupled_parents and obj in parent.pseudo_positioners:
         parent_pos = parent.position
         initial_positions[parent] = parent_pos
-        for c, p in zip(parent.pseudo_positioners, parent_pos):
+        for c, p in zip(parent.pseudo_positioners, parent_pos, strict=True):
             initial_positions[c] = p
 
     # TODO forbid mixed pseudo / real motion

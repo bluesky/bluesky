@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import re
 import signal
@@ -41,6 +42,7 @@ from bluesky.run_engine import (
     FailedStatus,
     IllegalMessageSequence,
     NoReplayAllowed,
+    PlanHalt,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
@@ -1428,6 +1430,63 @@ def test_sigint_in_not_pausable_state(RE):
     RE.abort()
 
 
+@uses_os_kill_sigint
+def test_sigint_handler_original_sig_ign(RE):
+    """A non-callable original SIGINT disposition (``SIG_IGN``) must not crash
+    the handler when it forwards the signal.
+
+    ``SigintHandler`` captures whatever SIGINT disposition was installed before
+    ``__enter__`` as ``_original_handler``.  ``signal.getsignal`` can return a
+    non-callable sentinel (``SIG_IGN``/``SIG_DFL``) or ``None``, so the two
+    forwarding call sites must not blindly *call* it (that would raise
+    ``TypeError``).  ``_restore_and_reraise`` instead re-installs the original
+    disposition and re-raises, letting the OS handle it.
+
+    This test installs ``SIG_IGN`` as the original disposition, then drives the
+    installed handler closure through both forwarding paths:
+
+    1. The escape-hatch path (``_count`` reaches 11), and
+    2. The post-release ``if self._released:`` path.
+
+    For ``SIG_IGN`` the re-raised SIGINT is simply discarded, so this is safe to
+    run under pytest.  (``SIG_DFL`` is deliberately *not* tested: re-raising
+    under the default disposition would terminate the test process.)
+    """
+    original = signal.getsignal(signal.SIGINT)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    try:
+        handler_ctx = SigintHandler(RE)
+        with handler_ctx:
+            # The closure installed by __enter__ is now the active handler.
+            installed = signal.getsignal(signal.SIGINT)
+            assert callable(installed)
+            assert handler_ctx._original_handler == signal.SIG_IGN
+
+            # Drive the escape hatch: 11 invocations flip _released and forward
+            # to the original disposition via _restore_and_reraise.  None of
+            # these may raise TypeError.
+            handler_ctx._last_sigint_time = ttime.monotonic()
+            handler_ctx._count = 0
+            for _i in range(11):
+                # Space invocations past the 0.1s debounce using the real clock.
+                handler_ctx._last_sigint_time -= 0.2
+                installed(signal.SIGINT, None)
+
+            assert handler_ctx._released is True
+            # The escape hatch re-installed the original SIG_IGN disposition.
+            assert signal.getsignal(signal.SIGINT) == signal.SIG_IGN
+
+            # Post-release path: re-install our closure and fire again to
+            # exercise the ``if self._released:`` branch directly.
+            signal.signal(signal.SIGINT, installed)
+            installed(signal.SIGINT, None)
+
+            # Still no TypeError, and the original disposition is restored.
+            assert signal.getsignal(signal.SIGINT) == signal.SIG_IGN
+    finally:
+        signal.signal(signal.SIGINT, original)
+
+
 def test_many_context_managers(RE):
     class Manager:
         enters = 0
@@ -2271,6 +2330,32 @@ def test_force_stop_exit_status(bail_func, status, RE):
     assert d.stop[uid]["exit_status"] == status
 
 
+@pytest.mark.parametrize(
+    "bail_func,exc_type",
+    [("stop", RequestStop), ("abort", RequestAbort), ("halt", PlanHalt)],
+)
+def test_paused_bail_exception_is_instance(bail_func, exc_type):
+    """``RunEngineResult.exception`` must be an exception *instance*, not a class.
+
+    Regression test: when paused, ``stop()``/``halt()`` set
+    ``self._exception`` to the exception *class* (``RequestStop`` / ``PlanHalt``)
+    rather than an instance, unlike ``abort()`` which uses ``RequestAbort()``.
+    """
+    RE = RunEngine({}, call_returns_result=True)
+
+    @run_decorator()
+    def bad_plan():
+        yield Msg("pause")
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(bad_plan())
+
+    rs = getattr(RE, bail_func)()
+    assert isinstance(rs.exception, exc_type)
+    # Guard against the class being stored instead of an instance.
+    assert not isinstance(rs.exception, type)
+
+
 def test_exceptions_exit_status(RE):
     d = DocCollector()
     RE.subscribe(d.insert)
@@ -2821,3 +2906,22 @@ def test_abs_set_fails(RE, wait):
 
     with pytest.raises(FailedStatus):
         RE(abs_set(device, 10, wait=wait))
+
+
+def test_verbose_round_trips_and_actually_silences(RE):
+    """``RE.verbose`` reports the logger, and setting it really silences.
+
+    Both halves go to the logger the adapter wraps: a `logging.LoggerAdapter`
+    has no ``disabled`` of its own, and nothing consults one if given it.
+    """
+    assert RE.verbose is True
+    assert RE.log.isEnabledFor(logging.ERROR)
+    try:
+        RE.verbose = False
+        assert RE.verbose is False
+        # And it is really quiet.
+        assert not RE.log.isEnabledFor(logging.ERROR)
+    finally:
+        RE.verbose = True
+    assert RE.verbose is True
+    assert RE.log.isEnabledFor(logging.ERROR)

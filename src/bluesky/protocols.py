@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
-from typing import Any, Generic, Literal, Protocol, TypeAlias, TypeVar, runtime_checkable
+from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, TypeVar, runtime_checkable
 
 from event_model.documents import Datum, StreamDatum, StreamResource
 from event_model.documents.event import PartialEvent
@@ -9,7 +9,11 @@ from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
-from typing_extensions import ParamSpec, TypedDict, Unpack
+
+# TypedDict and Unpack are imported from typing_extensions rather than typing:
+# typing_extensions.TypedDict carries backported fixes recommended until Python
+# 3.12, and typing.Unpack is only available from Python 3.11 (floor is 3.10).
+from typing_extensions import TypedDict, Unpack
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
@@ -442,7 +446,7 @@ class Pausable(Protocol):
 @runtime_checkable
 class Stoppable(Protocol):
     @abstractmethod
-    def stop(self, success=True) -> SyncOrAsync[None]:
+    def stop(self, *, success: bool = False) -> SyncOrAsync[None]:
         """Safely stop a device that may or may not be in motion.
 
         The argument ``success`` is a boolean.
