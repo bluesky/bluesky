@@ -1,9 +1,11 @@
 import abc
 import asyncio
 import collections.abc
+import dataclasses
 import datetime
 import inspect
 import itertools
+import math
 import operator
 import os
 import signal
@@ -15,16 +17,16 @@ import types
 import uuid
 import warnings
 from collections import namedtuple
-from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Generator, Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Generator, Iterable, Sequence
 from collections.abc import Iterable as TypingIterable
+from enum import Enum
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
 from typing import (
     Any,
-    Callable,
-    Optional,
+    TypeAlias,
+    TypedDict,
     TypeVar,
-    Union,
 )
 from weakref import WeakKeyDictionary, ref
 
@@ -32,6 +34,7 @@ import msgpack
 import msgpack_numpy
 import numpy as np
 from cycler import Cycler, cycler
+from event_model.documents import Document, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
@@ -81,6 +84,63 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
+def _to_json_safe(value: Any) -> list | dict | str | float | int | bool | None:
+    """Recursively convert a value into a json-safe structure."""
+
+    match value:
+        case Enum():
+            return _to_json_safe(value.value)
+        case None | bool() | int() | str():
+            return value
+        case float():
+            if math.isnan(value):
+                return None
+            if math.isinf(value):
+                return "Infinity" if value > 0 else "-Infinity"
+            return float(value)
+        case np.generic():
+            return _to_json_safe(value.item())
+        case np.ndarray():
+            return _to_json_safe(value.tolist())
+        case list() | tuple() | set():
+            return [_to_json_safe(v) for v in value]
+        case dict():
+            return {str(k): _to_json_safe(v) for k, v in value.items()}
+        case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
+            return _to_json_safe(dataclasses.asdict(value))
+        case _:
+            try:
+                return str(value)
+            except Exception:
+                return None
+
+
+def msg_to_json_safe_dict(msg: Msg) -> dict[str, Any]:
+    """Return a JSON-safe dictionary representation of this message.
+
+    Devices, enums, numpy scalars and other values in ``obj``/``args``/``kwargs``/
+    ``run`` that are not natively JSON-serializable are coerced to JSON-safe forms.
+
+    Parameters
+    ----------
+    msg : Msg
+        The message to be converted to a JSON-safe dictionary.
+
+    Returns
+    -------
+    dict[str, Any]
+        A JSON-safe dictionary representation of the message.
+    """
+
+    return {
+        "command": msg.command,
+        "obj": _to_json_safe(msg.obj),
+        "args": [_to_json_safe(a) for a in msg.args],
+        "kwargs": {str(k): _to_json_safe(v) for k, v in msg.kwargs.items()},
+        "run": _to_json_safe(msg.run),
+    }
+
+
 #: Return type of a plan, usually None. Always optional for dry-runs.
 P = TypeVar("P")
 
@@ -88,10 +148,28 @@ P = TypeVar("P")
 MsgGenerator = Generator[Msg, Any, P]
 
 #: Metadata passed from a plan to the RunEngine for embedding in a start document
-CustomPlanMetadata = dict[str, Any]
+CustomPlanMetadata = collections.abc.MutableMapping[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
-ScalarOrIterableFloat = Union[float, TypingIterable[float]]
+ScalarOrIterableFloat: TypeAlias = float | TypingIterable[float]
+
+# Single function to be used as an event listener
+Subscriber = Callable[[str, P], Any]
+
+OneOrMany: TypeAlias = P | Sequence[P]
+
+
+# Mapping from event type to listener or list of listeners
+class SubscriberMap(TypedDict, total=False):
+    all: OneOrMany[Subscriber[Document]]
+    start: OneOrMany[Subscriber[RunStart]]
+    stop: OneOrMany[Subscriber[RunStop]]
+    event: OneOrMany[Subscriber[Event]]
+    descriptor: OneOrMany[Subscriber[EventDescriptor]]
+
+
+# Single listener, multiple listeners or mapping of listeners by event type
+Subscribers: TypeAlias = OneOrMany[Subscriber[Document]] | SubscriberMap
 
 
 class RunEngineControlException(Exception):
@@ -141,15 +219,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES: tuple[type, ...] = (types.GeneratorType,)
-try:
-    from types import CoroutineType
-except ImportError:
-    # < py35
-    pass
-else:
-    PLAN_TYPES = PLAN_TYPES + (CoroutineType,)
-    del CoroutineType
+PLAN_TYPES: tuple[type, ...] = (types.GeneratorType, types.CoroutineType)
 
 
 def ensure_generator(plan):
@@ -206,9 +276,21 @@ class SignalHandler:
       probably only see one of them when you unblock this signal.
 
     https://www.gnu.org/software/libc/manual/html_node/Checking-for-Pending-Signals.html
+
+    .. deprecated:
+
+        This class is deprecated and will be removed in a future version of Bluesky.
+        See :ref:`SigintHandler` for an example on how to build a custom one.
+
     """
 
     def __init__(self, sig, log=None):
+        warnings.warn(
+            f"{SignalHandler.__name__} is deprecated and will be removed in a future version of Bluesky. "
+            f"See {SigintHandler.__name__} for an example on how to build a custom one.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.sig = sig
         self.interrupted = False
         self.count = 0
@@ -249,57 +331,134 @@ class SignalHandler:
     def handle_signals(self): ...
 
 
-class SigintHandler(SignalHandler):
+class PauseRequest(Enum):
+    NONE = 0
+    SOFT = 1
+    HARD = 2
+
+
+class SigintHandler:
+    """
+    Context manager that replaces a `KeyboardInterrupt` with a mechanism to
+    pause the Bluesky RunEngine. This allows you to press `Ctrl + C` during
+    a running plan and have the RunEngine pause.
+
+    On the first SIGINT, it will request a 'deferred pause' or 'soft pause'. The RunEngine will
+    pause at the next checkpoint.
+
+    On each subsequent SIGINT within 10 seconds, it will request a 'hard pause'. The RunEngine
+    will pause immediately.
+
+    However, if more than 10 SIGINTs are processed within 10 seconds, it will restore
+    and execute the original signal handler (typically `KeyboardInterrupt`).
+
+    Each SIGINT must be spaced by at least 100ms to count (to represent intentional human input).
+
+    The count will reset after 10 seconds since the last SIGINT processed.
+    """
+
     def __init__(self, RE):
-        super().__init__(signal.SIGINT, log=RE.log)
-        self.RE = RE
-        self.last_sigint_time = None  # time most recent SIGINT was processed
+        self._RE = RE
+        self._last_sigint_time = time.monotonic()
+        self._request = PauseRequest.NONE
+        self._released = True
+        self._request_event = threading.Event()
 
-    def __enter__(self):
-        return super().__enter__()
+    def _restore_and_reraise(self, signum, frame) -> None:
+        """Hand SIGINT back to the disposition installed before ``__enter__``.
 
-    def handle_signals(self):
-        # Check for pause requests from keyboard.
-        # TODO, there is a possible race condition between the two
-        # pauses here
-        if self.RE.state.is_running and (not self.RE._interrupted):
-            if self.last_sigint_time is None or time.time() - self.last_sigint_time > 10:
-                # reset the counter to 1
-                # It's been 10 seconds since the last SIGINT. Reset.
-                self.count = 1
-                if self.last_sigint_time is not None:
-                    self.log.debug("It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.")
+        Re-install ``self._original_handler`` and re-deliver the signal so
+        that disposition handles it. This works uniformly whether
+        ``_original_handler`` is a callable, ``signal.SIG_DFL``,
+        ``signal.SIG_IGN``, or ``None`` (a handler installed from C that is
+        not representable in Python), avoiding the ``TypeError`` that calling
+        a non-callable disposition directly would raise.
 
-                # weeee push these to threads to not block the main thread
-                def maybe_defer_pause():
-                    try:
-                        self.RE.request_pause(True)
-                    except TransitionError:
-                        ...
+        Swap is performed *before* the re-raise so the re-delivered signal is
+        dispatched to the original disposition rather than back into this
+        closure. Re-installing the same handler is idempotent, so a later
+        ``signal.signal`` in ``__exit__`` is harmless.
+        """
+        signal.signal(signal.SIGINT, self._original_handler)
+        signal.raise_signal(signal.SIGINT)
 
-                threading.Thread(target=maybe_defer_pause).start()
+    def _watch_request(self) -> None:
+        while not self._released:
+            if self._request == PauseRequest.SOFT:
                 print(
                     "A 'deferred pause' has been requested. The "
                     "RunEngine will pause at the next checkpoint. "
                     "To pause immediately, hit Ctrl+C again in the "
                     "next 10 seconds."
                 )
+                try:
+                    self._RE.request_pause(defer=True)
+                except TransitionError:
+                    ...
+            elif self._request == PauseRequest.HARD:
+                print("A 'hard pause' has been requested.")
+                try:
+                    self._RE.request_pause(defer=False)
+                except TransitionError:
+                    ...
 
-                self.last_sigint_time = time.time()
-            elif self.count == 2:
-                print("trying a second time")
-                # - Ctrl-C twice within 10 seconds -> hard pause
-                self.log.debug("RunEngine detected two SIGINTs. A hard pause will be requested.")
+            # Block until next request
+            self._request_event.wait()
+            self._request_event.clear()
 
-                # weeee push these to threads to not block the main thread
-                def maybe_prompt_pause():
-                    try:
-                        self.RE.request_pause(False)
-                    except TransitionError:
-                        ...
+    def __enter__(self):
+        # Setup internal state tracking
+        self._count = 0
+        self._last_sigint_time = time.monotonic()
+        self._released = False
+        self._request = PauseRequest.NONE
+        self._original_handler = signal.getsignal(signal.SIGINT)
 
-                threading.Thread(target=maybe_prompt_pause).start()
-            self.last_sigint_time = time.time()
+        # Spawn request thread
+        self._request_thread = threading.Thread(target=self._watch_request, daemon=True)
+        self._request_thread.start()
+
+        def handler(signum, frame):
+            """
+            Assumptions:
+            - `self._last_sigint_time` is initialized on __enter__ with timestamp
+            - `self._count` is initialized on __enter__ with 0
+            This callback must run very fast and avoid heavy work (no threads, prints,
+            substantial I/O, etc.). Lightweight lock operations like Event.set() are
+            acceptable.
+            """
+            if self._released:
+                self._restore_and_reraise(signum, frame)
+                return
+            now = time.monotonic()
+            time_diff = now - self._last_sigint_time
+
+            if time_diff > 10 or self._count == 0:
+                # First pause request
+                self._last_sigint_time = now
+                self._count = 1
+                self._request = PauseRequest.SOFT
+                self._request_event.set()
+            elif time_diff > 0.1 and self._count > 0:
+                # Second or more pause requests
+                self._last_sigint_time = now
+                self._count += 1
+                if self._count < 11:
+                    self._request = PauseRequest.HARD
+                    self._request_event.set()
+                else:
+                    self._released = True
+                    self._request_event.set()
+                    self._restore_and_reraise(signum, frame)
+
+        # Install handler callback
+        signal.signal(signal.SIGINT, handler)
+        return self
+
+    def __exit__(self, type, value, tb) -> None:
+        signal.signal(signal.SIGINT, self._original_handler)
+        self._released = True
+        self._request_event.set()
 
 
 class CallbackRegistry:
@@ -446,25 +605,35 @@ class _BoundMethodProxy:
     def __init__(self, cb):
         self._hash = hash(cb)
         self._destroy_callbacks = []
-        try:
-            # This branch is successful if 'cb' bound method and class method,
-            #   but destroy_callback mechanism works only for bound methods,
-            #   since cb.__self__ points to class instance only for
-            #   bound methods, not for class methods. Therefore destroy_callback
-            #   will not be called for class methods.
-            try:
-                self.inst = ref(cb.__self__, self._destroy)
-            except TypeError:
-                self.inst = None
-            self.func = cb.__func__
-            self.klass = cb.__self__.__class__
+        cb_self = getattr(cb, "__self__", None)
 
-        except AttributeError:
+        if cb_self is None:
             # 'cb' is a function, callable object or static method.
             # No weak reference is created, strong reference is stored instead.
             self.inst = None
             self.func = cb
             self.klass = None
+        elif isinstance(cb_self, type):
+            # 'cb' is a class method, so __self__ is the class rather than an
+            # instance of it. A class is weakly referenceable, so the branch below
+            # would succeed and then silently unsubscribe the callback when the
+            # class was collected -- and there is no instance whose death was
+            # supposed to mean anything. Hold it strongly, as for a plain function.
+            self.inst = None
+            self.func = cb
+            self.klass = cb_self
+        else:
+            try:
+                self.inst = ref(cb_self, self._destroy)
+            except TypeError:
+                # 'obj' cannot be weakly referenced, e.g. it uses __slots__ without
+                # __weakref__. Hold the bound method strongly rather than an unbound
+                # function that we would later call without its instance.
+                self.inst = None
+                self.func = cb
+            else:
+                self.func = cb.__func__
+            self.klass = cb_self.__class__
 
     def add_destroy_callback(self, callback):
         self._destroy_callbacks.append(_BoundMethodProxy(callback))
@@ -585,7 +754,7 @@ def normalize_subs_input(subs):
     elif hasattr(subs, "items"):
         for key, funcs in list(subs.items()):
             if key not in SUBS_NAMES:
-                raise KeyError(f"Keys must be one of {SUBS_NAMES!r:0}")
+                raise KeyError(f"Keys must be one of {SUBS_NAMES!r}")
             if callable(funcs):
                 normalized[key].append(funcs)
             else:
@@ -950,8 +1119,8 @@ def get_history():
             return historydict.HistoryDict(":memory:")
 
 
-_QT_KICKER_INSTALLED = {}
-_NB_KICKER_INSTALLED = {}
+_QT_KICKER_INSTALLED: dict = {}
+_NB_KICKER_INSTALLED: dict = {}
 
 
 def install_kicker(loop=None, update_rate=0.03):
@@ -1176,6 +1345,8 @@ def sanitize_np(val):
         if np.isscalar(val):
             return val.item()
         return val.tolist()
+    if type(val) in (list, tuple):
+        return type(val)(sanitize_np(v) for v in val)
     return val
 
 
@@ -1289,15 +1460,15 @@ class ProgressBarBase(abc.ABC):  # noqa: B024
         self,
         pos: Any,
         *,
-        name: Optional[str] = None,
+        name: str | None = None,
         current: Any = None,
         initial: Any = None,
         target: Any = None,
         unit: str = "units",
         precision: Any = None,
         fraction: Any = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
     ): ...
 
     def clear(self): ...  # noqa: B027
@@ -1444,7 +1615,7 @@ def default_progress_bar(status_objs_or_none) -> ProgressBarBase:
 
 class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
-    pbar: Optional[ProgressBarBase]
+    pbar: ProgressBarBase | None
 
     def __init__(self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
@@ -1728,7 +1899,7 @@ class DefaultDuringTask(DuringTask):
 
                 app = QtWidgets.QApplication.instance()
                 if app is None:
-                    _qapp = app = QtWidgets.QApplication([b"bluesky"])
+                    _qapp = app = QtWidgets.QApplication(["bluesky"])
                 assert app is not None
                 event_loop = QtCore.QEventLoop()
 
@@ -1887,7 +2058,7 @@ already_warned: dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
-    if args or kwargs and not already_warned.get(msg.command):
+    if (args or kwargs) and not already_warned.get(msg.command):
         already_warned[msg.command] = True
         error_msg = f"""\
 About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
@@ -1895,7 +2066,7 @@ In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("{msg.command}") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg)  # noqa: B028
+        warnings.warn(error_msg, stacklevel=4)
 
 
 def maybe_update_hints(hints: dict[str, Hints], obj):
@@ -1903,18 +2074,22 @@ def maybe_update_hints(hints: dict[str, Hints], obj):
         hints[obj.name] = obj.hints
 
 
+def _isasyncgen(iterator: SyncOrAsyncIterator[T]) -> TypeIs[AsyncIterator[T]]:
+    return inspect.isasyncgen(iterator)
+
+
 async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator[T]:
-    if inspect.isasyncgen(iterator):
+    if _isasyncgen(iterator):
         async for v in iterator:
             yield v
     else:
-        for v in iterator:  # type: ignore
+        for v in iterator:
             yield v
 
 
 async def maybe_collect_asset_docs(
-    msg, obj, index: Optional[int] = None, *args, **kwargs
-) -> AsyncIterable[Union[Asset, StreamAsset]]:
+    msg, obj, index: int | None = None, *args, **kwargs
+) -> AsyncIterable[Asset | StreamAsset]:
     # The if/elif statement must be done in this order because isinstance for protocol
     # doesn't check for exclusive signatures, and WritesExternalAssets will also
     # return true for a WritesStreamAsset as they both contain collect_asset_docs

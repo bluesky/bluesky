@@ -14,7 +14,7 @@ class LiveDispatcher(CallbackBase):
     """
     A secondary event stream of processed data
 
-    The LiveDipatcher base implementation does not change any of the data
+    The LiveDispatcher base implementation does not change any of the data
     emitted, this task is left to sub-classes, but instead handles
     reimplementing a secondary event stream that fits the same schema demanded
     by the RunEngine itself. In order to reduce the work done by these

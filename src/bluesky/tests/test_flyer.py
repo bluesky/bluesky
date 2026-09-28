@@ -352,8 +352,8 @@ def test_device_redundent_config_reading(RE):
     )
     assert flyer.call_counts["collect"] == 4
     assert flyer.call_counts["describe_collect"] == 1
-    assert flyer.call_counts["read_configuration"] == 1
-    assert flyer.call_counts["describe_configuration"] == 1
+    assert flyer.call_counts["read_configuration"] == 2
+    assert flyer.call_counts["describe_configuration"] == 2
     assert flyer.call_counts["kickoff"] == 1
     assert flyer.call_counts["complete"] == 1
 

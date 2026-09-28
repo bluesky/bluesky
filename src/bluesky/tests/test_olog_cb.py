@@ -1,7 +1,7 @@
 from bluesky import Msg
 from bluesky.callbacks.olog import logbook_cb_factory
 
-text = []
+text: list[str] = []
 
 
 def f(**kwargs):

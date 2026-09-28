@@ -1,16 +1,6 @@
 from abc import abstractmethod
-from collections.abc import AsyncIterator, Awaitable, Iterator
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Literal,
-    Optional,
-    Protocol,
-    TypeVar,
-    Union,
-    runtime_checkable,
-)
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, TypeVar, runtime_checkable
 
 from event_model.documents import Datum, StreamDatum, StreamResource
 from event_model.documents.event import PartialEvent
@@ -19,7 +9,11 @@ from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
-from typing_extensions import ParamSpec, TypedDict, Unpack
+
+# TypedDict and Unpack are imported from typing_extensions rather than typing:
+# typing_extensions.TypedDict carries backported fixes recommended until Python
+# 3.12, and typing.Unpack is only available from Python 3.11 (floor is 3.10).
+from typing_extensions import TypedDict, Unpack
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
@@ -41,6 +35,7 @@ class ReadingOptional(TypedDict, total=False):
 
 T = TypeVar("T")
 P = ParamSpec("P")
+R_co = TypeVar("R_co", covariant=True)
 
 
 class Reading(Generic[T], ReadingOptional):
@@ -52,20 +47,16 @@ class Reading(Generic[T], ReadingOptional):
     timestamp: float
 
 
-Asset = Union[
-    tuple[Literal["resource"], PartialResource],
-    tuple[Literal["datum"], Datum],
-]
+Asset: TypeAlias = tuple[Literal["resource"], PartialResource] | tuple[Literal["datum"], Datum]
 
 
-StreamAsset = Union[
-    tuple[Literal["stream_resource"], StreamResource],
-    tuple[Literal["stream_datum"], StreamDatum],
-]
+StreamAsset: TypeAlias = (
+    tuple[Literal["stream_resource"], StreamResource] | tuple[Literal["stream_datum"], StreamDatum]
+)
 
 
-SyncOrAsync = Union[T, Awaitable[T]]
-SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
+SyncOrAsync: TypeAlias = T | Awaitable[T]
+SyncOrAsyncIterator: TypeAlias = Iterator[T] | AsyncIterator[T]
 
 
 @runtime_checkable
@@ -82,7 +73,7 @@ class Status(Protocol):
         ...
 
     @abstractmethod
-    def exception(self, timeout: Optional[float] = 0.0) -> Optional[BaseException]: ...
+    def exception(self, timeout: float | None = 0.0) -> BaseException | None: ...
 
     @property
     @abstractmethod
@@ -98,13 +89,32 @@ class Status(Protocol):
 
 
 @runtime_checkable
+class StatusWithResult(Status, Protocol[R_co]):
+    @abstractmethod
+    def result(self) -> R_co:
+        """Return whatever result the Status is meant to produce when it is done.
+
+        It replicates the behavior of :py:meth:`asyncio.Future.result`.
+
+        If a result is not available yet, it should raise
+        :py:exc:`asyncio.InvalidStateError` (or a subclass of it).
+
+        Returns
+        -------
+        R_co
+            The result of the operation when it is done.
+        """
+        ...
+
+
+@runtime_checkable
 class HasName(Protocol):
     @property
     @abstractmethod
     def name(self) -> str:
         """Used to populate object_keys in the Event DataKey
 
-        https://blueskyproject.io/event-model/event-descriptors.html#object-keys"""
+        https://blueskyproject.io/event-model/main/explanations/event-descriptors.html#object-keys"""
         ...
 
 
@@ -112,7 +122,7 @@ class HasName(Protocol):
 class HasParent(Protocol):
     @property
     @abstractmethod
-    def parent(self) -> Optional[Any]:
+    def parent(self) -> Any | None:
         """``None``, or a reference to a parent device.
 
         Used by the RE to stop duplicate stages.
@@ -152,7 +162,7 @@ class WritesExternalAssets(Protocol):
 @runtime_checkable
 class WritesStreamAssets(Protocol):
     @abstractmethod
-    def collect_asset_docs(self, index: Optional[int] = None) -> SyncOrAsyncIterator[StreamAsset]:
+    def collect_asset_docs(self, index: int | None = None) -> SyncOrAsyncIterator[StreamAsset]:
         """Create the resource and datum documents describing data in external
             source up to a given index if provided.
 
@@ -304,7 +314,7 @@ class Readable(HasName, Protocol[T]):
 @runtime_checkable
 class Collectable(HasName, Protocol):
     @abstractmethod
-    def describe_collect(self) -> SyncOrAsync[Union[dict[str, DataKey], dict[str, dict[str, DataKey]]]]:
+    def describe_collect(self) -> SyncOrAsync[dict[str, DataKey] | dict[str, dict[str, DataKey]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
         Since a flyer can potentially return more than one event stream, this is either
@@ -396,7 +406,7 @@ class Stageable(Protocol):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     @abstractmethod
-    def stage(self) -> Union[Status, list[Any]]:
+    def stage(self) -> Status | list[Any]:
         """An optional hook for "setting up" the device for acquisition.
 
         It should return a ``Status`` that is marked done when the device is
@@ -405,7 +415,7 @@ class Stageable(Protocol):
         ...
 
     @abstractmethod
-    def unstage(self) -> Union[Status, list[Any]]:
+    def unstage(self) -> Status | list[Any]:
         """A hook for "cleaning up" the device after acquisition.
 
         It should return a ``Status`` that is marked done when the device is finished
@@ -436,7 +446,7 @@ class Pausable(Protocol):
 @runtime_checkable
 class Stoppable(Protocol):
     @abstractmethod
-    def stop(self, success=True) -> SyncOrAsync[None]:
+    def stop(self, *, success: bool = False) -> SyncOrAsync[None]:
         """Safely stop a device that may or may not be in motion.
 
         The argument ``success`` is a boolean.
@@ -456,7 +466,7 @@ Callback = Callable[[dict[str, Reading[T]]], None]
 @runtime_checkable
 class Subscribable(HasName, Protocol[T]):
     @abstractmethod
-    def subscribe(self, function: Callback[T]) -> None:
+    def subscribe_reading(self, function: Callback[T]) -> None:
         """Subscribe to updates in value of a device.
 
         When the device has a new value ready, it should call ``function``

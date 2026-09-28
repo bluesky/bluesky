@@ -2,6 +2,252 @@
  Release History
 =================
 
+Unreleased
+==========
+
+Added
+-----
+
+- Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
+  such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
+  subscription style from the signal.  For a ``Subscribable`` it subscribes,
+  and ``remove`` unsubscribes, on the RunEngine's event loop, since a
+  subscription belongs to the loop that made it.  Passing a signal that is
+  neither now raises a ``RuntimeError`` from ``install`` rather than an
+  ``AttributeError``.  Passing ``event_type`` alongside a ``Subscribable``
+  signal also raises, rather than being silently ignored: that style has no
+  event types, so a caller asking for one would otherwise get a suspender
+  watching something else with nothing said.
+
+Fixed
+-----
+- A suspension no longer duplicates the documents from a monitored signal.
+  Resuming from one re-subscribed every monitor, having never unsubscribed
+  them: monitors run throughout a suspension, and only a *pause* stops them.
+  One suspension therefore left each monitored signal subscribed twice, and
+  every Event it produced afterwards was emitted twice, compounding with each
+  further suspension.
+- A device is told a suspension has started only if it satisfies
+  `bluesky.protocols.Pausable`.  A suspension used to call ``pause()`` on
+  anything that had the attribute, where ``RunEngine.pause`` has always required
+  the protocol -- and ``Pausable`` requires ``resume`` as well, so a device with
+  only ``pause`` was told a suspension had begun and never told it had ended.
+  Both paths now ask the same question.
+
+- ``RunEngine.verbose`` reports whether the engine logs, and turning it off
+  stops it.  It read ``disabled`` from the log adapter, which has no such
+  attribute, so reading raised ``AttributeError`` until something had assigned
+  one -- and assigning put it on the adapter, where the logging machinery never
+  looks, so turning it off silenced nothing.  Both halves now go to the logger
+  the adapter wraps.
+
+Changed
+-------
+
+- Suspender justification messages report the last value the suspender was
+  called back with, rather than calling ``signal.get()`` when the message is
+  built.  As well as being readable for signals that cannot be read
+  synchronously, this reports the value that actually tripped the suspender
+  rather than whatever it has since become.
+- ``SuspendWhenChanged`` defaults ``expected_value`` to the first value it is
+  called back with, for every kind of signal, and so latches it when the
+  suspender is installed rather than when it is created.  Previously an ophyd
+  signal was read synchronously in ``__init__`` while a ``Subscribable`` one --
+  which cannot be -- latched on install, so *when* the default was captured
+  depended on which protocol the signal happened to implement.  Until the
+  suspender is installed ``expected_value`` is now ``None``; code reading it
+  between construction and installation, or constructing a suspender and then
+  changing the signal before installing it, will see the difference.
+- The ``bluesky.protocols.Subscribable`` protocol now requires a
+  ``subscribe_reading`` method rather than a ``subscribe`` method.  The
+  protocol did not match the implementation it was written to describe:
+  ophyd's ``subscribe`` calls back with the ``obj`` that changed, whereas
+  ``Subscribable`` documented a callback taking a mapping of
+  ``{name: Reading}``.  Renaming makes the two subscription styles
+  distinct, so an object can implement either (or both) unambiguously.
+- ophyd objects therefore no longer satisfy
+  ``isinstance(obj, Subscribable)``.  The ``monitor`` and ``unmonitor``
+  messages still support them: ``monitor`` calls ``subscribe_reading`` if
+  the object implements ``Subscribable``, and otherwise falls back to
+  calling ``subscribe`` and reading the object back in the callback.
+  Devices that implemented the old ``Subscribable`` protocol should rename
+  ``subscribe`` to ``subscribe_reading``; users of ophyd-async need at
+  least v0.13.5.
+
+v1.15.1 (2026-05-05)
+====================
+
+Added
+-----
+- Support for ``CURVE`` encryption in the ZMQ callback
+- Additional unit tests for ZMQ callback, and for ZMQ callback CLI entrypoint.
+
+Changed
+-------
+- Dropped support for passing in deprecated ``RE`` and ``zmq`` parameters to the ZMQ callback.
+
+v1.15.0 (2026-04-15)
+====================
+
+Added
+-----
+
+- Added support and testing for Python 3.13
+- ``event_model`` versions to ``RE.md``
+- More flexible addresses for ZMQ callbacks
+- Improved numpy sanitization for ``Msg`` tracing
+
+Fixed
+-----
+
+- Bug where ``SIGINT`` counting had a data race on very rapid presses, causing unreliable pausing behavior
+- Data saved from ``read_configuration()`` is now cached per stream, fixing subtle cache invalidation issues
+- ``TypeError`` on ``np.round`` in the ``%wa`` Bluesky magic with a multi-axis ``PsuedoPositioner`` coming from Numpy 2.0 change
+- Subtle bug in suspenders based on which thread the Ophyd subscription was run in
+- Handle empty motors in ``RunStart`` document in ``BestEffortCallback``
+
+Changed
+-------
+
+- Dropped support and testing for Python 3.9 (EOL in 2025-10)
+- ``SIGINT`` pause/interrupt behavior now requires 100ms between signal arrival to count toward a hard-pause or a ``KeyboardInterrupt``
+
+v1.14.6 (2025-10-08)
+====================
+
+Fixed
+-----
+
+- Error when using ``bps.wait`` with a timeout that actually triggered
+
+Changed
+-------
+
+- Remove the ``'streams'`` namespace (container) from the container structure created by ``TiledWriter``
+
+v1.14.5 (2025-10-03)
+====================
+
+Added
+-----
+
+- ``bps.wait`` now allows an additional ``watch`` parameter to specify
+  other status groups to watch. If any of the watched groups fail while
+  waiting for the main group, their exception will be raised. This is
+  needed so a plan can wait for a motion flyer to complete, failing if
+  any detector flyer fails, but not having to wait for the detector flyers
+  to write all files to disk before the next part of the plan.
+
+
+Fixed
+-----
+
+- Typing issues with latest versions of tiled, event-model
+
+v1.14.4 (2025-08-26)
+====================
+
+Changed
+-------
+
+- Update ``TiledWriter`` to match API changes in Tiled
+  (demotion of "composite" from structure family to spec)
+
+v1.14.3 (2025-08-26)
+====================
+
+Changed
+-------
+
+- RunEngine now supports both sync and async functions as a `scan_id_source`
+
+Fixed
+-----
+
+- Fix a Regression Related External Data Present in Multiple Streams
+
+v1.14.2 (2025-06-10)
+====================
+
+Added
+-----
+
+- ``bluesky.callbacks.buffer.BufferingWrapper``, which runs a wrapped
+  callback on its own thread behind a queue so that slow consumers do not
+  block the ``RunEngine``.  It raises if the queue fills up rather than
+  growing without bound.
+- ``bluesky.callbacks.json_writer.JSONWriter`` and ``JSONLinesWriter``,
+  which serialize a run's documents to JSON and JSONLines respectively.
+- ``TiledWriter`` accepts ``spec_to_mimetype`` to extend or override the
+  mapping used when converting legacy ``Resource`` documents to
+  ``StreamResource``, and ``patches`` to fix up documents before they are
+  normalized.
+- ``TiledWriter`` accepts ``backup_directory``; runs that fail to be
+  written to Tiled are written there in JSONLines format for recovery.
+- ``TiledWriter`` accepts ``batch_size``, the number of ``Event`` or
+  ``StreamDatum`` documents to collect before writing.  Larger values cut
+  down the number of write operations for bulk work such as database
+  migration; for streaming use, keep it at ``<= 1``.
+
+Changed
+-------
+
+- The document normalizer used by ``TiledWriter`` is now public as
+  ``bluesky.callbacks.tiled_writer.RunNormalizer`` (was
+  ``_RunNormalizer``), so it can be reused to feed updated documents to
+  other consumers.
+- ``MIMETYPE_LOOKUP`` moved from ``bluesky.callbacks.core`` to
+  ``bluesky.callbacks.tiled_writer``.
+- ``StreamResource`` documents are now emitted in the current
+  event-model schema.
+
+v1.14.1 (2025-05-21)
+====================
+
+Added
+-----
+
+- The `mv` and `mvr` plans accept a new argument, `timeout`.
+
+Changed
+-------
+
+- The `bluesky.callbacks.tiled_writer.TiledWriter` looks for an
+  optional key `tiled_access_tags` in the 'start' document and,
+  if found, uses it to set `access_tags` on the nodes created
+  in Tiled to store the metadata and data from the BlueskyRun.
+  In additional, some minor refinements were made to the writer.
+
+v1.14.0 (2025-05-06)
+====================
+
+Added
+-----
+
+- Included `ophyd_async` version in start document metadata.
+- Implemented `close()` on the wrapper object `Plan`.
+
+Changed
+-------
+
+- Reworked `bluesky.callbacks.tiled_writer.TiledWriter` and
+  supporting objects to lay out metadata and data from
+  Bluesky documents in a new way, dubbed version 3 of the
+  Tiled `BlueskyRun` spec.
+
+Fixed
+-----
+
+- Removed accidental debug prints in `plot_peak_stats`.
+- Fixed `LiveTable` output for boolean and Enum `ophyd-async` signals
+- Fixed a critical bug where using the ``configure`` machinery would generate a descriptor with stale configuration.
+
+Maintenance
+-----------
+
+- Fixed minor errors in docstrings and documentation.
+- Refactored plot setup logic in Best-Effort Callback for clarity.
+
 v1.13.1 (2024-12-12)
 ====================
 
@@ -13,9 +259,6 @@ Changed
   process or multiple processes sharing the same files.  ``PersistentDict`` is
   not being removed, but is strongly discouraged for new use.  To get the old pinning use
   ```pip install bluesky[old_persistentdict]`` or install ``zict<3``.
-
-
-
 
 v1.13.0a4 (2024-07-08)
 ======================

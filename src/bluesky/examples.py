@@ -72,15 +72,6 @@ def do_nothing(timeout=5):
     yield Msg("close_run")
 
 
-def checkpoint_forever():
-    # simplest pauseable scan
-    yield Msg("open_run")
-    while True:
-        ttime.sleep(0.1)
-        yield Msg("checkpoint")
-    yield Msg("close_run")
-
-
 def wait_one(det, motor):
     "Set, trigger, read"
     yield Msg("open_run")

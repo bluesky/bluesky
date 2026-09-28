@@ -412,10 +412,10 @@ def classify_outer_product_args_pattern(args):
         # Verify the motors are preset only at correct positions in the list
         if pattern == OuterProductArgsPattern.PATTERN_1:
             # Positions of the movable objects (motors)
-            pos_movable = list(range(0, len(args), 4))
+            pos_movable = set(range(0, len(args), 4))
         elif pattern == OuterProductArgsPattern.PATTERN_2:
             # Positions of the movable objects (motors)
-            pos_movable = [0] + list(range(4, len(args), 5))
+            pos_movable = {0} | set(range(4, len(args), 5))
         else:
             raise ValueError(f"Unknown pattern '{pattern}'")
         for n, element in enumerate(args):

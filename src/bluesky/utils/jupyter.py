@@ -3,7 +3,7 @@ import sys
 import time
 from functools import partial
 from threading import RLock
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 
 import numpy as np
 from IPython.core.display import HTML
@@ -53,15 +53,15 @@ class NotebookProgressBar(ProgressBarBase):
         self,
         pos: Any,
         *,
-        name: Optional[str] = None,
+        name: str | None = None,
         current: Any = None,
         initial: Any = None,
         target: Any = None,
         unit: str = "units",
         precision: Any = None,
         fraction: Any = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
     ):
         if all(x is not None for x in (current, initial, target)):
             # In this case there is enough information to draw a progress bar with
@@ -110,7 +110,7 @@ class NotebookProgressBar(ProgressBarBase):
         meta: str = "",
         color: str = "#97d4e8",
         total: float = 1.0,
-        value: Optional[float] = None,
+        value: float | None = None,
     ) -> None:
         """
         Draws the progress bar or a message if there is

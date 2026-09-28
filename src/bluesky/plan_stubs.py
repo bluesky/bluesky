@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 from cycler import cycler
 
@@ -22,6 +22,7 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    Collectable,
     Configurable,
     Flyable,
     Locatable,
@@ -36,6 +37,7 @@ from .protocols import (
     Stoppable,
     T,
     Triggerable,
+    WritesStreamAssets,
     check_supports,
 )
 from .utils import (
@@ -194,7 +196,7 @@ def locate(*objs, squeeze=True):
 
 
 @plan
-def monitor(obj: Readable, *, name: Optional[str] = None, **kwargs) -> MsgGenerator:
+def monitor(obj: Readable, *, name: str | None = None, **kwargs) -> MsgGenerator:
     """
     Asynchronously monitor for new values and emit Event documents.
 
@@ -258,7 +260,7 @@ def null() -> MsgGenerator:
 def abs_set(
     obj: Movable,
     *args: Any,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -306,7 +308,7 @@ def abs_set(
 def rel_set(
     obj: Movable,
     *args: Any,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -350,8 +352,9 @@ def rel_set(
 # is not currently able to be represented in python's type system
 @plan
 def mv(
-    *args: Union[Movable, Any],
-    group: Optional[Hashable] = None,
+    *args: Movable | Any,
+    group: Hashable | None = None,
+    timeout: float | None = None,
     **kwargs,
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
@@ -365,6 +368,8 @@ def mv(
         device1, value1, device2, value2, ...
     group : string, optional
         Used to mark these as a unit to be waited on.
+    timeout : float, optional
+        Specify a maximum time that the move(s) can be waited for.
     kwargs :
         passed to obj.set()
 
@@ -390,7 +395,7 @@ def mv(
     for obj, val in step.items():
         ret = yield Msg("set", obj, val, group=group, **kwargs)
         status_objects.append(ret)
-    yield Msg("wait", None, group=group)
+    yield Msg("wait", None, group=group, timeout=timeout)
     return tuple(status_objects)
 
 
@@ -399,7 +404,7 @@ mov = mv  # synonym
 
 @plan
 def mvr(
-    *args: Union[Movable, Any], group: Optional[Hashable] = None, **kwargs
+    *args: Movable | Any, group: Hashable | None = None, timeout: float | None = None, **kwargs
 ) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -412,6 +417,8 @@ def mvr(
         device1, value1, device2, value2, ...
     group : string, optional
         Used to mark these as a unit to be waited on.
+    timeout : float, optional
+        Specify a maximum time that the move(s) can be waited for.
     kwargs :
         passed to obj.set()
 
@@ -437,7 +444,7 @@ def mvr(
 
     @relative_set_decorator(objs)
     def inner_mvr():
-        return (yield from mv(*args, group=group, **kwargs))
+        return (yield from mv(*args, group=group, timeout=timeout, **kwargs))
 
     return (yield from inner_mvr())
 
@@ -568,7 +575,7 @@ def stop(obj: Stoppable) -> MsgGenerator:
 def trigger(
     obj: Triggerable,
     *,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
 ) -> MsgGenerator[Status]:
     """
@@ -622,7 +629,13 @@ def sleep(time: float) -> MsgGenerator:
 
 
 @plan
-def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, error_on_timeout: bool = True):
+def wait(
+    group: Hashable | None = None,
+    *,
+    timeout: float | None = None,
+    error_on_timeout: bool = True,
+    watch: Sequence[str] = (),
+):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -638,12 +651,15 @@ def wait(group: Optional[Hashable] = None, *, timeout: Optional[float] = None, e
         Specifies the behavior when the timeout is reached:
         - If True, a TimeoutError is raised if the operations do not complete within the specified timeout.
         - If False, the method returns once all objects are done.
+    watch : set of watch groups, optional
+        Additional groups to monitor while waiting for the primary group. Raises an exception if any watched group
+        fails.
     Yields
     ------
     msg : Msg
         Msg('wait', None, group=group, error_on_timeout=error_on_timeout, timeout=timeout)
     """
-    return (yield Msg("wait", None, group=group, error_on_timeout=error_on_timeout, timeout=timeout))
+    return (yield Msg("wait", None, group=group, error_on_timeout=error_on_timeout, timeout=timeout, watch=watch))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -742,9 +758,9 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 
 
 @plan
-def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
+def prepare(obj: Preparable, *args, group: Hashable | None = None, wait: bool = False, **kwargs):
     """
-    Prepare a device.
+    Prepare a device ready for trigger or kickoff.
 
     Parameters
     ----------
@@ -779,7 +795,7 @@ def prepare(obj: Preparable, *args, group: Optional[Hashable] = None, wait: bool
 def kickoff(
     obj: Flyable,
     *,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -821,7 +837,7 @@ def kickoff(
 
 
 @plan
-def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kwargs):
+def kickoff_all(*args, group: Hashable | None = None, wait: bool = True, **kwargs):
     """
     Kickoff one or more fly-scanning devices.
 
@@ -865,7 +881,7 @@ def kickoff_all(*args, group: Optional[Hashable] = None, wait: bool = True, **kw
 def complete(
     obj: Flyable,
     *,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
     wait: bool = False,
     **kwargs,
 ) -> MsgGenerator[Status]:
@@ -914,7 +930,7 @@ def complete(
 
 
 @plan
-def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **kwargs):
+def complete_all(*args, group: Hashable | None = None, wait: bool = False, **kwargs):
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
@@ -962,14 +978,14 @@ def complete_all(*args, group: Optional[Hashable] = None, wait: bool = False, **
 
 @plan
 def collect(
-    obj: Flyable, *args, stream: bool = False, return_payload: bool = True, name: Optional[str] = None
-) -> MsgGenerator[list[PartialEvent]]:
+    obj: Collectable, *args, stream: bool = False, return_payload: bool = True, name: str | None = None
+) -> MsgGenerator[list[PartialEvent] | None]:
     """
     Collect data cached by one or more fly-scanning devices and emit documents.
 
     Parameters
     ----------
-    obj : A device with 'kickoff', 'complete', and 'collect' methods.
+    obj : A device with a 'collect' method.
     stream : boolean, optional
         If False (default), emit Event documents in one bulk dump. If True,
         emit events one at time.
@@ -997,7 +1013,49 @@ def collect(
 
 
 @plan
-def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
+def collect_all(
+    *args, stream: bool = False, return_payload: bool = True, name: str | None = None
+) -> MsgGenerator[list[PartialEvent] | None]:
+    """
+    Collect data cached by one or more fly-scanning devices and emit documents.
+
+    Parameters
+    ----------
+    *args : Device(s) with a 'collect' method.
+    stream : boolean, optional
+        If False (default), emit Event documents in one bulk dump. If True,
+        emit events one at time.
+    return_payload: boolean, optional
+        If True (default), return the collected Events. If False, return None.
+        Using ``stream=True`` and ``return_payload=False`` together avoids
+        accumulating the documents in memory: they are emitted as they are
+        collected, and they are not accumulated.
+    name: str, optional
+        If not None, will collect for the named string specifically, else collect will be performed
+        on all streams.
+    """
+
+    # Only collectable objects should be passed in
+    objs = [check_supports(arg, Collectable) for arg in args]
+
+    # If we provide a stream name, attempt to collect all objects with that stream name.
+    # This is only supported if all the objects support the WritesStreamAssets protocol,
+    # so check for that. If not all objects support the protocol, fall back to collecting
+    # from each object separately.
+    if name is not None and (all(isinstance(obj, WritesStreamAssets) for obj in objs)):
+        return (yield from collect(*objs, stream=stream, return_payload=return_payload, name=name))
+    else:
+        # Otherwise, we need to collect from each object separately and combine the results.
+        collections = []
+        for obj in objs:
+            ret = yield from collect(obj, stream=stream, return_payload=return_payload, name=name)
+            if ret is not None:
+                collections.extend(ret)
+        return collections if collections else None
+
+
+@plan
+def collect_while_completing(flyers, dets, flush_period=None, stream_name=None, watch: Sequence[str] = ()):
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
     data from one or more Collectable detectors until all are done.
@@ -1013,8 +1071,8 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     stream_name: str, optional
         If not None, will collect for the named string specifically, else collect will be performed
         on all streams.
-
-
+    watch: set of watch groups, optional
+        Additional groups to monitor while collecting from flyers.
     Yields
     ------
     msg : Msg
@@ -1029,8 +1087,8 @@ def collect_while_completing(flyers, dets, flush_period=None, stream_name=None):
     yield from complete_all(*flyers, group=group, wait=False)
     done = False
     while not done:
-        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False)
-        yield from collect(*dets, name=stream_name)
+        done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False, watch=watch)
+        yield from collect_all(*dets, name=stream_name)
 
 
 @plan
@@ -1068,9 +1126,9 @@ def configure(
 def stage(
     obj: Stageable,
     *,
-    group: Optional[Hashable] = None,
-    wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, list[Any]]]:
+    group: Hashable | None = None,
+    wait: bool | None = None,
+) -> MsgGenerator[Status | list[Any]]:
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
 
@@ -1116,7 +1174,7 @@ def stage(
 @plan
 def stage_all(
     *args: Stageable,
-    group: Optional[Hashable] = None,
+    group: Hashable | None = None,
 ) -> MsgGenerator[None]:
     """
     'Stage' one or more devices (i.e., prepare them for use, 'arm' them).
@@ -1153,9 +1211,9 @@ def stage_all(
 def unstage(
     obj: Stageable,
     *,
-    group: Optional[Hashable] = None,
-    wait: Optional[bool] = None,
-) -> MsgGenerator[Union[Status, list[Any]]]:
+    group: Hashable | None = None,
+    wait: bool | None = None,
+) -> MsgGenerator[Status | list[Any]]:
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
 
@@ -1199,7 +1257,7 @@ def unstage(
 
 
 @plan
-def unstage_all(*args: Stageable, group: Optional[Hashable] = None) -> MsgGenerator[None]:
+def unstage_all(*args: Stageable, group: Hashable | None = None) -> MsgGenerator[None]:
     """
     'Unstage' one or more devices (i.e., put them in standby, 'disarm' them).
 
@@ -1327,7 +1385,7 @@ def remove_suspender(suspender: SuspenderBase) -> MsgGenerator:
 
 
 @plan
-def open_run(md: Optional[CustomPlanMetadata] = None) -> MsgGenerator[str]:
+def open_run(md: CustomPlanMetadata | None = None) -> MsgGenerator[str]:
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
 
@@ -1354,7 +1412,7 @@ def open_run(md: Optional[CustomPlanMetadata] = None) -> MsgGenerator[str]:
 
 
 @plan
-def close_run(exit_status: Optional[str] = None, reason: Optional[str] = None) -> MsgGenerator[str]:
+def close_run(exit_status: str | None = None, reason: str | None = None) -> MsgGenerator[str]:
     """
     Mark the end of the current 'run'. Emit a RunStop document.
 
@@ -1509,7 +1567,7 @@ def broadcast_msg(
 
 @plan
 def repeater(
-    n: Optional[int],
+    n: int | None,
     gen_func: Callable[..., MsgGenerator],
     *args,
     **kwargs,
@@ -1547,7 +1605,7 @@ def repeater(
 
 
 @plan
-def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]:
+def caching_repeater(n: int | None, plan: MsgGenerator) -> MsgGenerator[None]:
     """
     Generate n chained copies of the messages in a plan.
 
@@ -1581,7 +1639,7 @@ def caching_repeater(n: Optional[int], plan: MsgGenerator) -> MsgGenerator[None]
 
 
 @plan
-def one_shot(detectors: Sequence[Readable], take_reading: Optional[TakeReading] = None) -> MsgGenerator[None]:
+def one_shot(detectors: Sequence[Readable], take_reading: TakeReading | None = None) -> MsgGenerator[None]:
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1615,7 +1673,7 @@ def one_1d_step(
     detectors: Sequence[Readable],
     motor: Movable,
     step: Any,
-    take_reading: Optional[TakeReading] = None,
+    take_reading: TakeReading | None = None,
 ) -> MsgGenerator[Mapping[str, Reading]]:
     """
     Inner loop of a 1D step scan
@@ -1695,7 +1753,7 @@ def one_nd_step(
     detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
     pos_cache: dict[Movable, Any],
-    take_reading: Optional[TakeReading] = None,
+    take_reading: TakeReading | None = None,
 ) -> MsgGenerator[None]:
     """
     Inner loop of an N-dimensional step scan
@@ -1733,7 +1791,7 @@ def one_nd_step(
 @plan
 def repeat(
     plan: Callable[[], MsgGenerator],
-    num: Optional[int] = 1,
+    num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
 ) -> MsgGenerator[Any]:
     """

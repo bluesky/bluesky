@@ -189,6 +189,38 @@ def test_multi_motor_list_scan(RE, hw):
     multi_traj_checker(RE, scan, expected_data)
 
 
+def test_list_scan_unequal_lengths_raises():
+    """``list_scan`` (inner product) requires equal-length position lists."""
+    from .conftest import MovableSignal, ReadableSignal
+
+    det = ReadableSignal("det")
+    m1 = MovableSignal(name="m1")
+    m2 = MovableSignal(name="m2")
+
+    with pytest.raises(ValueError, match="lengths of all lists"):
+        # Validation runs before the first yield.
+        next(bp.list_scan([det], m1, [1, 2, 3], m2, [10, 20]))
+
+
+def test_list_scan_duplicate_motor_name_raises():
+    """``list_scan`` must reject motors that share a name.
+
+    Regression test: motors are identified by name in the length bookkeeping
+    (a dict keyed by ``motor.name``) and downstream data keys, so a duplicate
+    name silently overwrote an entry and corrupted validation. Duplicate names
+    are invalid and must be rejected explicitly.
+    """
+    from .conftest import MovableSignal, ReadableSignal
+
+    det = ReadableSignal("det")
+    # Two distinct motors that happen to share a name.
+    m_a = MovableSignal(name="dup")
+    m_b = MovableSignal(name="dup")
+
+    with pytest.raises(ValueError, match="unique name"):
+        next(bp.list_scan([det], m_a, [1, 2, 3], m_b, [10, 20, 30]))
+
+
 def test_dscan(RE, hw):
     traj = np.array([1, 2, 3])
     hw.motor.set(-4)
@@ -418,6 +450,32 @@ def test_adaptive_ascan(RE, hw):
         RE(scan5)
 
 
+def test_adaptive_scan_accepts_tuple_detectors(RE, hw):
+    """``detectors`` may be a tuple (as documented), not only a list.
+
+    Regression test: ``adaptive_core`` did ``detectors + [motor]``, which raised
+    ``TypeError`` when ``detectors`` was a tuple.
+    """
+    actual_traj = []
+    col = collector("motor", actual_traj)
+    # Pass detectors as a tuple -- this used to raise ``TypeError: can only
+    # concatenate tuple (not "list") to tuple``.
+    RE(bp.adaptive_scan((hw.det,), "det", hw.motor, 0, 5, 0.1, 1, 0.1, False), {"event": col})
+    assert np.all(np.diff(actual_traj) > 0)
+
+
+def test_adaptive_scan_missing_target_field_raises(RE, hw):
+    """A ``target_field`` that no device reports must fail with a clear error.
+
+    Regression test: the read loop left ``cur_I`` as ``None`` when
+    ``target_field`` was never found, silently bypassing the adaptive stepping
+    logic (``past_I`` stayed ``None`` so every step used the fixed initial
+    step) instead of surfacing the problem.
+    """
+    with pytest.raises(ValueError, match="was not found in the readings"):
+        RE(bp.adaptive_scan([hw.det], "NOT_A_REAL_FIELD", hw.motor, 0, 5, 0.1, 1, 0.1, False))
+
+
 def test_adaptive_dscan(RE, hw):
     scan1 = bp.rel_adaptive_scan([hw.det], "det", hw.motor, 0, 5, 0.1, 1, 0.1, True)
     scan2 = bp.rel_adaptive_scan([hw.det], "det", hw.motor, 0, 5, 0.1, 1, 0.2, True)
@@ -490,12 +548,21 @@ def test_tune_centroid(RE, hw):
 def test_count(RE, hw):
     det = hw.det
     motor = hw.motor
+
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     actual_intensity = []
     col = collector("det", actual_intensity)
     motor.set(0)
     plan = bp.count([det])
     RE(plan, {"event": col})
     assert actual_intensity[0] == 1.0
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
+    assert start_docs[0]["hints"]["dimensions"] == [(("time",), "primary")]
+
     # multiple counts, via updating attribute
     actual_intensity = []
     col = collector("det", actual_intensity)
@@ -552,8 +619,15 @@ def test_absolute_spiral(RE, hw):
     det = hw.det
     motor1.set(1.0)
     motor2.set(1.0)
+
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     scan = bp.spiral([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_spiral_data(0.0, 0.0), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
     scan = bp.spiral([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_spiral_data(0.5, 0.5), decimal=2)
@@ -567,11 +641,17 @@ def test_rel_spiral(RE, hw):
     start_x = 1.0
     start_y = 1.0
 
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     motor1.set(start_x)
     motor2.set(start_y)
     scan = bp.rel_spiral([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
 
     approx_multi_traj_checker(RE, scan, _get_spiral_data(start_x, start_y), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
 
 def _get_fermat_data(x_start, y_start):
@@ -618,10 +698,16 @@ def test_absolute_fermat_spiral(RE, hw):
     motor2 = hw.motor2
     det = hw.det
 
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     motor1.set(1.0)
     motor2.set(1.0)
     scan = bp.spiral_fermat([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_fermat_data(0.0, 0.0), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
     scan = bp.spiral_fermat([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
     approx_multi_traj_checker(RE, scan, _get_fermat_data(0.5, 0.5), decimal=2)
@@ -635,11 +721,17 @@ def test_relative_fermat_spiral(RE, hw):
     motor2 = hw.motor2
     det = hw.det
 
+    start_docs = []
+    RE.subscribe(lambda name, doc: start_docs.append(doc) if name == "start" else None)
+
     motor1.set(start_x)
     motor2.set(start_y)
     scan = bp.rel_spiral_fermat([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0, tilt=0.0)
 
     approx_multi_traj_checker(RE, scan, _get_fermat_data(start_x, start_y), decimal=2)
+
+    assert "uid" in start_docs[0]
+    assert "dimensions" in start_docs[0]["hints"]
 
 
 def test_x2x_scan(RE, hw):

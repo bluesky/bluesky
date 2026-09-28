@@ -6,6 +6,7 @@
 # ip.register_magics(BlueskyMagics)
 
 import asyncio
+import atexit
 import collections
 import warnings
 from operator import attrgetter
@@ -225,6 +226,22 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                 print()  # blank line
 
 
+@atexit.register
+def _shutdown_magics_run_engine():
+    # ``BlueskyMagics.RE`` is created at import time and runs its event loop
+    # forever on a daemon thread.  Close that loop on interpreter exit so it does
+    # not leak (ResourceWarning: unclosed event loop / socket) at shutdown.
+    RE = BlueskyMagics.RE
+    loop = RE._loop
+    if loop.is_closed():
+        return
+    if RE.state not in ("idle", "panicked"):
+        RE.halt()
+    loop.call_soon_threadsafe(loop.stop)
+    RE._th.join()
+    loop.close()
+
+
 def _print_devices(devices, prefix=""):
     cols = ["Local variable name", "Ophyd name (to be recorded as metadata)"]
     print(prefix + "{:38s} {:38s}".format(*cols))
@@ -234,6 +251,19 @@ def _print_devices(devices, prefix=""):
 
 def is_positioner(dev):
     return hasattr(dev, "position")
+
+
+def _round(value, decimals):
+    """Round value; return str if np.round yields an ndarray.
+
+    PseudoPositioner positions and limits are namedtuples; np.round
+    converts them to ndarray, which rejects string format specs under
+    numpy 2.x.
+    """
+    result = np.round(value, decimals=decimals)
+    if isinstance(result, np.ndarray):
+        return str(result)
+    return result
 
 
 def _print_positioners(positioners, sort=True, precision=6, prefix=""):
@@ -272,20 +302,20 @@ def _print_positioners(positioners, sort=True, precision=6, prefix=""):
                 prec = int(p.precision)
             except Exception:
                 prec = precision
-            value = np.round(v, decimals=prec)
+            value = _round(v, decimals=prec)
             try:
                 low_limit, high_limit = p.limits
             except Exception as exc:
                 low_limit = high_limit = exc.__class__.__name__
             else:
-                low_limit = np.round(low_limit, decimals=prec)
-                high_limit = np.round(high_limit, decimals=prec)
+                low_limit = _round(low_limit, decimals=prec)
+                high_limit = _round(high_limit, decimals=prec)
             try:
                 offset = p.user_offset.get()
             except Exception as exc:
                 offset = exc.__class__.__name__
             else:
-                offset = np.round(offset, decimals=prec)
+                offset = _round(offset, decimals=prec)
         else:
             value = v.__class__.__name__  # e.g. 'DisconnectedError'
             low_limit = high_limit = offset = ""

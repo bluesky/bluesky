@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+from enum import Enum
 from io import StringIO
 from itertools import permutations
 from unittest.mock import MagicMock
@@ -20,6 +21,8 @@ from bluesky.plans import count, grid_scan, inner_product_scan, scan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.tests.utils import DocCollector, MsgCollector, _print_redirect
+
+from .conftest import MovableSignal, ReadableSignal
 
 
 # copied from examples.py to avoid import
@@ -249,6 +252,98 @@ def test_evil_table_names(RE):
     fout.close()
 
 
+class TableTestEnum(str, Enum):
+    """Enum for testing LiveTable with enum values."""
+
+    OK = "OK"
+    NOT_OK = "NOT_OK"
+
+
+_BOOL_ENUM_DOCS = [
+    (
+        "descriptor",
+        {
+            "configuration": {},
+            "data_keys": {
+                "enum_test_sig": {
+                    "dtype": "string",
+                    "shape": [],
+                    "dtype_numpy": "|S40",
+                    "source": "ca://DEV:RBD9103:InRange_RBV",
+                    "choices": ["OK", "Under", "Over"],
+                    "object_name": "rbd9103",
+                },
+                "bool_test_sig": {
+                    "dtype": "boolean",
+                    "shape": [],
+                    "dtype_numpy": "|b1",
+                    "source": "ca://DEV:RBD9103:Stable_RBV",
+                    "object_name": "rbd9103",
+                },
+            },
+            "name": "primary",
+            "object_keys": {"rbd9103": ["enum_test_sig", "bool_test_sig"]},
+            "run_start": "d8e2afc6-2c79-4786-8a2e-b1245b2be578",
+            "time": 1746210217.2738924,
+            "uid": "2d29452a-a2e3-4697-8db2-423b8cae5065",
+            "hints": {"rbd9103": {"fields": ["enum_test_sig", "bool_test_sig"]}},
+        },
+    ),
+    (
+        "event",
+        {
+            "uid": "69b921f3-6037-477b-8d76-731c330c654a",
+            "time": 1746210217.2745216,
+            "data": {"enum_test_sig": TableTestEnum.OK, "bool_test_sig": False},
+            "timestamps": {"enum_test_sig": 631152000.0, "bool_test_sig": 631152000.0},
+            "seq_num": 1,
+            "filled": {},
+            "descriptor": "2d29452a-a2e3-4697-8db2-423b8cae5065",
+        },
+    ),
+    (
+        "event",
+        {
+            "uid": "69b921f3-6037-477b-8d76-731c330c654a",
+            "time": 1746210217.2745216,
+            "data": {"enum_test_sig": TableTestEnum.NOT_OK, "bool_test_sig": True},
+            "timestamps": {"enum_test_sig": 631152000.0, "bool_test_sig": 631152000.0},
+            "seq_num": 2,
+            "filled": {},
+            "descriptor": "2d29452a-a2e3-4697-8db2-423b8cae5065",
+        },
+    ),
+    (
+        "stop",
+        {
+            "uid": "0c862732-f3a2-4ee6-8ef8-7aed0cf4a408",
+            "time": 1746210217.2791321,
+            "run_start": "d8e2afc6-2c79-4786-8a2e-b1245b2be578",
+            "exit_status": "success",
+            "reason": "",
+            "num_events": {"primary": 1},
+        },
+    ),
+]
+
+
+def test_table_bool_enum_doc_inputs(RE):
+    table = LiveTable(list(_BOOL_ENUM_DOCS[0][1]["data_keys"]))
+    with _print_redirect() as fout:
+        print()  # get a blank line in camptured output
+        for name, doc in _BOOL_ENUM_DOCS:
+            table(name, doc)
+    reference = """
++-----------+------------+---------------+---------------+
+|   seq_num |       time | enum_test_sig | bool_test_sig |
++-----------+------------+---------------+---------------+
+|         1 | 14:23:37.2 |            OK |         False |
+|         2 | 14:23:37.2 |        NOT_OK |          True |
++-----------+------------+---------------+---------------+"""
+    _compare_tables(fout, reference)
+    fout.close()
+
+
 def test_live_fit(RE, hw):
     try:
         import lmfit
@@ -326,6 +421,38 @@ def test_live_fit_plot(RE, hw):
     expected = {"A": 1, "sigma": 1, "x0": 0}
     for k, v in expected.items():
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
+
+
+def test_live_fit_plot_respects_ylim():
+    """LiveFitPlot must forward its own ``ylim`` to the axes, not ``xlim``.
+
+    Regression test for a bug where ``LiveFitPlot.__init__`` passed
+    ``ylim=xlim`` to ``LivePlot``, so the user-supplied ``ylim`` was ignored and
+    the x-limits were applied to the y-axis.
+    """
+    try:
+        import lmfit
+    except ImportError:
+        raise pytest.skip("requires lmfit")  # noqa: B904
+
+    def gaussian(x, A, sigma, x0):
+        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {"A": 2, "sigma": lmfit.Parameter("sigma", 3, min=0), "x0": -0.2}
+    livefit = LiveFit(model, "det", {"x": "motor"}, init_guess, update_every=50)
+
+    xlim = (-5.0, 5.0)
+    ylim = (-1.0, 2.0)
+    _, ax = plt.subplots()
+    lfplot = LiveFitPlot(livefit, ax=ax, xlim=xlim, ylim=ylim)
+
+    # start() runs the deferred setup(), which applies the axis limits.
+    start_doc, *_ = compose_run()
+    lfplot.start(start_doc)
+
+    assert ax.get_xlim() == xlim
+    assert ax.get_ylim() == ylim
 
 
 @pytest.mark.parametrize("int_meth, stop_num, msg_num", [("stop", 1, 5), ("abort", 1, 5), ("halt", 1, 3)])
@@ -636,16 +763,16 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, stri
     assert logger.exception.call_count == len(documents)
 
 
-def test_in_plan_qt_callback(RE, hw):
+def test_in_plan_qt_callback(single_RE):
     from bluesky.callbacks.mpl_plotting import _get_teleporter
 
     _get_teleporter()
 
-    def my_plan():
-        motor = hw.motor
-        det = hw.det
+    RE = single_RE
 
-        motor.delay = 1
+    def my_plan():
+        motor = MovableSignal(name="motor")
+        det = ReadableSignal(name="det")
 
         plan = bp.scan([det], motor, -5, 5, 25)
         plan = subs_wrapper(bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name))
