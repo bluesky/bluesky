@@ -727,21 +727,50 @@ def test_exit_raise(RE, unpause_func, excp):
     assert flag
 
 
+@pytest.fixture
+def blocking_motor():
+    """A Movable whose set waits for ``status`` and whose stop waits for ``stop_released``.
+
+    A watchdog releases both after 10s, so that a lost signal fails the test
+    rather than hanging it.
+    """
+    from ophyd import StatusBase
+
+    class BlockingMovable:
+        def __init__(self):
+            self.set_values = []
+            self.set_called = threading.Event()
+            self.status = StatusBase()
+            self.stop_called = threading.Event()
+            self.stop_released = threading.Event()
+
+        def set(self, value):
+            self.set_values.append(value)
+            self.set_called.set()
+            return self.status
+
+        async def stop(self, *, success=False):
+            self.stop_called.set()
+            while not self.stop_released.is_set():
+                await asyncio.sleep(0.01)
+
+    motor = BlockingMovable()
+
+    def release():
+        motor.stop_released.set()
+        motor.status.set_finished()
+
+    watchdog = threading.Timer(10, release)
+    watchdog.start()
+    yield motor
+    watchdog.cancel()
+
+
 @uses_os_kill_sigint
-def test_sigint_three_hits(RE, hw, deterministic_sigint):
-    motor = hw.motor
-    motor.delay = 0.5
-
-    event = threading.Event()
-
-    def msg_hook(msg):
-        if msg.command == "set":
-            event.set()
-
-    RE.msg_hook = msg_hook
-
-    lp = RE.loop
-    motor.loop = lp
+@requires_ophyd
+def test_sigint_three_hits(RE, deterministic_sigint, blocking_motor):
+    motor = blocking_motor
+    states = []
 
     def self_sig_int_plan():
         yield from abs_set(motor, 1, wait=True)
@@ -749,23 +778,33 @@ def test_sigint_three_hits(RE, hw, deterministic_sigint):
     with deterministic_sigint() as sigint:
 
         def sim_kill():
-            event.wait(timeout=5)
-            for _ in range(3):
-                sigint.send()
+            motor.set_called.wait(timeout=5)
+            # Deferred pause, waiting for a checkpoint that never comes
+            sigint.send()
+            # Immediate pause, which stops the motor
+            sigint.send()
+            # The stop is held, so the third hit lands while the RE is pausing
+            motor.stop_called.wait(timeout=5)
+            states.append(RE.state)
+            sigint.send()
+            motor.stop_released.set()
 
-        threading.Thread(target=sim_kill, daemon=True).start()
-        start_time = ttime.time()
+        sender = threading.Thread(target=sim_kill, daemon=True)
+        sender.start()
         with pytest.raises(RunEngineInterrupted):
             RE(finalize_wrapper(self_sig_int_plan(), abs_set(motor, 0, wait=True)))
-        end_time = ttime.time()
+        sender.join(timeout=10)
 
-    # not enough time for motor to cleanup, but long enough to start
-    assert end_time - start_time < 0.4
-    RE.abort()  # now cleanup
+    assert states == ["pausing"]
+    # All three reached the RE's handler, none reached pytest
+    assert sigint.handlers[0]._count == 3
+    assert RE.state == "paused"
+    assert motor.set_values == [1]
 
-    done_cleanup_time = ttime.time()
-    # this should be 0.5 (the motor.delay) above, leave sloppy for CI
-    assert 0.4 < done_cleanup_time - end_time < 0.6
+    motor.status.set_finished()
+    RE.abort()
+    assert RE.state == "idle"
+    assert motor.set_values == [1, 0]
 
 
 @uses_os_kill_sigint

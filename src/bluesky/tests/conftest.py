@@ -217,12 +217,15 @@ class DeterministicSigint:
     The fake clock advances by 0.2s per ``send()`` call, and each call blocks
     until the signal handler has finished, so ``_count`` increments reliably
     regardless of real wall-clock jitter.
+
+    Every ``SigintHandler`` entered in the block is kept in ``handlers``.
     """
 
     def __init__(self):
         self._fake_time = 0.0
         self._handler_done = threading.Event()
         self._pid = os.getpid()
+        self.handlers = []
         self._orig_enter = SigintHandler.__enter__
         self._patcher = patch.object(SigintHandler, "__enter__", self._patched_enter)
 
@@ -230,6 +233,7 @@ class DeterministicSigint:
         return self._fake_time
 
     def _patched_enter(self, sigint_handler):
+        self.handlers.append(sigint_handler)
         with patch("bluesky.utils.time.monotonic", self._monotonic):
             result = self._orig_enter(sigint_handler)
         installed = signal.getsignal(signal.SIGINT)
