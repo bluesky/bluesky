@@ -970,10 +970,8 @@ def test_no_context_manager(RE):
 
 
 @uses_os_kill_sigint
-def test_single_sigint_interrupt_no_checkpoint(RE):
+def test_single_sigint_interrupt_no_checkpoint(RE, deterministic_sigint):
     """A single SIGINT on a plan without a checkpoint continues running"""
-    pid = os.getpid()
-
     event = threading.Event()
 
     def msg_hook(msg):
@@ -982,22 +980,28 @@ def test_single_sigint_interrupt_no_checkpoint(RE):
 
     RE.msg_hook = msg_hook
 
-    def send_sigint():
-        # Wait for event
-        event.wait()
-        os.kill(pid, signal.SIGINT)
+    with deterministic_sigint() as sigint:
 
-    def test_plan():
-        for _ in range(15):
+        def send_sigint():
+            # Wait for event
+            event.wait()
+            sigint.send()
+
+        def test_plan():
             yield Msg("null")
+            # Keep SIGINT owned by the RunEngine until the hit has been handled
+            deadline = ttime.monotonic() + 5
+            while not sigint.handlers[0]._count and ttime.monotonic() < deadline:
+                yield Msg("sleep", None, 0.01)
 
-    # Single SIGINT defers a pause but plan finishes anyway
-    sigint_thread = threading.Thread(target=send_sigint, daemon=True)
-    sigint_thread.start()
-    RE(test_plan())
+        # Single SIGINT defers a pause but plan finishes anyway
+        sigint_thread = threading.Thread(target=send_sigint, daemon=True)
+        sigint_thread.start()
+        RE(test_plan())
+        sigint_thread.join(timeout=10)
 
+    assert sigint.handlers[0]._count == 1
     assert RE.state == "idle"
-    sigint_thread.join(timeout=0.1)
 
 
 @uses_os_kill_sigint
