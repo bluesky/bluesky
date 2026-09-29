@@ -1829,7 +1829,22 @@ class RunEngine:
 
         (futs,) = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        completed, pending = await asyncio.wait(futs, **msg.kwargs)
+        # These tasks are ours: nothing else holds a reference with which to
+        # cancel them. `asyncio.wait` does not cancel what it was waiting on
+        # when it is itself cancelled, so a plan aborted while parked here left
+        # them running on a loop about to be closed, and asyncio reported "Task
+        # was destroyed but it is pending!" at some unrelated later moment.
+        #
+        # Only on the way out. A timeout leaves them alone deliberately: the
+        # awaitables are built by factories that work more than once, and
+        # waiting on the same group again after a timeout has to find whatever
+        # it was waiting for still in flight.
+        try:
+            completed, pending = await asyncio.wait(futs, **msg.kwargs)
+        except asyncio.CancelledError:
+            for fut in futs:
+                fut.cancel()
+            raise
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
         return futs

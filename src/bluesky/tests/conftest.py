@@ -1,5 +1,6 @@
 import asyncio
 import os
+import pprint
 import signal
 import threading
 import time
@@ -29,7 +30,51 @@ def pytest_addoption(parser):
     )
 
 
-def _clean_event_loop(RE, loop):
+def _error_on_unclosed_tasks(loop, test_name, loop_answered=True):
+    """Cancel whatever is still running on ``loop``, and object if it was there.
+
+    A task still pending when the loop closes makes asyncio report "Task was
+    destroyed but it is pending!" whenever it is finally collected, which is
+    during some later, unrelated test. Cancelling here is what stops the noise;
+    raising here is what stops it being someone else's problem, by naming the
+    test that actually left the task behind.
+
+    Reports whether or not the test passed. A check whose report depends on
+    whether the test also failed is a heuristic rather than an invariant, and
+    it hides the leak exactly when the code is misbehaving: measured on this
+    branch, a leaked supervisor task showed up in 24 of 28 suspender tests,
+    and was caught only because those tests were otherwise passing. Cancelling
+    and gathering already happen unconditionally, so reporting on a failing
+    test adds no risk of masking the real failure -- pytest reports FAILED and
+    ERROR separately.
+
+    And only when the loop was still running. A panicked RunEngine is one whose
+    loop stopped answering, which is the condition `test_sigint_many_hits_panic`
+    exists to produce: work scheduled onto it after that can never be finished
+    or cancelled by the code under test, because nothing will run another
+    callback there. Objecting to it would be objecting to the premise of the
+    test rather than to a leak. That is a property of the object under test,
+    not of the test result, so it is the one exemption this keeps.
+
+    Simplified from ophyd-async's fixture of the same shape: bluesky's ``RE``
+    fixture makes the loop itself, so there are no pytest-asyncio helper tasks
+    to allow for, and ``asyncio.all_tasks`` already returns only unfinished
+    ones.
+    """
+    pending = asyncio.all_tasks(loop)
+    if not pending:
+        return
+    for task in pending:
+        task.cancel()
+    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    if loop_answered:
+        # loop.set_debug(True), set when the fixture creates the loop, is what
+        # makes a task's repr below name the coroutine and line that created
+        # it -- without it this message is just a list of anonymous tasks.
+        raise RuntimeError(f"Tasks still running at the end of {test_name}:\n{pprint.pformat(pending, width=88)}")
+
+
+def _clean_event_loop(RE, loop, test_name):
     """Stop a RunEngine's background loop thread and close the loop.
 
     Without this the ``_UnixSelectorEventLoop`` (and its AF_UNIX self-pipe
@@ -44,7 +89,10 @@ def _clean_event_loop(RE, loop):
             pass
     loop.call_soon_threadsafe(loop.stop)
     RE._th.join()
-    loop.close()
+    try:
+        _error_on_unclosed_tasks(loop, test_name, loop_answered=RE.state != "panicked")
+    finally:
+        loop.close()
 
 
 @pytest.fixture(scope="function")
@@ -62,7 +110,7 @@ def make_RE(request):
         loop = asyncio.new_event_loop()
         loop.set_debug(True)
         RE = RunEngine(*args, loop=loop, **kwargs)
-        request.addfinalizer(lambda: _clean_event_loop(RE, loop))
+        request.addfinalizer(lambda: _clean_event_loop(RE, loop, request.node.name))
         return RE
 
     return factory
