@@ -36,6 +36,9 @@ Fixed
   every Event it produced afterwards was emitted twice, compounding with each
   further suspension.
   
+- A monitored signal's Event documents reach subscribers on the RunEngine's
+  event loop, rather than on the thread a synchronous ophyd signal calls back
+  on.
 - A device is told a suspension has started only if it satisfies
   `bluesky.protocols.Pausable`.  A suspension used to call ``pause()`` on
   anything that had the attribute, where ``RunEngine.pause`` has always required

@@ -2914,6 +2914,92 @@ def test_aborting_a_plan_parked_in_wait_for_cancels_what_it_waits_on(RE):
     assert cancelled.wait(5)
 
 
+def test_monitor_documents_arrive_on_the_loop_thread(RE, hw):
+    # A synchronous ophyd signal calls back on its own thread.
+    event_threads = []
+    loop_thread = []
+
+    async def note_loop_thread():
+        loop_thread.append(threading.current_thread().name)
+
+    def cb(name, doc):
+        if name == "event":
+            event_threads.append(threading.current_thread().name)
+
+    RE.subscribe(cb)
+    sig = hw.bool_sig
+    sig.put(0)
+
+    def plan():
+        yield Msg("wait_for", None, [note_loop_thread])
+        yield Msg("open_run")
+        yield Msg("monitor", sig, name="mon")
+        # Put from a device thread, which queues its Event on the loop.
+        put = threading.Thread(target=sig.put, args=(1,))
+        put.start()
+        put.join()
+        yield Msg("unmonitor", sig)
+        yield Msg("close_run")
+
+    RE(plan())
+
+    assert loop_thread == ["bluesky-run-engine"]
+    assert event_threads
+    assert set(event_threads) == {"bluesky-run-engine"}
+
+
+def test_a_monitor_event_arriving_after_close_run_is_dropped(RE, hw, caplog):
+    # A device thread still inside the callback as the monitor ends.
+    sig = hw.bool_sig
+    callbacks = []
+    subscribe = sig.subscribe
+
+    def recording_subscribe(callback, *args, **kwargs):
+        callbacks.append(callback)
+        return subscribe(callback, *args, **kwargs)
+
+    sig.subscribe = recording_subscribe
+
+    def plan():
+        yield Msg("open_run")
+        yield Msg("monitor", sig)
+        yield Msg("close_run")
+        late = threading.Thread(target=callbacks[0])
+        late.start()
+        late.join()
+        # Gives the loop a turn to dispatch what the thread queued.
+        yield Msg("null")
+
+    docs = []
+    RE(plan(), lambda name, doc: docs.append(name))
+
+    # Dropped, where it would otherwise follow the stop.
+    assert docs == ["start", "descriptor", "stop"]
+    assert "arrived after its monitor ended" in caplog.text
+
+
+def test_a_monitor_event_queued_before_close_run_arrives_before_the_run_stop(RE, hw):
+    docs = []
+    RE.subscribe(lambda name, doc: docs.append(name))
+    sig = hw.bool_sig
+    sig.put(0)
+
+    def plan():
+        yield Msg("open_run")
+        yield Msg("monitor", sig, name="mon")
+        # The device thread queues its Event on the loop and returns.
+        put = threading.Thread(target=sig.put, args=(1,))
+        put.start()
+        put.join()
+        # close_run unsubscribes the monitor, with the Event still queued.
+        yield Msg("close_run")
+
+    RE(plan())
+
+    # One Event on subscribe, one from the device thread.
+    assert docs == ["start", "descriptor", "event", "event", "stop"]
+
+
 def test_verbose_round_trips_and_actually_silences(RE):
     """``RE.verbose`` reports the logger, and setting it really silences.
 
