@@ -2,7 +2,6 @@ import asyncio
 import threading
 import time
 import time as ttime
-from functools import partial
 
 import pytest
 
@@ -23,7 +22,7 @@ from bluesky.suspenders import (
 from bluesky.tests import ophyd_async, requires_ophyd_async
 from bluesky.tests.utils import MsgCollector
 
-from .utils import _fabricate_asycio_event
+from .utils import CallbackSignal
 
 if ophyd_async:
     from ophyd_async.core import soft_signal_rw
@@ -473,17 +472,20 @@ def test_unresumable_suspend_fail(RE):
     "Tests what happens when a soft pause is requested from a suspended state"
 
     scan = [Msg("clear_checkpoint"), Msg("sleep", None, 2)]
-    m_coll = MsgCollector()
+    sig = CallbackSignal(name="unresumable_sig")
+    RE.install_suspender(SuspendBoolHigh(sig))
+
+    # At a message: a trip before the plan starts would hold, not abort.
+    m_coll = MsgCollector(msg_hook=lambda msg: sig.put(1) if msg.command == "sleep" else None)
     RE.msg_hook = m_coll
 
-    ev = _fabricate_asycio_event(RE.loop)
-    threading.Timer(0.1, partial(RE.request_suspend, fut=ev.wait)).start()
-    threading.Timer(1, ev.set).start()
     start = time.time()
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
     stop = time.time()
-    assert 0.1 < stop - start < 1
+    # Aborted at the trip, not after the sleep.
+    assert [m.command for m in m_coll.msgs] == ["clear_checkpoint", "sleep"]
+    assert stop - start < 1
 
 
 def test_suspender_plans(RE, hw):

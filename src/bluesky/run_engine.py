@@ -1193,8 +1193,10 @@ class RunEngine:
         for sus in self.suspenders:
             self.remove_suspender(sus)
 
-    def request_suspend(self, fut, *, pre_plan=None, post_plan=None, justification=None):
-        """Request that the run suspend itself until the future is finished.
+    def _suspend(self, fut, *, pre_plan=None, post_plan=None, justification=None):
+        """Suspend the running plan until the future is finished.
+
+        Internal; formerly ``RunEngine.request_suspend``.
 
         The two plans will be run before and after waiting for the future.
         This enable doing things like opening and closing shutters and

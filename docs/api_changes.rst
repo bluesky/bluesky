@@ -83,6 +83,12 @@ Changed
   ``subscribe`` to ``subscribe_reading``; users of ophyd-async need at
   least v0.13.5.
 
+Removed
+-------
+- ``RunEngine.request_suspend``, with no replacement.  Install a suspender,
+  which composes with other suspenders; or use ``RunEngine.request_pause``.
+
+
 v1.15.1 (2026-05-05)
 ====================
 

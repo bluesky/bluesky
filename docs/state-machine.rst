@@ -384,20 +384,16 @@ Suspender-related Methods
 The RunEngine also has a ``suspenders`` property, a collection of the
 currently-installed suspenders.
 
-Request Methods
----------------
+Requesting a Pause
+------------------
 
-This method is called when Ctrl+C is pressed or when a 'pause' Message is
-processed. It can also be called by user-defined agents. See the next example.
+This method is called when Ctrl+C is pressed. It can also be called by
+user-defined agents. See the next example.
 
 .. automethod:: bluesky.run_engine.RunEngine.request_pause
     :noindex:
 
-This method is used by the ``PVSuspend*`` classes above. It can also be called
-by user-defined agents.
-
-.. automethod:: bluesky.run_engine.RunEngine.request_suspend
-    :noindex:
+To suspend a plan, install a suspender; see :ref:`installing_suspenders`.
 
 
 Example: Requesting a pause from the asyncio event loop

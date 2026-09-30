@@ -55,7 +55,7 @@ from bluesky.tests.utils import DocCollector, MsgCollector
 from bluesky.utils import SigintHandler
 
 from .conftest import _error_on_unclosed_tasks
-from .utils import _careful_event_set, _fabricate_asycio_event
+from .utils import CallbackSignal, _careful_event_set, _fabricate_asycio_event
 
 
 def test_states():
@@ -602,7 +602,7 @@ def _make_unrewindable_suspender_marker():
     def test_plan(motor, det):
         yield Msg("set", motor, 0)
         yield Msg("trigger", det)
-        yield Msg("sleep", None, 1)
+        yield Msg("sleep", None, 0.1)
         yield Msg("set", motor, 0)
         yield Msg("trigger", det)
 
@@ -654,32 +654,31 @@ def _make_unrewindable_suspender_marker():
 
 
 @_make_unrewindable_suspender_marker()
-def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
+def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq, pause_if_stuck):
     from bluesky.utils import ts_msg_hook
 
     msgs = []
-    loop = RE.loop
+    seen = set()
+    sig = CallbackSignal(name="unrewindable_sig")
+    RE.install_suspender(SuspendBoolHigh(sig))
 
     def collector(msg):
         ts_msg_hook(msg)
         msgs.append(msg)
+        # First time only: the suspension replays messages.
+        if msg.command in seen:
+            return
+        seen.add(msg.command)
+        # Trip during the sleep, and recover at the suspension's wait.
+        if msg.command == "sleep":
+            sig.put(1)
+        elif msg.command == "wait_for":
+            sig.put(0)
 
     RE.msg_hook = collector
 
-    ev = _fabricate_asycio_event(loop)
-
-    timer = threading.Timer(0.5, RE.request_suspend, kwargs=dict(fut=ev.wait))  # noqa: C408
-    timer.start()
-
-    def verbose_set():
-        print("seting")
-        ev.set()
-
-    loop.call_soon_threadsafe(loop.call_later, 1, verbose_set)
-
     RE(plan(motor, det))
     assert [m.command for m in msgs] == msg_seq
-    timer.join()
 
 
 @pytest.mark.parametrize("unpause_func", [lambda RE: RE.stop(), lambda RE: RE.abort(), lambda RE: RE.resume()])
@@ -1550,9 +1549,12 @@ def test_invalid_generator(RE, hw, capsys):
             yield from post
 
     def base_plan(motor):
+        yield Msg("checkpoint")
         for j in range(5):
             yield Msg("set", motor, j * 2 + 1)
-        yield Msg("pause")
+        # REVIEW: Sleeps where main paused: a pre-plan only runs if the suspender trips while the plan runs.
+        #   Tripped while paused, it is lost on main and, from the Suspension commit, the resume just waits.
+        yield Msg("sleep", None, 1.5)
 
     def post_plan(motor):
         yield Msg("set", motor, 500)
@@ -1564,23 +1566,52 @@ def test_invalid_generator(RE, hw, capsys):
     def make_plan():
         return patho_finalize_wrapper(base_plan(motor), post_plan(motor))
 
-    with pytest.raises(RunEngineInterrupted):
-        RE(make_plan())
-    RE.request_suspend(None, pre_plan=pre_suspend_plan())
+    sig = CallbackSignal(name="invalid_generator_sig")
+    RE.install_suspender(SuspendBoolHigh(sig, pre_plan=pre_suspend_plan))
+    threading.Timer(0.3, sig.put, (1,)).start()
+
     capsys.readouterr()
-    try:
-        RE.resume()
-    except ValueError as sf:
-        assert sf.__cause__.args[0] == "this one"
+    with pytest.raises(ValueError) as info:
+        RE(make_plan())
+    assert info.value.__cause__.args[0] == "this one"
 
-    actual_err, _ = capsys.readouterr()
-    expected_prefix = "The plan "
-    expected_postfix = (" tried to yield a value on close.  Please fix your plan.\n")[::-1]
-    assert actual_err[: len(expected_prefix)] == expected_prefix
-    assert actual_err[::-1][: len(expected_postfix)] == expected_postfix
+    out, _ = capsys.readouterr()
+    # The suspension announces itself first, so pick out the line this is about.
+    complaints = [line for line in out.splitlines() if "yield a value on close" in line]
+    assert len(complaints) == 1
+    assert complaints[0].startswith("The plan ")
+    assert complaints[0].endswith(" tried to yield a value on close.  Please fix your plan.")
 
 
-def test_exception_cascade_REside(RE):
+def test_exception_cascade_REside(RE, pause_if_stuck):
+    except_hit = False
+
+    def sleeping_plan():
+        nonlocal except_hit
+        yield Msg("checkpoint")
+        try:
+            yield Msg("sleep", None, 1.5)
+        except Exception:
+            except_hit = True
+            raise
+
+    def pre_plan():
+        yield Msg("aardvark")
+
+    sig = CallbackSignal(name="cascade_sig")
+    # REVIEW: Main raised this with RE.request_suspend while paused. A suspender is the only way
+    #   in now, so the test has the shape of test_exception_cascade_planside.
+    RE.install_suspender(SuspendBoolHigh(sig, pre_plan=pre_plan))
+    # Trips as the plan reaches the sleep, which it never finishes.
+    RE.msg_hook = lambda msg: sig.put(1) if msg.command == "sleep" else None
+
+    # The engine rejects the pre-plan's unknown command, and the error reaches the plan.
+    with pytest.raises(KeyError):
+        RE(sleeping_plan())
+    assert except_hit
+
+
+def test_abort_throws_into_a_paused_plan(RE):
     except_hit = False
 
     def pausing_plan():
@@ -1593,32 +1624,23 @@ def test_exception_cascade_REside(RE):
             except_hit = True
             raise
 
-    def pre_plan():
-        yield Msg("aardvark")
-
-    def post_plan():
-        for j in range(5):  # noqa: B007
-            yield Msg("null")
-
     with pytest.raises(RunEngineInterrupted):
         RE(pausing_plan())
-    ev = _fabricate_asycio_event(RE.loop)
-    ev.set()
-    RE.request_suspend(ev.wait, pre_plan=pre_plan())
-    with pytest.raises(KeyError):
-        RE.resume()
+    # Ending a paused plan throws into it where it is parked.
+    RE.abort()
     assert except_hit
 
 
-def test_exception_cascade_planside(RE):
+def test_exception_cascade_planside(RE, pause_if_stuck):
     except_hit = False
 
-    def pausing_plan():
+    def sleeping_plan():
         nonlocal except_hit
-        for j in range(5):  # noqa: B007
-            yield Msg("null")
+        yield Msg("checkpoint")
         try:
-            yield Msg("pause")
+            # REVIEW: Waits where main paused: a pre-plan only runs if the suspender trips while the plan runs.
+            #   Tripped while paused, it is lost on main and, from the Suspension commit, the resume just waits.
+            yield Msg("sleep", None, 1.5)
         except Exception:
             except_hit = True
             raise
@@ -1627,17 +1649,14 @@ def test_exception_cascade_planside(RE):
         yield Msg("null")
         raise RuntimeError()
 
-    def post_plan():
-        for j in range(5):  # noqa: B007
-            yield Msg("null")
+    sig = CallbackSignal(name="cascade_sig")
+    RE.install_suspender(SuspendBoolHigh(sig, pre_plan=pre_plan))
+    # Trips as the plan reaches the sleep, which it never finishes.
+    RE.msg_hook = lambda msg: sig.put(1) if msg.command == "sleep" else None
 
-    with pytest.raises(RunEngineInterrupted):
-        RE(pausing_plan())
-    ev = _fabricate_asycio_event(RE.loop)
-    ev.set()
-    RE.request_suspend(ev.wait, pre_plan=pre_plan())
+    # A suspender's pre-plan runs in the plan, so its exception is the plan's.
     with pytest.raises(RuntimeError):
-        RE.resume()
+        RE(sleeping_plan())
     assert except_hit
 
 
