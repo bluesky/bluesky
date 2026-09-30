@@ -1715,8 +1715,6 @@ def test_invalid_generator(RE, hw, caplog, pause_if_stuck):
         yield Msg("checkpoint")
         for j in range(5):
             yield Msg("set", motor, j * 2 + 1)
-        # REVIEW: Waits where main paused: a pre-plan only runs if the suspender trips while the plan runs.
-        #   Tripped while paused, it is lost on main and, from the Suspension commit, the resume just waits.
         yield Msg("sleep", None, 1.5)
 
     def post_plan(motor):
@@ -1766,8 +1764,6 @@ def test_exception_cascade_REside(RE, pause_if_stuck):
         yield Msg("aardvark")
 
     sig = CallbackSignal(name="cascade_sig")
-    # REVIEW: Main raised this with RE.request_suspend while paused. A suspender is the only way
-    #   in now, so the test has the shape of test_exception_cascade_planside.
     RE.install_suspender(SuspendBoolHigh(sig, pre_plan=pre_plan))
     # Trips as the plan reaches the sleep, which it never finishes.
     RE.msg_hook = lambda msg: sig.put(1) if msg.command == "sleep" else None
@@ -1805,8 +1801,6 @@ def test_exception_cascade_planside(RE, pause_if_stuck):
         nonlocal except_hit
         yield Msg("checkpoint")
         try:
-            # REVIEW: Waits where main paused: a pre-plan only runs if the suspender trips while the plan runs.
-            #   Tripped while paused, it is lost on main and, from the Suspension commit, the resume just waits.
             yield Msg("sleep", None, 1.5)
         except Exception:
             except_hit = True

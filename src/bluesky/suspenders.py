@@ -141,8 +141,6 @@ class SuspenderBase(metaclass=ABCMeta):
         if suspension is None:
             # Not installed: nothing to do.
             return
-        # REVIEW: install(RE) from the prompt still works (deprecated), so its partner remove() has to
-        #   as well; main's remove() worked anywhere.
         if not running_on(suspension.loop):
             warn(
                 f"Calling {type(self).__name__}.remove off the event loop is deprecated. "
