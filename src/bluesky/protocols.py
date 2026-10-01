@@ -34,6 +34,7 @@ class ReadingOptional(TypedDict, total=False):
 
 
 T = TypeVar("T")
+T_co = TypeVar("T_co", contravariant=True)
 P = ParamSpec("P")
 R_co = TypeVar("R_co", covariant=True)
 
@@ -227,9 +228,9 @@ class Triggerable(Protocol):
 
 
 @runtime_checkable
-class Preparable(Protocol):
+class Preparable(Protocol[T_co]):
     @abstractmethod
-    def prepare(self, value) -> Status:
+    def prepare(self, value: T_co) -> Status:
         """Prepare a device for scanning.
 
         This method provides similar functionality to ``Stageable.stage`` and
@@ -349,9 +350,6 @@ class EventPageCollectable(Collectable, Protocol):
         A 'uid' is added by the RunEngine.
         """
         ...
-
-
-T_co = TypeVar("T_co", contravariant=True)
 
 
 @runtime_checkable
