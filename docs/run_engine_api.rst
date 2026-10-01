@@ -57,10 +57,9 @@ changes. See :ref:`suspenders`.
    RunEngine.remove_suspender
    RunEngine.clear_suspenders
 
-These methods are used internally to pause or suspend the RunEngine.
-Typically the user accomplishes this with Ctrl+C or by installing
-suspenders, respectively. For special applicaitons, they can be called
-directly.
+This method is used internally to pause the RunEngine. Typically the user
+accomplishes this with Ctrl+C. For special applications, it can be called
+directly. To suspend, install a suspender.
 
 
 .. autosummary::
@@ -68,7 +67,6 @@ directly.
    :toctree: generated
 
    RunEngine.request_pause
-   RunEngine.request_suspend
 
 These methods may be used to register custom commands to supplement or
 replace the built-in commands recognized by the RunEngine.

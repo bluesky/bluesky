@@ -19,9 +19,10 @@ from bluesky.examples import (
     wait_multiple,
     wait_one,
 )
+from bluesky.suspenders import SuspendBoolHigh
 from bluesky.tests import uses_os_kill_sigint
 
-from .utils import _careful_event_set, _fabricate_asycio_event
+from .utils import CallbackSignal, _careful_event_set, _fabricate_asycio_event, _when_parked
 
 
 def test_msgs(hw):
@@ -241,8 +242,9 @@ def test_list_of_msgs(RE, hw):
     RE([Msg("open_run"), Msg("set", hw.motor, 5), Msg("close_run")])
 
 
-def test_suspend(RE, hw):
-    ev = _fabricate_asycio_event(RE.loop)
+def test_suspend(RE, hw, pause_if_stuck):
+    sig = CallbackSignal(name="suspend_sig")
+    RE.install_suspender(SuspendBoolHigh(sig))
 
     test_list = [
         Msg("open_run"),
@@ -259,27 +261,37 @@ def test_suspend(RE, hw):
     ]
     assert RE.state == "idle"
 
-    def resume_cb():
-        RE.loop.call_soon_threadsafe(_careful_event_set(ev))
+    commands = []
+    released = []
 
-    def local_suspend():
-        RE.request_suspend(ev.wait)
-        # wait a second and then resume
-        threading.Timer(1, resume_cb).start()
+    def release():
+        commands.append("released")
+        released.append(ttime.time())
+        sig.put(0)
+
+    def suspend_then_release(msg):
+        commands.append(msg.command)
+        # First time only: the suspension replays the sleep.
+        if commands.count(msg.command) > 1:
+            return
+        # trigger the suspend right after the check point
+        if msg.command == "sleep":
+            sig.put(1)
+        # and let it recover once the plan waits
+        elif msg.command == "wait_for":
+            _when_parked(RE.loop, release)
 
     out = []
 
     def ev_cb(name, ev):
         out.append(ev)
 
-    # trigger the suspend right after the check point
-    threading.Timer(0.1, local_suspend).start()
-    # grab the start time
-    start = ttime.time()
+    RE.msg_hook = suspend_then_release
     # run, this will not return until it is done
     RE(test_list, {"event": ev_cb})
-    # check to make sure it took long enough
-    assert out[0]["time"] - start > 1.1
+    # check to make sure it waited for the recovery
+    assert commands[commands.index("wait_for") + 1] == "released"
+    assert out[0]["time"] > released[0]
 
     assert RE.state == "idle"
 

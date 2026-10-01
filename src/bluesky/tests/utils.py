@@ -77,3 +77,79 @@ def _careful_event_set(ev):
             ...
 
     return inner
+
+
+def _when_parked(loop, func, *args, max_turns=100):
+    """Call ``func(*args)`` on ``loop`` once nothing else there is ready to run, so a plan has parked."""
+    turns = 0
+
+    def check():
+        nonlocal turns
+        # Reads asyncio's private ready queue, as ophyd-async's wait_for_pending_wakeups does.
+        if not loop._ready:
+            func(*args)
+        elif turns < max_turns:
+            turns += 1
+            loop.call_soon(check)
+        else:
+            raise RuntimeError(f"Tasks still scheduling wakeups after {max_turns} turns")
+
+    loop.call_soon_threadsafe(check)
+
+
+async def _parked(max_yields=100):
+    """Return once nothing else on the running loop is ready to run, so every plan has parked."""
+    loop = asyncio.get_running_loop()
+    for _ in range(max_yields):
+        await asyncio.sleep(0)
+        # Reads asyncio's private ready queue, as ophyd-async's wait_for_pending_wakeups does.
+        if not loop._ready:
+            return
+    raise RuntimeError(f"Tasks still scheduling wakeups after {max_yields} yields")
+
+
+class CallbackSignal:
+    """A `bluesky.protocols.Subscribable` signal that calls back synchronously on `put`.
+
+    Subscribing reports the current value before returning, as ophyd and
+    ophyd-async do.
+    """
+
+    def __init__(self, value=0, name="callback_signal"):
+        self.name = name
+        self._value = value
+        self._callbacks: list = []
+
+    def subscribe_reading(self, function) -> None:
+        self._callbacks.append(function)
+        function(self.read())
+
+    def clear_sub(self, function) -> None:
+        self._callbacks.remove(function)
+
+    def read(self) -> dict:
+        return {self.name: {"value": self._value, "timestamp": 0.0}}
+
+    def put(self, value) -> None:
+        """Set the value and report it, on the calling thread."""
+        self._value = value
+        for function in list(self._callbacks):
+            function(self.read())
+
+
+def _at_message(RE, commands, **at):
+    """Run a function the first time each named command is seen by ``msg_hook``.
+
+    First time only, because a suspension replays messages. Trips a condition
+    at a message rather than at a time.
+    """
+    seen = set()
+
+    def hook(msg):
+        commands.append(msg.command)
+        func = at.get(msg.command)
+        if func is not None and msg.command not in seen:
+            seen.add(msg.command)
+            func()
+
+    RE.msg_hook = hook

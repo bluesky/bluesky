@@ -23,6 +23,7 @@ from event_model import (
 )
 from event_model.documents.event import Event
 
+from ._loop import call_soon_or_now
 from .log import doc_logger
 from .protocols import (
     Asset,
@@ -166,6 +167,8 @@ class RunBundler:
         self._sequence_counters: dict[Any, int] = dict()  # noqa: C408
         self._sequence_counters_copy: dict[Any, int] = dict()  # for if we redo data-points  # noqa: C408
         self._monitor_params: dict[Subscribable, tuple[Callback, dict]] = dict()  # noqa: C408  # cache of {obj: (cb, kwargs)}
+        # Events from monitor callbacks, as (obj, kwargs, doc), waiting to dispatch on the loop.
+        self._monitor_backlog: deque[tuple[Any, dict, Event]] = deque()
         # a cache of stream_resource uid to the data_keys that stream_resource collects for
         self._stream_resource_data_keys: dict[str, Iterable[str]] = dict()  # noqa: C408
         self.run_is_open = False
@@ -244,7 +247,10 @@ class RunBundler:
         # Clear any uncleared monitoring callbacks.
         for obj, (cb, kwargs) in list(self._monitor_params.items()):  # noqa: B007
             obj.clear_sub(cb)
-            del self._monitor_params[obj]
+        # Dispatch monitor Events already handed over, before the stop, without yielding.
+        self._flush_monitor_backlog()
+        # Any still to come are dropped, rather than following the stop.
+        self._monitor_params.clear()
         reason = msg.kwargs.get("reason", None)
         if reason is None:
             reason = ""
@@ -481,6 +487,8 @@ class RunBundler:
 
         stream_bundle = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
         compose_event = stream_bundle[1]
+        # A sync ophyd signal calls back on its own thread; its Events are dispatched on this loop.
+        loop = asyncio.get_running_loop()
 
         def emit_event_from_readings(readings: dict[str, Reading]):
             data, timestamps = _rearrange_into_parallel_dicts(readings)
@@ -488,7 +496,8 @@ class RunBundler:
                 data=data,
                 timestamps=timestamps,
             )
-            self.emit_sync(DocumentNames.event, doc)
+            self._monitor_backlog.append((obj, kwargs, doc))
+            call_soon_or_now(loop, self._flush_monitor_backlog)
 
         def emit_event_for_subscribe(*args, **kwargs):
             # Ignore the inputs. Use this call as a signal to call read on the
@@ -562,6 +571,8 @@ class RunBundler:
             raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not being monitored.")
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
+        # Dispatch its Events already handed over, without yielding; any still to come are dropped.
+        self._flush_monitor_backlog()
         del self._monitor_params[obj]
         await self.reset_checkpoint_state_coro()
 
@@ -674,6 +685,16 @@ class RunBundler:
 
     async def reset_checkpoint_state_coro(self):
         self.reset_checkpoint_state()
+
+    def _flush_monitor_backlog(self) -> None:
+        """Dispatch the Events monitor callbacks handed over, dropping any whose monitor ended. On the loop."""
+        while self._monitor_backlog:
+            obj, kwargs, doc = self._monitor_backlog.popleft()
+            # On the loop, so the check cannot race `close_run` or `unmonitor`.
+            if self._monitor_params.get(obj, (None, None))[1] is kwargs:
+                self.emit_sync(DocumentNames.event, doc)
+            else:
+                self.log.warning("Dropped an Event from %r that arrived after its monitor ended.", obj)
 
     async def suspend_monitors(self):
         for obj, (cb, kwargs) in self._monitor_params.items():  # noqa: B007

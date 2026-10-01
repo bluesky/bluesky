@@ -143,6 +143,16 @@ def RE(request, make_RE):
     return make_RE({}, call_returns_result=request.param)
 
 
+@pytest.fixture
+def pause_if_stuck(RE):
+    """Pause the plan after 10 s, so a trigger that never comes fails the test rather than hanging it."""
+    timer = threading.Timer(10, RE.request_pause)
+    timer.daemon = True
+    timer.start()
+    yield
+    timer.cancel()
+
+
 @pytest.fixture(scope="function")
 def single_RE(make_RE):
     """A ready-to-use ``RunEngine`` that runs a test only once.
