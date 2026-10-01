@@ -60,6 +60,25 @@ SyncOrAsyncIterator: TypeAlias = Iterator[T] | AsyncIterator[T]
 
 
 @runtime_checkable
+class Watchable(Protocol):
+    """An object whose progress can be monitored via ``watch()``."""
+
+    @property
+    @abstractmethod
+    def done(self) -> bool: ...
+
+    @abstractmethod
+    def watch(self, func: Callable) -> None:
+        """Register a callback to receive progress updates.
+
+        The callback will be called with keyword arguments:
+        ``name``, ``current``, ``initial``, ``target``, ``unit``,
+        ``precision``, ``fraction``, ``time_elapsed``, ``time_remaining``.
+        """
+        ...
+
+
+@runtime_checkable
 class Status(Protocol):
     @abstractmethod
     def add_callback(self, callback: Callable[["Status"], None]) -> None:
@@ -86,6 +105,13 @@ class Status(Protocol):
     def success(self) -> bool:
         """If done return whether the operation was successful."""
         ...
+
+
+@runtime_checkable
+class WatchableStatus(Status, Watchable, Protocol):
+    """A Status that also supports progress monitoring via ``watch()``."""
+
+    ...
 
 
 @runtime_checkable
