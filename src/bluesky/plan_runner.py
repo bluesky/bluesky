@@ -372,7 +372,8 @@ class PlanRunner:
        provisional.
 
     Built for one plan, whose task starts at construction, and discarded
-    after it. All of its state is used on the event loop only.
+    after it. All of its state is used on the event loop only. Normally built
+    by ``PlanSession.start``.
 
     Parameters
     ----------
@@ -2077,7 +2078,8 @@ class PlanRunner:
             return
         self._drop_plan_suspender(suspender)
 
-    # The built-in commands, as unbound methods; each runner binds its own.
+    # The built-in commands, as unbound methods, so `PlanSession.commands`
+    # can read them without a runner.
     _DEFAULT_COMMANDS: typing.ClassVar[dict[str, Callable[["PlanRunner", Msg], Awaitable[typing.Any]]]] = {
         "declare_stream": _declare_stream,
         "create": _create,

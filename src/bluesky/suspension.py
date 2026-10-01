@@ -53,19 +53,21 @@ def join_justifications(reasons: Reasons) -> str:
 
 
 class Suspension:
-    """The reasons a plan may not run, keyed by the suspender that tripped each.
+    """The reasons a plan may not run, here or in a parent, keyed by the suspender that tripped each.
 
     ``reasons`` is safe on any thread; everything else is loop-only and unchecked.
     """
 
-    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, parent: Suspension | None = None) -> None:
         self._loop = loop
+        self._parent = parent
         # Immutable and swapped whole on every change.
         self._reasons: Reasons = MappingProxyType({})
         # Pending releases of recovered reasons.
         self._releases: dict[Hashable, asyncio.TimerHandle] = {}
-        # Set and cleared on every change, to wake waiters.
-        self._changed = asyncio.Event()
+        # Set and cleared on every change, to wake waiters; shared with the parent,
+        # so a change up the chain wakes waiters here.
+        self._changed: asyncio.Event = parent._changed if parent is not None else asyncio.Event()
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -74,8 +76,10 @@ class Suspension:
 
     @property
     def reasons(self) -> Reasons:
-        """Every reason, in the order tripped; a new mapping after every change."""
-        return self._reasons
+        """Every reason, in the order tripped; the parent's first."""
+        if self._parent is None:
+            return self._reasons
+        return MappingProxyType({**self._parent.reasons, **self._reasons})
 
     def trip(
         self,
