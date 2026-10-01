@@ -14,9 +14,11 @@ User Documentation
    progress-bar
    event_descriptors
    async
+   headless
    multi_run_plans
    debugging
    run_engine_api
+   plan_session_api
    utils
    magics
    otel-tracing

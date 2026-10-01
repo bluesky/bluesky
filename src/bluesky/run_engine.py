@@ -265,10 +265,6 @@ class RunEngine:
     state
         {'idle', 'running', 'paused'}
 
-    suspenders
-        Read-only collection of `bluesky.suspenders.SuspenderBase` objects
-        which can suspend and resume execution; see related methods.
-
     preprocessors : list
         Generator functions that take in a plan (generator instance) and
         modify its messages on the way out. Suitable examples include

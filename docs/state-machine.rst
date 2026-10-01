@@ -293,6 +293,12 @@ See the API documentation (follow the links in the table below) for other
 suspender types and options, including a waiting period and cleanup
 procedures to run pre-suspend and pre-resume.
 
+.. note::
+
+   **Write pre- and post-plans to be idempotent.** Each tripped suspender runs
+   its own pre-plan, in the order they tripped, and post-plans run in reverse.
+   A pre-plan that closes a shutter must tolerate it being closed already.
+
 Built-in Suspenders
 -------------------
 

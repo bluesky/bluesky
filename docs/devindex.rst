@@ -7,5 +7,6 @@ Developer Documentation
    hardware
    msg
    run_engine
+   architecture
    api_changes
    contributing
