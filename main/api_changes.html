@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Release History &#8212; bluesky 1.15.2.dev213+g8bccfde78 documentation</title>
+    <title>Release History &#8212; bluesky 1.15.2.dev230+g1d0640485 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=cb1e264d"></script>
+    <script src="_static/documentation_options.js?v=2a323383"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api_changes';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev213+g8bccfde78';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev230+g1d0640485';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="The RunEngine run loop" href="run_engine.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev213+g8bccfde78" />
+  <meta name="docsearch:version" content="1.15.2.dev230+g1d0640485" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -600,6 +600,18 @@ watching something else with nothing said.</p></li>
 <section id="fixed">
 <h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>A plan aborted while parked in a <code class="docutils literal notranslate"><span class="pre">wait_for</span></code> cancels the tasks that wait was
+running.  Nothing else held a reference to them, and <code class="docutils literal notranslate"><span class="pre">asyncio.wait</span></code> does not
+cancel what it was waiting on when it is itself cancelled, so they outlived
+the plan and asyncio reported them as destroyed-while-pending at some
+unrelated later moment.  A <code class="docutils literal notranslate"><span class="pre">wait</span></code> that times out still leaves them alone, so
+waiting on the same group again finds them in flight.</p></li>
+<li><p>A suspension no longer duplicates the documents from a monitored signal.
+Resuming from one re-subscribed every monitor, having never unsubscribed
+them: monitors run throughout a suspension, and only a <em>pause</em> stops them.
+One suspension therefore left each monitored signal subscribed twice, and
+every Event it produced afterwards was emitted twice, compounding with each
+further suspension.</p></li>
 <li><p>A device is told a suspension has started only if it satisfies
 <cite>bluesky.protocols.Pausable</cite>.  A suspension used to call <code class="docutils literal notranslate"><span class="pre">pause()</span></code> on
 anything that had the attribute, where <code class="docutils literal notranslate"><span class="pre">RunEngine.pause</span></code> has always required
@@ -3033,7 +3045,7 @@ not have any effect on user code.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev213+g8bccfde78/docs/api_changes.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev230+g1d0640485/docs/api_changes.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
