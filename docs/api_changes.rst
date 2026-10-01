@@ -57,6 +57,9 @@ Fixed
   that plan either.
 - Installing a suspender that is already installed raises ``RuntimeError``,
   rather than orphaning the first install.  Remove it first.
+- A plan is held when a condition goes bad between the runner being built and
+  the plan starting.  Previously it could run to completion through the
+  tripped suspender.
 
 Changed
 -------
@@ -110,16 +113,28 @@ Changed
   on a plan that is still tripped prints what is holding it up and waits for it
   to clear, without opening a new suspension; a plan paused inside a suspension
   goes back into it.
-- ``PlanRunner`` does not print.  It calls its ``PlanHooks``
-  (``suspension_began``, ``hold_began`` and the rest), and ``RunEngine`` prints
-  from them, so nothing changes at a prompt.
+- ``PlanRunner`` does not print.  It calls ``PlanHooks``, and a ``RunEngine``
+  prints what main did.
+- A plan that yields a value on close is logged as a warning, not a printed
+  line.
+- ``RE.md`` is read once, as the plan is built, before the plan's first line
+  runs.  A plan that writes ``RE.md`` changes the *next* plan's metadata; pass
+  per-scan metadata with the plan's ``md=`` argument instead.  ``scan_id`` is
+  the one key still read live.
+- A suspender a plan installs with ``Msg('install_suspender')`` holds up only
+  that plan, and is removed when it ends.  ``Msg('remove_suspender')`` warns and
+  ignores a suspender the plan did not install.  ``RunEngine.suspenders`` and
+  ``RunEngine.clear_suspenders`` cover both kinds.
 
 Removed
 -------
 - ``RunEngine.request_suspend``, with no replacement.  Install a suspender,
   which composes with other suspenders; or use ``RunEngine.request_pause``.
-- ``SuspenderBase.get_futures`` and ``SuspenderBase.RE``.  Use
-  ``SuspenderBase.tripped``.
+- ``SuspenderBase.get_futures``, ``SuspenderBase.RE`` and
+  ``SuspenderBase._lock``.  Use ``SuspenderBase.tripped``.  A subclass that
+  overrides ``install`` is handed a ``Suspension``; one that calls
+  ``self.RE.abort()`` from its callback has no replacement, as ``RE.abort()``
+  cannot be called from the event loop.
 
 v1.15.1 (2026-05-05)
 ====================

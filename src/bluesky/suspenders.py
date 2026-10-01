@@ -90,7 +90,8 @@ class SuspenderBase(metaclass=ABCMeta):
         ----------
 
         suspension : :class:`~bluesky.suspension.Suspension`
-            What to trip.
+            What to trip: a session's holds up every plan it runs, a plan's
+            only that plan.
 
         event_type : str, optional
             The event type (subscription type) to watch. Only for a signal

@@ -14,7 +14,7 @@ from bluesky import Msg
 from bluesky.plan_runner import PlanEnvironment, PlanRunner
 from bluesky.plan_session import PlanSession
 from bluesky.suspenders import SuspendBoolHigh
-from bluesky.utils import InvalidCommand
+from bluesky.utils import InvalidCommand, RunEngineInterrupted
 
 from .utils import _parked
 
@@ -583,6 +583,157 @@ def test_runner_starts_empty():
     assert not run_bundlers
     # The plan stack holds this runner's own plan from construction.
     assert plan_stack_depth == 1
+
+
+def test_the_old_import_location_still_works():
+    from bluesky import run_engine
+
+    assert run_engine.PlanSession is PlanSession
+    assert run_engine.PlanRunner is PlanRunner
+
+
+def _crossings(rel_path):
+    """The innermost function around every hop onto the loop in a module."""
+    import ast
+
+    source = pathlib.Path(bluesky.__file__).parent / rel_path
+    tree = ast.parse(source.read_text())
+    crossing = {"call_soon_threadsafe", "run_coroutine_threadsafe"}
+    found = set()
+
+    def walk(node, enclosing):
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                walk(child, child.name)
+            else:
+                if (
+                    isinstance(child, ast.Call)
+                    and isinstance(child.func, ast.Attribute)
+                    and child.func.attr in crossing
+                ):
+                    found.add(enclosing)
+                walk(child, enclosing)
+
+    walk(tree, None)
+    return found
+
+
+def test_every_hop_onto_the_loop_is_one_of_the_few_we_mean():
+    # _loop.py holds the two ways in. magics.py and callbacks/zmq.py each stop a loop of
+    # their own. A new hop belongs in _loop.py.
+    package_dir = pathlib.Path(bluesky.__file__).parent
+    hops = {}
+    for path in sorted(package_dir.rglob("*.py")):
+        rel = path.relative_to(package_dir)
+        if rel.parts[0] in ("tests", "_vendor"):
+            continue
+        found = _crossings(str(rel))
+        if found:
+            hops[rel.as_posix()] = found
+
+    assert hops == {
+        "_loop.py": {"run_coro_on_loop", "call_soon_or_now"},
+        "magics.py": {"_shutdown_magics_run_engine"},
+        "callbacks/zmq.py": {"stop"},
+    }
+
+
+def test_a_malformed_plan_raises_on_the_calling_thread(RE):
+    # The engine stays usable.
+    with pytest.raises(TypeError):
+        RE(42)
+
+    assert RE._runner.state.is_idle
+    RE([Msg("null")])
+
+
+def test_run_engine_keeps_its_runner_after_the_plan(RE):
+    RE([Msg("open_run"), Msg("close_run")])
+    assert len(RE._run_start_uids) == 1
+    assert RE._exit_status == "success"
+    # ...and the next plan gets a fresh runner
+    previous = RE._runner
+    RE([Msg("open_run"), Msg("close_run")])
+    assert RE._runner is not previous
+    assert len(RE._run_start_uids) == 1
+
+
+def test_registered_commands_survive_a_new_runner(RE):
+    seen = []
+
+    async def custom(msg):
+        seen.append(msg.command)
+
+    RE.register_command("custom-command", custom)
+    for _ in range(2):
+        RE([Msg("custom-command")])
+    assert seen == ["custom-command"] * 2
+
+    RE.unregister_command("custom-command")
+    with pytest.raises(KeyError):
+        RE([Msg("custom-command")])
+
+
+def test_request_pause_coro_survives_for_queueserver(RE):
+    # Used by bluesky-queueserver.
+
+    def pause_from_another_thread():
+        asyncio.run_coroutine_threadsafe(RE._request_pause_coro(False), loop=RE.loop).result()
+
+    def plan():
+        yield Msg("checkpoint")
+        threading.Thread(target=pause_from_another_thread).start()
+        # Paused long before this ends.
+        yield Msg("sleep", None, 10)
+        yield Msg("null")
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    assert RE.state == "paused"
+    RE.stop()
+
+
+def test_session_subscribers_see_a_document_before_the_plan_s(RE):
+    seen = []
+    RE.subscribe(lambda name, doc: seen.append(("session", name)), "start")
+
+    RE(
+        [Msg("open_run"), Msg("close_run")],
+        {"start": lambda name, doc: seen.append(("plan", name))},
+    )
+
+    assert [who for who, _ in seen] == ["session", "plan"]
+
+
+def test_ignore_callback_exceptions_is_read_live_by_a_plan(RE):
+    RE.ignore_callback_exceptions = True
+    # Held at `hooks.may_proceed`, so the plan cannot run meanwhile.
+    RE._new_runner([Msg("null")])
+    assert RE._runner._dispatcher.ignore_exceptions is True
+
+    RE.ignore_callback_exceptions = False
+    assert RE._runner._dispatcher.ignore_exceptions is False
+
+    # Replacing it with an idle runner discards it.
+    RE._new_runner()
+
+
+def test_re_class_answers_for_whoever_is_driving(RE):
+    # The class of the runner's identity, else of the runner.
+    seen = []
+
+    def note():
+        seen.append((yield Msg("RE_class")))
+
+    RE(note())
+    assert seen == [type(RE)]
+
+    async def headless():
+        seen.clear()
+        await PlanSession().start(note())
+
+    asyncio.run(headless())
+    assert seen == [PlanRunner]
 
 
 def test_a_plans_subscription_tokens_never_collide_with_its_sessions():

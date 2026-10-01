@@ -5,6 +5,7 @@ import re
 import threading
 import time
 import time as ttime
+from collections.abc import Hashable, Mapping
 
 import pytest
 from ophyd.signal import Signal
@@ -24,7 +25,7 @@ from bluesky.suspenders import (
     SuspendWhenChanged,
     SuspendWhenOutsideBand,
 )
-from bluesky.suspension import join_justifications
+from bluesky.suspension import SuspensionReason, join_justifications
 from bluesky.tests import ophyd_async, requires_ophyd_async
 from bluesky.tests.utils import MsgCollector
 from bluesky.utils import FailedPause
@@ -185,28 +186,37 @@ def test_pretripped_async_signal(RE):
 
 
 @requires_ophyd_async
-def test_suspender_plans_async_signal(RE):
+def test_suspender_plans_async_signal(RE, pause_if_stuck):
     "Tests that an async suspender can be installed and removed via Msg"
     sig = _connected_soft_signal(RE, 0)
-    my_suspender = SuspendBoolHigh(sig, sleep=0.2)
+    my_suspender = SuspendBoolHigh(sig)
     scan = [Msg("checkpoint"), Msg("sleep", None, 0.2)]
+    commands = []
 
-    def trip_then_clear():
-        threading.Timer(0.1, _set_on_loop, (RE, sig, 1)).start()
-        threading.Timer(0.5, _set_on_loop, (RE, sig, 0)).start()
+    def clear():
+        commands.append("sig=0")
+        sig.set(0)
 
     # installed from inside a plan, it suspends and resumes
-    trip_then_clear()
-    start = ttime.time()
+    _at_message(RE, commands, sleep=lambda: sig.set(1), wait_for=lambda: _in_turn(RE, clear))
     RE([Msg("install_suspender", None, my_suspender)] + scan)
-    assert ttime.time() - start > 0.4 + 0.2 + 0.2
-    assert my_suspender in RE.suspenders
+    assert commands.count("_start_suspender") == 1
+    # Waited for the condition to clear, then replayed.
+    assert commands[commands.index("wait_for") :] == [
+        "wait_for",
+        "sig=0",
+        "_resume_from_suspender",
+        "rewindable",
+        "sleep",
+    ]
+    # and it ends with that plan; see test_suspender_installed_by_a_plan_ends_with_it.
+    assert my_suspender not in RE.suspenders
 
-    # removed from inside a plan, it no longer does
-    trip_then_clear()
-    start = ttime.time()
+    commands.clear()
+    _at_message(RE, commands, sleep=lambda: sig.set(1))
     RE([Msg("remove_suspender", None, my_suspender)] + scan)
-    assert ttime.time() - start < 0.5
+    _set_on_loop(RE, sig, 0)
+    assert "_start_suspender" not in commands
     assert my_suspender not in RE.suspenders
 
 
@@ -548,26 +558,34 @@ def test_unresumable_suspend_fail(RE):
     assert stop - start < 1
 
 
-def test_suspender_plans(RE, hw):
+def test_suspender_plans(RE, hw, pause_if_stuck):
     "Tests that the suspenders can be installed via Msg"
     sig = hw.bool_sig
-    my_suspender = SuspendBoolHigh(sig, sleep=0.2)
+    my_suspender = SuspendBoolHigh(sig)
 
     def putter(val):
         sig.put(val)
 
     putter(0)
 
-    # Do the messages work?
-    RE([Msg("install_suspender", None, my_suspender)])
-    assert my_suspender in RE.suspenders
+    # A suspender a plan installs ends with the plan.
+    seen = []
+
+    def note_while_running():
+        yield Msg("install_suspender", None, my_suspender)
+        seen.append(my_suspender in RE.suspenders)
+        yield Msg("remove_suspender", None, my_suspender)
+
+    RE(note_while_running())
+    assert seen == [True]
+    assert my_suspender not in RE.suspenders
     RE([Msg("remove_suspender", None, my_suspender)])
     assert my_suspender not in RE.suspenders
 
     # Can we call both in a plan?
     RE([Msg("install_suspender", None, my_suspender), Msg("remove_suspender", None, my_suspender)])
 
-    scan = [Msg("checkpoint"), Msg("sleep", None, 0.2)]
+    scan = [Msg("checkpoint"), Msg("sleep", None, 0.05)]
 
     # No suspend scan: does the wrapper error out?
     start = ttime.time()
@@ -577,22 +595,26 @@ def test_suspender_plans(RE, hw):
     assert delta < 0.9
 
     # Suspend scan
-    start = ttime.time()
-    threading.Timer(0.1, putter, (1,)).start()
-    threading.Timer(0.5, putter, (0,)).start()
+    commands = []
+    _at_message(RE, commands, sleep=lambda: putter(1), wait_for=lambda: _in_turn(RE, _clear(commands, sig)))
     RE(suspend_wrapper(scan, my_suspender))
-    stop = ttime.time()
-    delta = stop - start
-    assert delta > 0.9
+    assert commands.count("_start_suspender") == 1
+    # Waited for the condition to clear, then replayed.
+    assert commands[commands.index("wait_for") :] == [
+        "wait_for",
+        "bool_sig=0",
+        "_resume_from_suspender",
+        "rewindable",
+        "sleep",
+        "remove_suspender",
+    ]
 
     # Did we clean up?
-    start = ttime.time()
-    threading.Timer(0.1, putter, (1,)).start()
-    threading.Timer(0.5, putter, (0,)).start()
+    commands.clear()
+    _at_message(RE, commands, sleep=lambda: putter(1))
     RE(scan)
-    stop = ttime.time()
-    delta = stop - start
-    assert delta < 0.9
+    putter(0)
+    assert "_start_suspender" not in commands
 
 
 def test_a_suspension_holds_only_devices_that_can_be_released(RE, hw):
@@ -805,6 +827,25 @@ def test_a_retrip_inside_the_settle_window_keeps_the_hold(RE, hw, pause_if_stuck
     assert released - recovered[0] > 0.1
 
 
+def test_suspender_installed_by_a_plan_ends_with_it(RE, hw):
+    sig = hw.bool_sig
+    sig.put(0)
+    susp = SuspendBoolHigh(sig)
+    seen = []
+
+    def note():
+        yield Msg("install_suspender", None, susp)
+        seen.append(("after install", susp in RE.suspenders))
+        yield Msg("remove_suspender", None, susp)
+        seen.append(("after remove", susp in RE.suspenders))
+        yield Msg("install_suspender", None, susp)
+
+    RE(note())
+
+    assert seen == [("after install", True), ("after remove", False)]
+    assert susp not in RE.suspenders
+
+
 def test_clear_suspenders_while_paused_then_resume(RE, hw, pause_if_stuck):
     # At the prompt: RE(my_plan()), Ctrl-C, RE.clear_suspenders(), RE.resume().
     sig = hw.bool_sig
@@ -831,10 +872,6 @@ def test_clear_suspenders_while_paused_then_resume(RE, hw, pause_if_stuck):
 
 # A plan with a checkpoint to rewind to, and long enough to be interrupted.
 SCAN = [Msg("checkpoint"), Msg("sleep", None, 0.05)]
-
-
-def _at(delay, func, *args):
-    threading.Timer(delay, func, args).start()
 
 
 def _in_turn(RE, *funcs):
@@ -967,7 +1004,7 @@ def test_two_conditions_in_one_turn_are_one_suspension(RE):
         shutter.set(1)
 
     def look_then_release():
-        seen.append(join_justifications(RE._suspension.reasons))
+        seen.append(join_justifications(RE._session.suspension_reasons))
         beam.set(0)
         shutter.set(0)
 
@@ -980,7 +1017,7 @@ def test_two_conditions_in_one_turn_are_one_suspension(RE):
     assert commands.count("_start_suspender") == 1
 
 
-def test_a_trip_while_paused_makes_resume_wait(RE, hw):
+def test_a_trip_while_paused_makes_resume_wait(RE, hw, pause_if_stuck):
     sig = hw.bool_sig
     sig.put(0)
     RE.install_suspender(SuspendBoolHigh(sig))
@@ -991,14 +1028,13 @@ def test_a_trip_while_paused_makes_resume_wait(RE, hw):
 
     sig.put(1)
     _settle(RE)
-    assert RE._suspension.reasons
+    assert RE._session.suspension_reasons
 
-    _at(0.5, sig.put, 0)
-    start = ttime.time()
+    commands = []
+    _at_message(RE, commands, wait_for=lambda: _in_turn(RE, _clear(commands, sig)))
     RE.resume()
-    delta = ttime.time() - start
     # Resuming waited for the condition to clear.
-    assert delta > 0.4
+    assert commands[:2] == ["wait_for", "bool_sig=0"]
 
 
 def test_resume_announces_a_condition_that_tripped_while_paused(RE, capsys):
@@ -1308,13 +1344,48 @@ def test_clear_suspenders_reaches_a_plans_own_from_the_prompt(RE, hw, pause_if_s
     assert RE.suspenders == ()
 
 
+def test_the_suspender_methods_can_be_called_from_the_loop(RE, hw):
+    # As from a plan body or a subscriber, as on main.
+    sig = hw.bool_sig
+    sig.put(0)
+    susp = SuspendBoolHigh(sig)
+    raised = []
+
+    def install_from_the_loop():
+        try:
+            RE.install_suspender(susp)
+        except BaseException as exc:  # noqa: BLE001
+            raised.append(exc)
+
+    commands = []
+    # A msg_hook runs on the loop.
+    _at_message(RE, commands, sleep=install_from_the_loop)
+    RE([Msg("checkpoint"), Msg("sleep", None, 0.01)])
+
+    assert raised == []
+    assert susp in RE.suspenders
+    RE.clear_suspenders()
+
+
+def test_a_plan_cannot_remove_a_suspender_it_did_not_install(RE, hw):
+    sig = hw.bool_sig
+    sig.put(0)
+    session_scoped = SuspendBoolHigh(sig)
+    RE.install_suspender(session_scoped)
+
+    with pytest.warns(UserWarning, match="can only remove a suspender it installed itself"):
+        RE([Msg("remove_suspender", None, session_scoped)])
+
+    assert session_scoped in RE.suspenders
+
+
 def test_removing_a_suspender_settles_before_it_returns(RE, hw):
     sig = hw.bool_sig
     sig.put(1)  # bad, and it has emitted, so the subscription reports it
     suspender = SuspendBoolHigh(sig)
 
     RE.install_suspender(suspender)
-    suspension = RE._suspension
+    suspension = RE._session._suspension
     assert suspension.reasons
 
     RE.remove_suspender(suspender)
@@ -1419,14 +1490,14 @@ def test_a_suspension_arriving_after_the_plan_ends_does_nothing(RE):
     RE.install_suspender(SuspendBoolHigh(sig, tripped_message="too late"))
 
     RE([Msg("null")])
-    assert RE._state.is_idle
+    assert RE._runner.state.is_idle
 
     sig.put(1)
     # Queued behind the trip, so the trip has landed when this returns.
     run_coro_on_loop(asyncio.sleep(0), RE._loop)
 
-    assert RE._state.is_idle
-    assert "too late" in join_justifications(RE._suspension.reasons)
+    assert RE._runner.state.is_idle
+    assert "too late" in join_justifications(RE._session.suspension_reasons)
 
 
 def test_pre_plans_run_in_fire_order_and_post_plans_in_reverse(RE, hw, pause_if_stuck):
@@ -1530,10 +1601,33 @@ def test_installing_a_suspender_on_the_run_engine_still_works(RE, hw):
     assert susp in RE.suspenders
     sig.put(1)
     _settle(RE)
-    assert RE._suspension.reasons
+    assert RE._session.suspension_reasons
     sig.put(0)
     _settle(RE)
-    assert not RE._suspension.reasons
+    assert not RE._session.suspension_reasons
+
+
+def test_a_suspension_reaches_the_suspension_began_hook(RE, pause_if_stuck):
+    suspensions: list[Mapping[Hashable, SuspensionReason]] = []
+    RE._session.hooks.suspension_began = suspensions.append
+
+    sig = Signal(value=0, name="s")
+    sig.put(0)
+    susp = SuspendBoolHigh(sig)
+    RE.install_suspender(susp)
+
+    commands = []
+    _at_message(RE, commands, sleep=lambda: sig.put(1), wait_for=lambda: _in_turn(RE, _clear(commands, sig)))
+    RE(SCAN)
+
+    assert suspensions
+    (reasons,) = suspensions
+    assert list(reasons) == [susp]
+    assert join_justifications(reasons) == "Signal s is high"
+
+
+# --------------------------------------------------------------------------
+# The suspension itself
 
 
 def test_a_condition_tripping_while_paused_joins_the_open_suspension(RE, hw, pause_if_stuck):
