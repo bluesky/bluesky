@@ -110,6 +110,9 @@ Changed
   on a plan that is still tripped prints what is holding it up and waits for it
   to clear, without opening a new suspension; a plan paused inside a suspension
   goes back into it.
+- ``PlanRunner`` does not print.  It calls its ``PlanHooks``
+  (``suspension_began``, ``hold_began`` and the rest), and ``RunEngine`` prints
+  from them, so nothing changes at a prompt.
 
 Removed
 -------
