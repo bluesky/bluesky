@@ -49,6 +49,11 @@ Fixed
   one -- and assigning put it on the adapter, where the logging machinery never
   looks, so turning it off silenced nothing.  Both halves now go to the logger
   the adapter wraps.
+- A suspender that trips while the plan is paused now holds it when it
+  resumes.  Previously the trip was dropped, and no later trip could suspend
+  that plan either.
+- Installing a suspender that is already installed raises ``RuntimeError``,
+  rather than orphaning the first install.  Remove it first.
 
 Changed
 -------
@@ -82,12 +87,33 @@ Changed
   Devices that implemented the old ``Subscribable`` protocol should rename
   ``subscribe`` to ``subscribe_reading``; users of ophyd-async need at
   least v0.13.5.
+- A plan has one internal ``Suspension``, tripped while any suspender's reason
+  stands.  ``RunEngine.install_suspender`` is unchanged, and returns once a
+  suspender on an already-bad signal has tripped.  A plan started while tripped
+  is held at its first message, running neither pre- nor post-plan, as before.
+- ``SuspenderBase.install`` takes the ``Suspension`` to trip rather than a
+  ``RunEngine``.  Passing a ``RunEngine`` still installs on it, with a
+  ``DeprecationWarning``.
+- ``SuspenderBase.install`` raises ``RuntimeError`` unless called on the
+  RunEngine's event loop.  ``SuspenderBase.remove`` off the loop warns
+  (``DeprecationWarning``) and crosses to it.  From the prompt, use
+  ``RunEngine.install_suspender``, ``remove_suspender`` and
+  ``clear_suspenders``.
+- ``SuspenderBase.tripped`` may lag a ``put`` by a loop iteration, as readings
+  are decided on the event loop.  Starting a plan after a ``put`` is unaffected.
+- Two conditions going bad at once are now one suspension carrying both
+  justifications, not two.  The second is announced as it joins.
+- Nothing runs while a plan is paused, including pre-plans.  ``RunEngine.resume``
+  on a plan that is still tripped prints what is holding it up and waits for it
+  to clear, without opening a new suspension; a plan paused inside a suspension
+  goes back into it.
 
 Removed
 -------
 - ``RunEngine.request_suspend``, with no replacement.  Install a suspender,
   which composes with other suspenders; or use ``RunEngine.request_pause``.
-
+- ``SuspenderBase.get_futures`` and ``SuspenderBase.RE``.  Use
+  ``SuspenderBase.tripped``.
 
 v1.15.1 (2026-05-05)
 ====================
