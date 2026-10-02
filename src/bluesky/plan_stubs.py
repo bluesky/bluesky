@@ -35,6 +35,7 @@ from .protocols import (
     Stageable,
     Status,
     Stoppable,
+    T,
     Triggerable,
     WritesStreamAssets,
     check_supports,
@@ -171,9 +172,9 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
 
 
 @typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+def locate(*objs: Locatable, squeeze: bool = True) -> MsgGenerator[list[Location[T]]]: ...
 @typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
+def locate(obj: Locatable, squeeze: Literal[True] = True) -> MsgGenerator[Location[T]]: ...
 @plan
 def locate(*objs, squeeze=True):
     """
