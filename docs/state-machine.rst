@@ -293,6 +293,12 @@ See the API documentation (follow the links in the table below) for other
 suspender types and options, including a waiting period and cleanup
 procedures to run pre-suspend and pre-resume.
 
+.. note::
+
+   **Write pre- and post-plans to be idempotent.** Each tripped suspender runs
+   its own pre-plan, in the order they tripped, and post-plans run in reverse.
+   A pre-plan that closes a shutter must tolerate it being closed already.
+
 Built-in Suspenders
 -------------------
 
@@ -384,20 +390,16 @@ Suspender-related Methods
 The RunEngine also has a ``suspenders`` property, a collection of the
 currently-installed suspenders.
 
-Request Methods
----------------
+Requesting a Pause
+------------------
 
-This method is called when Ctrl+C is pressed or when a 'pause' Message is
-processed. It can also be called by user-defined agents. See the next example.
+This method is called when Ctrl+C is pressed. It can also be called by
+user-defined agents. See the next example.
 
 .. automethod:: bluesky.run_engine.RunEngine.request_pause
     :noindex:
 
-This method is used by the ``PVSuspend*`` classes above. It can also be called
-by user-defined agents.
-
-.. automethod:: bluesky.run_engine.RunEngine.request_suspend
-    :noindex:
+To suspend a plan, install a suspender; see :ref:`installing_suspenders`.
 
 
 Example: Requesting a pause from the asyncio event loop
