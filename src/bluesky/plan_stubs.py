@@ -35,6 +35,7 @@ from .protocols import (
     Stageable,
     Status,
     Stoppable,
+    T,
     Triggerable,
     WritesStreamAssets,
     check_supports,
@@ -171,9 +172,11 @@ def read(obj: Readable) -> MsgGenerator[Reading]:
 
 
 @typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
+def locate(obj: Locatable[T], /, *, squeeze: Literal[True] = True) -> MsgGenerator[Location[T]]: ...
 @typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
+def locate(obj: Locatable[T], /, *, squeeze: Literal[False]) -> MsgGenerator[list[Location[T]]]: ...
+@typing.overload
+def locate(*objs: Locatable[Any], squeeze: bool = True) -> MsgGenerator[list[Location[Any]]]: ...
 @plan
 def locate(*objs, squeeze=True):
     """
@@ -181,15 +184,21 @@ def locate(*objs, squeeze=True):
 
     Parameters
     ----------
-    obj : Device or Signal
-    sqeeze: bool
-        If True, return the result as a list.
-        If False, always return a list of retults even with a single object.
+    *objs : Device or Signal
+    squeeze : bool
+        If True and a single object is given, return its location on its own.
+        If False, always return a list of locations, even for a single object.
+        Several objects always give a list.
 
     Yields
     ------
-     msg : Msg
+    msg : Msg
         ``Msg('locate', obj1, ..., objn, squeeze=True)``
+
+    Returns
+    -------
+    location : Location or list of Location
+        The location of each object, in the order given.
     """
     return (yield Msg("locate", *objs, squeeze=squeeze))
 
