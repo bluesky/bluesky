@@ -21,6 +21,21 @@ Added
 
 Fixed
 -----
+
+- A plan aborted while parked in a ``wait_for`` cancels the tasks that wait was
+  running.  Nothing else held a reference to them, and ``asyncio.wait`` does not
+  cancel what it was waiting on when it is itself cancelled, so they outlived
+  the plan and asyncio reported them as destroyed-while-pending at some
+  unrelated later moment.  A ``wait`` that times out still leaves them alone, so
+  waiting on the same group again finds them in flight.
+  
+- A suspension no longer duplicates the documents from a monitored signal.
+  Resuming from one re-subscribed every monitor, having never unsubscribed
+  them: monitors run throughout a suspension, and only a *pause* stops them.
+  One suspension therefore left each monitored signal subscribed twice, and
+  every Event it produced afterwards was emitted twice, compounding with each
+  further suspension.
+  
 - A device is told a suspension has started only if it satisfies
   `bluesky.protocols.Pausable`.  A suspension used to call ``pause()`` on
   anything that had the attribute, where ``RunEngine.pause`` has always required
