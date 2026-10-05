@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>How Bluesky Interfaces with Hardware &#8212; bluesky 1.15.2.dev230+g1d0640485 documentation</title>
+    <title>How Bluesky Interfaces with Hardware &#8212; bluesky 1.15.2.dev234+gf1f1d2fa9 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=2a323383"></script>
+    <script src="_static/documentation_options.js?v=074df0de"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'hardware';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev230+g1d0640485';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev234+gf1f1d2fa9';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Developer Documentation" href="devindex.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev230+g1d0640485" />
+  <meta name="docsearch:version" content="1.15.2.dev234+gf1f1d2fa9" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -1428,10 +1428,10 @@ with minimal guidance from the user. See <a class="reference internal" href="cal
 <dl class="py class">
 <dt class="sig sig-object py" id="bluesky.protocols.Preparable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bluesky.protocols.</span></span><span class="sig-name descname"><span class="pre">Preparable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky/protocols.html#Preparable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.protocols.Preparable" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">T_co</span></code>]</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="bluesky.protocols.Preparable.prepare">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#bluesky.protocols.Status" title="bluesky.protocols.Status"><span class="pre">Status</span></a></span></span><a class="reference internal" href="_modules/bluesky/protocols.html#Preparable.prepare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.protocols.Preparable.prepare" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T_co</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#bluesky.protocols.Status" title="bluesky.protocols.Status"><span class="pre">Status</span></a></span></span><a class="reference internal" href="_modules/bluesky/protocols.html#Preparable.prepare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bluesky.protocols.Preparable.prepare" title="Link to this definition">#</a></dt>
 <dd><p>Prepare a device for scanning.</p>
 <p>This method provides similar functionality to <code class="docutils literal notranslate"><span class="pre">Stageable.stage</span></code> and
 <code class="docutils literal notranslate"><span class="pre">Movable.set</span></code>, with key differences:</p>
@@ -1739,7 +1739,7 @@ compatible way, e.g.:</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev230+g1d0640485/docs/hardware.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev234+gf1f1d2fa9/docs/hardware.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
