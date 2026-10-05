@@ -1831,7 +1831,22 @@ class RunEngine:
 
         (futs,) = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        completed, pending = await asyncio.wait(futs, **msg.kwargs)
+        # These tasks are ours: nothing else holds a reference with which to
+        # cancel them. `asyncio.wait` does not cancel what it was waiting on
+        # when it is itself cancelled, so a plan aborted while parked here left
+        # them running on a loop about to be closed, and asyncio reported "Task
+        # was destroyed but it is pending!" at some unrelated later moment.
+        #
+        # Only on the way out. A timeout leaves them alone deliberately: the
+        # awaitables are built by factories that work more than once, and
+        # waiting on the same group again after a timeout has to find whatever
+        # it was waiting for still in flight.
+        try:
+            completed, pending = await asyncio.wait(futs, **msg.kwargs)
+        except asyncio.CancelledError:
+            for fut in futs:
+                fut.cancel()
+            raise
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
         return futs
@@ -2438,23 +2453,25 @@ class RunEngine:
         """
         await self._request_pause_coro(*msg.args, **msg.kwargs)
 
-    async def _resume(self, msg):
-        """Request the run engine to resume
-
-        Expected message object is:
-
-            Msg('resume', defer=False, name=None, callback=None)
-
-        See RunEngine.resume() docstring for explanation of the three
-        keyword arguments in the `Msg` signature
-        """
-        # Re-instate monitoring callbacks.
-        for current_run in self._run_bundlers.values():
-            await current_run.restore_monitors()
-        # Notify Devices of the resume in case they want to clean up.
+    async def _resume_objects(self):
+        """The plan is moving again: tell the devices, so they can prepare."""
         for obj in self._objs_seen:
             if isinstance(obj, Pausable):
                 await maybe_await(obj.resume())
+
+    async def _resume(self, msg):
+        """The suspension is over: tell the devices.
+
+        Expected message object is:
+
+            Msg('_resume_from_suspender')
+
+        Sent by the helper plan `_start_suspender` pushes, between the hold and
+        the post-plan. Nothing to do with `RunEngine.resume`.
+
+        Monitors are untouched: a suspension never stopped them.
+        """
+        await self._resume_objects()
 
     async def _checkpoint(self, msg):
         """Instruct the RunEngine to create a checkpoint so that we can rewind
