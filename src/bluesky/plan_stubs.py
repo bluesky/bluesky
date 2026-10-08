@@ -634,7 +634,7 @@ def wait(
     timeout: float | None = None,
     error_on_timeout: bool = True,
     watch: Sequence[str] = (),
-) -> MsgGenerator:
+) -> MsgGenerator[tuple[Status]]:
     """
     Wait for all statuses in a group to report being finished.
 
