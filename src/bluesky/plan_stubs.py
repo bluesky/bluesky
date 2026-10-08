@@ -634,7 +634,7 @@ def wait(
     timeout: float | None = None,
     error_on_timeout: bool = True,
     watch: Sequence[str] = (),
-):
+) -> MsgGenerator:
     """
     Wait for all statuses in a group to report being finished.
 
@@ -757,7 +757,9 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 
 
 @plan
-def prepare(obj: Preparable[Any], *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any):
+def prepare(
+    obj: Preparable[Any], *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any
+) -> MsgGenerator[Status]:
     """
     Prepare a device ready for trigger or kickoff.
 
@@ -836,7 +838,9 @@ def kickoff(
 
 
 @plan
-def kickoff_all(*args: Flyable, group: Hashable | None = None, wait: bool = True, **kwargs: Any):
+def kickoff_all(
+    *args: Flyable, group: Hashable | None = None, wait: bool = True, **kwargs: Any
+) -> MsgGenerator[tuple[Status]]:
     """
     Kickoff one or more fly-scanning devices.
 
@@ -928,7 +932,9 @@ def complete(
 
 
 @plan
-def complete_all(*args: Flyable, group: Hashable | None = None, wait: bool = False, **kwargs: Any):
+def complete_all(
+    *args: Flyable, group: Hashable | None = None, wait: bool = False, **kwargs: Any
+) -> MsgGenerator[tuple[Status]]:
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
@@ -1058,7 +1064,7 @@ def collect_while_completing(
     flush_period: float | None = None,
     stream_name: str | None = None,
     watch: Sequence[str] = (),
-):
+) -> MsgGenerator[tuple[Status]]:
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
     data from one or more Collectable detectors until all are done.
