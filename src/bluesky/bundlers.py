@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from itertools import combinations
 from logging import LoggerAdapter
-from typing import Any, Literal, TypeAlias, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeGuard, cast
 
 from event_model import (
     ComposeDescriptorBundle,
@@ -25,7 +25,8 @@ from event_model import (
 )
 from event_model.documents.event import Event
 
-from bluesky.run_engine import RunEngineMetadata
+if TYPE_CHECKING:
+    from bluesky.run_engine import RunEngineMetadata
 
 from .log import doc_logger
 from .protocols import (
@@ -137,7 +138,7 @@ class _StreamCache:
 class RunBundler:
     def __init__(
         self,
-        md: RunEngineMetadata | None,
+        md: "RunEngineMetadata | None",
         record_interruptions: bool,
         emit: Callable,
         emit_sync: Callable,
@@ -411,7 +412,8 @@ class RunBundler:
             if self._bundle_name not in self._descriptors:
                 raise IllegalMessageSequence("In strict mode you must pre-declare streams.")
 
-        assert self._bundle_name is not None, "Msg('create') must have a stream name"
+        if self._bundle_name is None:
+            raise ValueError("Msg('create') must have a stream name")
         self._set_current_stream_cache(self._bundle_name)
 
     async def read(self, msg, reading):
@@ -475,7 +477,7 @@ class RunBundler:
 
         where kwargs are passed through to ``obj.subscribe()``
         """
-        obj = check_supports(msg.obj, Subscribable)
+        obj = msg.obj
         if msg.args:
             raise ValueError("The 'monitor' Msg does not accept positional arguments.")
         kwargs = dict(msg.kwargs)
@@ -487,23 +489,7 @@ class RunBundler:
 
         _, compose_event, _ = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
 
-        def emit_event(readings: dict[str, Reading] | None = None, *args, **kwargs):
-            if readings is not None:
-                # We were passed something we can use, but check no args or kwargs
-                if args or kwargs:
-                    raise ValueError(
-                        "If subscribe callback called with readings, args and kwargs are not supported."
-                    )
-            else:
-                # Ignore the inputs. Use this call as a signal to call read on the
-                # object, a crude way to be sure we get all the info we need.
-                readable_obj = check_supports(obj, Readable)  # type: ignore
-                readings = readable_obj.read()  # type: ignore
-                if inspect.isawaitable(readings):
-                    raise RuntimeError(
-                        f"{readable_obj} has async read() method and the callback "
-                        "passed to subscribe() was not called with Dict[str, Reading]"
-                    )
+        def emit_event_from_readings(readings: dict[str, Reading]):
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
@@ -511,9 +497,29 @@ class RunBundler:
             )
             self.emit_sync(DocumentNames.event, doc)
 
-        self._monitor_params[obj] = emit_event, kwargs
-        # TODO: deprecate **kwargs when Ophyd.v2 is available
-        obj.subscribe(emit_event, **kwargs)
+        def emit_event_for_subscribe(*args, **kwargs):
+            # Ignore the inputs. Use this call as a signal to call read on the
+            # object, a crude way to be sure we get all the info we need.
+            readable_obj = check_supports(obj, Readable)
+            readings = readable_obj.read()
+            if inspect.isawaitable(readings):
+                raise RuntimeError(
+                    f"{readable_obj} has a subscribe() method rather than a "
+                    "subscribe_readings() method and an async read() method. "
+                    "If using ophyd-async, make sure you are using at least v0.13.5."
+                )
+            emit_event_from_readings(readings)
+
+        if isinstance(obj, Subscribable):
+            self._monitor_params[obj] = emit_event_from_readings, kwargs
+            obj.subscribe_reading(emit_event_from_readings)
+        elif callable(getattr(obj, "subscribe", None)):
+            self._monitor_params[obj] = emit_event_for_subscribe, kwargs
+            obj.subscribe(emit_event_for_subscribe, **kwargs)
+        else:
+            raise RuntimeError(
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
 
     def record_interruption(self, content):
         """
@@ -554,7 +560,11 @@ class RunBundler:
 
             Msg('unmonitor', obj)
         """
-        obj = check_supports(msg.obj, Subscribable)
+        obj = msg.obj
+        if not callable(getattr(obj, "clear_sub", None)):
+            raise RuntimeError(
+                "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % obj
+            )
         if obj not in self._monitor_params:
             raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not being monitored.")
         cb, kwargs = self._monitor_params[obj]
@@ -1098,7 +1108,7 @@ class RunBundler:
         # Warn for page collectable support
         for obj in collect_objects:
             if isinstance(obj, EventCollectable) and isinstance(obj, EventPageCollectable):
-                doc_logger.warn(
+                doc_logger.warning(
                     "collect() was called for a device %r which is both EventCollectable "
                     "and EventPageCollectable. Using device.collect_pages().",
                     obj.name,
@@ -1128,9 +1138,7 @@ class RunBundler:
         # If there is not a stream then we should be using an old-style doubly nested
         # and we need to describe_collect and prepare the nested streams.
         if not stream_name:
-            if frozenset(collect_objects) not in self._local_descriptors or (
-                collect_objects[0] not in self._local_descriptors
-            ):
+            if collect_objects[0] not in self._local_descriptors:
                 if len(collect_objects) > 1:
                     raise IllegalMessageSequence(
                         "If collecting multiple objects you must predeclare a stream for all "
@@ -1247,6 +1255,6 @@ class RunBundler:
 
     async def _ensure_cached(self, obj: Readable | Flyable | Configurable, collect: bool = False):
         coros = [self._current_stream_cache.ensure_cached(obj, collect)]
-        if collect and isinstance(obj, Flyable):
+        if collect:
             coros.append(self._cache_describe_collect(obj))
         await asyncio.gather(*coros)

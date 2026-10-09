@@ -27,6 +27,28 @@ class CallbackWithException(CallbackBase):
 
 
 @pytest.fixture
+def make_wrapper():
+    """Factory for ``BufferingWrapper`` instances that are shut down on teardown.
+
+    Wrappers that are never explicitly shut down otherwise have their
+    ``shutdown`` method run at interpreter exit via ``atexit``.  By that point
+    the logging stream is closed, which produces noisy
+    ``ValueError: I/O operation on closed file`` tracebacks.
+    """
+    created: list[BufferingWrapper] = []
+
+    def factory(*args, **kwargs):
+        wrapper = BufferingWrapper(*args, **kwargs)
+        created.append(wrapper)
+        return wrapper
+
+    yield factory
+
+    for wrapper in created:
+        wrapper.shutdown()
+
+
+@pytest.fixture
 def fast_cb():
     yield SlowDummyCallback(delay=0)
 
@@ -64,9 +86,9 @@ def wait_for_condition(condition, timeout=3, interval=0.01):
 
 
 @pytest.mark.parametrize("cb", ["fast_cb", "slow_cb"])
-def test_calls_are_delegated(cb, request):
+def test_calls_are_delegated(cb, request, make_wrapper):
     cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     buff_cb("start", {"x": 1})
     with wait_for_condition(lambda: ("start", {"x": 1}) in cb.called):
@@ -78,9 +100,9 @@ def test_calls_are_delegated(cb, request):
 
 
 @pytest.mark.parametrize("cb", ["fast_cb", "slow_cb"])
-def test_calls_are_delegated_and_finished(cb, request):
+def test_calls_are_delegated_and_finished(cb, request, make_wrapper):
     cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     assert buff_cb._thread.is_alive()
     assert len(cb.called) == 0
@@ -97,9 +119,9 @@ def test_calls_are_delegated_and_finished(cb, request):
 
 
 @pytest.mark.parametrize("cb", ["fast_cb", "slow_cb"])
-def test_graceful_shutdown_blocks_queue(cb, request):
+def test_graceful_shutdown_blocks_queue(cb, request, make_wrapper):
     cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     buff_cb("event", {"data": 42})
     buff_cb.shutdown()
@@ -112,9 +134,9 @@ def test_graceful_shutdown_blocks_queue(cb, request):
 
 
 @pytest.mark.parametrize("cb", ["fast_cb", "slow_cb"])
-def test_double_shutdown_does_not_fail(cb, request):
+def test_double_shutdown_does_not_fail(cb, request, make_wrapper):
     cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     buff_cb("one", {})
     buff_cb.shutdown()
@@ -124,9 +146,9 @@ def test_double_shutdown_does_not_fail(cb, request):
 
 
 @pytest.mark.parametrize("cb, expected_min_duration", [("fast_cb", 0.0), ("slow_cb", 0.5)])
-def test_shutdown_waits_for_processing(cb, expected_min_duration, request):
+def test_shutdown_waits_for_processing(cb, expected_min_duration, request, make_wrapper):
     cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     for i in range(5):
         buff_cb("event", {"val": i})
@@ -144,9 +166,9 @@ def test_shutdown_waits_for_processing(cb, expected_min_duration, request):
 
 
 @pytest.mark.parametrize("cb, expected_max_duration", [("fast_cb", 0.1), ("slow_cb", 0.1)])
-def test_shutdown_without_wait(cb, expected_max_duration, request):
+def test_shutdown_without_wait(cb, expected_max_duration, request, make_wrapper):
     cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     for i in range(5):
         buff_cb("event", {"val": i})
@@ -160,9 +182,9 @@ def test_shutdown_without_wait(cb, expected_max_duration, request):
 
 
 @pytest.mark.parametrize("cb", ["fast_cb", "slow_cb"])
-def test_shutdown_stops_processing_new_items(cb, request):
+def test_shutdown_stops_processing_new_items(cb, request, make_wrapper):
     cb = request.getfixturevalue(cb)
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     buff_cb("one", {})
     buff_cb.shutdown()
@@ -174,10 +196,10 @@ def test_shutdown_stops_processing_new_items(cb, request):
     assert ("two", {}) not in cb.called
 
 
-def test_execption_in_callback():
+def test_execption_in_callback(make_wrapper):
     """Test that exceptions in the callback are handled gracefully."""
     cb = CallbackWithException()
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     with pytest.raises(RuntimeError, match="This callback always raises an exception."):
         cb("test", {"data": 123})
@@ -188,15 +210,15 @@ def test_execption_in_callback():
     buff_cb("test", {"data": 123})
 
 
-def test_callback_logging_exceptions(monkeypatch):
+def test_callback_logging_exceptions(monkeypatch, make_wrapper):
     from types import SimpleNamespace
     from unittest.mock import MagicMock
 
-    logger = SimpleNamespace(exception=MagicMock())
+    logger = SimpleNamespace(exception=MagicMock(), info=MagicMock())
     monkeypatch.setattr("bluesky.callbacks.buffer.logger", logger)
 
     cb = CallbackWithException()
-    buff_cb = BufferingWrapper(cb)
+    buff_cb = make_wrapper(cb)
 
     assert logger.exception.call_count == 0
     buff_cb("test", {"data": 123})

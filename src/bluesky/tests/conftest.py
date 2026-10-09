@@ -1,5 +1,6 @@
 import asyncio
 import os
+import pprint
 import signal
 import threading
 import time
@@ -14,25 +15,143 @@ from bluesky.protocols import HasHints, HasParent, Hints, NamedMovable, Readable
 from bluesky.run_engine import RunEngine, TransitionError
 from bluesky.utils import SigintHandler
 
+CALL_RETURNS_RESULT_OPTION = "--include-call-returns-result-false"
 
-@pytest.fixture(scope="function", params=[False, True])
-def RE(request):
-    loop = asyncio.new_event_loop()
-    loop.set_debug(True)
-    RE = RunEngine({}, call_returns_result=request.param, loop=loop)
 
-    def clean_event_loop():
-        if RE.state not in ("idle", "panicked"):
-            try:
-                RE.halt()
-            except TransitionError:
-                pass
-        loop.call_soon_threadsafe(loop.stop)
-        RE._th.join()
+def pytest_addoption(parser):
+    parser.addoption(
+        CALL_RETURNS_RESULT_OPTION,
+        action="store_true",
+        default=False,
+        help=(
+            "Also run the RE fixture with call_returns_result=False. "
+            "By default only call_returns_result=True is exercised."
+        ),
+    )
+
+
+def _error_on_unclosed_tasks(loop, test_name, loop_answered=True):
+    """Cancel whatever is still running on ``loop``, and object if it was there.
+
+    A task still pending when the loop closes makes asyncio report "Task was
+    destroyed but it is pending!" whenever it is finally collected, which is
+    during some later, unrelated test. Cancelling here is what stops the noise;
+    raising here is what stops it being someone else's problem, by naming the
+    test that actually left the task behind.
+
+    Reports whether or not the test passed. A check whose report depends on
+    whether the test also failed is a heuristic rather than an invariant, and
+    it hides the leak exactly when the code is misbehaving: measured on this
+    branch, a leaked supervisor task showed up in 24 of 28 suspender tests,
+    and was caught only because those tests were otherwise passing. Cancelling
+    and gathering already happen unconditionally, so reporting on a failing
+    test adds no risk of masking the real failure -- pytest reports FAILED and
+    ERROR separately.
+
+    And only when the loop was still running. A panicked RunEngine is one whose
+    loop stopped answering, which is the condition `test_sigint_many_hits_panic`
+    exists to produce: work scheduled onto it after that can never be finished
+    or cancelled by the code under test, because nothing will run another
+    callback there. Objecting to it would be objecting to the premise of the
+    test rather than to a leak. That is a property of the object under test,
+    not of the test result, so it is the one exemption this keeps.
+
+    Simplified from ophyd-async's fixture of the same shape: bluesky's ``RE``
+    fixture makes the loop itself, so there are no pytest-asyncio helper tasks
+    to allow for, and ``asyncio.all_tasks`` already returns only unfinished
+    ones.
+    """
+    pending = asyncio.all_tasks(loop)
+    if not pending:
+        return
+    for task in pending:
+        task.cancel()
+    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    if loop_answered:
+        # loop.set_debug(True), set when the fixture creates the loop, is what
+        # makes a task's repr below name the coroutine and line that created
+        # it -- without it this message is just a list of anonymous tasks.
+        raise RuntimeError(f"Tasks still running at the end of {test_name}:\n{pprint.pformat(pending, width=88)}")
+
+
+def _clean_event_loop(RE, loop, test_name):
+    """Stop a RunEngine's background loop thread and close the loop.
+
+    Without this the ``_UnixSelectorEventLoop`` (and its AF_UNIX self-pipe
+    socketpair) is only released at interpreter shutdown, producing noisy
+    ``ResourceWarning: unclosed event loop`` / ``unclosed <socket.socket ...>``
+    messages.
+    """
+    if RE.state not in ("idle", "panicked"):
+        try:
+            RE.halt()
+        except TransitionError:
+            pass
+    loop.call_soon_threadsafe(loop.stop)
+    RE._th.join()
+    try:
+        _error_on_unclosed_tasks(loop, test_name, loop_answered=RE.state != "panicked")
+    finally:
         loop.close()
 
-    request.addfinalizer(clean_event_loop)
-    return RE
+
+@pytest.fixture(scope="function")
+def make_RE(request):
+    """Factory for ``RunEngine`` instances whose event loops are closed on teardown.
+
+    This underpins the ready-to-use ``RE`` / ``single_RE`` fixtures and is
+    only needed directly in the rare case where a test wants to construct several
+    engines or pass unusual constructor arguments.  Every engine created via the
+    returned factory has its background loop thread stopped and its event loop
+    closed during teardown.
+    """
+
+    def factory(*args, **kwargs):
+        loop = asyncio.new_event_loop()
+        loop.set_debug(True)
+        RE = RunEngine(*args, loop=loop, **kwargs)
+        request.addfinalizer(lambda: _clean_event_loop(RE, loop, request.node.name))
+        return RE
+
+    return factory
+
+
+def pytest_generate_tests(metafunc):
+    """Parametrize the ``RE`` fixture over ``call_returns_result``.
+
+    A fixture cannot both declare ``params`` and be re-parametrized by a hook,
+    so the parametrization lives here (the only place that can see the
+    command-line option): ``call_returns_result=True`` always runs, and the
+    ``False`` variant is added only when ``--include-call-returns-result-false``
+    is passed, doubling the ``RE``-based tests.
+    """
+    if RE.__name__ in metafunc.fixturenames:
+        call_returns_result = [True]
+        if metafunc.config.getoption(CALL_RETURNS_RESULT_OPTION):
+            call_returns_result = [False, True]
+        metafunc.parametrize(RE.__name__, call_returns_result, indirect=True)
+
+
+@pytest.fixture(scope="function")
+def RE(request, make_RE):
+    """A ready-to-use ``RunEngine`` parametrized over ``call_returns_result``.
+
+    Parametrization is supplied by :func:`pytest_generate_tests`: by default the
+    fixture only runs with ``call_returns_result=True``. Pass
+    ``--include-call-returns-result-false`` to also run the ``False`` variant.
+    """
+    return make_RE({}, call_returns_result=request.param)
+
+
+@pytest.fixture(scope="function")
+def single_RE(make_RE):
+    """A ready-to-use ``RunEngine`` that runs a test only once.
+
+    Like ``RE`` but without the ``call_returns_result`` parametrization, for
+    tests where running under both values adds no coverage.  ``call_returns_result``
+    is set to ``True`` so plan results are available.
+    """
+    return make_RE({}, call_returns_result=True)
 
 
 @pytest.fixture(scope="function")
@@ -146,12 +265,15 @@ class DeterministicSigint:
     The fake clock advances by 0.2s per ``send()`` call, and each call blocks
     until the signal handler has finished, so ``_count`` increments reliably
     regardless of real wall-clock jitter.
+
+    Every ``SigintHandler`` entered in the block is kept in ``handlers``.
     """
 
     def __init__(self):
         self._fake_time = 0.0
         self._handler_done = threading.Event()
         self._pid = os.getpid()
+        self.handlers = []
         self._orig_enter = SigintHandler.__enter__
         self._patcher = patch.object(SigintHandler, "__enter__", self._patched_enter)
 
@@ -159,6 +281,7 @@ class DeterministicSigint:
         return self._fake_time
 
     def _patched_enter(self, sigint_handler):
+        self.handlers.append(sigint_handler)
         with patch("bluesky.utils.time.monotonic", self._monotonic):
             result = self._orig_enter(sigint_handler)
         installed = signal.getsignal(signal.SIGINT)

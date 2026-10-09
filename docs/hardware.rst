@@ -71,6 +71,18 @@ conforms to the following definition
             A fraction of zero indicates completion.
             A fraction of one indicates progress has not started.
 
+A ``Status`` may also carry a result produced by the operation it tracks, by
+implementing ``result()`` in addition to the members above.
+
+.. autoclass:: bluesky.protocols.StatusWithResult
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+The ``RunEngine`` never inspects this result; it exists so that plans and
+protocols built on top of ``Status`` can retrieve a value once the operation is
+done.
+
 
 Named Device
 ++++++++++++

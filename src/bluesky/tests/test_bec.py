@@ -8,7 +8,6 @@ from event_model import RunRouter
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from bluesky import RunEngine
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky.plans import grid_scan, scan, spiral_square
 from bluesky.preprocessors import SupplementalData
@@ -328,9 +327,9 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
             stats_value == out_value  # noqa: B015
 
 
-def test_many_motors():
+def test_many_motors(single_RE):
     """Ensure appropriate behavior for too many motors to plot. No figures with warning, and a table."""
-    RE = RunEngine({})
+    RE = single_RE
     dets = [ReadableSignal(name="ab_det")]
     motors = [
         MovableSignal(name="motor"),

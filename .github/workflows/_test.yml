@@ -9,6 +9,13 @@ on:
         type: string
         description: The runner to run this job on
         required: true
+      full-suite:
+        type: boolean
+        description: >-
+          Also run the RE fixture's call_returns_result=False variant
+          (roughly doubles the RE-based tests).
+        required: false
+        default: false
     secrets:
       CODECOV_TOKEN:
         required: true
@@ -20,6 +27,9 @@ env:
 jobs:
   run:
     runs-on: ${{ inputs.runs-on }}
+    # A healthy run of this suite takes 11-17 minutes, and sigint tests can
+    # hang pytest if they fail, so use a runner timeout rather than use pytest timeout
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -51,7 +61,7 @@ jobs:
           pip-install: ".[dev]"
 
       - name: Run tests
-        run: tox -e tests
+        run: tox -e tests -- ${{ inputs.full-suite && '--include-call-returns-result-false' || '' }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

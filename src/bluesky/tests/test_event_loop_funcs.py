@@ -30,7 +30,7 @@ def test_call_in_bluesky_event_loop(RE):
     assert event_loop == RE._loop
 
 
-def test_autoawait_in_bluesky_event_loop(RE):
+def test_autoawait_in_bluesky_event_loop(RE, request):
     event_loop = None
 
     async def check():
@@ -38,6 +38,19 @@ def test_autoawait_in_bluesky_event_loop(RE):
         event_loop = asyncio.get_running_loop()
 
     IPython = pytest.importorskip("IPython")
+
+    # IPython's default autoawait machinery creates its own asyncio event loop
+    # (cached in ``IPython.core.async_helpers``).  Close it on teardown so it is
+    # not leaked (ResourceWarning: unclosed event loop / socket) at shutdown.
+    def close_ipython_loop():
+        from IPython.core.async_helpers import get_asyncio_loop
+
+        loop = get_asyncio_loop()
+        if loop is not None and not loop.is_closed():
+            loop.close()
+
+    request.addfinalizer(close_ipython_loop)
+
     ip = IPython.core.interactiveshell.InteractiveShell(user_ns=locals())
     # Check that without the autoawait we get the wrong event loop
     ip.run_cell("await check()")
