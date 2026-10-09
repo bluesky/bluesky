@@ -1064,7 +1064,7 @@ def collect_while_completing(
     flush_period: float | None = None,
     stream_name: str | None = None,
     watch: Sequence[str] = (),
-) -> MsgGenerator[tuple[Status, ...]]:
+) -> MsgGenerator:
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
     data from one or more Collectable detectors until all are done.
