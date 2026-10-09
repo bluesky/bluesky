@@ -6,13 +6,15 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from itertools import combinations
 from logging import LoggerAdapter
-from typing import Any, Literal, TypeAlias, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeGuard, cast
 
 from event_model import (
     ComposeDescriptorBundle,
+    ComposeEvent,
     DataKey,
     Datum,
     DocumentNames,
+    EventDescriptor,
     EventModelValueError,
     Resource,
     StreamDatum,
@@ -22,6 +24,9 @@ from event_model import (
     pack_event_page,
 )
 from event_model.documents.event import Event
+
+if TYPE_CHECKING:
+    from bluesky.run_engine import RunEngineMetadata
 
 from .log import doc_logger
 from .protocols import (
@@ -90,7 +95,7 @@ class _StreamCache:
     # obj.read_configuration() timestamps
     config_ts_cache: ObjDict[Any] = field(default_factory=dict)
 
-    async def ensure_cached(self, obj, collect=False):
+    async def ensure_cached(self, obj, collect: bool=False):
         """Cache objects Readable and Configurable methods. Cache Collectable methods if collect is True."""
         coros = []
         if not collect and obj not in self.describe_cache:
@@ -101,12 +106,12 @@ class _StreamCache:
             coros.append(self.cache_read_config(obj))
         await asyncio.gather(*coros)
 
-    async def _cache_describe(self, obj):
+    async def _cache_describe(self, obj: Readable):
         "Read the object's describe and cache it."
         obj = check_supports(obj, Readable)
         self.describe_cache[obj] = await maybe_await(obj.describe())
 
-    async def _cache_describe_config(self, obj):
+    async def _cache_describe_config(self, obj: Configurable):
         "Read the object's describe_configuration and cache it."
         if isinstance(obj, Configurable):
             conf_keys = await maybe_await(obj.describe_configuration())
@@ -133,7 +138,7 @@ class _StreamCache:
 class RunBundler:
     def __init__(
         self,
-        md: dict | None,
+        md: "RunEngineMetadata | None",
         record_interruptions: bool,
         emit: Callable,
         emit_sync: Callable,
@@ -268,7 +273,7 @@ class RunBundler:
         self,
         desc_key: str,
         objs_dks: dict[HasName, dict[str, DataKey]],
-    ):
+    ) -> tuple[EventDescriptor, ComposeEvent, list[dict[HasName, dict[str, DataKey]]]]:
         # We do not have an Event Descriptor for this set
         # so one must be created.
         data_keys = {}
@@ -322,16 +327,17 @@ class RunBundler:
             list(objs_dks),
         )
 
-    async def declare_stream(self, msg):
+    async def declare_stream(
+        self, msg: Msg
+    ) -> tuple[EventDescriptor, ComposeEvent, list]:
         """Generate and emit an EventDescriptor."""
-        command, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs.get("name")
-        assert stream_name is not None, "A stream name that is not None is required for pre-declare"
+        stream_name = msg.kwargs.get("name")
+        if stream_name is None:
+            raise ValueError("A stream name that is not None is required for pre-declare.")
 
-        collect = kwargs.get("collect", False)
-        assert no_obj is None
-        objs = frozenset(objs)
-        objs_dks = {}  # {collect_object: stream_data_keys}
+        collect = msg.kwargs.get("collect", False)
+        objs = frozenset(msg.args)
+        objs_dks = {}
 
         self._set_current_stream_cache(stream_name)
 
@@ -344,10 +350,11 @@ class RunBundler:
                 )
 
                 # ensure that there is only one stream and it is the stream we have provided.
-                assert len(streams_and_data_keys) == 1 and streams_and_data_keys[0][0] == stream_name, (
-                    "`declare_stream` contained `collect=True` but  `describe_collect` did "
-                    f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
-                )
+                if len(streams_and_data_keys) != 1 or streams_and_data_keys[0][0] != stream_name:
+                    raise ValueError(
+                        "`declare_stream` contained `collect=True` but  `describe_collect` did "
+                        f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
+                    )
             else:
                 data_keys = self._current_stream_cache.describe_cache[obj]
 
@@ -366,7 +373,7 @@ class RunBundler:
             self._current_stream_cache = _StreamCache()
             self._saved_stream_cache[stream_name] = self._current_stream_cache
 
-    async def create(self, msg):
+    async def create(self, msg: Msg):
         """
         Start bundling future obj.read() calls for an Event document.
 
@@ -391,12 +398,11 @@ class RunBundler:
         self._asset_docs_cache.clear()
         self._objs_read.clear()
         self.bundling = True
-        command, obj, args, kwargs, _ = msg
         try:
-            self._bundle_name = kwargs["name"]
+            self._bundle_name = msg.kwargs["name"]
         except KeyError:
             try:
-                (self._bundle_name,) = args
+                (self._bundle_name,) = msg.args
             except ValueError:
                 raise ValueError(
                     "Msg('create') now requires a stream name, given as "
@@ -406,6 +412,8 @@ class RunBundler:
             if self._bundle_name not in self._descriptors:
                 raise IllegalMessageSequence("In strict mode you must pre-declare streams.")
 
+        if self._bundle_name is None:
+            raise ValueError("Msg('create') must have a stream name")
         self._set_current_stream_cache(self._bundle_name)
 
     async def read(self, msg, reading):
@@ -479,8 +487,7 @@ class RunBundler:
 
         await self._current_stream_cache.ensure_cached(obj)
 
-        stream_bundle = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
-        compose_event = stream_bundle[1]
+        _, compose_event, _ = await self._prepare_stream(name, {obj: self._current_stream_cache.describe_cache[obj]})
 
         def emit_event_from_readings(readings: dict[str, Reading]):
             data, timestamps = _rearrange_into_parallel_dicts(readings)
@@ -802,9 +809,8 @@ class RunBundler:
         def is_data_key(obj: Any) -> bool:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
-        assert all(not is_data_key(value) for value in describe_collect.values()), (
-            "Single nested data keys should be pre-declared"
-        )
+        if not all(not is_data_key(value) for value in describe_collect.values()):
+            raise RuntimeError("Single nested data keys should be pre-declared")
 
         # Make sure you can't use identical data keys in multiple streams
         # Data structure is assumed to be dict[stream_name, dictionary of key -> data_key]
@@ -988,7 +994,10 @@ class RunBundler:
                 objs_read = frozenset(partial_event["data"])
                 compose_event = local_descriptors[objs_read].compose_event
                 data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
-                assert frozenset(data_keys.keys()) == objs_read
+                if frozenset(data_keys.keys()) != objs_read:
+                    raise RuntimeError(
+                        f"Mismatched objects read, expected {frozenset(data_keys.keys())!s}, got {objs_read!s}"
+                    )
 
             if [x for x in self.get_external_data_keys(data_keys) if x in partial_event["data"]]:
                 raise RuntimeError("Received an event containing data for external data keys.")
@@ -1115,12 +1124,15 @@ class RunBundler:
         # If a stream name was provided in the message, check the stream has been declared
         # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
-            assert message_stream_name in declared_stream_names, (
-                "If a message stream name is provided declare stream needs to be called first."
-            )
+            if message_stream_name not in declared_stream_names:
+                raise RuntimeError("If a message stream name is provided declare stream needs to be called first.")
             stream_name = message_stream_name
         elif declared_stream_names:
-            assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations
+            if len(frozenset(declared_stream_names)) != 1:
+                raise RuntimeError(
+                    "If multiple streams have been declared for the collect objects, "
+                    "a message stream name must be provided to collect."
+                )
             stream_name = declared_stream_names[0]
 
         # If there is not a stream then we should be using an old-style doubly nested
@@ -1209,7 +1221,7 @@ class RunBundler:
             except Exception:
                 self.log.exception("Failed to collect %r.", obj)
 
-    async def configure(self, msg):
+    async def configure(self, msg: Msg):
         """Configure an object
 
         Expected message object is ::
@@ -1241,7 +1253,7 @@ class RunBundler:
             )
             self._describe_collect_cache[obj] = c
 
-    async def _ensure_cached(self, obj, collect: bool = False):
+    async def _ensure_cached(self, obj: Readable | Flyable | Configurable, collect: bool = False):
         coros = [self._current_stream_cache.ensure_cached(obj, collect)]
         if collect:
             coros.append(self._cache_describe_collect(obj))
