@@ -620,8 +620,10 @@ def test_broken_table():
 
     # The instance of LiveTable will include two empty separator lines by default
     assert len(lines) == 9
-    for ln in lines[-2:]:
-        assert ln.strip() == "failed to format row"
+    # A float in a column described as "integer" is still rendered (ev3).
+    assert "failed to format row" not in lines[-2]
+    assert "1.000" in lines[-2]
+    assert lines[-1].strip() == "failed to format row"
 
 
 def test_callback_safe():
