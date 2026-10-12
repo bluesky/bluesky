@@ -91,7 +91,7 @@ def declare_stream(
 
 
 @plan
-def create(name: str = "primary") -> MsgGenerator:
+def create(name: str = "primary") -> MsgGenerator[None]:
     """
     Bundle future readings into a new Event document.
 
@@ -114,7 +114,7 @@ def create(name: str = "primary") -> MsgGenerator:
 
 
 @plan
-def save() -> MsgGenerator:
+def save() -> MsgGenerator[None]:
     """
     Close a bundle of readings and emit a completed Event document.
 
@@ -131,7 +131,7 @@ def save() -> MsgGenerator:
 
 
 @plan
-def drop() -> MsgGenerator:
+def drop() -> MsgGenerator[None]:
     """
     Drop a bundle of readings without emitting a completed Event document.
 
@@ -195,7 +195,7 @@ def locate(*objs, squeeze=True):
 
 
 @plan
-def monitor(obj: Readable, *, name: str | None = None, **kwargs: Any) -> MsgGenerator:
+def monitor(obj: Readable, *, name: str | None = None, **kwargs: Any) -> MsgGenerator[None]:
     """
     Asynchronously monitor for new values and emit Event documents.
 
@@ -222,7 +222,7 @@ def monitor(obj: Readable, *, name: str | None = None, **kwargs: Any) -> MsgGene
 
 
 @plan
-def unmonitor(obj: Readable) -> MsgGenerator:
+def unmonitor(obj: Readable) -> MsgGenerator[None]:
     """
     Stop monitoring.
 
@@ -243,7 +243,7 @@ def unmonitor(obj: Readable) -> MsgGenerator:
 
 
 @plan
-def null() -> MsgGenerator:
+def null() -> MsgGenerator[None]:
     """
     Yield a no-op Message. (Primarily for debugging and testing.)
 
@@ -634,7 +634,7 @@ def wait(
     timeout: float | None = None,
     error_on_timeout: bool = True,
     watch: Sequence[str] = (),
-) -> MsgGenerator[tuple[Status]]:
+) -> MsgGenerator[bool]:
     """
     Wait for all statuses in a group to report being finished.
 
@@ -699,7 +699,7 @@ def clear_checkpoint() -> MsgGenerator:
 
 
 @plan
-def pause() -> MsgGenerator:
+def pause() -> MsgGenerator[None]:
     """
     Pause and wait for the user to resume.
 
@@ -717,7 +717,7 @@ def pause() -> MsgGenerator:
 
 
 @plan
-def deferred_pause() -> MsgGenerator:
+def deferred_pause() -> MsgGenerator[None]:
     """
     Pause at the next checkpoint.
 
@@ -1064,7 +1064,7 @@ def collect_while_completing(
     flush_period: float | None = None,
     stream_name: str | None = None,
     watch: Sequence[str] = (),
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
     data from one or more Collectable detectors until all are done.
@@ -1328,7 +1328,7 @@ def subscribe(name: str, func: Callable[[str, Mapping[str, Any]], None]) -> MsgG
 
 
 @plan
-def unsubscribe(token: int) -> MsgGenerator:
+def unsubscribe(token: int) -> MsgGenerator[None]:
     """
     Remove a subscription.
 
@@ -1350,7 +1350,7 @@ def unsubscribe(token: int) -> MsgGenerator:
 
 
 @plan
-def install_suspender(suspender: SuspenderBase) -> MsgGenerator:
+def install_suspender(suspender: SuspenderBase) -> MsgGenerator[None]:
     """
     Install a suspender during a plan.
 
@@ -1372,7 +1372,7 @@ def install_suspender(suspender: SuspenderBase) -> MsgGenerator:
 
 
 @plan
-def remove_suspender(suspender: SuspenderBase) -> MsgGenerator:
+def remove_suspender(suspender: SuspenderBase) -> MsgGenerator[None]:
     """
     Remove a suspender during a plan.
 
@@ -1450,7 +1450,7 @@ def close_run(exit_status: str | None = None, reason: str | None = None) -> MsgG
 
 
 @plan
-def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any) -> MsgGenerator:
+def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any) -> MsgGenerator[tuple[Status]]:
     """
     Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
 
