@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev234+gf1f1d2fa9 documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev246+gda7c30745 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=074df0de"></script>
+    <script src="../../_static/documentation_options.js?v=8688987e"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev234+gf1f1d2fa9';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev246+gda7c30745';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev234+gf1f1d2fa9" />
+  <meta name="docsearch:version" content="1.15.2.dev246+gda7c30745" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1888,7 +1888,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_temp_callback_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_plan</span> <span class="o">=</span> <span class="n">plan</span>  <span class="c1"># this ref is just used for metadata introspection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plan</span> <span class="o">=</span> <span class="n">plan</span>  <span class="c1"># type: ignore # this ref is just used for metadata introspection</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_metadata_per_call</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">metadata_kw</span><span class="p">)</span>
 
         <span class="n">gen</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
@@ -2953,18 +2953,10 @@ window.runMermaid = runMermaid;</script>
             <span class="k">raise</span> <span class="n">IllegalMessageSequence</span><span class="p">(</span><span class="n">ims_msg</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Add a reading to the open event bundle.</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_perform_single_reading</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">read_args</span><span class="p">,</span> <span class="o">**</span><span class="n">read_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Perform a reading on a single device."""</span>
 
-<span class="sd">        Expected message object is:</span>
-
-<span class="sd">            Msg('read', obj)</span>
-<span class="sd">        """</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)</span>
-        <span class="c1"># actually _read_ the object</span>
-        <span class="n">warn_if_msg_args_or_kwargs</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">read</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="o">*</span><span class="n">read_args</span><span class="p">,</span> <span class="o">**</span><span class="n">read_kwargs</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
@@ -2972,13 +2964,38 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"This is a bug in your object implementation, "</span>
                 <span class="s2">"`read` must return a dictionary."</span>
             <span class="p">)</span>
-        <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">key_absence_sentinel</span> <span class="o">:=</span> <span class="nb">object</span><span class="p">())</span>
-        <span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">key_absence_sentinel</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ret</span><span class="p">)</span>
-
         <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Add a reading to the open event bundle.</span>
+
+<span class="sd">        The obj and args of the read message are all objects to be read.</span>
+
+<span class="sd">        Expected message object is:</span>
+
+<span class="sd">            Msg('read', *objs)</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">run_key</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">run</span>
+        <span class="n">objs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">((</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,)</span> <span class="o">+</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">non_readable</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Readable</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">non_readable</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">"Run engine received a read message with which contained "</span>
+                <span class="sa">f</span><span class="s2">"the following devices which were not readable: </span><span class="si">{</span><span class="n">non_readable</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">read_returns</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_perform_single_reading</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">current_run</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_bundlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_key</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">current_run</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">read_returns</span><span class="p">)))</span>
+
+        <span class="n">all_readings</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">read_ret</span> <span class="ow">in</span> <span class="n">read_returns</span><span class="p">:</span>
+            <span class="n">all_readings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">read_ret</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">all_readings</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_locate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>

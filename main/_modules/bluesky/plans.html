@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plans &#8212; bluesky 1.15.2.dev234+gf1f1d2fa9 documentation</title>
+    <title>bluesky.plans &#8212; bluesky 1.15.2.dev246+gda7c30745 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=074df0de"></script>
+    <script src="../../_static/documentation_options.js?v=8688987e"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev234+gf1f1d2fa9';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev246+gda7c30745';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev234+gf1f1d2fa9" />
+  <meta name="docsearch:version" content="1.15.2.dev246+gda7c30745" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -911,7 +911,6 @@ window.runMermaid = runMermaid;</script>
   <h1>Source code for bluesky.plans</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
@@ -922,6 +921,8 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cycler</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.env_vars</span><span class="w"> </span><span class="kn">import</span> <span class="n">BLUESKY_PREDECLARE</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># cytools is a drop-in replacement for toolz, implemented in Cython</span>
@@ -1029,7 +1030,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">_md</span><span class="p">[</span><span class="s2">"hints"</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"dimensions"</span><span class="p">,</span> <span class="p">[((</span><span class="s2">"time"</span><span class="p">,),</span> <span class="s2">"primary"</span><span class="p">)])</span>  <span class="c1"># type: ignore</span>
 
     <span class="c1"># per_shot might define a different stream, so do not predeclare primary</span>
-    <span class="n">predeclare</span> <span class="o">=</span> <span class="n">per_shot</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"BLUESKY_PREDECLARE"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">predeclare</span> <span class="o">=</span> <span class="n">per_shot</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">BLUESKY_PREDECLARE</span>
     <span class="n">msg_per_step</span><span class="p">:</span> <span class="n">PerShot</span> <span class="o">=</span> <span class="n">per_shot</span> <span class="k">if</span> <span class="n">per_shot</span> <span class="k">else</span> <span class="n">bps</span><span class="o">.</span><span class="n">one_shot</span>
 
     <span class="nd">@bpp</span><span class="o">.</span><span class="n">stage_decorator</span><span class="p">(</span><span class="n">detectors</span><span class="p">)</span>
@@ -1538,7 +1539,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">_md</span><span class="p">[</span><span class="s2">"hints"</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"dimensions"</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 
-    <span class="n">predeclare</span> <span class="o">=</span> <span class="n">per_step</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"BLUESKY_PREDECLARE"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">predeclare</span> <span class="o">=</span> <span class="n">per_step</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">BLUESKY_PREDECLARE</span>
     <span class="k">if</span> <span class="n">per_step</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">per_step</span> <span class="o">=</span> <span class="n">bps</span><span class="o">.</span><span class="n">one_1d_step</span>
 
@@ -1696,7 +1697,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">direction_sign</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="n">devices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">separate_devices</span><span class="p">([</span><span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">motor</span><span class="p">]))</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"BLUESKY_PREDECLARE"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">BLUESKY_PREDECLARE</span><span class="p">:</span>
             <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"primary"</span><span class="p">)</span>
         <span class="k">while</span> <span class="n">next_pos</span> <span class="o">*</span> <span class="n">direction_sign</span> <span class="o">&lt;</span> <span class="n">stop</span> <span class="o">*</span> <span class="n">direction_sign</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"checkpoint"</span><span class="p">)</span>
@@ -1938,7 +1939,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">cur_I</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">sum_I</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># for peak centroid calculation, I(x)</span>
         <span class="n">sum_xI</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"BLUESKY_PREDECLARE"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">BLUESKY_PREDECLARE</span><span class="p">:</span>
             <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">declare_stream</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="o">*</span><span class="n">detectors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"primary"</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
         <span class="k">while</span> <span class="nb">abs</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">min_step</span> <span class="ow">and</span> <span class="n">low_limit</span> <span class="o">&lt;=</span> <span class="n">next_pos</span> <span class="o">&lt;=</span> <span class="n">high_limit</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"checkpoint"</span><span class="p">)</span>
@@ -2041,7 +2042,7 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># change it, else set it to the one generated above</span>
         <span class="n">_md</span><span class="p">[</span><span class="s2">"hints"</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"dimensions"</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 
-    <span class="n">predeclare</span> <span class="o">=</span> <span class="n">per_step</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"BLUESKY_PREDECLARE"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">predeclare</span> <span class="o">=</span> <span class="n">per_step</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">BLUESKY_PREDECLARE</span>
     <span class="k">if</span> <span class="n">per_step</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">per_step</span> <span class="o">=</span> <span class="n">bps</span><span class="o">.</span><span class="n">one_nd_step</span>
     <span class="k">else</span><span class="p">:</span>
