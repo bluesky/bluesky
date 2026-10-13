@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Multi-Run Plans &#8212; bluesky 1.15.2.dev254+g26ebf4d5c documentation</title>
+    <title>Multi-Run Plans &#8212; bluesky 1.15.2.dev268+g3fb85489e documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=2c6eacea"></script>
+    <script src="_static/documentation_options.js?v=093b0185"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'multi_run_plans';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev254+g26ebf4d5c';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev268+g3fb85489e';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Asynchronous Acquisition" href="async.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev254+g26ebf4d5c" />
+  <meta name="docsearch:version" content="1.15.2.dev268+g3fb85489e" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -816,53 +816,53 @@ when the run opened.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="n">RE</span><span class="p">(</span><span class="n">plan_sequential_runs</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2026-10-12 17:15:59</span>
-<span class="go">Persistent Unique Scan ID: '560d3f34-73fa-4449-8031-eb1a97b4fb27'</span>
+<span class="go">Transient Scan ID: 1     Time: 2026-10-13 07:07:14</span>
+<span class="go">Persistent Unique Scan ID: '9ea0e5eb-f409-4475-93dd-0498529faa02'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 17:15:59.7 |     -1.000 |      0.677 |</span>
-<span class="go">|         2 | 17:15:59.7 |     -0.778 |      1.491 |</span>
-<span class="go">|         3 | 17:15:59.8 |     -0.556 |      2.697 |</span>
-<span class="go">|         4 | 17:15:59.9 |     -0.333 |      4.004 |</span>
-<span class="go">|         5 | 17:15:59.9 |     -0.111 |      4.878 |</span>
-<span class="go">|         6 | 17:16:00.0 |      0.111 |      4.878 |</span>
-<span class="go">|         7 | 17:16:00.1 |      0.333 |      4.004 |</span>
-<span class="go">|         8 | 17:16:00.1 |      0.556 |      2.697 |</span>
-<span class="go">|         9 | 17:16:00.2 |      0.778 |      1.491 |</span>
-<span class="go">|        10 | 17:16:00.3 |      1.000 |      0.677 |</span>
+<span class="go">|         1 | 07:07:14.2 |     -1.000 |      0.677 |</span>
+<span class="go">|         2 | 07:07:14.3 |     -0.778 |      1.491 |</span>
+<span class="go">|         3 | 07:07:14.3 |     -0.556 |      2.697 |</span>
+<span class="go">|         4 | 07:07:14.4 |     -0.333 |      4.004 |</span>
+<span class="go">|         5 | 07:07:14.4 |     -0.111 |      4.878 |</span>
+<span class="go">|         6 | 07:07:14.5 |      0.111 |      4.878 |</span>
+<span class="go">|         7 | 07:07:14.5 |      0.333 |      4.004 |</span>
+<span class="go">|         8 | 07:07:14.5 |      0.556 |      2.697 |</span>
+<span class="go">|         9 | 07:07:14.6 |      0.778 |      1.491 |</span>
+<span class="go">|        10 | 07:07:14.6 |      1.000 |      0.677 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator scan ['560d3f34'] (scan num: 1)</span>
+<span class="go">generator scan ['9ea0e5eb'] (scan num: 1)</span>
 
 
 
 
 
-<span class="go">Transient Scan ID: 2     Time: 2026-10-12 17:16:00</span>
-<span class="go">Persistent Unique Scan ID: '26d4fee5-c93b-47c5-9ff7-700ca62e67db'</span>
+<span class="go">Transient Scan ID: 2     Time: 2026-10-13 07:07:14</span>
+<span class="go">Persistent Unique Scan ID: 'f115e177-ed24-45d8-842e-7a26cd8be330'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go">|   seq_num |       time |     motor1 |       det1 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|         1 | 17:16:00.5 |      0.000 |      5.000 |      1.765 |</span>
-<span class="go">|         2 | 17:16:00.8 |      0.222 |      4.530 |      1.765 |</span>
-<span class="go">|         3 | 17:16:00.9 |      0.444 |      3.368 |      1.765 |</span>
-<span class="go">|         4 | 17:16:01.1 |      0.667 |      2.056 |      1.765 |</span>
-<span class="go">|         5 | 17:16:01.3 |      0.889 |      1.030 |      1.765 |</span>
-<span class="go">|         6 | 17:16:01.5 |      1.111 |      0.423 |      1.765 |</span>
-<span class="go">|         7 | 17:16:01.7 |      1.333 |      0.143 |      1.765 |</span>
-<span class="go">|         8 | 17:16:01.9 |      1.556 |      0.040 |      1.765 |</span>
-<span class="go">|         9 | 17:16:02.1 |      1.778 |      0.009 |      1.765 |</span>
-<span class="go">|        10 | 17:16:02.3 |      2.000 |      0.002 |      1.765 |</span>
+<span class="go">|         1 | 07:07:14.8 |      0.000 |      5.000 |      1.765 |</span>
+<span class="go">|         2 | 07:07:15.0 |      0.222 |      4.530 |      1.765 |</span>
+<span class="go">|         3 | 07:07:15.1 |      0.444 |      3.368 |      1.765 |</span>
+<span class="go">|         4 | 07:07:15.2 |      0.667 |      2.056 |      1.765 |</span>
+<span class="go">|         5 | 07:07:15.3 |      0.889 |      1.030 |      1.765 |</span>
+<span class="go">|         6 | 07:07:15.4 |      1.111 |      0.423 |      1.765 |</span>
+<span class="go">|         7 | 07:07:15.5 |      1.333 |      0.143 |      1.765 |</span>
+<span class="go">|         8 | 07:07:15.7 |      1.556 |      0.040 |      1.765 |</span>
+<span class="go">|         9 | 07:07:15.8 |      1.778 |      0.009 |      1.765 |</span>
+<span class="go">|        10 | 07:07:15.9 |      2.000 |      0.002 |      1.765 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator rel_scan ['26d4fee5'] (scan num: 2)</span>
+<span class="go">generator rel_scan ['f115e177'] (scan num: 2)</span>
 
 
 
 <span class="gh">Out[1]: </span>
-<span class="go">('560d3f34-73fa-4449-8031-eb1a97b4fb27',</span>
-<span class="go"> '26d4fee5-c93b-47c5-9ff7-700ca62e67db')</span>
+<span class="go">('9ea0e5eb-f409-4475-93dd-0498529faa02',</span>
+<span class="go"> 'f115e177-ed24-45d8-842e-7a26cd8be330')</span>
 </pre></div>
 </div>
 </section>
@@ -940,11 +940,11 @@ the table for the ‘outer’ run.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [2]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_outer</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2026-10-12 17:16:03</span>
-<span class="go">Persistent Unique Scan ID: '969c39b9-85e6-421c-9fe2-00cfa1cce32a'</span>
+<span class="go">Transient Scan ID: 1     Time: 2026-10-13 07:07:16</span>
+<span class="go">Persistent Unique Scan ID: 'c3abf0ff-4d12-4d43-8ed4-5896e318e4ac'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |      motor |        det |</span>
+<span class="go">|   seq_num |       time |        det |      motor |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
@@ -953,11 +953,11 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2026-10-12 17:16:04</span>
-<span class="go">Persistent Unique Scan ID: '34367fee-f959-4ed8-8248-77b0958171c1'</span>
+<span class="go">Transient Scan ID: 2     Time: 2026-10-13 07:07:17</span>
+<span class="go">Persistent Unique Scan ID: 'd2b8de9c-0722-43c3-9328-8712b4443c53'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det2 |     motor2 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |     motor2 |       det2 |</span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
@@ -971,7 +971,7 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_outer ['34367fee'] (scan num: 2)</span>
+<span class="go">generator sim_plan_outer ['d2b8de9c'] (scan num: 2)</span>
 
 
 
@@ -981,13 +981,13 @@ the table for the ‘outer’ run.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_outer ['969c39b9'] (scan num: 1)</span>
+<span class="go">generator sim_plan_outer ['c3abf0ff'] (scan num: 1)</span>
 
 
 
 <span class="gh">Out[2]: </span>
-<span class="go">('969c39b9-85e6-421c-9fe2-00cfa1cce32a',</span>
-<span class="go"> '34367fee-f959-4ed8-8248-77b0958171c1')</span>
+<span class="go">('c3abf0ff-4d12-4d43-8ed4-5896e318e4ac',</span>
+<span class="go"> 'd2b8de9c-0722-43c3-9328-8712b4443c53')</span>
 </pre></div>
 </div>
 <p>The wrapper <cite>bpp.set_run_key_wrapper</cite> can be used instead of the decorator. For example
@@ -1094,7 +1094,7 @@ performs callback subscriptions.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+-----------------+------------+-----------------+------------+</span>
-<span class="go">generator sim_plan_outer ['dded72a7'] (scan num: 2)</span>
+<span class="go">generator sim_plan_outer ['19aaaced'] (scan num: 2)</span>
 
 
 <span class="go"> failed to format row </span>
@@ -1103,12 +1103,12 @@ performs callback subscriptions.</p>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+-----------------+------------+</span>
-<span class="go">generator sim_plan_outer ['610e5a61'] (scan num: 1)</span>
+<span class="go">generator sim_plan_outer ['21b9a477'] (scan num: 1)</span>
 
 
 <span class="gh">Out[3]: </span>
-<span class="go">('610e5a61-bfef-4fca-a33d-c39b8c6c944e',</span>
-<span class="go"> 'dded72a7-1487-4011-afb1-72bd98ef3c95')</span>
+<span class="go">('21b9a477-5b0e-4be5-a777-f79030334380',</span>
+<span class="go"> '19aaaced-cd6f-41d3-ba32-eb0e94fb181b')</span>
 </pre></div>
 </div>
 <p>In some cases it may be necessary to implement a run that could be interrupted
@@ -1186,65 +1186,65 @@ before at each call.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">RE</span><span class="p">(</span><span class="n">sim_plan_recursive</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
 
 
-<span class="go">Transient Scan ID: 1     Time: 2026-10-12 17:16:13</span>
-<span class="go">Persistent Unique Scan ID: '45324916-ba17-40f2-9743-5c8f0759615b'</span>
+<span class="go">Transient Scan ID: 1     Time: 2026-10-13 07:07:23</span>
+<span class="go">Persistent Unique Scan ID: '00435dc0-fae9-40bb-a625-8b4b8725a73a'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 
 
-<span class="go">Transient Scan ID: 2     Time: 2026-10-12 17:16:13</span>
-<span class="go">Persistent Unique Scan ID: '918c13ca-2539-4a04-ae8c-c1a3ae75d96b'</span>
+<span class="go">Transient Scan ID: 2     Time: 2026-10-13 07:07:23</span>
+<span class="go">Persistent Unique Scan ID: 'f3e3fd3e-15e4-4527-8d79-62fe32bbba37'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 17:16:13.9 |      5.000 |      0.000 |</span>
-<span class="go">|         2 | 17:16:14.1 |      4.616 |      0.200 |</span>
-<span class="go">|         3 | 17:16:14.3 |      3.631 |      0.400 |</span>
+<span class="go">|         1 | 07:07:23.4 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 07:07:23.5 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 07:07:23.6 |      0.400 |      3.631 |</span>
 
 
-<span class="go">Transient Scan ID: 3     Time: 2026-10-12 17:16:14</span>
-<span class="go">Persistent Unique Scan ID: '77330bf8-5f31-45eb-8320-31e6a5738c97'</span>
+<span class="go">Transient Scan ID: 3     Time: 2026-10-13 07:07:23</span>
+<span class="go">Persistent Unique Scan ID: 'ba5cbfb5-ce87-4dbf-891b-58779d26aafb'</span>
 <span class="go">New stream: 'primary'</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|   seq_num |       time |       det1 |     motor1 |</span>
+<span class="go">|   seq_num |       time |     motor1 |       det1 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">|         1 | 17:16:14.5 |      5.000 |      0.000 |</span>
-<span class="go">|         2 | 17:16:14.7 |      4.616 |      0.200 |</span>
-<span class="go">|         3 | 17:16:14.9 |      3.631 |      0.400 |</span>
-<span class="go">|         4 | 17:16:15.1 |      2.434 |      0.600 |</span>
-<span class="go">|         5 | 17:16:15.4 |      1.390 |      0.800 |</span>
-<span class="go">|         6 | 17:16:15.5 |      0.677 |      1.000 |</span>
-<span class="go">|         7 | 17:16:15.7 |      0.281 |      1.200 |</span>
-<span class="go">|         8 | 17:16:15.9 |      0.099 |      1.400 |</span>
+<span class="go">|         1 | 07:07:23.7 |      0.000 |      5.000 |</span>
+<span class="go">|         2 | 07:07:23.9 |      0.200 |      4.616 |</span>
+<span class="go">|         3 | 07:07:24.0 |      0.400 |      3.631 |</span>
+<span class="go">|         4 | 07:07:24.1 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 07:07:24.2 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 07:07:24.3 |      1.000 |      0.677 |</span>
+<span class="go">|         7 | 07:07:24.5 |      1.200 |      0.281 |</span>
+<span class="go">|         8 | 07:07:24.6 |      1.400 |      0.099 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive ['77330bf8'] (scan num: 3)</span>
+<span class="go">generator sim_plan_recursive ['ba5cbfb5'] (scan num: 3)</span>
 
 
 
-<span class="go">|         4 | 17:16:16.4 |      2.434 |      0.600 |</span>
-<span class="go">|         5 | 17:16:16.6 |      1.390 |      0.800 |</span>
-<span class="go">|         6 | 17:16:16.8 |      0.677 |      1.000 |</span>
+<span class="go">|         4 | 07:07:24.9 |      0.600 |      2.434 |</span>
+<span class="go">|         5 | 07:07:25.0 |      0.800 |      1.390 |</span>
+<span class="go">|         6 | 07:07:25.1 |      1.000 |      0.677 |</span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive ['918c13ca'] (scan num: 2)</span>
+<span class="go">generator sim_plan_recursive ['f3e3fd3e'] (scan num: 2)</span>
 
 
 
 <span class="go"> failed to format row </span>
 <span class="go"> failed to format row </span>
 <span class="go">+-----------+------------+------------+------------+</span>
-<span class="go">generator sim_plan_recursive ['45324916'] (scan num: 1)</span>
+<span class="go">generator sim_plan_recursive ['00435dc0'] (scan num: 1)</span>
 
 
 
 <span class="gh">Out[4]: </span>
-<span class="go">('45324916-ba17-40f2-9743-5c8f0759615b',</span>
-<span class="go"> '918c13ca-2539-4a04-ae8c-c1a3ae75d96b',</span>
-<span class="go"> '77330bf8-5f31-45eb-8320-31e6a5738c97')</span>
+<span class="go">('00435dc0-fae9-40bb-a625-8b4b8725a73a',</span>
+<span class="go"> 'f3e3fd3e-15e4-4527-8d79-62fe32bbba37',</span>
+<span class="go"> 'ba5cbfb5-ce87-4dbf-891b-58779d26aafb')</span>
 </pre></div>
 </div>
 <p>The identical result can be achieved by using <cite>bpp.set_run_key_wrapper()</cite>:</p>
@@ -1340,7 +1340,7 @@ before at each call.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev254+g26ebf4d5c/docs/multi_run_plans.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev268+g3fb85489e/docs/multi_run_plans.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
