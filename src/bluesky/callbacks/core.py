@@ -3,7 +3,6 @@ Useful callbacks for the Run Engine
 """
 
 import logging
-import os
 import time as ttime
 import warnings
 from collections import OrderedDict, deque, namedtuple
@@ -14,6 +13,8 @@ from functools import wraps as _wraps
 from itertools import count
 
 from event_model import DocumentRouter
+
+from bluesky.env_vars import BLUESKY_DEBUG_CALLBACKS
 
 from ..utils import ensure_uid
 
@@ -57,9 +58,8 @@ def make_callback_safe(func=None, *, logger=None):
         try:
             return func(*args, **kwargs)
         except Exception:
-            debug_mode = os.environ.get("BLUESKY_DEBUG_CALLBACKS", False)
             if logger is not None:
-                if debug_mode:
+                if BLUESKY_DEBUG_CALLBACKS:
                     msg = f"Exception in {func}"
                 else:
                     msg = (
@@ -69,7 +69,7 @@ def make_callback_safe(func=None, *, logger=None):
                         "BLUESKY_DEBUG_CALLBACKS env to '1'"
                     )
                 logger.exception(msg)
-            if debug_mode:
+            if BLUESKY_DEBUG_CALLBACKS:
                 raise
 
     return inner
@@ -429,7 +429,7 @@ class LiveTable(CallbackBase):
             if self.log is not None:
                 self.log.exception(ex)
             self._print(f"{{k:*^{self._min_width}}}".format(k=" failed to format row "))
-            if os.environ.get("BLUESKY_DEBUG_CALLBACKS", False):
+            if BLUESKY_DEBUG_CALLBACKS:
                 raise ex
         super().event(doc)
 

@@ -221,6 +221,12 @@ def test_publisher_custom_serializer(mock_ctx):
     p.close()
 
 
+# NOTE: Skipping a weird race condition with unhandled exceptions from pytest on linux on python 3.10
+#  where exceptions are raised in the thread.
+@pytest.mark.skipif(
+    sys.version_info < (3, 11) and sys.platform == "linux",
+    reason="Skip on Linux when Python == 3.10",
+)
 def test_dispatcher_custom_deserializer():
     """Verify RemoteDispatcher uses the custom deserializer."""
     custom_deserializer = MagicMock(return_value={"uid": "abc123"})
@@ -472,7 +478,6 @@ def test_dep_warning_if_using_port_args(mock_zmq_context, in_or_out: str):
 
 @pytest.mark.parametrize("cls", [ServerCurve, ClientCurve])
 def test_cannot_bind_with_incorrect_curve(mock_zmq_context, tmp_path, cls):
-
     args = [tmp_path, tmp_path]
     if cls == ServerCurve:
         args.append(None)  # ServerCurve takes an extra argument

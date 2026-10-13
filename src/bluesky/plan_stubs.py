@@ -6,10 +6,11 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from cycler import cycler
 
+from bluesky.env_vars import BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
 from bluesky.suspenders import SuspenderBase
 
 try:
@@ -24,17 +25,21 @@ from event_model.documents import EventDescriptor
 from .protocols import (
     Collectable,
     Configurable,
+    Executable,
     Flyable,
     Locatable,
     Location,
     Movable,
+    P,
     PartialEvent,
     Preparable,
     Readable,
     Reading,
     Stageable,
     Status,
+    StatusWithResult,
     Stoppable,
+    T,
     Triggerable,
     WritesStreamAssets,
     check_supports,
@@ -91,7 +96,7 @@ def declare_stream(
 
 
 @plan
-def create(name: str = "primary") -> MsgGenerator:
+def create(name: str = "primary") -> MsgGenerator[None]:
     """
     Bundle future readings into a new Event document.
 
@@ -114,7 +119,7 @@ def create(name: str = "primary") -> MsgGenerator:
 
 
 @plan
-def save() -> MsgGenerator:
+def save() -> MsgGenerator[None]:
     """
     Close a bundle of readings and emit a completed Event document.
 
@@ -131,7 +136,7 @@ def save() -> MsgGenerator:
 
 
 @plan
-def drop() -> MsgGenerator:
+def drop() -> MsgGenerator[None]:
     """
     Drop a bundle of readings without emitting a completed Event document.
 
@@ -149,25 +154,36 @@ def drop() -> MsgGenerator:
 
 
 @plan
-def read(obj: Readable) -> MsgGenerator[Reading]:
+def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
     """
-    Take a reading and add it to the current bundle of readings.
+    Read from devices and add to the current bundle of readings.
 
     Parameters
     ----------
-    obj : Device or Signal
+    objs : Readable objects.
 
     Yields
     ------
     msg : Msg
-        Msg('read', obj)
+        ``Msg('read', *objs)``
+
 
     Returns
     -------
-    reading :
+    reading:
         Reading object representing information recorded
     """
-    return (yield Msg("read", obj))
+
+    # If ``True`` then there will be one Msg per device, which means that
+    # asynchronous devices will not be gathered.;
+    if BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE:
+        reading = {}
+        for obj in objs:
+            partial_reading = yield Msg("read", obj)
+            reading.update(partial_reading)
+        return cast(Reading, reading)
+    else:
+        return (yield Msg("read", *objs))
 
 
 @typing.overload
@@ -195,7 +211,7 @@ def locate(*objs, squeeze=True):
 
 
 @plan
-def monitor(obj: Readable, *, name: str | None = None, **kwargs: Any) -> MsgGenerator:
+def monitor(obj: Readable, *, name: str | None = None, **kwargs: Any) -> MsgGenerator[None]:
     """
     Asynchronously monitor for new values and emit Event documents.
 
@@ -222,7 +238,7 @@ def monitor(obj: Readable, *, name: str | None = None, **kwargs: Any) -> MsgGene
 
 
 @plan
-def unmonitor(obj: Readable) -> MsgGenerator:
+def unmonitor(obj: Readable) -> MsgGenerator[None]:
     """
     Stop monitoring.
 
@@ -243,7 +259,7 @@ def unmonitor(obj: Readable) -> MsgGenerator:
 
 
 @plan
-def null() -> MsgGenerator:
+def null() -> MsgGenerator[None]:
     """
     Yield a no-op Message. (Primarily for debugging and testing.)
 
@@ -578,7 +594,7 @@ def trigger(
     wait: bool = False,
 ) -> MsgGenerator[Status]:
     """
-    Trigger and acquisition. Optionally, wait for it to complete.
+    Trigger an acquisition. Optionally, wait for it to complete.
 
     Parameters
     ----------
@@ -601,6 +617,46 @@ def trigger(
 
     """
     ret = yield Msg("trigger", obj, group=group)
+    if wait:
+        yield Msg("wait", None, group=group)
+    return ret
+
+
+@plan
+def execute(
+    obj: Executable[P, T],
+    group: Hashable | None = None,
+    wait: bool = False,
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> MsgGenerator[StatusWithResult[T]]:
+    """
+    Execute a remote procedural call on a device. Optionally, wait for it to complete.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    args :
+        passed to obj.execute()
+    kwargs :
+        passed to obj.execute()
+
+    Yields
+    ------
+    msg : Msg
+
+    Returns
+    -------
+    status :
+        StatusWithResult that completes when execution is done. If `wait` is True,
+        this will always be complete by the time it is returned.
+    """
+    ret = yield Msg("execute", obj, group=group, execute_args=args, execute_kwargs=kwargs)
     if wait:
         yield Msg("wait", None, group=group)
     return ret
@@ -634,7 +690,7 @@ def wait(
     timeout: float | None = None,
     error_on_timeout: bool = True,
     watch: Sequence[str] = (),
-):
+) -> MsgGenerator[bool]:
     """
     Wait for all statuses in a group to report being finished.
 
@@ -699,7 +755,7 @@ def clear_checkpoint() -> MsgGenerator:
 
 
 @plan
-def pause() -> MsgGenerator:
+def pause() -> MsgGenerator[None]:
     """
     Pause and wait for the user to resume.
 
@@ -717,7 +773,7 @@ def pause() -> MsgGenerator:
 
 
 @plan
-def deferred_pause() -> MsgGenerator:
+def deferred_pause() -> MsgGenerator[None]:
     """
     Pause at the next checkpoint.
 
@@ -757,7 +813,9 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 
 
 @plan
-def prepare(obj: Preparable[Any], *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any):
+def prepare(
+    obj: Preparable[Any], *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any
+) -> MsgGenerator[Status]:
     """
     Prepare a device ready for trigger or kickoff.
 
@@ -836,7 +894,9 @@ def kickoff(
 
 
 @plan
-def kickoff_all(*args: Flyable, group: Hashable | None = None, wait: bool = True, **kwargs: Any):
+def kickoff_all(
+    *args: Flyable, group: Hashable | None = None, wait: bool = True, **kwargs: Any
+) -> MsgGenerator[tuple[Status, ...]]:
     """
     Kickoff one or more fly-scanning devices.
 
@@ -928,7 +988,9 @@ def complete(
 
 
 @plan
-def complete_all(*args: Flyable, group: Hashable | None = None, wait: bool = False, **kwargs: Any):
+def complete_all(
+    *args: Flyable, group: Hashable | None = None, wait: bool = False, **kwargs: Any
+) -> MsgGenerator[tuple[Status, ...]]:
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
@@ -1058,7 +1120,7 @@ def collect_while_completing(
     flush_period: float | None = None,
     stream_name: str | None = None,
     watch: Sequence[str] = (),
-):
+) -> MsgGenerator[None]:
     """
     Collect data from one or more fly-scanning devices and emit documents, then collect and emit
     data from one or more Collectable detectors until all are done.
@@ -1322,7 +1384,7 @@ def subscribe(name: str, func: Callable[[str, Mapping[str, Any]], None]) -> MsgG
 
 
 @plan
-def unsubscribe(token: int) -> MsgGenerator:
+def unsubscribe(token: int) -> MsgGenerator[None]:
     """
     Remove a subscription.
 
@@ -1344,7 +1406,7 @@ def unsubscribe(token: int) -> MsgGenerator:
 
 
 @plan
-def install_suspender(suspender: SuspenderBase) -> MsgGenerator:
+def install_suspender(suspender: SuspenderBase) -> MsgGenerator[None]:
     """
     Install a suspender during a plan.
 
@@ -1366,7 +1428,7 @@ def install_suspender(suspender: SuspenderBase) -> MsgGenerator:
 
 
 @plan
-def remove_suspender(suspender: SuspenderBase) -> MsgGenerator:
+def remove_suspender(suspender: SuspenderBase) -> MsgGenerator[None]:
     """
     Remove a suspender during a plan.
 
@@ -1444,7 +1506,7 @@ def close_run(exit_status: str | None = None, reason: str | None = None) -> MsgG
 
 
 @plan
-def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any) -> MsgGenerator:
+def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any) -> MsgGenerator[tuple[Status, ...]]:
     """
     Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
 
@@ -1508,15 +1570,8 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
         # Skip 'wait' if none of the devices implemented a trigger method.
         if not no_wait:
             yield from wait(group=grp)
-        yield from create(name)
 
-        def read_plan():
-            ret = {}  # collect and return readings to give plan access to them
-            for obj in devices:
-                reading = yield from read(obj)
-                if reading is not None:
-                    ret.update(reading)
-            return ret
+        yield from create(name)
 
         def standard_path():
             yield from save()
@@ -1525,8 +1580,9 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
             yield from drop()
             raise exp
 
-        ret = yield from contingency_wrapper(read_plan(), except_plan=exception_path, else_plan=standard_path)
-        return ret
+        return (
+            yield from contingency_wrapper(read(*devices), except_plan=exception_path, else_plan=standard_path)
+        )
 
     from .preprocessors import rewindable_wrapper
 

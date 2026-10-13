@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import signal
 import sys
 import threading
@@ -15,6 +16,7 @@ import pytest
 from event_model import DocumentNames
 
 from bluesky import Msg, RunEngine
+from bluesky import plans as bp
 from bluesky.plan_stubs import (
     abs_set,
     checkpoint,
@@ -36,7 +38,7 @@ from bluesky.preprocessors import (
     run_wrapper,
     subs_wrapper,
 )
-from bluesky.protocols import Status
+from bluesky.protocols import Status, StatusWithResult
 from bluesky.run_engine import (
     FailedStatus,
     IllegalMessageSequence,
@@ -491,6 +493,86 @@ def test_stage_and_unstage_status_objects(RE):
     stop = ttime.monotonic()
 
     assert 2 <= stop - start < 3
+
+
+def test_execute(RE):
+    from ophyd import StatusBase
+
+    executed = {}
+    finished = {}
+
+    class Dummy:
+        name = "dummy"
+
+        def _callback(self, d: dict, st: Status):
+            d[self.name] = True
+            st.set_finished()  # type: ignore
+
+        def execute(self, *args, **kwargs) -> Status:
+            st = StatusBase()
+            executed[self.name] = (args, kwargs)
+            threading.Timer(0.1, self._callback, args=[finished, st]).start()
+            return st
+
+    dummy = Dummy()
+
+    def my_plan():
+        yield Msg("execute", dummy, group="g", execute_args=(1, 2), execute_kwargs={"a": 3})
+        assert executed == {"dummy": ((1, 2), {"a": 3})}
+        assert not finished
+        yield Msg("wait", group="g")
+        assert finished == {"dummy": True}
+
+    RE(my_plan())
+
+    assert executed == {"dummy": ((1, 2), {"a": 3})}
+    assert finished == {"dummy": True}
+
+
+def test_execute_returns_status_with_result(RE):
+    class ResultStatus(StatusWithResult[str]):
+        def add_callback(self, callback) -> None:
+            callback(self)
+
+        def exception(self, timeout=0.0):
+            return None
+
+        @property
+        def done(self) -> bool:
+            return True
+
+        @property
+        def success(self) -> bool:
+            return True
+
+        def result(self) -> str:
+            return "hello"
+
+    class Dummy:
+        name = "dummy"
+
+        def execute(self, *args, **kwargs) -> Status:
+            return ResultStatus()
+
+    dummy = Dummy()
+    captured = {}
+
+    def my_plan():
+        captured["status"] = yield Msg("execute", dummy, group="g", execute_args=(1,))
+        yield Msg("wait", group="g")
+
+    RE(my_plan())
+
+    assert isinstance(captured["status"], StatusWithResult)
+    assert captured["status"].result() == "hello"
+
+
+def test_execute_bad_obj(RE, hw):
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("does not implement all Executable methods"),
+    ):
+        RE([Msg("execute", hw.motor)])
 
 
 def test_bad_call_args(RE):
@@ -1746,7 +1828,6 @@ def test_rewindable_state_retrival(RE, start_state):
                 "wait",
                 "create",
                 "read",
-                "read",
                 "save",
                 "rewindable",
                 "close_run",
@@ -1762,7 +1843,6 @@ def test_rewindable_state_retrival(RE, start_state):
                 "trigger",
                 "wait",
                 "create",
-                "read",
                 "read",
                 "save",
                 "close_run",
@@ -2210,8 +2290,7 @@ def test_double_call(RE):
 
 @pytest.mark.parametrize("predeclare", [True, False])
 def test_num_events(RE, hw, db, predeclare, monkeypatch):
-    if predeclare:
-        monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", predeclare)
     RE.subscribe(db.insert)
 
     rs1 = RE(count([]))

@@ -30,6 +30,7 @@ from bluesky._vendor.super_state_machine.machines import StateMachine
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
 from .protocols import (
+    Executable,
     Flyable,
     Locatable,
     Movable,
@@ -523,6 +524,7 @@ class RunEngine:
         self._require_stream_declaration = False
         self._command_registry = {
             "declare_stream": self._declare_stream,
+            "execute": self._execute,
             "create": self._create,
             "save": self._save,
             "drop": self._drop,
@@ -949,7 +951,7 @@ class RunEngine:
             for func in funcs:
                 self._temp_callback_ids.add(self.subscribe(func, name))
 
-        self._plan = plan  # this ref is just used for metadata introspection
+        self._plan = plan  # type: ignore # this ref is just used for metadata introspection
         self._metadata_per_call.update(metadata_kw)
 
         gen = ensure_generator(plan)
@@ -1955,10 +1957,7 @@ class RunEngine:
         Descriptor document.
         """
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = (
                 "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
@@ -1982,28 +1981,17 @@ class RunEngine:
         on declare_stream, rather than `describe`.
         """
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = (
                 "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
-    async def _read(self, msg: Msg):
-        """
-        Add a reading to the open event bundle.
+    async def _perform_single_reading(self, obj, *read_args, **read_kwargs):
+        """Perform a reading on a single device."""
 
-        Expected message object is:
-
-            Msg('read', obj)
-        """
-        obj = check_supports(msg.obj, Readable)
-        # actually _read_ the object
-        warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
-        ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
+        ret = await maybe_await(obj.read(*read_args, **read_kwargs))
 
         if ret is None:
             raise RuntimeError(
@@ -2011,14 +1999,38 @@ class RunEngine:
                 "This is a bug in your object implementation, "
                 "`read` must return a dictionary."
             )
-        run_key = msg.run
-        if isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
-            await current_run.read(msg, ret)
-
         return ret
+
+    async def _read(self, msg):
+        """
+        Add a reading to the open event bundle.
+
+        The obj and args of the read message are all objects to be read.
+
+        Expected message object is:
+
+            Msg('read', *objs)
+
+        """
+
+        run_key = msg.run
+        objs = list((msg.obj,) + msg.args) if msg.obj is not None else []
+        non_readable = [obj for obj in objs if not isinstance(obj, Readable)]
+        if non_readable:
+            raise TypeError(
+                "Run engine received a read message with which contained "
+                f"the following devices which were not readable: {non_readable}"
+            )
+
+        read_returns = await asyncio.gather(*[self._perform_single_reading(obj) for obj in objs])
+
+        if (current_run := self._run_bundlers.get(run_key)) is not None:
+            await current_run.read(msg, list(zip(objs, read_returns)))
+
+        all_readings = {}
+        for read_ret in read_returns:
+            all_readings.update(read_ret)
+        return all_readings
 
     async def _locate(self, msg: Msg):
         """
@@ -2059,10 +2071,7 @@ class RunEngine:
         """
 
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "A 'monitor' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
         else:
@@ -2078,10 +2087,7 @@ class RunEngine:
             Msg('unmonitor', obj)
         """
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "An 'unmonitor' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
         else:
@@ -2096,10 +2102,7 @@ class RunEngine:
             Msg('save')
         """
         run_key = msg.run
-        if isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             await current_run.save(msg)
         else:
             ims_msg = "A 'save' message was sent but no run is open."
@@ -2113,10 +2116,7 @@ class RunEngine:
             Msg('drop')
         """
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "A 'drop' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
         else:
@@ -2164,10 +2164,7 @@ class RunEngine:
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "A 'kickoff' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
 
@@ -2223,10 +2220,7 @@ class RunEngine:
         """
         _set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             # TODO add test exercising this path
             ims_msg = "A 'collect' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
@@ -2268,6 +2262,23 @@ class RunEngine:
 
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="set")
 
+        return ret
+
+    async def _execute(self, msg):
+        """
+        Execute an RCP on a device and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('execute', obj, *args, **kwargs)
+        """
+        obj = check_supports(msg.obj, Executable)
+        group = msg.kwargs.get("group")
+        args = msg.kwargs.get("execute_args", ())
+        kwargs = dict(msg.kwargs.get("execute_kwargs", {}))
+
+        ret = obj.execute(*args, **kwargs)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
         return ret
 
     async def _trigger(self, msg: Msg):
@@ -2429,7 +2440,9 @@ class RunEngine:
         where `sleep_time` is in seconds
         """
         if len(msg.args) != 1 or not isinstance(msg.args[0], (int, float)):
-            raise ValueError("The 'sleep' message must have a single numeric argument for the sleep time in seconds.")
+            raise ValueError(
+                "The 'sleep' message must have a single numeric argument for the sleep time in seconds."
+            )
         sleep_time = msg.args[0]
         await asyncio.sleep(sleep_time)
 
@@ -2539,10 +2552,7 @@ class RunEngine:
             object.configure(*args, **kwargs)
         """
         run_key = msg.run
-        if not isinstance(
-            current_run := self._run_bundlers.get(run_key, object()),
-            RunBundler
-        ):
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             current_run = None
         elif current_run.bundling:
             ims_msg = "Cannot configure after 'create' but before 'save' Aborting!"
