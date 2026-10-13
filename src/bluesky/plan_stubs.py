@@ -25,17 +25,21 @@ from event_model.documents import EventDescriptor
 from .protocols import (
     Collectable,
     Configurable,
+    Executable,
     Flyable,
     Locatable,
     Location,
     Movable,
+    P,
     PartialEvent,
     Preparable,
     Readable,
     Reading,
     Stageable,
     Status,
+    StatusWithResult,
     Stoppable,
+    T,
     Triggerable,
     WritesStreamAssets,
     check_supports,
@@ -613,6 +617,46 @@ def trigger(
 
     """
     ret = yield Msg("trigger", obj, group=group)
+    if wait:
+        yield Msg("wait", None, group=group)
+    return ret
+
+
+@plan
+def execute(
+    obj: Executable[P, T],
+    group: Hashable | None = None,
+    wait: bool = False,
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> MsgGenerator[StatusWithResult[T]]:
+    """
+    Execute a remote procedural call on a device. Optionally, wait for it to complete.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    args :
+        passed to obj.execute()
+    kwargs :
+        passed to obj.execute()
+
+    Yields
+    ------
+    msg : Msg
+
+    Returns
+    -------
+    status :
+        StatusWithResult that completes when execution is done. If `wait` is True,
+        this will always be complete by the time it is returned.
+    """
+    ret = yield Msg("execute", obj, group=group, execute_args=args, execute_kwargs=kwargs)
     if wait:
         yield Msg("wait", None, group=group)
     return ret
