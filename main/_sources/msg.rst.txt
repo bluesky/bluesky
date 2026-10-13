@@ -403,7 +403,7 @@ Expected message object is::
 
     Msg('close_run', None, exit_status=None, reason=None)
 
-if *exit_stats* and *reason* are not provided, use the values
+if *exit_status* and *reason* are not provided, use the values
 stashed on the RE.
 
 
