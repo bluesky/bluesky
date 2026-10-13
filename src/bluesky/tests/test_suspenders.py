@@ -634,17 +634,45 @@ def test_a_suspension_does_not_duplicate_a_monitored_signals_documents(RE, hw):
     sig.put(0)
     RE.install_suspender(SuspendBoolHigh(sig, sleep=0.1))
 
+    monitor_ready = threading.Event()
+    suspension_started = threading.Event()
+    driver_errors = []
+
+    def collect(message):
+        if message.command == "_start_suspender":
+            suspension_started.set()
+
+    RE.msg_hook = collect
+
     def plan():
         yield Msg("open_run")
         yield Msg("monitor", dev, name="mon")
+        monitor_ready.set()
         yield Msg("checkpoint")
         yield Msg("sleep", None, 0.2)
         dev.fire()
         yield Msg("close_run")
 
-    threading.Timer(0.05, sig.put, (1,)).start()
-    threading.Timer(0.3, sig.put, (0,)).start()
-    RE(plan())
+    def trip_and_resume():
+        try:
+            assert monitor_ready.wait(timeout=5)
+            sig.put(1)
+            assert suspension_started.wait(timeout=5)
+        except Exception as exc:
+            driver_errors.append(exc)
+        finally:
+            sig.put(0)
+
+    signal_thread = threading.Thread(target=trip_and_resume)
+    signal_thread.start()
+    try:
+        RE(plan())
+    finally:
+        signal_thread.join(timeout=5)
+        assert not signal_thread.is_alive()
+
+    assert not driver_errors
+    assert suspension_started.is_set()
 
     # One subscription, made once and taken off at close_run.
     assert dev.subscriptions == 1
@@ -652,3 +680,45 @@ def test_a_suspension_does_not_duplicate_a_monitored_signals_documents(RE, hw):
     # And so one Event per reading, not one per subscription per reading.
     assert dev.fires > 0
     assert len(events) == dev.fires
+
+
+def test_suspender_trips_while_run_engine_loop_is_blocked(RE, hw):
+    """A slow plan must not prevent a device thread from tripping a suspender."""
+    sig = hw.bool_sig
+    sig.put(0)
+    loop_blocked = threading.Event()
+    callback_started = threading.Event()
+
+    class NotifyingSuspendBoolHigh(SuspendBoolHigh):
+        def _should_suspend(self, value):
+            callback_started.set()
+            return super()._should_suspend(value)
+
+    susp = NotifyingSuspendBoolHigh(sig, pre_plan=[Msg("null")])
+    RE.install_suspender(susp)
+    callback_started.clear()
+
+    def trip_and_resume():
+        assert loop_blocked.wait(timeout=5)
+        sig.put(1)
+        time.sleep(0.4)
+        sig.put(0)
+
+    def blocking_plan():
+        loop_blocked.set()
+        assert callback_started.wait(timeout=5)
+        time.sleep(0.2)
+        yield Msg("checkpoint")
+        yield Msg("sleep", None, 0.2)
+
+    messages = []
+    RE.msg_hook = messages.append
+    signal_thread = threading.Thread(target=trip_and_resume)
+    signal_thread.start()
+    try:
+        RE(blocking_plan())
+    finally:
+        signal_thread.join(timeout=5)
+        assert not signal_thread.is_alive()
+
+    assert "_start_suspender" in [message.command for message in messages]
