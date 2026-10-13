@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>The RunEngine run loop &#8212; bluesky 1.15.2.dev270+g14848ce0b documentation</title>
+    <title>The RunEngine run loop &#8212; bluesky 1.15.2.dev272+g5cc4cadf0 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=800ddf62"></script>
+    <script src="_static/documentation_options.js?v=55c41a1e"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'run_engine';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev270+g14848ce0b';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev272+g5cc4cadf0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Message Protocol" href="msg.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev270+g14848ce0b" />
+  <meta name="docsearch:version" content="1.15.2.dev272+g5cc4cadf0" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -797,11 +797,10 @@ interrupt the plan.</p>
 integrating together two event loops: the RE loop which is processing
 the plan and the <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> event loop which is managing multiple
 frames of execution. The event loop may switch between execution frames
-when a coroutine is suspended by a <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> statement. Thus we
+when a coroutine is suspended by an <code class="docutils literal notranslate"><span class="pre">await</span></code> statement. Thus we
 change the methods we dispatch to and the main <code class="docutils literal notranslate"><span class="pre">_run</span></code> method to
-co-routines by adding the <code class="docutils literal notranslate"><span class="pre">&#64;asyncio.coroutine</span></code> decorator and calling
-the dispatched functions via <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> rather than with a direct
-function call.</p>
+asynchronous functions by adding the <code class="docutils literal notranslate"><span class="pre">async</span></code> keyword and <code class="docutils literal notranslate"><span class="pre">await</span></code>-ing them
+instead of using their return values directly.</p>
 <p>We also added a <code class="docutils literal notranslate"><span class="pre">msg_hook</span></code> attribute to the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>
 which is a super handy debugging tool to see exactly what messages are
 being processed by the RunEngine. It can be set to any callable which
@@ -839,14 +838,13 @@ takes a single <code class="docutils literal notranslate"><span class="pre">Msg<
             <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">exc</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">):</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="n">ensure_generator</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
         <span class="n">last_result</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">_exception</span><span class="p">)</span>
                     <span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
@@ -861,20 +859,17 @@ takes a single <code class="docutils literal notranslate"><span class="pre">Msg<
 
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_command_registry</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
-                <span class="n">last_result</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">last_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
-        <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">'-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
 
 
@@ -985,14 +980,13 @@ API to control the behavior.</p>
         <span class="s2">"i.e., can the plan in progress by rewound"</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">pending_cancel_exception</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">'running'</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
                     <span class="c1"># The case where we have a stashed exception</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="c1"># throw the exception at the current plan</span>
@@ -1066,7 +1060,7 @@ API to control the behavior.</p>
                         <span class="c1"># this is one of two places that 'async'</span>
                         <span class="c1"># exceptions (coming in via throw) can be</span>
                         <span class="c1"># raised</span>
-                        <span class="n">response</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">coro</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">coro</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                     <span class="c1"># special case `CancelledError` and let the outer</span>
                     <span class="c1"># exception block deal with it.</span>
                     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
@@ -1109,21 +1103,18 @@ API to control the behavior.</p>
         <span class="c1"># if the task was cancelled</span>
         <span class="k">if</span> <span class="n">pending_cancel_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">pending_cancel_exception</span>
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
-        <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">'-- </span><span class="si">{!s:10.10s}</span><span class="s1"> : </span><span class="si">{: &lt;25.25s}</span><span class="s1"> --'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">))</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Process a 'input' Msg. Expected Msg:</span>
 
@@ -1133,10 +1124,9 @@ API to control the behavior.</p>
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'prompt'</span><span class="p">,</span> <span class="s1">''</span><span class="p">)</span>
         <span class="n">async_input</span> <span class="o">=</span> <span class="n">AsyncInput</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
         <span class="n">async_input</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">async_input</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">''</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">async_input</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">async_input</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Request the run engine to pause</span>
 
 <span class="sd">        Expected message object is:</span>
@@ -1241,8 +1231,7 @@ API to control the behavior.</p>
             <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">exc</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Instruct the RunEngine to create a checkpoint so that we can rewind</span>
 <span class="sd">        to this point if necessary</span>
 
@@ -1250,13 +1239,13 @@ API to control the behavior.</p>
 
 <span class="sd">            Msg('checkpoint')</span>
 <span class="sd">        """</span>
-        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state_coro</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state_coro</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deferred_pause_requested</span><span class="p">:</span>
             <span class="c1"># We are at a checkpoint; we are done deferring the pause.</span>
             <span class="c1"># Give the _check_for_signals coroutine time to look for</span>
             <span class="c1"># additional SIGINTs that would trigger an abort.</span>
-            <span class="k">yield from</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">request_pause</span><span class="p">(</span><span class="n">defer</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_reset_checkpoint_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1265,10 +1254,10 @@ API to control the behavior.</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_msg_cache</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
 
-    <span class="n">_reset_checkpoint_state_coro</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">coroutine</span><span class="p">(</span><span class="n">_reset_checkpoint_state</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_reset_checkpoint_state_coro</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_checkpoint_state</span><span class="p">()</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_clear_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Clear a set checkpoint</span>
 
 <span class="sd">        Expected message object is:</span>
@@ -1280,8 +1269,7 @@ API to control the behavior.</p>
         <span class="c1"># clear stashed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_teed_sequence_counters</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_rewindable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''Set rewindable state of RunEngine</span>
 
 <span class="sd">        Expected message object is:</span>
@@ -1295,8 +1283,7 @@ API to control the behavior.</p>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rewindable</span>
 
-    <span class="nd">@asyncio</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_null</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_null</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        A no-op message, mainly for debugging and testing.</span>
 <span class="sd">        """</span>
@@ -1407,7 +1394,7 @@ The table below summarizes the differences between these methods:</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev270+g14848ce0b/docs/run_engine.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev272+g5cc4cadf0/docs/run_engine.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
