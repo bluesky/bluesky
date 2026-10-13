@@ -394,6 +394,18 @@ class LiveTable(CallbackBase):
         self._print(self._sep_format)
         super().descriptor(doc)
 
+    def _float_fallback_format(self, k):
+        # The descriptor said "integer" (inferred from the first value) but a
+        # float arrived; format it as a float in the same column width.
+        info = self._format_info[k]
+        return self._FMTLOOKUP["f"].format(
+            k=f"h{str(hash(k))}",
+            width=info.width - 2 * self._pad_len,
+            prec=info.prec,
+            dtype="f",
+            pad=self._extra_pad,
+        )
+
     def event(self, doc):
         try:
             if ensure_uid(doc["descriptor"]) not in self._descriptors:
@@ -415,6 +427,8 @@ class LiveTable(CallbackBase):
                 # If we have an enum, format with it's value
                 else f.format(**{f"h{str(hash(k))}": data[k].value})
                 if ((k in data) and isinstance(data[k], (Enum)))
+                else self._float_fallback_format(k).format(**{f"h{str(hash(k))}": data[k]})
+                if ((k in data) and self._format_info[k].dtype == "d" and isinstance(data[k], float))
                 else f.format(**{f"h{str(hash(k))}": data[k]})
                 # Show data[k] if k exists in this Event and is 'filled'.
                 # (The latter is only applicable if the data is
