@@ -551,7 +551,7 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
         return default_value
 
     if hint is not None:
-        return ret[hint]["value"]  # type: ignore
+        return ret[hint]["value"]
 
     # handle the no hint 1 field case
     try:
@@ -566,7 +566,7 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
 
         raise ValueError(msg) from er
     else:
-        return data["value"]  # type: ignore
+        return data["value"]
 
 
 @plan
