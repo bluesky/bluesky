@@ -154,7 +154,7 @@ def drop() -> MsgGenerator[None]:
 
 
 @plan
-def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[Reading]]:
+def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[str, Reading]]:
     """
     Read from devices and add to the current bundle of readings.
 
