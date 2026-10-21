@@ -19,6 +19,11 @@ Added
   event types, so a caller asking for one would otherwise get a suspender
   watching something else with nothing said.
 
+Removed
+-------
+
+- Unused Struct and StructMeta base and metaclass removed.
+
 Fixed
 -----
 
