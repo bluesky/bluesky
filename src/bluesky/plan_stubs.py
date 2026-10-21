@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from cycler import cycler
 
@@ -154,7 +154,7 @@ def drop() -> MsgGenerator[None]:
 
 
 @plan
-def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
+def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[Reading]]:
     """
     Read from devices and add to the current bundle of readings.
 
@@ -181,7 +181,7 @@ def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
         for obj in objs:
             partial_reading = yield Msg("read", obj)
             reading.update(partial_reading)
-        return cast(Reading, reading)
+        return reading
     else:
         return (yield Msg("read", *objs))
 
