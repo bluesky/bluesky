@@ -167,11 +167,10 @@ def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[Reading]]:
     msg : Msg
         ``Msg('read', *objs)``
 
-
     Returns
     -------
     reading:
-        Reading object representing information recorded
+        dict of device name to recorded information.
     """
 
     # If ``True`` then there will be one Msg per device, which means that
