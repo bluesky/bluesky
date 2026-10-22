@@ -89,6 +89,8 @@ dev = [
     "suitcase-msgpack",
     "tifffile",
     "tiled[server]",
+    # duckdb 2.0 breaks tiled appendable tables (500 on create_appendable_table)
+    "duckdb<2",
     "tox-direct",
     "types-mock",
     "vendoring",
