@@ -37,7 +37,7 @@ dev = [
     "cloudpickle",
     "copier",
     "coverage",
-    "databroker==2.0.1",
+    "databroker==2.0.2",
     "doct",
     "doctr",
     "flake8",
