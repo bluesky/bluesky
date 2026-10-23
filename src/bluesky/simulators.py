@@ -423,7 +423,8 @@ def assert_message_and_return_remaining(
         return (group is not None and (msg.kwargs and msg.kwargs.get("group") != group)) or not predicate(msg)
 
     matched = list(dropwhile(not_matching, messages))
-    assert matched, f"Nothing matched predicate {predicate}"
+    if not matched:
+        raise AssertionError(f"Nothing matched predicate {predicate}")
     return matched
 
 
