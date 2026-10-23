@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import operator
 import time
@@ -1505,7 +1506,9 @@ def close_run(exit_status: str | None = None, reason: str | None = None) -> MsgG
 
 
 @plan
-def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any) -> MsgGenerator[tuple[Status, ...]]:
+def wait_for(
+    futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any
+) -> MsgGenerator[list[asyncio.Future[Any]]]:
     """
     Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
 
