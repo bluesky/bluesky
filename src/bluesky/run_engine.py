@@ -1813,7 +1813,7 @@ class RunEngine:
             raise stashed_exception
         return plan_return
 
-    async def _wait_for(self, msg):
+    async def _wait_for(self, msg: Msg) -> list[asyncio.Future[typing.Any]]:
         """Instruct the RunEngine to wait for futures and return the resulting tasks.
 
         Expected message object is:
