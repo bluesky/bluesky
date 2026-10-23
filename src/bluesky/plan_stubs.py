@@ -318,7 +318,7 @@ def abs_set(
     :func:`bluesky.plan_stubs.mv`
     """
     if check:
-        yield from check_value(obj, args)
+        yield from check_value(obj, *args)
     if wait and group is None:
         group = str(uuid.uuid4())
     ret = yield Msg("set", obj, *args, group=group, **kwargs)

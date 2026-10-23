@@ -1112,7 +1112,8 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
 
 def relative_set_wrapper(plan, devices=None):
     """
-    Interpret 'set' messages on devices as relative to initial position.
+    Interpret 'set' and 'check_value' messages on devices as relative to
+    initial position.
 
     Parameters
     ----------
@@ -1124,8 +1125,8 @@ def relative_set_wrapper(plan, devices=None):
     Yields
     ------
     msg : Msg
-        messages from plan, with 'read' messages inserted and 'set' messages
-        mutated
+        messages from plan, with 'read' messages inserted and 'set' and
+        'check_value' messages mutated
     """
     initial_positions = {}
     if devices is not None:
@@ -1134,7 +1135,7 @@ def relative_set_wrapper(plan, devices=None):
         coupled_parents = set()
 
     def rewrite_pos(msg):
-        if (msg.command == "set") and (msg.obj in initial_positions):
+        if (msg.command in ("set", "check_value")) and (msg.obj in initial_positions):
             (rel_pos,) = msg.args
             abs_pos = initial_positions[msg.obj] + rel_pos
             new_msg = msg._replace(args=(abs_pos,))
@@ -1143,7 +1144,7 @@ def relative_set_wrapper(plan, devices=None):
             return msg
 
     def insert_reads(msg):
-        if msg.command != "set":
+        if msg.command not in ("set", "check_value"):
             return None, None
 
         eligible = (devices is None) or (msg.obj in devices)
