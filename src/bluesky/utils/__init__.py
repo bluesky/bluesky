@@ -1,9 +1,11 @@
 import abc
 import asyncio
 import collections.abc
+import dataclasses
 import datetime
 import inspect
 import itertools
+import math
 import operator
 import os
 import signal
@@ -19,7 +21,6 @@ from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, G
 from collections.abc import Iterable as TypingIterable
 from enum import Enum
 from functools import partial, reduce, wraps
-from inspect import Parameter, Signature
 from typing import (
     Any,
     TypeAlias,
@@ -38,6 +39,7 @@ from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky.env_vars import BLUESKY_HISTORY_PATH
 from bluesky.protocols import (
     Asset,
     HasHints,
@@ -80,6 +82,63 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
 
     def __repr__(self):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
+
+
+def _to_json_safe(value: Any) -> list | dict | str | float | int | bool | None:
+    """Recursively convert a value into a json-safe structure."""
+
+    match value:
+        case Enum():
+            return _to_json_safe(value.value)
+        case None | bool() | int() | str():
+            return value
+        case float():
+            if math.isnan(value):
+                return None
+            if math.isinf(value):
+                return "Infinity" if value > 0 else "-Infinity"
+            return float(value)
+        case np.generic():
+            return _to_json_safe(value.item())
+        case np.ndarray():
+            return _to_json_safe(value.tolist())
+        case list() | tuple() | set():
+            return [_to_json_safe(v) for v in value]
+        case dict():
+            return {str(k): _to_json_safe(v) for k, v in value.items()}
+        case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
+            return _to_json_safe(dataclasses.asdict(value))
+        case _:
+            try:
+                return str(value)
+            except Exception:
+                return None
+
+
+def msg_to_json_safe_dict(msg: Msg) -> dict[str, Any]:
+    """Return a JSON-safe dictionary representation of this message.
+
+    Devices, enums, numpy scalars and other values in ``obj``/``args``/``kwargs``/
+    ``run`` that are not natively JSON-serializable are coerced to JSON-safe forms.
+
+    Parameters
+    ----------
+    msg : Msg
+        The message to be converted to a JSON-safe dictionary.
+
+    Returns
+    -------
+    dict[str, Any]
+        A JSON-safe dictionary representation of the message.
+    """
+
+    return {
+        "command": msg.command,
+        "obj": _to_json_safe(msg.obj),
+        "args": [_to_json_safe(a) for a in msg.args],
+        "kwargs": {str(k): _to_json_safe(v) for k, v in msg.kwargs.items()},
+        "run": _to_json_safe(msg.run),
+    }
 
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
@@ -160,15 +219,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES: tuple[type, ...] = (types.GeneratorType,)
-try:
-    from types import CoroutineType
-except ImportError:
-    # < py35
-    pass
-else:
-    PLAN_TYPES = PLAN_TYPES + (CoroutineType,)
-    del CoroutineType
+PLAN_TYPES: tuple[type, ...] = (types.GeneratorType, types.CoroutineType)
 
 
 def ensure_generator(plan):
@@ -313,6 +364,24 @@ class SigintHandler:
         self._released = True
         self._request_event = threading.Event()
 
+    def _restore_and_reraise(self, signum, frame) -> None:
+        """Hand SIGINT back to the disposition installed before ``__enter__``.
+
+        Re-install ``self._original_handler`` and re-deliver the signal so
+        that disposition handles it. This works uniformly whether
+        ``_original_handler`` is a callable, ``signal.SIG_DFL``,
+        ``signal.SIG_IGN``, or ``None`` (a handler installed from C that is
+        not representable in Python), avoiding the ``TypeError`` that calling
+        a non-callable disposition directly would raise.
+
+        Swap is performed *before* the re-raise so the re-delivered signal is
+        dispatched to the original disposition rather than back into this
+        closure. Re-installing the same handler is idempotent, so a later
+        ``signal.signal`` in ``__exit__`` is harmless.
+        """
+        signal.signal(signal.SIGINT, self._original_handler)
+        signal.raise_signal(signal.SIGINT)
+
     def _watch_request(self) -> None:
         while not self._released:
             if self._request == PauseRequest.SOFT:
@@ -359,7 +428,8 @@ class SigintHandler:
             acceptable.
             """
             if self._released:
-                self._original_handler(signum, frame)
+                self._restore_and_reraise(signum, frame)
+                return
             now = time.monotonic()
             time_diff = now - self._last_sigint_time
 
@@ -379,7 +449,7 @@ class SigintHandler:
                 else:
                     self._released = True
                     self._request_event.set()
-                    self._original_handler(signum, frame)
+                    self._restore_and_reraise(signum, frame)
 
         # Install handler callback
         signal.signal(signal.SIGINT, handler)
@@ -387,9 +457,8 @@ class SigintHandler:
 
     def __exit__(self, type, value, tb) -> None:
         signal.signal(signal.SIGINT, self._original_handler)
-        if not self._released:
-            self._released = True
-            self._request_event.set()
+        self._released = True
+        self._request_event.set()
 
 
 class CallbackRegistry:
@@ -635,43 +704,6 @@ class _BoundMethodProxy:
         return self._hash
 
 
-# The following two code blocks are adapted from David Beazley's
-# 'Python 3 Metaprogramming' https://www.youtube.com/watch?v=sPiWg5jSoZI
-
-
-class StructMeta(type):
-    def __new__(cls, name, bases, clsdict):
-        clsobj = super().__new__(cls, name, bases, clsdict)
-        args_params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in clsobj._fields]
-        kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None) for name in ["md"]]
-        sig = Signature(args_params + kwargs_params)
-        clsobj.__signature__ = sig
-        return clsobj
-
-
-class Struct(metaclass=StructMeta):
-    "The _fields of any subclass become its attritubes and __init__ args."
-
-    _fields: list[str] = []
-
-    def __init__(self, *args, **kwargs):
-        # Now bind default values of optional arguments.
-        # If it seems like there should be a cleaner way to do this, see
-        # http://bugs.python.org/msg221104
-        bound = self.__signature__.bind(*args, **kwargs)
-        for name, param in self.__signature__.parameters.items():
-            if name not in bound.arguments and param.default is not inspect._empty:
-                bound.arguments[name] = param.default
-        for name, val in bound.arguments.items():
-            setattr(self, name, val)
-        self.flyers = []
-
-    def set(self, **kwargs):
-        "Update attributes as keyword arguments."
-        for attr, val in kwargs.items():
-            setattr(self, attr, val)
-
-
 SUBS_NAMES = ["all", "start", "stop", "event", "descriptor"]
 
 
@@ -685,7 +717,7 @@ def normalize_subs_input(subs):
     elif hasattr(subs, "items"):
         for key, funcs in list(subs.items()):
             if key not in SUBS_NAMES:
-                raise KeyError(f"Keys must be one of {SUBS_NAMES!r:0}")
+                raise KeyError(f"Keys must be one of {SUBS_NAMES!r}")
             if callable(funcs):
                 normalized[key].append(funcs)
             else:
@@ -997,9 +1029,8 @@ class PersistentDict(collections.abc.MutableMapping):
 
 
 SEARCH_PATH = []
-ENV_VAR = "BLUESKY_HISTORY_PATH"
-if ENV_VAR in os.environ:
-    SEARCH_PATH.append(os.environ[ENV_VAR])
+if BLUESKY_HISTORY_PATH:
+    SEARCH_PATH.append(BLUESKY_HISTORY_PATH)
 SEARCH_PATH.extend(
     [
         os.path.expanduser("~/.config/bluesky/bluesky_history.db"),
@@ -1050,8 +1081,8 @@ def get_history():
             return historydict.HistoryDict(":memory:")
 
 
-_QT_KICKER_INSTALLED: dict = {}
-_NB_KICKER_INSTALLED: dict = {}
+_QT_KICKER_INSTALLED: Any = {}
+_NB_KICKER_INSTALLED: Any = {}
 
 
 def install_kicker(loop=None, update_rate=0.03):
@@ -1989,7 +2020,7 @@ already_warned: dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
-    if args or kwargs and not already_warned.get(msg.command):
+    if (args or kwargs) and not already_warned.get(msg.command):
         already_warned[msg.command] = True
         error_msg = f"""\
 About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
@@ -1997,7 +2028,7 @@ In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("{msg.command}") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg)  # noqa: B028
+        warnings.warn(error_msg, stacklevel=4)
 
 
 def maybe_update_hints(hints: dict[str, Hints], obj):

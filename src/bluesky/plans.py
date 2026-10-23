@@ -1,6 +1,5 @@
 import collections
 import inspect
-import os
 import sys
 import time
 from collections import defaultdict
@@ -11,6 +10,8 @@ from typing import Any, TypeAlias
 
 import numpy as np
 from cycler import Cycler
+
+from bluesky.env_vars import BLUESKY_PREDECLARE
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -116,7 +117,7 @@ def count(
     _md["hints"].setdefault("dimensions", [(("time",), "primary")])  # type: ignore
 
     # per_shot might define a different stream, so do not predeclare primary
-    predeclare = per_shot is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_shot is None and BLUESKY_PREDECLARE
     msg_per_step: PerShot = per_shot if per_shot else bps.one_shot
 
     @bpp.stage_decorator(detectors)
@@ -181,6 +182,10 @@ def list_scan(
     length = None
     for motor, pos_list in partition(2, args):
         pos_list = list(pos_list)  # Ensure list (accepts any finite iterable).
+        # Motors are identified by name downstream (e.g. in the data keys and
+        # length bookkeeping below), so each must have a unique name.
+        if motor.name in lengths:
+            raise ValueError(f"Each motor must have a unique name, but {motor.name!r} was used more than once.")
         lengths[motor.name] = len(pos_list)
         if not length:
             length = len(pos_list)
@@ -486,7 +491,7 @@ def _scan_1d(
 
     steps = np.linspace(**_md["plan_pattern_args"])
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def inner_scan():
         for step in steps:
@@ -606,13 +611,13 @@ def log_scan(
     else:
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_step is None and BLUESKY_PREDECLARE
     if per_step is None:
         per_step = bps.one_1d_step
 
     steps = np.logspace(**_md["plan_pattern_args"])
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
         if predeclare:
@@ -745,7 +750,7 @@ def adaptive_scan(
     else:
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def adaptive_core():
         next_pos = start
@@ -757,8 +762,8 @@ def adaptive_scan(
             direction_sign = 1
         else:
             direction_sign = -1
-        devices = tuple(utils.separate_devices(detectors + [motor]))
-        if os.environ.get("BLUESKY_PREDECLARE", False):
+        devices = tuple(utils.separate_devices([*detectors, motor]))
+        if BLUESKY_PREDECLARE:
             yield from bps.declare_stream(*devices, name="primary")
         while next_pos * direction_sign < stop * direction_sign:
             yield Msg("checkpoint")
@@ -767,11 +772,21 @@ def adaptive_scan(
             for det in detectors:
                 yield Msg("trigger", det, group="B")
             yield Msg("wait", None, "B")
+            cur_I = None
+            target_field_found = False
+            all_fields: list[str] = []
             for det in devices:
                 cur_det = yield Msg("read", det)
+                all_fields.extend(cur_det)
                 if target_field in cur_det:
                     cur_I = cur_det[target_field]["value"]
+                    target_field_found = True
             yield Msg("save")
+            if not target_field_found:
+                raise ValueError(
+                    f"target_field {target_field!r} was not found in the readings of any of the "
+                    f"detectors or the motor. Available fields this step: {sorted(all_fields)}."
+                )
 
             # special case first first loop
             if past_I is None:
@@ -975,7 +990,7 @@ def tune_centroid(
     low_limit = min(start, stop)
     high_limit = max(start, stop)
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def _tune_core(start: float, stop: float, num: int, signal: str):
         next_pos = start
@@ -984,12 +999,12 @@ def tune_centroid(
         cur_I = None
         sum_I = 0  # for peak centroid calculation, I(x)
         sum_xI = 0
-        if os.environ.get("BLUESKY_PREDECLARE", False):
+        if BLUESKY_PREDECLARE:
             yield from bps.declare_stream(motor, *detectors, name="primary")  # type: ignore
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)  # type: ignore      # Movable
-            ret = yield from bps.trigger_and_read(list(detectors) + [motor])  # type: ignore
+            ret = yield from bps.trigger_and_read([*detectors, motor])  # type: ignore
             cur_I = ret[signal]["value"]
             sum_I += cur_I
             position = ret[motor_name]["value"]
@@ -1084,7 +1099,7 @@ def scan_nd(
         # change it, else set it to the one generated above
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_step is None and BLUESKY_PREDECLARE
     if per_step is None:
         per_step = bps.one_nd_step
     else:
@@ -2306,6 +2321,9 @@ def fly(
     flyers: list[Flyable],
     *,
     md: CustomPlanMetadata | None = None,
+    collect_flush_period: float | None = None,
+    stream_name: str | None = None,
+    watch: Sequence[str] = (),
 ) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
@@ -2314,28 +2332,34 @@ def fly(
     ----------
     flyers : collection
         objects that support the flyer interface
-    md : dict, optional
-        metadata
+    md : CustomPlanMetadata, optional
+        Additional metadata to include in the run start document
+    collect_flush_period : float, optional
+        If set, will use `collect_while_completing` with the given flush period
+    stream_name : str, optional
+        If set, will declare a stream with the given name for all flyers
+    watch: set of watch groups, optional
+        Additional groups to monitor while collecting from flyers.
+        Will only be used if `collect_flush_period` is set.
 
     Yields
     ------
     msg : Msg
-        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+        bluesky messages for opening/closing run, optionally declaring stream, and controlling flyers
 
     See Also
     --------
     :func:`bluesky.preprocessors.fly_during_wrapper`
     :func:`bluesky.preprocessors.fly_during_decorator`
     """
-    uid = yield from bps.open_run(md)
-    for flyer in flyers:
-        yield from bps.kickoff(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.complete(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.collect(flyer)
-    yield from bps.close_run()
-    return uid
+
+    @bpp.run_decorator(md=md)
+    def _inner():
+        yield from bps.fly_stub(
+            flyers, collect_flush_period=collect_flush_period, stream_name=stream_name, watch=watch
+        )
+
+    return (yield from _inner())
 
 
 def x2x_scan(

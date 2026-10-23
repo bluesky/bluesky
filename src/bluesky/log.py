@@ -156,6 +156,8 @@ def validate_level(level) -> int:
         levelno = level
     elif isinstance(level, str):
         levelno = logging.getLevelName(level)
+    else:
+        raise TypeError(f"level must be an int or str, not {type(level).__name__}")
 
     if isinstance(levelno, int):
         return levelno

@@ -5,9 +5,73 @@
 Unreleased
 ==========
 
+Added
+-----
+
+- Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
+  such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
+  subscription style from the signal.  For a ``Subscribable`` it subscribes,
+  and ``remove`` unsubscribes, on the RunEngine's event loop, since a
+  subscription belongs to the loop that made it.  Passing a signal that is
+  neither now raises a ``RuntimeError`` from ``install`` rather than an
+  ``AttributeError``.  Passing ``event_type`` alongside a ``Subscribable``
+  signal also raises, rather than being silently ignored: that style has no
+  event types, so a caller asking for one would otherwise get a suspender
+  watching something else with nothing said.
+
+Removed
+-------
+
+- Unused Struct and StructMeta base and metaclass removed.
+
+Fixed
+-----
+
+- A plan aborted while parked in a ``wait_for`` cancels the tasks that wait was
+  running.  Nothing else held a reference to them, and ``asyncio.wait`` does not
+  cancel what it was waiting on when it is itself cancelled, so they outlived
+  the plan and asyncio reported them as destroyed-while-pending at some
+  unrelated later moment.  A ``wait`` that times out still leaves them alone, so
+  waiting on the same group again finds them in flight.
+  
+- A suspension no longer duplicates the documents from a monitored signal.
+  Resuming from one re-subscribed every monitor, having never unsubscribed
+  them: monitors run throughout a suspension, and only a *pause* stops them.
+  One suspension therefore left each monitored signal subscribed twice, and
+  every Event it produced afterwards was emitted twice, compounding with each
+  further suspension.
+  
+- A device is told a suspension has started only if it satisfies
+  `bluesky.protocols.Pausable`.  A suspension used to call ``pause()`` on
+  anything that had the attribute, where ``RunEngine.pause`` has always required
+  the protocol -- and ``Pausable`` requires ``resume`` as well, so a device with
+  only ``pause`` was told a suspension had begun and never told it had ended.
+  Both paths now ask the same question.
+
+- ``RunEngine.verbose`` reports whether the engine logs, and turning it off
+  stops it.  It read ``disabled`` from the log adapter, which has no such
+  attribute, so reading raised ``AttributeError`` until something had assigned
+  one -- and assigning put it on the adapter, where the logging machinery never
+  looks, so turning it off silenced nothing.  Both halves now go to the logger
+  the adapter wraps.
+
 Changed
 -------
 
+- Suspender justification messages report the last value the suspender was
+  called back with, rather than calling ``signal.get()`` when the message is
+  built.  As well as being readable for signals that cannot be read
+  synchronously, this reports the value that actually tripped the suspender
+  rather than whatever it has since become.
+- ``SuspendWhenChanged`` defaults ``expected_value`` to the first value it is
+  called back with, for every kind of signal, and so latches it when the
+  suspender is installed rather than when it is created.  Previously an ophyd
+  signal was read synchronously in ``__init__`` while a ``Subscribable`` one --
+  which cannot be -- latched on install, so *when* the default was captured
+  depended on which protocol the signal happened to implement.  Until the
+  suspender is installed ``expected_value`` is now ``None``; code reading it
+  between construction and installation, or constructing a suspender and then
+  changing the signal before installing it, will see the difference.
 - The ``bluesky.protocols.Subscribable`` protocol now requires a
   ``subscribe_reading`` method rather than a ``subscribe`` method.  The
   protocol did not match the implementation it was written to describe:
