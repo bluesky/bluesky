@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev276+gfd0710ed1 documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev283+ga202248e5 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=35b16bec"></script>
+    <script src="../../_static/documentation_options.js?v=24c68f09"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev276+gfd0710ed1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev283+ga202248e5';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev276+gfd0710ed1" />
+  <meta name="docsearch:version" content="1.15.2.dev283+ga202248e5" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -917,7 +917,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">cast</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
 
@@ -1076,7 +1076,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="read">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.read.html#bluesky.plan_stubs.read">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">[</span><span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Reading</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">[</span><span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Read from devices and add to the current bundle of readings.</span>
 
@@ -1089,11 +1089,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    msg : Msg</span>
 <span class="sd">        ``Msg('read', *objs)``</span>
 
-
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    reading:</span>
-<span class="sd">        Reading object representing information recorded</span>
+<span class="sd">        dict of device name to recorded information.</span>
 <span class="sd">    """</span>
 
     <span class="c1"># If ``True`` then there will be one Msg per device, which means that</span>
@@ -1103,7 +1102,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
             <span class="n">partial_reading</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
             <span class="n">reading</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">partial_reading</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">Reading</span><span class="p">,</span> <span class="n">reading</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">reading</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="o">*</span><span class="n">objs</span><span class="p">))</span></div>
 
@@ -1501,7 +1500,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">default_value</span>
 
     <span class="k">if</span> <span class="n">hint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ret</span><span class="p">[</span><span class="n">hint</span><span class="p">][</span><span class="s2">"value"</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="n">ret</span><span class="p">[</span><span class="n">hint</span><span class="p">][</span><span class="s2">"value"</span><span class="p">]</span>
 
     <span class="c1"># handle the no hint 1 field case</span>
     <span class="k">try</span><span class="p">:</span>
@@ -1516,7 +1515,7 @@ window.runMermaid = runMermaid;</script>
 
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">er</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span>  <span class="c1"># type: ignore</span></div>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span></div>
 
 
 
