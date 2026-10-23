@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from cycler import cycler
 
@@ -154,7 +154,7 @@ def drop() -> MsgGenerator[None]:
 
 
 @plan
-def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
+def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[str, Reading]]:
     """
     Read from devices and add to the current bundle of readings.
 
@@ -167,11 +167,10 @@ def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
     msg : Msg
         ``Msg('read', *objs)``
 
-
     Returns
     -------
     reading:
-        Reading object representing information recorded
+        dict of device name to recorded information.
     """
 
     # If ``True`` then there will be one Msg per device, which means that
@@ -181,7 +180,7 @@ def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Reading]:
         for obj in objs:
             partial_reading = yield Msg("read", obj)
             reading.update(partial_reading)
-        return cast(Reading, reading)
+        return reading
     else:
         return (yield Msg("read", *objs))
 
@@ -552,7 +551,7 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
         return default_value
 
     if hint is not None:
-        return ret[hint]["value"]  # type: ignore
+        return ret[hint]["value"]
 
     # handle the no hint 1 field case
     try:
@@ -567,7 +566,7 @@ def rd(obj: Readable, *, default_value: Any = 0) -> MsgGenerator[Any]:
 
         raise ValueError(msg) from er
     else:
-        return data["value"]  # type: ignore
+        return data["value"]
 
 
 @plan
