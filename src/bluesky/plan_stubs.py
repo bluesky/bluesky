@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import operator
 import time
@@ -1551,7 +1552,9 @@ def close_run(exit_status: str | None = None, reason: str | None = None) -> MsgG
 
 
 @plan
-def wait_for(futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any) -> MsgGenerator[tuple[Status, ...]]:
+def wait_for(
+    futures: Iterable[Callable[[], Awaitable[Any]]], **kwargs: Any
+) -> MsgGenerator[list[asyncio.Future[Any]]]:
     """
     Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
 
@@ -1972,3 +1975,59 @@ def repeat(
                     yield Msg("sleep", None, d)
 
     return (yield from repeated_plan())
+
+
+@plan
+def fly_stub(
+    flyers: Sequence[Flyable],
+    *,
+    collect_flush_period: float | None = None,
+    stream_name: str | None = None,
+    watch: Sequence[str] = (),
+) -> MsgGenerator[None]:
+    """
+    Perform a fly scan with one or more 'flyers'. A run must be open before calling this stub.
+
+    Parameters
+    ----------
+    flyers : collection
+        objects that support the flyer interface
+    collect_flush_period : float, optional
+        If set, will use `collect_while_completing` with the given flush period
+    stream_name : str, optional
+        If set, will declare a stream with the given name for all flyers
+    watch: set of watch groups, optional
+        Additional groups to monitor while collecting from flyers.
+        Will only be used if `collect_flush_period` is set.
+
+    Yields
+    ------
+    msg : Msg
+        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+
+    See Also
+    --------
+    :func:`bluesky.preprocessors.fly_during_wrapper`
+    :func:`bluesky.preprocessors.fly_during_decorator`
+    """
+
+    # Extract list of collectable detectors from flyers
+    dets = [flyer for flyer in flyers if isinstance(flyer, Collectable)]
+
+    # If provided, attempt to declare single stream for all collectable detectors
+    # note that if set, all detectors must produce the same number of events.
+    if stream_name is not None:
+        yield from declare_stream(*dets, name=stream_name)
+
+    # Kickoff all flyers
+    yield from kickoff_all(*flyers, wait=True)
+
+    # If flush period given, collect while completing.
+    if collect_flush_period is not None:
+        yield from collect_while_completing(
+            flyers, dets, flush_period=collect_flush_period, stream_name=stream_name, watch=watch
+        )
+    else:
+        # Otherwise, wait for all flyers to complete before collecting.
+        yield from complete_all(*flyers, wait=True)
+        yield from collect_all(*dets, name=stream_name)
