@@ -7,6 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 from event_model.documents.event_descriptor import DataKey
+from ophyd.sim import NullStatus
 
 import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
@@ -273,6 +274,68 @@ def test_locatable_message_multiple_objects(RE, hw):
         # And now it will skip one as they both incremented above
         dict(setpoint=5.0, readback=5.0),  # noqa: C408
     ]
+
+
+class UncheckedAxis:
+    def __init__(self, name: str, position: float, calls: list) -> None:
+        self.name = name
+        self.parent = None
+        self.position = position
+        self.calls = calls
+
+    def set(self, value: float) -> NullStatus:
+        self.calls.append(("set", value))
+        self.position = value
+        return NullStatus()
+
+    def locate(self) -> Location[float]:
+        return {"setpoint": self.position, "readback": self.position}
+
+
+class CheckedAxis(UncheckedAxis):
+    def check_value(self, value: float) -> None:
+        self.calls.append(("check", value))
+        if not 0 <= value <= 10:
+            raise ValueError(f"{value} is outside the limits of {self.name}")
+
+
+def test_mv_checks_before_setting(RE):
+    """Check the value before setting it when mv is called with check."""
+    calls = []
+    RE(mv(CheckedAxis("x", 0.0, calls), 3.0, check=True))
+    assert calls == [("check", 3.0), ("set", 3.0)]
+
+
+def test_mv_check_rejects_value_without_moving(RE):
+    """Raise the device's error and leave it in place when the check fails."""
+    calls = []
+    x = CheckedAxis("x", 0.0, calls)
+    with pytest.raises(ValueError, match="outside the limits"):
+        RE(mv(x, 20.0, check=True))
+    assert calls == [("check", 20.0)]
+    assert x.position == 0.0
+
+
+def test_abs_set_checks_value(RE):
+    """Check the value itself, not the argument tuple, before abs_set sets it."""
+    calls = []
+    RE(abs_set(CheckedAxis("x", 0.0, calls), 3.0, check=True, wait=True))
+    assert calls == [("check", 3.0), ("set", 3.0)]
+
+
+def test_mvr_checks_absolute_target(RE):
+    """Check the absolute target, not the relative step, before mvr moves."""
+    calls = []
+    RE(mvr(CheckedAxis("x", 5.0, calls), 2.0, check=True))
+    assert calls == [("check", 7.0), ("set", 7.0)]
+
+
+def test_check_warns_for_device_without_check_value(RE):
+    """Warn and still move a device that cannot check its value."""
+    calls = []
+    with pytest.warns(UserWarning, match="has no check_value"):
+        RE(mv(UncheckedAxis("x", 0.0, calls), 3.0, check=True))
+    assert calls == [("set", 3.0)]
 
 
 def test_rd_locatable(RE, hw):
