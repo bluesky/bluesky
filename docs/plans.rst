@@ -481,6 +481,7 @@ Plans for interacting with hardware:
     read
     rd
     locate
+    loc
     stage
     unstage
     configure

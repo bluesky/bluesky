@@ -18,9 +18,17 @@ Added
   signal also raises, rather than being silently ignored: that style has no
   event types, so a caller asking for one would otherwise get a suspender
   watching something else with nothing said.
+- ``bluesky.plan_stubs.loc`` locates one object and returns its ``Location``.
 
 Removed
 -------
+
+- The ``squeeze`` parameter of ``bluesky.plan_stubs.locate`` has no effect and
+  raises a warning when passed.  Use ``bluesky.plan_stubs.loc`` to get a
+  single ``Location``.
+- The ``squeeze`` keyword of the ``locate`` message has been removed.  The RunEngine ignores
+  it with a warning, and returns a single ``Location`` for one object and a
+  list for several.
 
 - Unused Struct and StructMeta base and metaclass removed.
 
@@ -57,6 +65,15 @@ Fixed
 
 Changed
 -------
+
+- ``bluesky.plan_stubs.locate`` returns a mapping from each object's name to
+  its ``Location``, for one object or several.  Each object must have a
+  ``name``.
+
+  .. code-block:: python
+
+      locations = yield from bps.locate(x, y)
+      locations["x"]["readback"]
 
 - Suspender justification messages report the last value the suspender was
   called back with, rather than calling ``signal.get()`` when the message is
