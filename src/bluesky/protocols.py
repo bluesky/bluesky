@@ -89,6 +89,10 @@ class Status(Protocol):
         ...
 
 
+#: Type variable for status objects with extended API
+StatusType = TypeVar("StatusType", bound=Status, covariant=True)
+
+
 @runtime_checkable
 class StatusWithResult(Status, Protocol[R_co]):
     @abstractmethod
@@ -220,17 +224,17 @@ class Configurable(Protocol[T]):
 
 
 @runtime_checkable
-class Triggerable(Protocol):
+class Triggerable(Protocol[StatusType]):
     @abstractmethod
-    def trigger(self) -> Status:
+    def trigger(self) -> StatusType:
         """Return a ``Status`` that is marked done when the device is done triggering."""
         ...
 
 
 @runtime_checkable
-class Preparable(Protocol[T_co]):
+class Preparable(Protocol[T_co, StatusType]):
     @abstractmethod
-    def prepare(self, value: T_co) -> Status:
+    def prepare(self, value: T_co) -> StatusType:
         """Prepare a device for scanning.
 
         This method provides similar functionality to ``Stageable.stage`` and
@@ -384,9 +388,9 @@ class Locatable(Movable[T], Protocol):
 
 
 @runtime_checkable
-class Flyable(HasName, Protocol):
+class Flyable(HasName, Protocol[StatusType]):
     @abstractmethod
-    def kickoff(self) -> Status:
+    def kickoff(self) -> StatusType:
         """Begin acculumating data.
 
         Return a ``Status`` and mark it done when acqusition has begun.
@@ -394,17 +398,17 @@ class Flyable(HasName, Protocol):
         ...
 
     @abstractmethod
-    def complete(self) -> Status:
+    def complete(self) -> StatusType:
         """Return a ``Status`` and mark it done when acquisition has completed."""
         ...
 
 
 @runtime_checkable
-class Stageable(Protocol):
+class Stageable(Protocol[StatusType]):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     @abstractmethod
-    def stage(self) -> Status | list[Any]:
+    def stage(self) -> StatusType | list[Any]:
         """An optional hook for "setting up" the device for acquisition.
 
         It should return a ``Status`` that is marked done when the device is
@@ -413,7 +417,7 @@ class Stageable(Protocol):
         ...
 
     @abstractmethod
-    def unstage(self) -> Status | list[Any]:
+    def unstage(self) -> StatusType | list[Any]:
         """A hook for "cleaning up" the device after acquisition.
 
         It should return a ``Status`` that is marked done when the device is finished
