@@ -113,7 +113,7 @@ class BestEffortCallback(QtAwareCallback):
         # Prepare a guess about the dimensions (independent variables) in case
         # we need it.
         motors = self._start_doc.get("motors")
-        if motors is not None:
+        if motors is not None and len(motors) > 0:
             GUESS = [([motor], "primary") for motor in motors]
         else:
             GUESS = [(["time"], "primary")]
@@ -150,12 +150,10 @@ class BestEffortCallback(QtAwareCallback):
         # Print heading.
         tt = datetime.fromtimestamp(self._start_doc["time"]).utctimetuple()
         if self._heading_enabled:
-            print(
-                "\n\nTransient Scan ID: {0}     Time: {1}".format(  # noqa: UP030
-                    self._start_doc.get("scan_id", ""), time.strftime("%Y-%m-%d %H:%M:%S", tt)
-                )
-            )
-            print("Persistent Unique Scan ID: '{0}'".format(self._start_doc["uid"]))  # noqa: UP030
+            scan_id = self._start_doc.get("scan_id", "")
+            scan_time = time.strftime("%Y-%m-%d %H:%M:%S", tt)
+            print(f"\n\nTransient Scan ID: {scan_id}     Time: {scan_time}")
+            print(f"Persistent Unique Scan ID: '{self._start_doc['uid']}'")
 
     def _set_up_plots(self, doc, stream_name, columns: list[Any]):
         """Using the descriptor doc"""
@@ -591,7 +589,7 @@ class LivePlotPlusPeaks(LivePlot):
 
                 def toggle(event):
                     if event.key == "P":
-                        self.__visible[ax] = ~self.__visible[ax]
+                        self.__visible[ax] = not self.__visible[ax]
                         for instance in self.__instances[ax]:
                             instance.check_visibility()
 

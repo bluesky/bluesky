@@ -187,12 +187,23 @@ def test_relative_pseudo(hw, RE, db):
 
 
 def test_reset_wrapper(hw, RE, monkeypatch):
-    monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", True)
     p = hw.pseudo3x3
     m_col = MsgCollector()
     RE.msg_hook = m_col
 
-    RE(bp.relative_inner_product_scan([], 1, p.pseudo1, 0, 1, p.pseudo2, 0, 1))
+    RE(
+        bp.relative_inner_product_scan(
+            [],
+            1,
+            p.pseudo1,
+            0,
+            1,
+            p.pseudo2,
+            0,
+            1,
+        )
+    )
     expecte_objs = [p, None, None, None, p, None, p, None, None, p, None, None, p, p, None]
     assert len(m_col.msgs) == 15
     assert [m.obj for m in m_col.msgs] == expecte_objs
@@ -475,20 +486,20 @@ def _grid_scan_position_list(args, snake_axes):
     "args, snake_axes",
     [
         # Calls using new arguments
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), None),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), False),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), True),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), []),  # Empty list will disable snaking
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor1"]),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor2"]),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor1", "motor2"]),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, "motor2", 7, 8, 5), None),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, "motor2", 7, 8, 5), False),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, "motor2", 7, 8, 5), True),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, "motor2", 7, 8, 5), []),  # Empty list will disable snaking
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, "motor2", 7, 8, 5), ["motor1"]),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, "motor2", 7, 8, 5), ["motor2"]),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, "motor2", 7, 8, 5), ["motor1", "motor2"]),
         # Deprecated calls
         (
-            ("motor", 1, 2, 3, "motor1", 4, 5, 6, True, "motor2", 7, 8, 9, True),
+            ("motor", 1, 2, 2, "motor1", 4, 5, 3, True, "motor2", 7, 8, 5, True),
             None,
         ),  # snake_axes may be only set to None
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, True, "motor2", 7, 8, 9, False), None),
-        (("motor", 1, 2, 3, "motor1", 4, 5, 6, False, "motor2", 7, 8, 9, True), None),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, True, "motor2", 7, 8, 5, False), None),
+        (("motor", 1, 2, 2, "motor1", 4, 5, 3, False, "motor2", 7, 8, 5, True), None),
     ],
 )
 @pytest.mark.parametrize("plan, is_relative", [(bp.grid_scan, False), (bp.rel_grid_scan, True)])
@@ -647,7 +658,7 @@ def test_describe_failure(RE):
 
 
 def test_errors_through_msg_mutator(hw, monkeypatch):
-    monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", True)
     gen = bp.rel_scan([], hw.motor, 5, -5, 10)
 
     msgs = []
@@ -686,7 +697,7 @@ def test_predeclare_env(hw, monkeypatch, predeclare):
     from cycler import cycler
 
     if predeclare:
-        monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+        monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", True)
 
     for p in [
         bp.count([hw.det]),
@@ -722,3 +733,21 @@ def test_input_plan(RE):
 
     with patch("bluesky.utils.sys.stdin.readline", return_value="answer\n"):
         RE(plan())
+
+
+def test_lazily_stage_decorator_with_child_signals(RE, hw):
+    det = hw.det
+
+    @bpp.lazily_stage_decorator()
+    @bpp.run_decorator(md={})
+    def lazy_stage_list_scan(*args, **kwargs):
+        return (yield from bpp.stub_wrapper(bp.list_scan(*args, **kwargs)))
+
+    with (
+        patch.object(det, "stage", wraps=det.stage) as det_stage,
+        patch.object(det, "unstage", wraps=det.unstage) as det_unstage,
+    ):
+        RE(lazy_stage_list_scan([det], det.sigma, [1, 2, 3]))
+
+        assert det_stage.call_count == 1
+        assert det_unstage.call_count == 1

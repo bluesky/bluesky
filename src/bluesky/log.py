@@ -3,7 +3,6 @@
 import logging
 import sys
 from types import ModuleType
-from typing import Optional
 
 try:
     import colorama
@@ -11,7 +10,7 @@ try:
     colorama.init()
 except ImportError:
     colorama = None
-curses: Optional[ModuleType]
+curses: ModuleType | None
 try:
     import curses
 except ImportError:
@@ -157,6 +156,8 @@ def validate_level(level) -> int:
         levelno = level
     elif isinstance(level, str):
         levelno = logging.getLevelName(level)
+    else:
+        raise TypeError(f"level must be an int or str, not {type(level).__name__}")
 
     if isinstance(levelno, int):
         return levelno

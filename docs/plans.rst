@@ -480,6 +480,7 @@ Plans for interacting with hardware:
     trigger
     read
     rd
+    locate
     stage
     unstage
     configure

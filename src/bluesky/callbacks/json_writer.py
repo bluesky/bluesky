@@ -1,13 +1,12 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 
 class JSONWriter:
-    """Writer of Bluesky docuemnts of a single run into a JSON file as an array.
+    """Writer of Bluesky documents of a single run into a JSON file as an array.
 
-    The file is created when a Start doocument is received, each new document is
+    The file is created when a Start document is received, each new document is
     written immediately, and the JSON array is closed when the "stop" document
     is received.
     """
@@ -15,7 +14,7 @@ class JSONWriter:
     def __init__(
         self,
         dirname: str,
-        filename: Optional[str] = None,
+        filename: str | None = None,
     ):
         self.dirname = Path(dirname)
         self.filename = filename
@@ -40,12 +39,12 @@ class JSONWriter:
 
 
 class JSONLinesWriter:
-    """Writer of Bluesky docuemnts into a JSON Lines file
+    """Writer of Bluesky documents into a JSON Lines file
 
     If the file already exists, new documents will be appended to it.
     """
 
-    def __init__(self, dirname: str, filename: Optional[str] = None):
+    def __init__(self, dirname: str, filename: str | None = None):
         self.dirname = Path(dirname)
         self.filename = filename
 

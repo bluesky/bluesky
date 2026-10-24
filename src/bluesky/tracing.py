@@ -1,5 +1,6 @@
 import functools
-from typing import Callable, cast
+from collections.abc import Callable
+from typing import cast
 
 from opentelemetry.trace import Tracer, get_tracer
 

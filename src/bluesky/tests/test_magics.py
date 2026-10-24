@@ -1,13 +1,32 @@
-import os
-import signal
+import threading
 from types import SimpleNamespace
 
 import pytest
+from ophyd import Component as Cpt
+from ophyd import PseudoPositioner, PseudoSingle, SoftPositioner
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
-from bluesky.magics import BlueskyMagics
+from bluesky.magics import BlueskyMagics, _print_positioners
+from bluesky.protocols import Status
 from bluesky.tests import uses_os_kill_sigint
+
+from .conftest import MovableSignal
+
+
+class TwoAxisPseudo(PseudoPositioner):
+    """Minimal two-axis PseudoPositioner for testing."""
+
+    px = Cpt(PseudoSingle)
+    py = Cpt(PseudoSingle)
+    rx = Cpt(SoftPositioner, init_pos=0)
+    ry = Cpt(SoftPositioner, init_pos=0)
+
+    def forward(self, pp):
+        return self.RealPosition(rx=pp.px, ry=pp.py)
+
+    def inverse(self, rp):
+        return self.PseudoPosition(px=rp.rx, py=rp.ry)
 
 
 class FakeIPython:
@@ -150,22 +169,68 @@ def test_magics_missing_ns_key(RE, hw):
 
 
 @uses_os_kill_sigint
-def test_interrupted(RE, hw):
-    motor = hw.motor
-    motor.delay = 10
+def test_interrupted(deterministic_sigint):
+
+    class PendingStatus(Status):
+        """A Status that never completes on its own."""
+
+        @property
+        def done(self):
+            return False
+
+        @property
+        def success(self):
+            return False
+
+        def add_callback(self, callback):
+            pass
+
+        def exception(self, timeout=0.0):
+            return None
+
+    class SlowMovable(MovableSignal):
+        def set(self, value):
+            return PendingStatus()
+
+    motor = SlowMovable(name="motor")
 
     ip = FakeIPython({})
     sm = BlueskyMagics(ip)
     ip.user_ns["motor"] = motor
 
-    pid = os.getpid()
+    running = threading.Event()
 
-    def sim_kill(n=1):
-        for j in range(n):  # noqa: B007
-            print("KILL")
-            os.kill(pid, signal.SIGINT)
+    def hook(msg):
+        if msg.command == "wait":
+            running.set()
 
-    motor.loop = sm.RE.loop
-    sm.RE.loop.call_later(1, sim_kill, 2)
-    sm.mov("motor 1")
+    sm.RE.msg_hook = hook
+
+    def send_interrupts(sigint):
+        running.wait(timeout=5)
+        sigint.send()
+        sigint.send()
+
+    with deterministic_sigint() as sigint:
+        t = threading.Thread(target=send_interrupts, args=(sigint,), daemon=True)
+        t.start()
+        sm.mov("motor 1")
+        t.join(timeout=5)
+
     assert sm.RE.state == "idle"
+
+
+def test_print_positioners_pseudo_positioner():
+    # PseudoPositioner.position is a namedtuple; np.round returns an ndarray
+    # under numpy 2.x, which raises TypeError with string format specs.
+    dev = TwoAxisPseudo(name="dev")
+    _print_positioners([dev])  # must not raise TypeError
+
+
+def test_wa_pseudo_positioner():
+    # %wa must not raise TypeError for multi-axis PseudoPositioner objects.
+    dev = TwoAxisPseudo(name="dev", labels=["motors"])
+    ip = FakeIPython({"dev": dev})
+    sm = BlueskyMagics(ip)
+    sm.wa("")  # must not raise TypeError
+    sm.wa("motors")  # must not raise TypeError

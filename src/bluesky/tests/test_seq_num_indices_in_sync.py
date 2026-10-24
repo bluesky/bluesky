@@ -1,7 +1,7 @@
 import importlib.metadata
 from collections.abc import Iterable, Iterator
 from random import randint, sample
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import packaging.version
 import pytest
@@ -29,14 +29,14 @@ DRAFT_0_STREAM_RESOURCE = event_model_version < packaging.version.parse("1.21.0"
 
 
 class ExternalAssetDevice:
-    sequence_counter_at_chunks: Optional[Union[range, list[int]]] = None
+    sequence_counter_at_chunks: range | list[int] | None = None
     current_chunk: int = 0
 
     def __init__(
         self,
         number_of_chunks: int,
         number_of_frames: int,
-        detectors: Optional[list[str]] = None,
+        detectors: list[str] | None = None,
         stream_datum_contains_one_index: bool = False,
     ):
         self.detectors = detectors or ["det1", "det2", "det3"]

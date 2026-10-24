@@ -1,16 +1,17 @@
 import collections
 import inspect
-import os
 import sys
 import time
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import partial
 from itertools import chain, zip_longest
-from typing import Any, Callable, Optional, Union
+from typing import Any, TypeAlias
 
 import numpy as np
 from cycler import Cycler
+
+from bluesky.env_vars import BLUESKY_PREDECLARE
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -31,11 +32,11 @@ from .utils import (
 )
 
 #: Plan function that can be used for each shot in a detector acquisition involving no actuation
-PerShot = Callable[[Sequence[Readable], Optional[bps.TakeReading]], MsgGenerator]
+PerShot = Callable[[Sequence[Readable], bps.TakeReading | None], MsgGenerator]
 
 #: Plan function that can be used for each step in a scan
 PerStep1D = Callable[
-    [Sequence[Readable], Movable, Any, Optional[bps.TakeReading]],
+    [Sequence[Readable], Movable, Any, bps.TakeReading | None],
     MsgGenerator,
 ]
 PerStepND = Callable[
@@ -43,11 +44,11 @@ PerStepND = Callable[
         Sequence[Readable],
         Mapping[Movable, Any],
         dict[Movable, Any],
-        Optional[bps.TakeReading],
+        bps.TakeReading | None,
     ],
     MsgGenerator,
 ]
-PerStep = Union[PerStep1D, PerStepND]
+PerStep: TypeAlias = PerStep1D | PerStepND
 
 
 def _check_detectors_type_input(detectors):
@@ -65,11 +66,11 @@ def derive_default_hints(motors: list[Any]) -> dict[str, Sequence]:
 
 def count(
     detectors: Sequence[Readable],
-    num: Optional[int] = 1,
+    num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
     *,
-    per_shot: Optional[PerShot] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_shot: PerShot | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
@@ -116,7 +117,7 @@ def count(
     _md["hints"].setdefault("dimensions", [(("time",), "primary")])  # type: ignore
 
     # per_shot might define a different stream, so do not predeclare primary
-    predeclare = per_shot is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_shot is None and BLUESKY_PREDECLARE
     msg_per_step: PerShot = per_shot if per_shot else bps.one_shot
 
     @bpp.stage_decorator(detectors)
@@ -131,9 +132,9 @@ def count(
 
 def list_scan(
     detectors: Sequence[Readable],
-    *args: tuple[Union[Movable, Any], list[Any]],
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    *args: Movable[Any] | Sequence[Any],
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one or more variables in steps simultaneously (inner product).
@@ -181,6 +182,10 @@ def list_scan(
     length = None
     for motor, pos_list in partition(2, args):
         pos_list = list(pos_list)  # Ensure list (accepts any finite iterable).
+        # Motors are identified by name downstream (e.g. in the data keys and
+        # length bookkeeping below), so each must have a unique name.
+        if motor.name in lengths:
+            raise ValueError(f"Each motor must have a unique name, but {motor.name!r} was used more than once.")
         lengths[motor.name] = len(pos_list)
         if not length:
             length = len(pos_list)
@@ -224,9 +229,9 @@ def list_scan(
 
 def rel_list_scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    *args: Movable | Any,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in steps relative to current position.
@@ -281,10 +286,10 @@ def rel_list_scan(
 
 def list_grid_scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
+    *args: Movable | Any,
     snake_axes: bool = False,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -358,10 +363,10 @@ def list_grid_scan(
 
 def rel_list_grid_scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
+    *args: Movable | Any,
     snake_axes: bool = False,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory. Each point is
@@ -425,8 +430,8 @@ def _scan_1d(
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps.
@@ -486,7 +491,7 @@ def _scan_1d(
 
     steps = np.linspace(**_md["plan_pattern_args"])
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def inner_scan():
         for step in steps:
@@ -502,8 +507,8 @@ def _rel_scan_1d(
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps relative to current positon.
@@ -606,13 +611,13 @@ def log_scan(
     else:
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_step is None and BLUESKY_PREDECLARE
     if per_step is None:
         per_step = bps.one_1d_step
 
     steps = np.logspace(**_md["plan_pattern_args"])
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
         if predeclare:
@@ -630,8 +635,8 @@ def rel_log_scan(
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps relative to current position.
@@ -680,9 +685,9 @@ def adaptive_scan(
     max_step: float,
     target_delta: float,
     backstep: bool,
-    threshold: Optional[float] = 0.8,
+    threshold: float | None = 0.8,
     *,
-    md: Optional[CustomPlanMetadata] = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable with adaptively tuned step size.
@@ -745,7 +750,7 @@ def adaptive_scan(
     else:
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def adaptive_core():
         next_pos = start
@@ -757,8 +762,8 @@ def adaptive_scan(
             direction_sign = 1
         else:
             direction_sign = -1
-        devices = tuple(utils.separate_devices(detectors + [motor]))
-        if os.environ.get("BLUESKY_PREDECLARE", False):
+        devices = tuple(utils.separate_devices([*detectors, motor]))
+        if BLUESKY_PREDECLARE:
             yield from bps.declare_stream(*devices, name="primary")
         while next_pos * direction_sign < stop * direction_sign:
             yield Msg("checkpoint")
@@ -767,11 +772,21 @@ def adaptive_scan(
             for det in detectors:
                 yield Msg("trigger", det, group="B")
             yield Msg("wait", None, "B")
+            cur_I = None
+            target_field_found = False
+            all_fields: list[str] = []
             for det in devices:
                 cur_det = yield Msg("read", det)
+                all_fields.extend(cur_det)
                 if target_field in cur_det:
                     cur_I = cur_det[target_field]["value"]
+                    target_field_found = True
             yield Msg("save")
+            if not target_field_found:
+                raise ValueError(
+                    f"target_field {target_field!r} was not found in the readings of any of the "
+                    f"detectors or the motor. Available fields this step: {sorted(all_fields)}."
+                )
 
             # special case first first loop
             if past_I is None:
@@ -809,9 +824,9 @@ def rel_adaptive_scan(
     max_step: float,
     target_delta: float,
     backstep: bool,
-    threshold: Optional[float] = 0.8,
+    threshold: float | None = 0.8,
     *,
-    md: Optional[CustomPlanMetadata] = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Relative scan over one variable with adaptively tuned step size.
@@ -881,7 +896,7 @@ def tune_centroid(
     step_factor: float = 3.0,
     snake: bool = False,
     *,
-    md: Optional[CustomPlanMetadata] = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
@@ -975,7 +990,7 @@ def tune_centroid(
     low_limit = min(start, stop)
     high_limit = max(start, stop)
 
-    @bpp.stage_decorator(list(detectors) + [motor])
+    @bpp.stage_decorator([*detectors, motor])
     @bpp.run_decorator(md=_md)
     def _tune_core(start: float, stop: float, num: int, signal: str):
         next_pos = start
@@ -984,12 +999,12 @@ def tune_centroid(
         cur_I = None
         sum_I = 0  # for peak centroid calculation, I(x)
         sum_xI = 0
-        if os.environ.get("BLUESKY_PREDECLARE", False):
+        if BLUESKY_PREDECLARE:
             yield from bps.declare_stream(motor, *detectors, name="primary")  # type: ignore
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)  # type: ignore      # Movable
-            ret = yield from bps.trigger_and_read(list(detectors) + [motor])  # type: ignore
+            ret = yield from bps.trigger_and_read([*detectors, motor])  # type: ignore
             cur_I = ret[signal]["value"]
             sum_I += cur_I
             position = ret[motor_name]["value"]
@@ -1027,8 +1042,8 @@ def scan_nd(
     detectors: Sequence[Readable],
     cycler: Cycler,
     *,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over an arbitrary N-dimensional trajectory.
@@ -1084,7 +1099,7 @@ def scan_nd(
         # change it, else set it to the one generated above
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_step is None and BLUESKY_PREDECLARE
     if per_step is None:
         per_step = bps.one_nd_step
     else:
@@ -1171,9 +1186,9 @@ def scan_nd(
 def inner_product_scan(
     detectors: Sequence[Readable],
     num: int,
-    *args: Union[Movable, Any],
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    *args: Movable | Any,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[None]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1184,10 +1199,10 @@ def inner_product_scan(
 
 def scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
-    num: Optional[int] = None,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    *args: Movable | Any,
+    num: int | None = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory.
@@ -1294,9 +1309,9 @@ def scan(
 def grid_scan(
     detectors: Sequence[Readable],
     *args,
-    snake_axes: Optional[Union[Iterable, bool]] = None,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    snake_axes: Iterable | bool | None = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -1470,10 +1485,10 @@ def grid_scan(
 
 def rel_grid_scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
-    snake_axes: Optional[Union[Iterable, bool]] = None,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    *args: Movable | Any,
+    snake_axes: Iterable | bool | None = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh relative to current position.
@@ -1530,9 +1545,9 @@ def rel_grid_scan(
 def relative_inner_product_scan(  # type: ignore
     detectors: Sequence[Readable],
     num: int,
-    *args: Union[Movable, Any],
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    *args: Movable | Any,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1543,10 +1558,10 @@ def relative_inner_product_scan(  # type: ignore
 
 def rel_scan(
     detectors: Sequence[Readable],
-    *args: Union[Movable, Any],
+    *args: Movable | Any,
     num=None,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory relative to current position.
@@ -1602,7 +1617,7 @@ def tweak(
     motor: NamedMovable,
     step: float,
     *,
-    md: Optional[CustomPlanMetadata] = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Move and motor and read a detector with an interactive prompt.
@@ -1693,10 +1708,10 @@ def spiral_fermat(
     dr: float,
     factor: float,
     *,
-    dr_y: Optional[float] = None,
-    tilt: Optional[float] = 0.0,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    dr_y: float | None = None,
+    tilt: float | None = 0.0,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """Absolute fermat spiral scan, centered around (x_start, y_start)
 
@@ -1797,10 +1812,10 @@ def rel_spiral_fermat(
     dr: float,
     factor: float,
     *,
-    dr_y: Optional[float] = None,
-    tilt: Optional[float] = 0.0,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    dr_y: float | None = None,
+    tilt: float | None = 0.0,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """Relative fermat spiral scan
 
@@ -1876,10 +1891,10 @@ def spiral(
     dr: float,
     nth: float,
     *,
-    dr_y: Optional[float] = None,
-    tilt: Optional[float] = 0.0,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    dr_y: float | None = None,
+    tilt: float | None = 0.0,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """Spiral scan, centered around (x_start, y_start)
 
@@ -1978,10 +1993,10 @@ def rel_spiral(
     dr: float,
     nth: float,
     *,
-    dr_y: Optional[float] = None,
+    dr_y: float | None = None,
     tilt: float = 0.0,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """Relative spiral scan
 
@@ -2054,8 +2069,8 @@ def spiral_square(
     x_num: float,
     y_num: float,
     *,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """Absolute square spiral scan, centered around (x_center, y_center)
 
@@ -2150,8 +2165,8 @@ def rel_spiral_square(
     x_num: float,
     y_num: float,
     *,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """Relative square spiral scan, centered around current (x, y) position.
 
@@ -2216,9 +2231,9 @@ def ramp_plan(
     monitor_sig: Readable,
     inner_plan_func: Callable[[], MsgGenerator],
     take_pre_data: bool = True,
-    timeout: Optional[float] = None,
-    period: Optional[float] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    timeout: float | None = None,
+    period: float | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """Take data while ramping one or more positioners.
 
@@ -2305,7 +2320,10 @@ def ramp_plan(
 def fly(
     flyers: list[Flyable],
     *,
-    md: Optional[CustomPlanMetadata] = None,
+    md: CustomPlanMetadata | None = None,
+    collect_flush_period: float | None = None,
+    stream_name: str | None = None,
+    watch: Sequence[str] = (),
 ) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
@@ -2314,28 +2332,34 @@ def fly(
     ----------
     flyers : collection
         objects that support the flyer interface
-    md : dict, optional
-        metadata
+    md : CustomPlanMetadata, optional
+        Additional metadata to include in the run start document
+    collect_flush_period : float, optional
+        If set, will use `collect_while_completing` with the given flush period
+    stream_name : str, optional
+        If set, will declare a stream with the given name for all flyers
+    watch: set of watch groups, optional
+        Additional groups to monitor while collecting from flyers.
+        Will only be used if `collect_flush_period` is set.
 
     Yields
     ------
     msg : Msg
-        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+        bluesky messages for opening/closing run, optionally declaring stream, and controlling flyers
 
     See Also
     --------
     :func:`bluesky.preprocessors.fly_during_wrapper`
     :func:`bluesky.preprocessors.fly_during_decorator`
     """
-    uid = yield from bps.open_run(md)
-    for flyer in flyers:
-        yield from bps.kickoff(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.complete(flyer, wait=True)
-    for flyer in flyers:
-        yield from bps.collect(flyer)
-    yield from bps.close_run()
-    return uid
+
+    @bpp.run_decorator(md=md)
+    def _inner():
+        yield from bps.fly_stub(
+            flyers, collect_flush_period=collect_flush_period, stream_name=stream_name, watch=watch
+        )
+
+    return (yield from _inner())
 
 
 def x2x_scan(
@@ -2346,8 +2370,8 @@ def x2x_scan(
     stop: float,
     num: int,
     *,
-    per_step: Optional[PerStep] = None,
-    md: Optional[CustomPlanMetadata] = None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio

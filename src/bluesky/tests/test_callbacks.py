@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from event_model import DocumentNames, compose_run
 
+import bluesky.callbacks.core as core_callbacks
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
 from bluesky.callbacks import CallbackBase, CallbackCounter, LiveFit, LiveTable
@@ -21,6 +22,8 @@ from bluesky.plans import count, grid_scan, inner_product_scan, scan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.tests.utils import DocCollector, MsgCollector, _print_redirect
+
+from .conftest import MovableSignal, ReadableSignal
 
 
 # copied from examples.py to avoid import
@@ -421,6 +424,38 @@ def test_live_fit_plot(RE, hw):
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
 
 
+def test_live_fit_plot_respects_ylim():
+    """LiveFitPlot must forward its own ``ylim`` to the axes, not ``xlim``.
+
+    Regression test for a bug where ``LiveFitPlot.__init__`` passed
+    ``ylim=xlim`` to ``LivePlot``, so the user-supplied ``ylim`` was ignored and
+    the x-limits were applied to the y-axis.
+    """
+    try:
+        import lmfit
+    except ImportError:
+        raise pytest.skip("requires lmfit")  # noqa: B904
+
+    def gaussian(x, A, sigma, x0):
+        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {"A": 2, "sigma": lmfit.Parameter("sigma", 3, min=0), "x0": -0.2}
+    livefit = LiveFit(model, "det", {"x": "motor"}, init_guess, update_every=50)
+
+    xlim = (-5.0, 5.0)
+    ylim = (-1.0, 2.0)
+    _, ax = plt.subplots()
+    lfplot = LiveFitPlot(livefit, ax=ax, xlim=xlim, ylim=ylim)
+
+    # start() runs the deferred setup(), which applies the axis limits.
+    start_doc, *_ = compose_run()
+    lfplot.start(start_doc)
+
+    assert ax.get_xlim() == xlim
+    assert ax.get_ylim() == ylim
+
+
 @pytest.mark.parametrize("int_meth, stop_num, msg_num", [("stop", 1, 5), ("abort", 1, 5), ("halt", 1, 3)])
 def test_interrupted_with_callbacks(RE, int_meth, stop_num, msg_num):
     docs = defaultdict(list)
@@ -694,7 +729,7 @@ def test_callbackclass_safe_logger(EvilBaseClass):
     assert logger.exception.call_count == len(DocumentNames)
 
 
-@pytest.mark.parametrize("strict", ["1", None])
+@pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.parametrize(
     "documents",
     (
@@ -705,10 +740,7 @@ def test_callbackclass_safe_logger(EvilBaseClass):
     ),
 )
 def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, strict):
-    if strict is not None:
-        monkeypatch.setenv("BLUESKY_DEBUG_CALLBACKS", strict)
-    else:
-        monkeypatch.delenv("BLUESKY_DEBUG_CALLBACKS", raising=False)
+    monkeypatch.setattr(core_callbacks, "BLUESKY_DEBUG_CALLBACKS", strict)
     logger = MagicMock()
 
     @make_class_safe(logger=logger, to_wrap=tuple(x.name for x in documents))
@@ -729,16 +761,16 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, stri
     assert logger.exception.call_count == len(documents)
 
 
-def test_in_plan_qt_callback(RE, hw):
+def test_in_plan_qt_callback(single_RE):
     from bluesky.callbacks.mpl_plotting import _get_teleporter
 
     _get_teleporter()
 
-    def my_plan():
-        motor = hw.motor
-        det = hw.det
+    RE = single_RE
 
-        motor.delay = 1
+    def my_plan():
+        motor = MovableSignal(name="motor")
+        det = ReadableSignal(name="det")
 
         plan = bp.scan([det], motor, -5, 5, 25)
         plan = subs_wrapper(bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name))

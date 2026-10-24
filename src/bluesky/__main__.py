@@ -2,14 +2,13 @@
 
 from argparse import ArgumentParser
 from collections.abc import Sequence
-from typing import Union
 
 from . import __version__
 
 __all__ = ["main"]
 
 
-def main(args: Union[Sequence[str], None] = None) -> None:
+def main(args: Sequence[str] | None = None) -> None:
     """Argument parser for the CLI."""
 
     parser = ArgumentParser()

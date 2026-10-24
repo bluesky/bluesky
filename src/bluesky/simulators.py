@@ -1,12 +1,9 @@
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from itertools import dropwhile
 from time import time
 from typing import (
     Any,
-    Callable,
     Literal,
-    Optional,
-    Union,
     cast,
 )
 from warnings import warn
@@ -172,10 +169,10 @@ class RunEngineSimulator:
 
     def add_handler(
         self,
-        commands: Union[str, Sequence[str]],
+        commands: str | Sequence[str],
         handler: Callable[[Msg], object],
-        msg_filter: Optional[Union[str, Callable[[Msg], bool]]] = None,
-        index: Union[int, Literal["end"]] = 0,
+        msg_filter: str | Callable[[Msg], bool] | None = None,
+        index: int | Literal["end"] = 0,
     ):
         """Add the specified handler for a particular message.
 
@@ -203,17 +200,19 @@ class RunEngineSimulator:
         self.message_handlers.insert(
             cast(int, index if index != END else len(self.message_handlers)),
             _MessageHandler(
-                lambda msg: msg.command in commands
-                and (
-                    msg_filter is None
-                    or (callable(msg_filter) and msg_filter(msg))
-                    or (msg.obj and msg.obj.name == msg_filter)
+                lambda msg: (
+                    msg.command in commands
+                    and (
+                        msg_filter is None
+                        or (callable(msg_filter) and msg_filter(msg))
+                        or (msg.obj and msg.obj.name == msg_filter)
+                    )
                 ),
                 handler,
             ),
         )
 
-    def add_read_handler_for(self, obj: Readable, value: Optional[Any]):
+    def add_read_handler_for(self, obj: Readable, value: Any | None):
         """
         Convenience method to register a handler to return a result from a
         single-valued 'read' command.
@@ -302,7 +301,7 @@ class RunEngineSimulator:
         self.add_handler(
             "wait",
             handler,
-            lambda msg: (group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group),
+            lambda msg: group == RunEngineSimulator.GROUP_ANY or msg.kwargs["group"] == group,
         )
 
     def add_callback_handler_for(
@@ -310,7 +309,7 @@ class RunEngineSimulator:
         command: str,
         document_name: str,
         document: dict,
-        msg_filter: Optional[Callable[[Msg], bool]] = None,
+        msg_filter: Callable[[Msg], bool] | None = None,
     ):
         """Add a handler to fire a callback when a matching command is encountered.
         Equivalent to add_callback_for_multiple(command, [[(document_name, document)]], msg_filter)
@@ -331,7 +330,7 @@ class RunEngineSimulator:
         self,
         command: str,
         docs: Sequence[Sequence[tuple[str, dict]]],
-        msg_filter: Optional[Callable[[Msg], bool]] = None,
+        msg_filter: Callable[[Msg], bool] | None = None,
     ):
         """Add a handler to fire callbacks in sequence when a matching command is encountered.
 
@@ -409,7 +408,7 @@ class RunEngineSimulator:
 def assert_message_and_return_remaining(
     messages: list[Msg],
     predicate: Callable[[Msg], bool],
-    group: Optional[str] = None,
+    group: str | None = None,
 ):
     """Find the next message matching the predicate, assert that we found it.
 

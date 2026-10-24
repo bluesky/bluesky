@@ -1,5 +1,4 @@
 import asyncio
-import sys
 
 import pytest
 
@@ -24,18 +23,14 @@ def test_call_in_bluesky_event_loop(RE):
         nonlocal event_loop
         event_loop = asyncio.get_running_loop()
 
-    if sys.version_info >= (3, 10):
-        # For some reason asyncio.run reuses the RE loop, then closes
-        # it at the end on python 3.9 and below, which makes test_examples.py
-        # fail, so skip this bit for that python
-        asyncio.run(check())
-        assert event_loop and event_loop != RE._loop
+    asyncio.run(check())
+    assert event_loop and event_loop != RE._loop
 
     call_in_bluesky_event_loop(check())
     assert event_loop == RE._loop
 
 
-def test_autoawait_in_bluesky_event_loop(RE):
+def test_autoawait_in_bluesky_event_loop(RE, request):
     event_loop = None
 
     async def check():
@@ -43,6 +38,19 @@ def test_autoawait_in_bluesky_event_loop(RE):
         event_loop = asyncio.get_running_loop()
 
     IPython = pytest.importorskip("IPython")
+
+    # IPython's default autoawait machinery creates its own asyncio event loop
+    # (cached in ``IPython.core.async_helpers``).  Close it on teardown so it is
+    # not leaked (ResourceWarning: unclosed event loop / socket) at shutdown.
+    def close_ipython_loop():
+        from IPython.core.async_helpers import get_asyncio_loop
+
+        loop = get_asyncio_loop()
+        if loop is not None and not loop.is_closed():
+            loop.close()
+
+    request.addfinalizer(close_ipython_loop)
+
     ip = IPython.core.interactiveshell.InteractiveShell(user_ns=locals())
     # Check that without the autoawait we get the wrong event loop
     ip.run_cell("await check()")

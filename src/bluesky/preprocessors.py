@@ -29,6 +29,9 @@ from .utils import (
 )
 from .utils import short_uid as _short_uid
 
+# Commands whose object should be lazily staged before the message is processed.
+_LAZY_STAGE_COMMANDS = {"read", "set", "trigger", "kickoff"}
+
 
 def plan_mutator(plan, msg_proc):
     """
@@ -107,6 +110,11 @@ def plan_mutator(plan, msg_proc):
                 # 'new_gen')
                 if id(exhausted_gen) in tail_result_cache:
                     ret = tail_result_cache.pop(id(exhausted_gen))
+                else:
+                    # No cached tail result for this generator, so there is no
+                    # value to hand back; use None instead of a stale value
+                    # left over from a prior loop iteration.
+                    ret = None
 
                 result_stack.append(ret)
 
@@ -341,7 +349,8 @@ def print_summary_wrapper(plan):
         elif cmd == "create":
             read_cache = []
         elif cmd == "read":
-            read_cache.append(msg.obj.name)
+            devices = (msg.obj, *msg.args)
+            read_cache += [device.name for device in devices]
         elif cmd == "save":
             print(f"  Read {read_cache}")
         return msg
@@ -357,7 +366,8 @@ def run_wrapper(plan, *, md=None):
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
     md : dict, optional
-        metadata to be passed into the 'open_run' message
+        metadata to be passed into the 'open_run' message. Values must be
+        JSON-serializable and compatible with the event-model RunStart schema.
     """
     rs_uid = yield from open_run(md)
 
@@ -946,29 +956,28 @@ def lazily_stage_wrapper(plan):
         messages from plan with 'stage' messages inserted and 'unstage'
         messages appended
     """
-    COMMANDS = set(["read", "set", "trigger", "kickoff"])  # noqa: C405
     # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
 
     def inner(msg):
-        if msg.command in COMMANDS and msg.obj not in devices_staged:
+        if msg.command in _LAZY_STAGE_COMMANDS:
             root = root_ancestor(msg.obj)
+            if root not in devices_staged:
 
-            def new_gen():
-                # Here we insert a 'stage' message
-                ret = yield Msg("stage", root)
-                # and cache the result
-                if ret is None:
-                    # The generator may be being list-ified.
-                    # This is a hack to make that possible.
-                    ret = [root]
-                devices_staged.extend(ret)
-                # and then proceed with our regularly scheduled programming
-                yield msg
+                def new_gen():
+                    # Here we insert a 'stage' message
+                    ret = yield Msg("stage", root)
+                    # and cache the result
+                    if ret is None:
+                        # The generator may be being list-ified.
+                        # This is a hack to make that possible.
+                        ret = [root]
+                    devices_staged.extend(ret)
+                    # and then proceed with our regularly scheduled programming
+                    yield msg
 
-            return new_gen(), None
-        else:
-            return None, None
+                return new_gen(), None
+        return None, None
 
     def inner_unstage_all():
         yield from unstage_all(*reversed(devices_staged))
@@ -1087,7 +1096,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
 
     # if we move a pseudo positioner also stash it's children
     if obj in coupled_parents:
-        for c, p in zip(obj.pseudo_positioners, setpoint):
+        for c, p in zip(obj.pseudo_positioners, setpoint, strict=True):
             initial_positions[c] = p
 
     # if we move a pseudo single, also stash it's parent and siblings
@@ -1095,7 +1104,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     if parent in coupled_parents and obj in parent.pseudo_positioners:
         parent_pos = parent.position
         initial_positions[parent] = parent_pos
-        for c, p in zip(parent.pseudo_positioners, parent_pos):
+        for c, p in zip(parent.pseudo_positioners, parent_pos, strict=True):
             initial_positions[c] = p
 
     # TODO forbid mixed pseudo / real motion
@@ -1134,18 +1143,21 @@ def relative_set_wrapper(plan, devices=None):
             return msg
 
     def insert_reads(msg):
+        if msg.command != "set":
+            return None, None
+
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
-        if (msg.command == "set") and eligible and not seen:
-            return (
-                pchain(
-                    __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
-                    single_gen(msg),
-                ),
-                None,
-            )
-        else:
+        if not eligible or seen:
             return None, None
+
+        return (
+            pchain(
+                __read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents),
+                single_gen(msg),
+            ),
+            None,
+        )
 
     plan = plan_mutator(plan, insert_reads)
     plan = msg_mutator(plan, rewrite_pos)

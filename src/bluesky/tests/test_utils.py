@@ -1,16 +1,17 @@
 import asyncio
+import gc
 import operator
 import time
 import warnings
+from enum import Enum
 from functools import reduce
 from unittest.mock import patch
 
 import numpy as np
-import orjson
 import pytest
 from cycler import cycler
 
-from bluesky import RunEngine, RunEngineInterrupted
+from bluesky import RunEngineInterrupted
 from bluesky.plan_stubs import complete_all, mv
 from bluesky.preprocessors import pchain
 from bluesky.run_engine import WaitForTimeoutError
@@ -18,12 +19,13 @@ from bluesky.utils import (
     AsyncInput,
     CallbackRegistry,
     Msg,
+    already_warned,
     ensure_generator,
     is_movable,
     is_plan,
     merge_cycler,
+    msg_to_json_safe_dict,
     plan,
-    truncate_json_overflow,
     warn_if_msg_args_or_kwargs,
 )
 
@@ -379,6 +381,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
         # Now delete all the callable objects one by one
         for n in range(len(obj_to_delete)):
             obj_to_delete[n] = None  # Overwriting the reference deletes the object
+            # Collect now, rather than leaving it to whenever the cyclic collector
+            # next runs. Without this the assertions below turn on collection
+            # timing rather than on what the registry holds: the class method
+            # cases passed for years while asserting the opposite of what the
+            # registry did, because the collector happened not to run in between.
+            gc.collect()
 
             # Check the function composition
             if callable_type in [
@@ -441,6 +449,78 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                     f"Incorrect number of callbacks for '{sig_name}'"
                 )
             _process_each_signal(n_start_check=n + 1)
+
+
+def test_CallbackRegistry_class_method_survives_collection_of_its_class():
+    """A class method callback is held strongly, so collecting the class is not enough.
+
+    ``__self__`` of a class method is the class itself, which is weakly
+    referenceable. Taking a weak reference to it would unsubscribe the callback
+    once the class was collected -- invisible for a class defined in a module,
+    which never is, but not for one created dynamically.
+    """
+
+    def make_instance():
+        class C:
+            @classmethod
+            def cb(cls, out):
+                out.append("called")
+
+        return C()
+
+    reg = CallbackRegistry()
+    instance = make_instance()
+    reg.connect("sig", instance.cb)
+
+    # Drop every reference the caller holds, to the instance and so to the class.
+    instance = None
+    gc.collect()
+
+    assert len(reg.callbacks["sig"]) == 1
+    out = []
+    reg.process("sig", out)
+    assert out == ["called"]
+
+
+def test_CallbackRegistry_callback_on_unweakreferenceable_instance():
+    """An instance that cannot be weakly referenced keeps a working callback.
+
+    ``__slots__`` without ``__weakref__`` makes ``ref()`` raise, and the fallback
+    used to keep the *unbound* function, which then got called without its
+    instance -- at process time, long after connect had reported success.
+    """
+
+    class Slotted:
+        __slots__ = ()
+
+        def cb(self, out):
+            out.append("called")
+
+    reg = CallbackRegistry()
+    instance = Slotted()
+    reg.connect("sig", instance.cb)
+
+    out = []
+    reg.process("sig", out)
+    assert out == ["called"]
+
+
+def test_CallbackRegistry_bound_method_still_unsubscribes_on_death():
+    """The weak reference an ordinary bound method relies on is unchanged."""
+
+    class C:
+        def cb(self, out):
+            out.append("called")
+
+    reg = CallbackRegistry()
+    instance = C()
+    reg.connect("sig", instance.cb)
+    assert len(reg.callbacks["sig"]) == 1
+
+    instance = None
+    gc.collect()
+
+    assert "sig" not in reg.callbacks
 
 
 def test_CallbackRegistry_2():
@@ -520,6 +600,36 @@ https://github.com/bluesky/bluesky/issues"""
     assert len(recwarn) == 0
 
 
+def test_msg_args_only_warns_once():
+    """The warn-once dedupe must also apply when only positional args are passed.
+
+    Regression test for an operator-precedence bug where
+    ``args or kwargs and not already_warned.get(...)`` parsed as
+    ``args or (kwargs and ...)``. With that precedence a truthy ``args`` short
+    circuits before ``already_warned`` is ever consulted *or* recorded, so the
+    dedupe flag is never set and every call re-warns.
+    """
+
+    class MyDevice:
+        def kickoff(self, *args, **kwargs):
+            pass
+
+    device = MyDevice()
+    msg = Msg("kickoff-args-only")
+    # Ensure a clean dedupe state for this command.
+    already_warned.pop(msg.command, None)
+
+    # A call with positional args must record the dedupe flag.
+    with pytest.warns(UserWarning):
+        warn_if_msg_args_or_kwargs(msg, device.kickoff, ("positional",), {})
+    assert already_warned.get(msg.command) is True
+
+    # Second call with args must be deduped: no warning is emitted.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # any warning would raise
+        warn_if_msg_args_or_kwargs(msg, device.kickoff, ("positional",), {})
+
+
 @plan
 def sample_plan():
     return (yield Msg("null"))
@@ -535,9 +645,9 @@ def non_iterating_plan():
 
 
 @pytest.mark.parametrize("gen_func, iterated", [(iterating_plan, True), (non_iterating_plan, False)])
-def test_warning_behavior(gen_func, iterated):
+def test_warning_behavior(gen_func, iterated, single_RE):
     """Test that warnings are issued correctly based on iteration."""
-    RE = RunEngine()
+    RE = single_RE
     if iterated:
         with warnings.catch_warnings(record=True) as record:
             warnings.simplefilter("always")
@@ -556,8 +666,8 @@ def pchain_plan():
     yield from pchain(sample_plan(), pause_plan(), sample_plan())
 
 
-def test_warnings_with_interruption():
-    RE = RunEngine()
+def test_warnings_with_interruption(single_RE):
+    RE = single_RE
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
         with pytest.raises(RunEngineInterrupted):
@@ -637,46 +747,103 @@ def test_async_input_does_not_block_event_loop(RE, capsys):
     RE(plan())
 
 
-def test_truncate_json_overflow():
-    # Test with a large integer
-    data = {"large_pos_int": 2**60, "large_neg_int": -(2**60)}
-    truncated_data = truncate_json_overflow(data)
-    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
-    for val in orjson.loads(orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)).values():
-        assert val is not None
+class _NamedDevice:
+    def __init__(self, name):
+        self.name = name
 
-    # Test with a large float
-    data = {"large_pos_float": 2e308, "large_neg_float": -2e308}
-    truncated_data = truncate_json_overflow(data)
-    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
-    for val in orjson.loads(orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)).values():
-        assert val is not None
+    def __repr__(self):
+        return f"_NamedDevice(name={self.name!r})"
 
-    # Test with a list of large integers and floats
-    data = [[2**60, -(2**60)], [2e308, -2e308]]
-    truncated_data = truncate_json_overflow(data)
-    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
 
-    # Test with a dictionary containing various types
-    data = {
-        "int": 42,
-        "float": 3.14,
-        "str": "Hello, world!",
-        "list": [1, 2, 3],
-        "dict": {"key": "value"},
-        "large_int": 2**60,
-        "large_float": 2e308,
-        "nested": {
-            "large_neg_int": -(2**60),
-            "large_neg_float": -2e308,
-            "list_of_large_ints": [2**60, -(2**60)],
-            "list_of_large_floats": [2e308, -2e308],
-        },
+class _Color(Enum):
+    RED = "red"
+    ANSWER = 42
+
+
+def test_serialize_basic_message():
+    msg = Msg("set", None, 5, group="g1")
+    assert msg_to_json_safe_dict(msg) == {
+        "command": "set",
+        "obj": None,
+        "args": [5],
+        "kwargs": {"group": "g1"},
+        "run": None,
     }
-    truncated_data = truncate_json_overflow(data)
-    assert orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER)
 
-    # Test with a NaN value
-    data = {"nan": float("nan")}
-    truncated_data = truncate_json_overflow(data)
-    assert orjson.loads(orjson.dumps(truncated_data, option=orjson.OPT_STRICT_INTEGER))["nan"] is None
+
+def test_serialize_returns_json_safe_dict():
+    import json
+
+    device = _NamedDevice("det1")
+    msg = Msg("trigger", device, np.int64(3), value=np.float64(1.5))
+    doc = msg_to_json_safe_dict(msg)
+    # Round-trips through json without raising.
+    assert json.loads(json.dumps(doc)) == doc
+
+
+def test_serialize_coerces_device_to_repr():
+    device = _NamedDevice("motor")
+    msg = Msg("set", device, 1)
+    assert msg_to_json_safe_dict(msg)["obj"] == repr(device)
+
+
+def test_serialize_coerces_enum_to_value():
+    msg = Msg("set", None, _Color.RED, answer=_Color.ANSWER)
+    doc = msg_to_json_safe_dict(msg)
+    assert doc["args"] == ["red"]
+    assert doc["kwargs"] == {"answer": 42}
+
+
+def test_serialize_coerces_numpy_scalars_and_arrays():
+    msg = Msg(
+        "set",
+        None,
+        np.int64(7),
+        np.float64(2.5),
+        np.array([1, 2, 3]),
+    )
+    assert msg_to_json_safe_dict(msg)["args"] == [7, 2.5, [1, 2, 3]]
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (float("nan"), None),
+        (float("inf"), "Infinity"),
+        (float("-inf"), "-Infinity"),
+        (np.float64("nan"), None),
+        (np.float64("inf"), "Infinity"),
+    ],
+)
+def test_serialize_coerces_non_finite_floats(value, expected):
+    msg = Msg("set", None, value)
+    assert msg_to_json_safe_dict(msg)["args"] == [expected]
+
+
+def test_serialize_recurses_into_containers():
+    device = _NamedDevice("det")
+    msg = Msg(
+        "configure",
+        None,
+        [1, _Color.RED, device],
+        mapping={"a": np.int64(1), "b": (float("inf"),)},
+    )
+    doc = msg_to_json_safe_dict(msg)
+    assert doc["args"] == [[1, "red", repr(device)]]
+    assert doc["kwargs"] == {"mapping": {"a": 1, "b": ["Infinity"]}}
+
+
+def test_serialize_coerces_dict_keys_to_str():
+    msg = Msg("set", None, run=1)
+    doc = msg_to_json_safe_dict(msg)
+    assert doc["run"] == 1
+    msg = Msg("configure", None, data={1: "one"})
+    assert msg_to_json_safe_dict(msg)["kwargs"] == {"data": {"1": "one"}}
+
+
+def test_serialize_bool_preserved():
+    msg = Msg("set", None, True, flag=False)
+    serialized = msg_to_json_safe_dict(msg)
+    assert serialized["args"] == [True]
+    assert serialized["kwargs"] == {"flag": False}
+    assert isinstance(serialized["args"][0], bool)

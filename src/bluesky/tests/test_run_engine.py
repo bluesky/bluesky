@@ -1,17 +1,22 @@
 import asyncio
+import logging
 import os
+import re
 import signal
+import sys
 import threading
 import time as ttime
 import types
 from collections import defaultdict
 from functools import partial
 from traceback import FrameSummary, extract_tb
+from typing import cast
 
 import pytest
 from event_model import DocumentNames
 
 from bluesky import Msg, RunEngine
+from bluesky import plans as bp
 from bluesky.plan_stubs import (
     abs_set,
     checkpoint,
@@ -33,11 +38,12 @@ from bluesky.preprocessors import (
     run_wrapper,
     subs_wrapper,
 )
-from bluesky.protocols import Status
+from bluesky.protocols import Status, StatusWithResult
 from bluesky.run_engine import (
     FailedStatus,
     IllegalMessageSequence,
     NoReplayAllowed,
+    PlanHalt,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
@@ -45,9 +51,12 @@ from bluesky.run_engine import (
     TransitionError,
     WaitForTimeoutError,
 )
+from bluesky.suspenders import SuspendBoolHigh
 from bluesky.tests import requires_ophyd, uses_os_kill_sigint
 from bluesky.tests.utils import DocCollector, MsgCollector
+from bluesky.utils import SigintHandler
 
+from .conftest import _error_on_unclosed_tasks
 from .utils import _careful_event_set, _fabricate_asycio_event
 
 
@@ -486,6 +495,86 @@ def test_stage_and_unstage_status_objects(RE):
     assert 2 <= stop - start < 3
 
 
+def test_execute(RE):
+    from ophyd import StatusBase
+
+    executed = {}
+    finished = {}
+
+    class Dummy:
+        name = "dummy"
+
+        def _callback(self, d: dict, st: Status):
+            d[self.name] = True
+            st.set_finished()  # type: ignore
+
+        def execute(self, *args, **kwargs) -> Status:
+            st = StatusBase()
+            executed[self.name] = (args, kwargs)
+            threading.Timer(0.1, self._callback, args=[finished, st]).start()
+            return st
+
+    dummy = Dummy()
+
+    def my_plan():
+        yield Msg("execute", dummy, group="g", execute_args=(1, 2), execute_kwargs={"a": 3})
+        assert executed == {"dummy": ((1, 2), {"a": 3})}
+        assert not finished
+        yield Msg("wait", group="g")
+        assert finished == {"dummy": True}
+
+    RE(my_plan())
+
+    assert executed == {"dummy": ((1, 2), {"a": 3})}
+    assert finished == {"dummy": True}
+
+
+def test_execute_returns_status_with_result(RE):
+    class ResultStatus(StatusWithResult[str]):
+        def add_callback(self, callback) -> None:
+            callback(self)
+
+        def exception(self, timeout=0.0):
+            return None
+
+        @property
+        def done(self) -> bool:
+            return True
+
+        @property
+        def success(self) -> bool:
+            return True
+
+        def result(self) -> str:
+            return "hello"
+
+    class Dummy:
+        name = "dummy"
+
+        def execute(self, *args, **kwargs) -> Status:
+            return ResultStatus()
+
+    dummy = Dummy()
+    captured = {}
+
+    def my_plan():
+        captured["status"] = yield Msg("execute", dummy, group="g", execute_args=(1,))
+        yield Msg("wait", group="g")
+
+    RE(my_plan())
+
+    assert isinstance(captured["status"], StatusWithResult)
+    assert captured["status"].result() == "hello"
+
+
+def test_execute_bad_obj(RE, hw):
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("does not implement all Executable methods"),
+    ):
+        RE([Msg("execute", hw.motor)])
+
+
 def test_bad_call_args(RE):
     with pytest.raises(Exception):  # noqa: B017
         RE(53)
@@ -721,96 +810,155 @@ def test_exit_raise(RE, unpause_func, excp):
     assert flag
 
 
+@pytest.fixture
+def blocking_motor():
+    """A Movable whose set waits for ``status`` and whose stop waits for ``stop_released``.
+
+    A watchdog releases both after 10s, so that a lost signal fails the test
+    rather than hanging it.
+    """
+    from ophyd import StatusBase
+
+    class BlockingMovable:
+        def __init__(self):
+            self.set_values = []
+            self.set_called = threading.Event()
+            self.status = StatusBase()
+            self.stop_called = threading.Event()
+            self.stop_released = threading.Event()
+
+        def set(self, value):
+            self.set_values.append(value)
+            self.set_called.set()
+            return self.status
+
+        async def stop(self, *, success=False):
+            self.stop_called.set()
+            while not self.stop_released.is_set():
+                await asyncio.sleep(0.01)
+
+    motor = BlockingMovable()
+
+    def release():
+        motor.stop_released.set()
+        motor.status.set_finished()
+
+    watchdog = threading.Timer(10, release)
+    watchdog.start()
+    yield motor
+    watchdog.cancel()
+
+
 @uses_os_kill_sigint
-def test_sigint_three_hits(RE, hw):
-    import time
-
-    motor = hw.motor
-    motor.delay = 0.5
-
-    pid = os.getpid()
-
-    def sim_kill(n):
-        for j in range(n):  # noqa: B007
-            time.sleep(0.05)
-            os.kill(pid, signal.SIGINT)
-
-    lp = RE.loop
-    motor.loop = lp
+@requires_ophyd
+def test_sigint_three_hits(RE, deterministic_sigint, blocking_motor):
+    motor = blocking_motor
+    states = []
 
     def self_sig_int_plan():
-        threading.Timer(0.05, sim_kill, (3,)).start()
         yield from abs_set(motor, 1, wait=True)
 
-    start_time = ttime.time()
-    with pytest.raises(RunEngineInterrupted):
-        RE(finalize_wrapper(self_sig_int_plan(), abs_set(motor, 0, wait=True)))
-    end_time = ttime.time()
-    # not enough time for motor to cleanup, but long enough to start
-    assert 0.05 < end_time - start_time < 0.2
-    RE.abort()  # now cleanup
+    with deterministic_sigint() as sigint:
 
-    done_cleanup_time = ttime.time()
-    # this should be 0.5 (the motor.delay) above, leave sloppy for CI
-    assert 0.3 < done_cleanup_time - end_time < 0.6
+        def sim_kill():
+            motor.set_called.wait(timeout=5)
+            # Deferred pause, waiting for a checkpoint that never comes
+            sigint.send()
+            # Immediate pause, which stops the motor
+            sigint.send()
+            # The stop is held, so the third hit lands while the RE is pausing
+            motor.stop_called.wait(timeout=5)
+            states.append(RE.state)
+            sigint.send()
+            motor.stop_released.set()
+
+        sender = threading.Thread(target=sim_kill, daemon=True)
+        sender.start()
+        with pytest.raises(RunEngineInterrupted):
+            RE(finalize_wrapper(self_sig_int_plan(), abs_set(motor, 0, wait=True)))
+        sender.join(timeout=10)
+
+    assert states == ["pausing"]
+    # All three reached the RE's handler, none reached pytest
+    assert sigint.handlers[0]._count == 3
+    assert RE.state == "paused"
+    assert motor.set_values == [1]
+
+    motor.status.set_finished()
+    RE.abort()
+    assert RE.state == "idle"
+    assert motor.set_values == [1, 0]
 
 
 @uses_os_kill_sigint
-def test_sigint_many_hits_pln(RE):
-    pid = os.getpid()
-
-    def sim_kill(n):
-        for j in range(n):
-            print("KILL", j)
-            ttime.sleep(0.05)
-            os.kill(pid, signal.SIGINT)
+def test_sigint_many_hits_pln(RE, deterministic_sigint):
+    plan_started = threading.Event()
 
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
+        plan_started.set()
         for j in range(100):  # noqa: B007
             ttime.sleep(0.1)
         yield Msg("null")
 
-    start_time = ttime.time()
-    timer = threading.Timer(0.2, sim_kill, (11,))
-    timer.start()
-    with pytest.raises(RunEngineInterrupted):
-        RE(hanging_plan())
+    with deterministic_sigint() as sigint:
+
+        def sim_kill():
+            plan_started.wait(timeout=5)
+            for _ in range(11):
+                sigint.send()
+
+        threading.Thread(target=sim_kill, daemon=True).start()
+        start_time = ttime.time()
+        with pytest.raises(RunEngineInterrupted):
+            RE(hanging_plan())
+
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 5
     # The KeyboardInterrupt will have been converted to a hard pause that
     # the test plan can not handle so we abort and go to idle.
     assert RE.state == "idle"
-    timer.join()
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 12),
+    reason=(
+        "Hangs on Python <3.12 due to a possible CPython bug: after "
+        "PyThreadState_SetAsyncExc the main thread deadlocks and "
+        "never reaches the subsequent blocking_event.wait(). "
+        "Issue only reproduces on CI."
+    ),
+)
 @uses_os_kill_sigint
-def test_sigint_many_hits_panic(RE):
-    raise pytest.skip("hangs tests on exit")
-    pid = os.getpid()
+def test_sigint_many_hits_panic(RE, deterministic_sigint):
+    event = threading.Event()
+    wait_forever_event = threading.Event()
 
-    def sim_kill(n):
-        for j in range(n):
-            print("KILL", j, ttime.monotonic() - start_time)
-            ttime.sleep(0.05)
-            os.kill(pid, signal.SIGINT)
+    def msg_hook(msg):
+        if msg.command == "null":
+            event.set()
+
+    RE.msg_hook = msg_hook
 
     def hanging_plan():
-        "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
+        "a plan that blocks the RunEngine's normal Ctrl+C handing with a wait"
         yield Msg("null")
-        ttime.sleep(5)
+        wait_forever_event.wait()
         yield Msg("null")
 
-    start_time = ttime.monotonic()
-    timer = threading.Timer(0.2, sim_kill, (11,))
-    timer.start()
-    with pytest.raises(RunEngineInterrupted):
-        RE(hanging_plan())
-    # Check that hammering SIGINT escaped from that 5-second sleep.
-    assert (ttime.monotonic() - start_time) < 2.5
+    with deterministic_sigint() as sigint:
+
+        def sim_kill():
+            event.wait(timeout=5)
+            for _ in range(11):
+                sigint.send()
+
+        threading.Thread(target=sim_kill, daemon=True).start()
+        with pytest.raises(RunEngineInterrupted):
+            RE(hanging_plan())
+
     # The KeyboardInterrupt but because we could not shut down, panic!
     assert RE.state == "panicked"
-    timer.join()
 
     with pytest.raises(RuntimeError):
         RE([])
@@ -830,16 +978,12 @@ def test_sigint_many_hits_panic(RE):
     with pytest.raises(RuntimeError):
         RE.request_pause()
 
+    wait_forever_event.set()
+
 
 @uses_os_kill_sigint
-def test_sigint_many_hits_cb(RE):
-    pid = os.getpid()
-
-    def sim_kill(n):
-        for j in range(n):  # noqa: B007
-            print("KILL")
-            ttime.sleep(0.05)
-            os.kill(pid, signal.SIGINT)
+def test_sigint_many_hits_cb(RE, deterministic_sigint):
+    cb_started = threading.Event()
 
     @run_decorator()
     def infinite_plan():
@@ -847,19 +991,26 @@ def test_sigint_many_hits_cb(RE):
             yield Msg("null")
 
     def hanging_callback(name, doc):
+        cb_started.set()
         for j in range(100):  # noqa: B007
             ttime.sleep(0.1)
 
-    start_time = ttime.time()
-    timer = threading.Timer(0.2, sim_kill, (11,))
-    timer.start()
-    with pytest.raises(RunEngineInterrupted):
-        RE(infinite_plan(), {"start": hanging_callback})
+    with deterministic_sigint() as sigint:
+
+        def sim_kill():
+            cb_started.wait(timeout=5)
+            for _ in range(11):
+                sigint.send()
+
+        threading.Thread(target=sim_kill, daemon=True).start()
+        start_time = ttime.time()
+        with pytest.raises(RunEngineInterrupted):
+            RE(infinite_plan(), {"start": hanging_callback})
+
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 5
     # The KeyboardInterrupt will have been converted to a hard pause.
     assert RE.state == "idle"
-    timer.join()
 
 
 @uses_os_kill_sigint
@@ -899,6 +1050,486 @@ def test_no_context_manager(RE):
     # Hanging plan finished, but extra sleep did not
     assert 2 < delta < 5
     timer.join()
+
+
+@uses_os_kill_sigint
+def test_single_sigint_interrupt_no_checkpoint(RE, deterministic_sigint):
+    """A single SIGINT on a plan without a checkpoint continues running"""
+    event = threading.Event()
+
+    def msg_hook(msg):
+        if msg.command == "null":
+            event.set()
+
+    RE.msg_hook = msg_hook
+
+    with deterministic_sigint() as sigint:
+
+        def send_sigint():
+            # Wait for event
+            event.wait()
+            sigint.send()
+
+        def test_plan():
+            yield Msg("null")
+            # Keep SIGINT owned by the RunEngine until the hit has been handled
+            deadline = ttime.monotonic() + 5
+            while not sigint.handlers[0]._count and ttime.monotonic() < deadline:
+                yield Msg("sleep", None, 0.01)
+
+        # Single SIGINT defers a pause but plan finishes anyway
+        sigint_thread = threading.Thread(target=send_sigint, daemon=True)
+        sigint_thread.start()
+        RE(test_plan())
+        sigint_thread.join(timeout=10)
+
+    assert sigint.handlers[0]._count == 1
+    assert RE.state == "idle"
+
+
+@uses_os_kill_sigint
+def test_single_sigint_hits_checkpoint(RE):
+    """A single SIGINT on a plan with a checkpoint interrupts"""
+    pid = os.getpid()
+
+    event = threading.Event()
+
+    def msg_hook(msg):
+        if msg.command == "null":
+            event.set()
+
+    RE.msg_hook = msg_hook
+
+    def send_sigint():
+        event.wait()
+        os.kill(pid, signal.SIGINT)
+
+    def infinite_plan():
+        while True:
+            yield Msg("null")
+            yield from checkpoint()
+
+    # Single SIGINT reaches checkpoint
+    sigint_thread = threading.Thread(target=send_sigint, daemon=True)
+    sigint_thread.start()
+    with pytest.raises(RunEngineInterrupted):
+        RE(infinite_plan())
+
+    assert RE.state == "paused"
+    sigint_thread.join(timeout=0.1)
+
+
+@uses_os_kill_sigint
+def test_single_sigint_no_carry_over(RE):
+    """A single SIGINT does not pause at the next plan's checkpoint"""
+    pid = os.getpid()
+
+    wait_for_reached = threading.Event()
+    deferred_pause_done = cast(asyncio.Event, _fabricate_asycio_event(RE.loop))
+
+    def msg_hook(msg):
+        if msg.command == "wait_for":
+            wait_for_reached.set()
+
+    RE.msg_hook = msg_hook
+
+    _orig_request_pause = RE.request_pause
+
+    def _tracked_request_pause(defer=False):
+        result = _orig_request_pause(defer=defer)
+        if defer:
+            RE.loop.call_soon_threadsafe(deferred_pause_done.set)
+        return result
+
+    RE.request_pause = _tracked_request_pause
+
+    def send_sigint():
+        if wait_for_reached.wait(timeout=5):
+            os.kill(pid, signal.SIGINT)
+
+    def test_plan():
+        yield from wait_for([deferred_pause_done.wait], timeout=5)
+
+    # Single SIGINT defers a pause but plan finishes anyway
+    sigint_thread = threading.Thread(target=send_sigint, daemon=True)
+    sigint_thread.start()
+    RE(test_plan())
+    sigint_thread.join(timeout=5)
+    assert not sigint_thread.is_alive()
+
+    assert deferred_pause_done.is_set()
+
+    def checkpoint_plan():
+        for _ in range(10):
+            yield Msg("null")
+            yield from checkpoint()
+
+    RE(checkpoint_plan())
+    assert RE.state == "idle"
+
+
+@uses_os_kill_sigint
+def test_double_sigint_interrupts_now(RE):
+    """Two SIGINTs in succession interrupts immediately"""
+    pid = os.getpid()
+
+    running_event = threading.Event()
+    deferred_pause_done = threading.Event()
+
+    def msg_hook(msg):
+        if msg.command == "null":
+            running_event.set()
+
+    RE.msg_hook = msg_hook
+
+    _orig_request_pause = RE.request_pause
+
+    def _tracked_request_pause(defer=False):
+        result = _orig_request_pause(defer=defer)
+        if defer:
+            deferred_pause_done.set()
+        return result
+
+    RE.request_pause = _tracked_request_pause
+
+    def send_sigint():
+        running_event.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+        # Wait at least 100ms to send second SIGINT
+        ttime.sleep(0.15)
+        deferred_pause_done.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+
+    def test_plan():
+        while True:
+            yield Msg("null")
+
+    sigint_thread = threading.Thread(target=send_sigint, daemon=True)
+    sigint_thread.start()
+    with pytest.raises(RunEngineInterrupted):
+        RE(test_plan())
+
+    assert RE.state == "paused"
+
+    sigint_thread.join(timeout=0.1)
+
+
+@uses_os_kill_sigint
+def test_sigint_during_suspender_active(RE, hw):
+    pid = os.getpid()
+    states = []
+    running_event = threading.Event()
+    wait_for_reached = threading.Event()
+    deferred_pause_done = threading.Event()
+
+    def state_hook(new_state, old_state):
+        states.append((old_state, new_state))
+        if new_state == "running" and old_state == "idle":
+            running_event.set()
+
+    RE.state_hook = state_hook
+
+    def msg_hook(msg):
+        if msg.command == "wait_for":
+            wait_for_reached.set()
+
+    RE.msg_hook = msg_hook
+
+    _orig_request_pause = RE.request_pause
+
+    def _tracked_request_pause(defer=False):
+        result = _orig_request_pause(defer=defer)
+        if defer:
+            deferred_pause_done.set()
+        return result
+
+    RE.request_pause = _tracked_request_pause
+
+    bool_signal = hw.bool_sig
+    suspender = SuspendBoolHigh(bool_signal)
+    suspender.install(RE)
+    bool_signal.put(False)
+
+    def send_sigints():
+        wait_for_reached.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+        # Wait at least 100ms to send second SIGINT
+        ttime.sleep(0.15)
+        deferred_pause_done.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+
+    def trigger_suspend():
+        running_event.wait(timeout=5)
+        bool_signal.put(True)
+
+    def infinite_plan():
+        while True:
+            yield Msg("null")
+
+    sigint_thread = threading.Thread(target=send_sigints, daemon=True)
+    suspend_thread = threading.Thread(target=trigger_suspend, daemon=True)
+    sigint_thread.start()
+    suspend_thread.start()
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(infinite_plan())
+
+    bool_signal.put(False)
+    sigint_thread.join(timeout=5)
+    suspend_thread.join(timeout=5)
+
+    assert ("running", "suspending") in states
+    assert ("running", "pausing") in states
+    assert RE.state == "paused"
+
+
+@uses_os_kill_sigint
+def test_sigint_pause_during_active_suspension_no_devices(RE, hw):
+    pid = os.getpid()
+    states = []
+    wait_for_reached = threading.Event()
+    deferred_pause_done = threading.Event()
+
+    def state_hook(new_state, old_state):
+        states.append((old_state, new_state))
+
+    RE.state_hook = state_hook
+
+    def msg_hook(msg):
+        if msg.command == "wait_for":
+            wait_for_reached.set()
+
+    RE.msg_hook = msg_hook
+
+    _orig_request_pause = RE.request_pause
+
+    def _tracked_request_pause(defer=False):
+        result = _orig_request_pause(defer=defer)
+        if defer:
+            deferred_pause_done.set()
+        return result
+
+    RE.request_pause = _tracked_request_pause
+
+    bool_signal = hw.bool_sig
+    suspender = SuspendBoolHigh(bool_signal)
+    bool_signal.put(True)
+    RE.install_suspender(suspender)
+
+    def send_sigints():
+        wait_for_reached.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+        # Wait at least 100ms to send second SIGINT
+        ttime.sleep(0.15)
+        deferred_pause_done.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+
+    sigint_thread = threading.Thread(target=send_sigints, daemon=True)
+    sigint_thread.start()
+
+    def plan():
+        while True:
+            yield Msg("null")
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+
+    bool_signal.put(False)
+    sigint_thread.join(timeout=5)
+
+    assert ("running", "pausing") in states
+    assert RE.state == "paused"
+
+
+@uses_os_kill_sigint
+def test_sigint_in_not_pausable_state(RE):
+    """A SIGINT arriving while the RE is not pausable must not crash the
+    watcher thread.
+
+    Sequence of events:
+
+    1. ``send_sigints`` thread sends two SIGINTs (soft then hard) to
+       trigger a hard pause.  The RE transitions running -> pausing -> paused.
+    2. On the main thread's teardown path, ``GateContext.__exit__`` runs
+       *before* ``SigintHandler.__exit__`` (LIFO order).  It sleeps 0.15 s
+       to clear the signal handler's 0.1 s debounce window, then sends an
+       extra SIGINT.  Because ``SigintHandler`` is still installed, the
+       handler routes the signal to the watcher thread.
+    3. The watcher thread calls ``request_pause`` while the RE is paused
+       (not pausable), hitting ``TransitionError``.  Our monkey-patched
+       ``_tracked_request_pause`` sets ``transition_error_hit`` when this
+       happens.
+    4. We assert that the ``TransitionError`` was caught (not raised), and
+       prove the watcher thread survived by resuming + pausing a second time.
+
+    """
+    pid = os.getpid()
+
+    running_event = threading.Event()
+    deferred_pause_done = threading.Event()
+    hard_pause_done = threading.Event()
+    transition_error_hit = threading.Event()
+
+    def msg_hook(msg):
+        if msg.command == "null":
+            running_event.set()
+
+    RE.msg_hook = msg_hook
+
+    _orig_request_pause = RE.request_pause
+
+    def _tracked_request_pause(defer=False):
+        try:
+            result = _orig_request_pause(defer=defer)
+        except TransitionError:
+            transition_error_hit.set()
+            raise
+        if defer:
+            deferred_pause_done.set()
+        else:
+            hard_pause_done.set()
+        return result
+
+    RE.request_pause = _tracked_request_pause
+
+    class GateContext:
+        """Entered after SigintHandler (exited before it in LIFO order).
+
+        On exit, waits for the hard pause to complete, then sends an
+        extra SIGINT after 0.15 s (clearing the handler's 0.1 s debounce).
+        This guarantees the ``SigintHandler`` is still installed when the
+        extra signal arrives.
+        """
+
+        def __init__(self, RE):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            # Wait for the hard pause to land.
+            hard_pause_done.wait(timeout=5)
+            # Sleep past the 0.1 s debounce window so the signal handler
+            # accepts this SIGINT instead of silently dropping it.
+            ttime.sleep(0.15)
+            os.kill(pid, signal.SIGINT)
+            # Wait for the watcher thread to process the request and
+            # hit TransitionError.
+            transition_error_hit.wait(timeout=5)
+
+    RE.context_managers = [SigintHandler, GateContext]
+
+    def infinite_plan():
+        while True:
+            yield Msg("null")
+
+    def send_sigints():
+        running_event.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+        ttime.sleep(0.15)
+        deferred_pause_done.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+
+    sigint_thread = threading.Thread(target=send_sigints, daemon=True)
+    sigint_thread.start()
+    with pytest.raises(RunEngineInterrupted):
+        RE(infinite_plan())
+    sigint_thread.join(timeout=5)
+
+    assert transition_error_hit.is_set()
+    assert RE.state == "paused"
+
+    # Prove the watcher thread survived: resume the RE, then pause it
+    # again with SIGINTs.  If the watcher had died from an uncaught
+    # TransitionError, request_pause would never be called and the
+    # infinite plan would run forever.
+    running_event.clear()
+    deferred_pause_done.clear()
+
+    # Replace with a simple tracker and remove the gate for the
+    # resume cycle.
+    def _simple_tracked_request_pause(defer=False):
+        result = _orig_request_pause(defer=defer)
+        if defer:
+            deferred_pause_done.set()
+        return result
+
+    RE.request_pause = _simple_tracked_request_pause
+    RE.context_managers = [SigintHandler]
+
+    def send_sigints_again():
+        running_event.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+        ttime.sleep(0.15)
+        deferred_pause_done.wait(timeout=5)
+        os.kill(pid, signal.SIGINT)
+
+    sigint_thread2 = threading.Thread(target=send_sigints_again, daemon=True)
+    sigint_thread2.start()
+    with pytest.raises(RunEngineInterrupted):
+        RE.resume()
+    sigint_thread2.join(timeout=5)
+
+    assert RE.state == "paused"
+    RE.abort()
+
+
+@uses_os_kill_sigint
+def test_sigint_handler_original_sig_ign(RE):
+    """A non-callable original SIGINT disposition (``SIG_IGN``) must not crash
+    the handler when it forwards the signal.
+
+    ``SigintHandler`` captures whatever SIGINT disposition was installed before
+    ``__enter__`` as ``_original_handler``.  ``signal.getsignal`` can return a
+    non-callable sentinel (``SIG_IGN``/``SIG_DFL``) or ``None``, so the two
+    forwarding call sites must not blindly *call* it (that would raise
+    ``TypeError``).  ``_restore_and_reraise`` instead re-installs the original
+    disposition and re-raises, letting the OS handle it.
+
+    This test installs ``SIG_IGN`` as the original disposition, then drives the
+    installed handler closure through both forwarding paths:
+
+    1. The escape-hatch path (``_count`` reaches 11), and
+    2. The post-release ``if self._released:`` path.
+
+    For ``SIG_IGN`` the re-raised SIGINT is simply discarded, so this is safe to
+    run under pytest.  (``SIG_DFL`` is deliberately *not* tested: re-raising
+    under the default disposition would terminate the test process.)
+    """
+    original = signal.getsignal(signal.SIGINT)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    try:
+        handler_ctx = SigintHandler(RE)
+        with handler_ctx:
+            # The closure installed by __enter__ is now the active handler.
+            installed = signal.getsignal(signal.SIGINT)
+            assert callable(installed)
+            assert handler_ctx._original_handler == signal.SIG_IGN
+
+            # Drive the escape hatch: 11 invocations flip _released and forward
+            # to the original disposition via _restore_and_reraise.  None of
+            # these may raise TypeError.
+            handler_ctx._last_sigint_time = ttime.monotonic()
+            handler_ctx._count = 0
+            for _i in range(11):
+                # Space invocations past the 0.1s debounce using the real clock.
+                handler_ctx._last_sigint_time -= 0.2
+                installed(signal.SIGINT, None)
+
+            assert handler_ctx._released is True
+            # The escape hatch re-installed the original SIG_IGN disposition.
+            assert signal.getsignal(signal.SIGINT) == signal.SIG_IGN
+
+            # Post-release path: re-install our closure and fire again to
+            # exercise the ``if self._released:`` branch directly.
+            signal.signal(signal.SIGINT, installed)
+            installed(signal.SIGINT, None)
+
+            # Still no TypeError, and the original disposition is restored.
+            assert signal.getsignal(signal.SIGINT) == signal.SIG_IGN
+    finally:
+        signal.signal(signal.SIGINT, original)
 
 
 def test_many_context_managers(RE):
@@ -1197,7 +1828,6 @@ def test_rewindable_state_retrival(RE, start_state):
                 "wait",
                 "create",
                 "read",
-                "read",
                 "save",
                 "rewindable",
                 "close_run",
@@ -1213,7 +1843,6 @@ def test_rewindable_state_retrival(RE, start_state):
                 "trigger",
                 "wait",
                 "create",
-                "read",
                 "read",
                 "save",
                 "close_run",
@@ -1661,8 +2290,7 @@ def test_double_call(RE):
 
 @pytest.mark.parametrize("predeclare", [True, False])
 def test_num_events(RE, hw, db, predeclare, monkeypatch):
-    if predeclare:
-        monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", predeclare)
     RE.subscribe(db.insert)
 
     rs1 = RE(count([]))
@@ -1742,6 +2370,32 @@ def test_force_stop_exit_status(bail_func, status, RE):
     assert d.start[0]["uid"] == uid
     assert len(d.stop) == 1
     assert d.stop[uid]["exit_status"] == status
+
+
+@pytest.mark.parametrize(
+    "bail_func,exc_type",
+    [("stop", RequestStop), ("abort", RequestAbort), ("halt", PlanHalt)],
+)
+def test_paused_bail_exception_is_instance(bail_func, exc_type):
+    """``RunEngineResult.exception`` must be an exception *instance*, not a class.
+
+    Regression test: when paused, ``stop()``/``halt()`` set
+    ``self._exception`` to the exception *class* (``RequestStop`` / ``PlanHalt``)
+    rather than an instance, unlike ``abort()`` which uses ``RequestAbort()``.
+    """
+    RE = RunEngine({}, call_returns_result=True)
+
+    @run_decorator()
+    def bad_plan():
+        yield Msg("pause")
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(bad_plan())
+
+    rs = getattr(RE, bail_func)()
+    assert isinstance(rs.exception, exc_type)
+    # Guard against the class being stored instead of an instance.
+    assert not isinstance(rs.exception, type)
 
 
 def test_exceptions_exit_status(RE):
@@ -1945,22 +2599,24 @@ def test_unsubscribe(RE):
     assert len(RE.dispatcher._token_mapping) == 0
 
 
-@pytest.mark.parametrize("set_finished", [True, False])
-def test_wait_with_timeout(set_finished, RE):
+@pytest.fixture
+def device_pair():
     from ophyd import StatusBase
     from ophyd.device import Device
 
     class MockDevice(Device):
         def stage(self):
-            status = StatusBase()
-            if set_finished:
-                status.set_finished()
-            return status
+            return StatusBase()
 
-    mock_device = MockDevice(name="mock_device")
+    return MockDevice(name="device1"), MockDevice(name="device2")
 
+
+@pytest.mark.parametrize("set_finished", [True, False])
+def test_wait_with_timeout(set_finished, RE, device_pair):
     def plan():
-        yield Msg("stage", mock_device, group="test_group")
+        status = yield Msg("stage", device_pair[0], group="test_group")
+        if set_finished:
+            status.set_finished()
         yield from wait(group="test_group", timeout=0.1)
 
     if set_finished:
@@ -1968,6 +2624,110 @@ def test_wait_with_timeout(set_finished, RE):
     else:
         with pytest.raises(TimeoutError):
             RE(plan())
+
+
+def test_wait_then_add_to_groups(RE, device_pair):
+    def plan():
+        status1 = yield Msg("stage", device_pair[0], group="test_group")
+        done = yield from wait(group="test_group", timeout=0.001, error_on_timeout=False)
+        assert done is False
+        status2 = yield Msg("stage", device_pair[1], group="test_group")
+        done = yield from wait(group="test_group", timeout=0.001, error_on_timeout=False)
+        assert done is False
+        status1.set_finished()
+        status2.set_finished()
+        done = yield from wait(group="test_group", timeout=0.001)
+        assert done is True
+
+    RE(plan())
+
+
+async def finish_status_later(status, when: float, error: bool):
+    await asyncio.sleep(when)
+    if error:
+        status.set_exception(ValueError("failed"))
+    else:
+        status.set_finished()
+
+
+@pytest.mark.parametrize(
+    "raises,exception,duration",
+    [
+        (True, FailedStatus, 0.1),
+        (False, WaitForTimeoutError, 0.5),
+    ],
+)
+def test_wait_when_one_status_returns_raises(RE, device_pair, raises, exception, duration):
+    def plan():
+        yield Msg("stage", device_pair[0], group="test_group")
+        status2 = yield Msg("stage", device_pair[1], group="test_group")
+        asyncio.create_task(finish_status_later(status2, 0.05, raises))
+        yield from wait(group="test_group", timeout=0.5)
+
+    start = ttime.monotonic()
+    with pytest.raises(exception):
+        RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(duration, abs=0.1)
+
+
+@pytest.mark.parametrize(
+    "raises,exception,duration",
+    [
+        (True, FailedStatus, 0.1),
+        (False, WaitForTimeoutError, 0.5),
+    ],
+)
+def test_wait_returns_based_on_watch_raises(RE, device_pair, raises, exception, duration):
+    def plan():
+        yield Msg("stage", device_pair[0], group="test_group")
+        stage2 = yield Msg("stage", device_pair[1], group="watch_group")
+        asyncio.create_task(finish_status_later(stage2, 0.05, raises))
+        yield from wait(group="test_group", watch=("watch_group",), timeout=0.5)
+
+    start = ttime.monotonic()
+    with pytest.raises(exception):
+        RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(duration, abs=0.1)
+
+
+def test_set_finished_before_watch_completes_immediately(RE, device_pair):
+    def plan():
+        status = yield Msg("stage", device_pair[0], group="test_group")
+        status.set_finished()
+        yield Msg("stage", device_pair[1], group="watch_group")
+        yield from wait(group="test_group", timeout=0.1, watch=("watch_group",))
+
+    RE(plan())
+
+
+def test_watch_finished_before_set_return_when_set_finishes(RE, device_pair):
+    def plan():
+        status1 = yield Msg("stage", device_pair[0], group="test_group")
+        status2 = yield Msg("stage", device_pair[1], group="watch_group")
+        asyncio.create_task(finish_status_later(status1, 0.2, False))
+        asyncio.create_task(finish_status_later(status2, 0.05, False))
+        yield from wait(group="test_group", timeout=0.3, watch=("watch_group",))
+
+    start = ttime.monotonic()
+    RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(0.2, abs=0.05)
+
+
+def test_set_failed_before_watch_raises_immediately(RE, device_pair):
+    def plan():
+        status = yield Msg("stage", device_pair[0], group="test_group")
+        yield Msg("stage", device_pair[1], group="watch_group")
+        status.set_exception(Exception("Mock device failed"))
+        yield from wait(group="test_group", timeout=1.0, watch=("watch_group",))
+
+    start = ttime.monotonic()
+    with pytest.raises(FailedStatus):
+        RE(plan())
+    elapsed = ttime.monotonic() - start
+    assert elapsed == pytest.approx(0.0, abs=0.1)
 
 
 async def passing_coroutine():
@@ -2171,3 +2931,110 @@ def test_descriptor_order(RE):
                 assert list(doc["data_keys"]) == key_order
 
         RE(scan(dets, i1930.charlie, -1, 1, 2), lambda name, doc, key_order=key_order: check(key_order, name, doc))
+
+
+@requires_ophyd
+@pytest.mark.parametrize("wait", [True, False])
+def test_abs_set_fails(RE, wait):
+    from ophyd import Device, StatusBase
+
+    class FailingMovable(Device):
+        def set(self, value) -> Status:
+            status = StatusBase()
+            status.set_exception(LookupError("Movement failed"))
+            return status
+
+    device = FailingMovable(name="failing_device")
+
+    with pytest.raises(FailedStatus):
+        RE(abs_set(device, 10, wait=wait))
+
+
+def test_aborting_a_plan_parked_in_wait_for_cancels_what_it_waits_on(RE):
+    """The tasks a `wait_for` built are the RunEngine's to cancel.
+
+    Nothing else holds a reference to them, and `asyncio.wait` does not cancel
+    what it was waiting on when it is itself cancelled, so they outlived the
+    plan on a loop about to be closed.
+    """
+    cancelled = threading.Event()
+
+    async def never():
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    threading.Timer(0.2, RE.request_pause).start()
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg("wait_for", None, [never])])
+    RE.abort()
+
+    assert cancelled.wait(5)
+
+
+def test_verbose_round_trips_and_actually_silences(RE):
+    """``RE.verbose`` reports the logger, and setting it really silences.
+
+    Both halves go to the logger the adapter wraps: a `logging.LoggerAdapter`
+    has no ``disabled`` of its own, and nothing consults one if given it.
+    """
+    assert RE.verbose is True
+    assert RE.log.isEnabledFor(logging.ERROR)
+    try:
+        RE.verbose = False
+        assert RE.verbose is False
+        # And it is really quiet.
+        assert not RE.log.isEnabledFor(logging.ERROR)
+    finally:
+        RE.verbose = True
+    assert RE.verbose is True
+    assert RE.log.isEnabledFor(logging.ERROR)
+
+
+def test_the_leak_check_objects_to_a_task_left_running():
+    """The `RE` fixture's own check, tested directly.
+
+    Its body runs only when something leaks, which is never in a green suite,
+    so nothing would otherwise exercise it until the day it matters.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+
+        async def forever():
+            await asyncio.Event().wait()
+
+        task = loop.create_task(forever())
+
+        with pytest.raises(RuntimeError, match="Tasks still running"):
+            _error_on_unclosed_tasks(loop, "a_test_that_leaked")
+
+        # Cancelled, not merely complained about: the point of the check is
+        # that the next test does not inherit the task.
+        assert task.cancelled()
+    finally:
+        loop.close()
+
+
+def test_the_leak_check_stays_quiet_about_a_loop_that_stopped_answering():
+    """A panicked RunEngine is the one case that is not a leak.
+
+    Its loop has stopped running callbacks, so work left on it could never
+    have been finished or cancelled by the code under test. Objecting would be
+    objecting to the premise of `test_sigint_many_hits_panic`.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+
+        async def forever():
+            await asyncio.Event().wait()
+
+        task = loop.create_task(forever())
+
+        _error_on_unclosed_tasks(loop, "a_panicked_test", loop_answered=False)
+
+        # Tidied up just the same; only the objection is withheld.
+        assert task.cancelled()
+    finally:
+        loop.close()
