@@ -1937,6 +1937,7 @@ def fly_stub(
     *,
     collect_flush_period: float | None = None,
     stream_name: str | None = None,
+    collect: bool = False,
     watch: Sequence[str] = (),
 ) -> MsgGenerator[None]:
     """
@@ -1950,6 +1951,10 @@ def fly_stub(
         If set, will use `collect_while_completing` with the given flush period
     stream_name : str, optional
         If set, will declare a stream with the given name for all flyers
+    collect : bool, optional
+        If set, declare the stream from the flyers' `describe_collect`
+        rather than `describe`. Only used if `stream_name` is set.
+        Default is `False`.
     watch: set of watch groups, optional
         Additional groups to monitor while collecting from flyers.
         Will only be used if `collect_flush_period` is set.
@@ -1971,7 +1976,7 @@ def fly_stub(
     # If provided, attempt to declare single stream for all collectable detectors
     # note that if set, all detectors must produce the same number of events.
     if stream_name is not None:
-        yield from declare_stream(*dets, name=stream_name)
+        yield from declare_stream(*dets, name=stream_name, collect=collect)
 
     # Kickoff all flyers
     yield from kickoff_all(*flyers, wait=True)
