@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
-from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, TypeVar, runtime_checkable
+from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, runtime_checkable
 
 from event_model.documents import Datum, StreamDatum, StreamResource
 from event_model.documents.event import PartialEvent
@@ -10,10 +10,11 @@ from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 
-# TypedDict and Unpack are imported from typing_extensions rather than typing:
-# typing_extensions.TypedDict carries backported fixes recommended until Python
-# 3.12, and typing.Unpack is only available from Python 3.11 (floor is 3.10).
-from typing_extensions import TypedDict, Unpack
+# TypedDict, TypeVar and Unpack are imported from typing_extensions rather than
+# typing: typing_extensions.TypedDict carries backported fixes recommended until
+# Python 3.12, typing.TypeVar only accepts a default from Python 3.13, and
+# typing.Unpack is only available from Python 3.11 (floor is 3.10).
+from typing_extensions import TypedDict, TypeVar, Unpack
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
@@ -89,8 +90,8 @@ class Status(Protocol):
         ...
 
 
-#: Type variable for status objects with extended API
-StatusT = TypeVar("StatusT", bound=Status, covariant=True)
+#: Type variable for status objects with extended API, ``Status`` when not given
+StatusT = TypeVar("StatusT", bound=Status, covariant=True, default=Status)
 
 
 @runtime_checkable
@@ -357,9 +358,9 @@ class EventPageCollectable(Collectable, Protocol):
 
 
 @runtime_checkable
-class Movable(Protocol[T_co]):
+class Movable(Protocol[T_co, StatusT]):
     @abstractmethod
-    def set(self, *args: Unpack[tuple[T_co]]) -> Status:
+    def set(self, *args: Unpack[tuple[T_co]]) -> StatusT:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
@@ -374,7 +375,7 @@ class Location(Generic[T], TypedDict):
 
 
 @runtime_checkable
-class Locatable(Movable[T], Protocol):
+class Locatable(Movable[T, StatusT], Protocol):
     @abstractmethod
     def locate(self) -> SyncOrAsync[Location[T]]:
         """Return the current location of a Device.
@@ -533,7 +534,7 @@ class HasHints(HasName, Protocol):
 
 
 @runtime_checkable
-class NamedMovable(Movable[T_co], HasHints, Protocol):
+class NamedMovable(Movable[T_co, StatusT], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
     ...

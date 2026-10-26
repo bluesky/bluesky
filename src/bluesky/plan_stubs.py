@@ -320,7 +320,7 @@ def null() -> MsgGenerator[None]:
 
 @plan
 def abs_set(
-    obj: Movable[Any],
+    obj: Movable[Any, StatusT],
     *args: Any,
     group: Hashable | None = None,
     wait: bool = False,
@@ -368,7 +368,7 @@ def abs_set(
 
 @plan
 def rel_set(
-    obj: Movable[Any],
+    obj: Movable[Any, StatusT],
     *args: Any,
     group: Hashable | None = None,
     wait: bool = False,
@@ -418,7 +418,7 @@ def mv(
     group: Hashable | None = None,
     timeout: float | None = None,
     **kwargs: Any,
-) -> MsgGenerator[tuple[StatusT, ...]]:
+) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -467,7 +467,7 @@ mov = mv  # synonym
 @plan
 def mvr(
     *args: Movable[Any] | Any, group: Hashable | None = None, timeout: float | None = None, **kwargs: Any
-) -> MsgGenerator[tuple[StatusT, ...]]:
+) -> MsgGenerator[tuple[Status, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
