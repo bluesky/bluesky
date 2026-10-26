@@ -2079,7 +2079,7 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
         return ret
 
 
-class Plan(Generator[Msg, Any, P]):
+class Plan(MsgGenerator[P]):
     __slots__ = ("_iter", "_stack")
 
     def __init__(
