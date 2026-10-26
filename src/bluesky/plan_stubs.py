@@ -38,7 +38,7 @@ from .protocols import (
     Reading,
     Stageable,
     Status,
-    StatusType,
+    StatusT,
     StatusWithResult,
     Stoppable,
     T,
@@ -325,7 +325,7 @@ def abs_set(
     group: Hashable | None = None,
     wait: bool = False,
     **kwargs: Any,
-) -> MsgGenerator[StatusType]:
+) -> MsgGenerator[StatusT]:
     """
     Set a value. Optionally, wait for it to complete before continuing.
 
@@ -373,7 +373,7 @@ def rel_set(
     group: Hashable | None = None,
     wait: bool = False,
     **kwargs: Any,
-) -> MsgGenerator[StatusType]:
+) -> MsgGenerator[StatusT]:
     """
     Set a value relative to current value. Optionally, wait before continuing.
 
@@ -418,7 +418,7 @@ def mv(
     group: Hashable | None = None,
     timeout: float | None = None,
     **kwargs: Any,
-) -> MsgGenerator[tuple[StatusType, ...]]:
+) -> MsgGenerator[tuple[StatusT, ...]]:
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -467,7 +467,7 @@ mov = mv  # synonym
 @plan
 def mvr(
     *args: Movable[Any] | Any, group: Hashable | None = None, timeout: float | None = None, **kwargs: Any
-) -> MsgGenerator[tuple[StatusType, ...]]:
+) -> MsgGenerator[tuple[StatusT, ...]]:
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
@@ -635,11 +635,11 @@ def stop(obj: Stoppable) -> MsgGenerator:
 
 @plan
 def trigger(
-    obj: Triggerable[StatusType],
+    obj: Triggerable[StatusT],
     *,
     group: Hashable | None = None,
     wait: bool = False,
-) -> MsgGenerator[StatusType]:
+) -> MsgGenerator[StatusT]:
     """
     Trigger an acquisition. Optionally, wait for it to complete.
 
@@ -861,8 +861,8 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 
 @plan
 def prepare(
-    obj: Preparable[Any, StatusType], *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any
-) -> MsgGenerator[StatusType]:
+    obj: Preparable[Any, StatusT], *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any
+) -> MsgGenerator[StatusT]:
     """
     Prepare a device ready for trigger or kickoff.
 
@@ -897,12 +897,12 @@ def prepare(
 
 @plan
 def kickoff(
-    obj: Flyable[StatusType],
+    obj: Flyable[StatusT],
     *,
     group: Hashable | None = None,
     wait: bool = False,
     **kwargs: Any,
-) -> MsgGenerator[StatusType]:
+) -> MsgGenerator[StatusT]:
     """
     Kickoff one fly-scanning device.
 
@@ -942,8 +942,8 @@ def kickoff(
 
 @plan
 def kickoff_all(
-    *args: Flyable[StatusType], group: Hashable | None = None, wait: bool = True, **kwargs: Any
-) -> MsgGenerator[tuple[StatusType, ...]]:
+    *args: Flyable[StatusT], group: Hashable | None = None, wait: bool = True, **kwargs: Any
+) -> MsgGenerator[tuple[StatusT, ...]]:
     """
     Kickoff one or more fly-scanning devices.
 
@@ -971,7 +971,7 @@ def kickoff_all(
     :func:`bluesky.plan_stubs.wait`
     """
     group = group or str(uuid.uuid4())
-    statuses: list[StatusType] = []
+    statuses: list[StatusT] = []
 
     for flyable in args:
         ret = yield Msg("kickoff", flyable, group=group, **kwargs)
@@ -984,12 +984,12 @@ def kickoff_all(
 
 @plan
 def complete(
-    obj: Flyable[StatusType],
+    obj: Flyable[StatusT],
     *,
     group: Hashable | None = None,
     wait: bool = False,
     **kwargs: Any,
-) -> MsgGenerator[StatusType]:
+) -> MsgGenerator[StatusT]:
     """
     Tell a flyable, 'stop collecting, whenever you are ready'.
 
@@ -1036,8 +1036,8 @@ def complete(
 
 @plan
 def complete_all(
-    *args: Flyable[StatusType], group: Hashable | None = None, wait: bool = False, **kwargs: Any
-) -> MsgGenerator[tuple[StatusType, ...]]:
+    *args: Flyable[StatusT], group: Hashable | None = None, wait: bool = False, **kwargs: Any
+) -> MsgGenerator[tuple[StatusT, ...]]:
     """
     Tell one or more flyable objects, 'stop collecting, whenever you are ready'.
 
@@ -1071,7 +1071,7 @@ def complete_all(
     :func:`bluesky.plan_stubs.wait`
     """
     group = group or str(uuid.uuid4())
-    statuses: list[StatusType] = []
+    statuses: list[StatusT] = []
 
     for flyable in args:
         ret = yield Msg("complete", flyable, group=group, **kwargs)
@@ -1236,11 +1236,11 @@ def configure(
 
 @plan
 def stage(
-    obj: Stageable[StatusType],
+    obj: Stageable[StatusT],
     *,
     group: Hashable | None = None,
     wait: bool | None = None,
-) -> MsgGenerator[StatusType | list[Any]]:
+) -> MsgGenerator[StatusT | list[Any]]:
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
 
@@ -1321,11 +1321,11 @@ def stage_all(
 
 @plan
 def unstage(
-    obj: Stageable[StatusType],
+    obj: Stageable[StatusT],
     *,
     group: Hashable | None = None,
     wait: bool | None = None,
-) -> MsgGenerator[StatusType | list[Any]]:
+) -> MsgGenerator[StatusT | list[Any]]:
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
 
