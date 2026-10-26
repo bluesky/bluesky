@@ -68,16 +68,16 @@ TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]
 
 @plan
 def declare_stream(
-    *objs: Readable, name: str, collect: bool = False
+    *objs: Readable[Any] | Collectable, name: str, collect: bool = False
 ) -> MsgGenerator[tuple[EventDescriptor, ComposeEvent]]:
     """
     Bundle future readings into a new Event document.
 
     Parameters
     ----------
-    objs :
+    objs : Readable[Any] | Collectable
         objects whose readings will be present in the stream
-    name : string, optional
+    name : str, optional
         name given to event stream, used for convenient identification
         default is 'primary'
     collect : bool, optional
