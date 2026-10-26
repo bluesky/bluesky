@@ -25,6 +25,7 @@ from bluesky.plan_stubs import (
     execute,
     install_suspender,
     kickoff,
+    loc,
     locate,
     monitor,
     mv,
@@ -86,13 +87,9 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         (save, (), {}, [Msg("save")]),
         (drop, (), {}, [Msg("drop")]),
         (read, ("det",), {}, [Msg("read", "det")]),
-        (locate, (), {}, [Msg("locate", squeeze=True)]),
-        (
-            locate,
-            ("foo",),
-            {"squeeze": False},
-            [Msg("locate", "foo", squeeze=False)],
-        ),
+        (locate, ("foo",), {}, [Msg("locate", "foo")]),
+        (locate, ("foo", "bar"), {}, [Msg("locate", "foo", "bar")]),
+        (loc, ("foo",), {}, [Msg("locate", "foo")]),
         (monitor, ("foo",), {}, [Msg("monitor", "foo", name=None)]),
         (monitor, ("foo",), {"name": "c"}, [Msg("monitor", "foo", name="c")]),
         (unmonitor, ("foo",), {}, [Msg("unmonitor", "foo")]),
@@ -260,14 +257,14 @@ def test_locatable_message_multiple_objects(RE, hw):
     two = AsyncLocatable()
 
     def multi_rd():
-        rds.append((yield Msg("locate", one, squeeze=False)))
+        rds.append((yield Msg("locate", one)))
         rds.append((yield Msg("locate", two)))
         rds.append((yield Msg("locate", one, two)))
         rds.append((yield Msg("locate", one)))
 
     RE(multi_rd())
     assert rds == [
-        [dict(setpoint=1.0, readback=1.0)],  # noqa: C408
+        dict(setpoint=1.0, readback=1.0),  # noqa: C408
         dict(setpoint=2.0, readback=2.0),  # noqa: C408
         # Check they happened at the same time, so have the same value
         [dict(setpoint=3.0, readback=3.0), dict(setpoint=3.0, readback=3.0)],  # noqa: C408
@@ -336,6 +333,78 @@ def test_check_warns_for_device_without_check_value(RE):
     with pytest.warns(UserWarning, match="has no check_value"):
         RE(mv(UncheckedAxis("x", 0.0, calls), 3.0, check=True))
     assert calls == [("set", 3.0)]
+
+
+class UnnamedAxis:
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def set(self, value: float) -> NullStatus:
+        self.value = value
+        return NullStatus()
+
+    def locate(self) -> Location[float]:
+        return {"setpoint": self.value, "readback": self.value}
+
+
+class Axis(UnnamedAxis):
+    def __init__(self, name: str, value: float) -> None:
+        super().__init__(value)
+        self.name = name
+
+
+def test_loc_and_locate(RE):
+    """Return one location from loc and a location per name from locate."""
+    x, y = Axis("x", 1.0), Axis("y", 2.0)
+    results = []
+
+    def plan():
+        results.append((yield from loc(x)))
+        results.append((yield from locate(x)))
+        results.append((yield from locate(x, y)))
+
+    RE(plan())
+    assert results == [
+        {"setpoint": 1.0, "readback": 1.0},
+        {"x": {"setpoint": 1.0, "readback": 1.0}},
+        {"x": {"setpoint": 1.0, "readback": 1.0}, "y": {"setpoint": 2.0, "readback": 2.0}},
+    ]
+
+
+def test_locate_rejects_duplicate_names(RE):
+    """Raise ValueError when two located objects have the same name."""
+    with pytest.raises(ValueError, match="unique names"):
+        RE(locate(Axis("x", 1.0), Axis("x", 2.0)))
+
+
+def test_locate_rejects_unnamed_object(RE):
+    """Raise TypeError when a located object has no name."""
+    with pytest.raises(TypeError, match="no name"):
+        RE(locate(UnnamedAxis(1.0)))
+
+
+def test_locate_warns_on_squeeze(RE):
+    """Warn that squeeze is ignored and still return locations by name."""
+    results = []
+
+    def plan():
+        results.append((yield from locate(Axis("x", 1.0), squeeze=True)))
+
+    with pytest.warns(UserWarning, match="ignores squeeze"):
+        RE(plan())
+    assert results == [{"x": {"setpoint": 1.0, "readback": 1.0}}]
+
+
+def test_locate_message_warns_on_squeeze(RE):
+    """Warn that the locate message ignores squeeze and return one location."""
+    results = []
+
+    def plan():
+        results.append((yield Msg("locate", Axis("x", 1.0), squeeze=False)))
+
+    with pytest.warns(UserWarning, match="locate message ignores squeeze"):
+        RE(plan())
+    assert results == [{"setpoint": 1.0, "readback": 1.0}]
 
 
 def test_rd_locatable(RE, hw):
