@@ -812,7 +812,10 @@ class RunBundler:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
         assert all(not is_data_key(value) for value in describe_collect.values()), (
-            "Single nested data keys should be pre-declared"
+            "Single nested data keys should be pre-declared: describe_collect() of "
+            f"{collect_object.name!r} returns the data keys of one stream, so declare that "
+            "stream before collecting, with declare_stream(..., name=..., collect=True) "
+            "or the stream_name and collect=True arguments of fly"
         )
 
         # Make sure you can't use identical data keys in multiple streams
