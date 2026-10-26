@@ -2,12 +2,11 @@ import asyncio
 import itertools
 import operator
 import time
-import typing
 import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any, Literal
+from typing import Any
 
 from cycler import cycler
 
@@ -28,6 +27,7 @@ from .protocols import (
     Configurable,
     Executable,
     Flyable,
+    HasName,
     Locatable,
     Location,
     Movable,
@@ -186,28 +186,74 @@ def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[str, Reading]]:
         return (yield Msg("read", *objs))
 
 
-@typing.overload
-def locate(obj: Locatable, squeeze: Literal[True] = True) -> Location: ...  # type: ignore[overload-overlap]
-@typing.overload
-def locate(*objs: Locatable, squeeze: bool = True) -> list[Location]: ...
 @plan
-def locate(*objs, squeeze=True):
+def locate(*objs: Locatable[Any], squeeze: bool | None = None) -> MsgGenerator[Mapping[str, Location[Any]]]:
     """
-    Locate some Movables and return their locations.
+    Locate some Movables in parallel and return their locations by name.
 
     Parameters
     ----------
-    obj : Device or Signal
-    sqeeze: bool
-        If True, return the result as a list.
-        If False, always return a list of retults even with a single object.
+    *objs : Locatable[Any]
+        One or more objects implementing the locate() method.
+        They must also have a ``name`` property.
+    squeeze : bool, optional
+        Ignored, with a warning. Use ``loc`` to get a single location.
 
     Yields
     ------
-     msg : Msg
-        ``Msg('locate', obj1, ..., objn, squeeze=True)``
+    msg : Msg
+        ``Msg('locate', obj1, ..., objn)``
+
+    Returns
+    -------
+    locations : Mapping[str, Location]
+        The location of each object, keyed by its name.
+
+    Raises
+    ------
+    TypeError
+        If an object has no ``name``.
+    ValueError
+        If two objects have the same name.
     """
-    return (yield Msg("locate", *objs, squeeze=squeeze))
+    if squeeze is not None:
+        warnings.warn(
+            "locate() ignores squeeze and always returns a mapping from name to location; "
+            "use loc() for a single location. squeeze will be removed in a future version.",
+            stacklevel=2,
+        )
+    locations = yield Msg("locate", *objs)
+    if locations is None:
+        # list-ify mode
+        return {}
+    if len(objs) == 1:
+        locations = [locations]
+    names = []
+    for obj in objs:
+        if not isinstance(obj, HasName):
+            raise TypeError(f"{obj!r} has no name to key its location by")
+        names.append(obj.name)
+    if len(set(names)) != len(names):
+        raise ValueError(f"Objects to locate must have unique names, got {names}")
+    return dict(zip(names, locations, strict=True))
+
+
+@plan
+def loc(obj: Locatable[T]) -> MsgGenerator[Location[T]]:
+    """
+    Locate a Movable and return its location.
+
+    Yields
+    ------
+    msg : Msg
+        ``Msg('locate', obj)``
+
+    Returns
+    -------
+    location : Location
+        Where the Movable was asked to move to and where it is now.
+    """
+    return (yield Msg("locate", obj))
 
 
 @plan
