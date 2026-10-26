@@ -471,7 +471,7 @@ class RunEngine:
         self.md_validator = md_validator
         if md_normalizer is None:
             md_normalizer = _default_md_normalizer
-        self.md_normalizer = md_normalizer
+        self.md_normalizer: Callable[[RunEngineMetadata], RunEngineMetadata] = md_normalizer
         self.scan_id_source = scan_id_source
 
         self.max_depth = None
@@ -511,7 +511,7 @@ class RunEngine:
         self._seen_wait_and_move_on_keys: set[typing.Any] = (
             set()
         )  # group ids that have been passed to _wait_and_move_on
-        self._msg_cache: deque[typing.Any] = deque()  # history of processed msgs for rewinding
+        self._msg_cache: deque[typing.Any] | None = deque()  # history of processed msgs for rewinding
         self._rewindable_flag: bool = True  # if the RE is allowed to replay msgs
         self._plan_stack: deque[typing.Any] = deque()  # stack of generators to work off of
         self._response_stack: deque[typing.Any] = deque()  # resps to send into the plans
@@ -730,9 +730,9 @@ class RunEngine:
         self._objs_seen.clear()
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
-        self._plan_stack = deque()
+        self._plan_stack.clear()
         self._msg_cache = deque()
-        self._response_stack = deque()
+        self._response_stack.clear()
         self._exception = None
         self._run_start_uids.clear()
         self._exit_status = "success"
@@ -1553,7 +1553,8 @@ class RunEngine:
                     # If we are here, we have come back to life either to
                     # continue (resume) or to clean up before exiting.
 
-                assert len(self._response_stack) == len(self._plan_stack)
+                if len(self._response_stack) != len(self._plan_stack):
+                    raise RuntimeError("The response stack and plan stack are out of sync. ")
                 # set resp to the sentinel so that if we fail in the sleep
                 # we do not add an extra response
                 resp = sentinel
@@ -1851,7 +1852,7 @@ class RunEngine:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
         return futs
 
-    async def _open_run(self, msg):
+    async def _open_run(self, msg: Msg):
         """Instruct the RunEngine to start a new "run"
 
         Expected message object is:
@@ -1907,7 +1908,7 @@ class RunEngine:
         self._run_start_uids.append(new_uid)
         return new_uid
 
-    async def _close_run(self, msg):
+    async def _close_run(self, msg: Msg):
         """Instruct the RunEngine to write the RunStop document
 
         Expected message object is:
@@ -1940,7 +1941,7 @@ class RunEngine:
         except IndexError:
             logger.warning("No open traces left to close!")
 
-    async def _create(self, msg):
+    async def _create(self, msg: Msg):
         """Trigger the run engine to start bundling future obj.read() calls for
          an Event document
 
@@ -1956,16 +1957,14 @@ class RunEngine:
         Descriptor document.
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = (
                 "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
             raise IllegalMessageSequence(ims_msg)
         return await current_run.create(msg)
 
-    async def _declare_stream(self, msg):
+    async def _declare_stream(self, msg: Msg):
         """Trigger the run engine to start bundling future obj.describe() calls for
          an Event document
 
@@ -1982,9 +1981,7 @@ class RunEngine:
         on declare_stream, rather than `describe`.
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = (
                 "Cannot bundle readings without an open run. That is, 'create' must be preceded by 'open_run'."
             )
@@ -2061,7 +2058,7 @@ class RunEngine:
         else:
             return list(await asyncio.gather(*coros))
 
-    async def _monitor(self, msg):
+    async def _monitor(self, msg: Msg):
         """
         Monitor a signal. Emit event documents asynchronously.
 
@@ -2079,16 +2076,14 @@ class RunEngine:
         """
 
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "A 'monitor' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
         else:
             await current_run.monitor(msg)
         await self._reset_checkpoint_state_coro()
 
-    async def _unmonitor(self, msg):
+    async def _unmonitor(self, msg: Msg):
         """
         Stop monitoring; i.e., remove the callback emitting event documents.
 
@@ -2097,16 +2092,14 @@ class RunEngine:
             Msg('unmonitor', obj)
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "An 'unmonitor' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
         else:
             await current_run.unmonitor(msg)
         await self._reset_checkpoint_state_coro()
 
-    async def _save(self, msg):
+    async def _save(self, msg: Msg):
         """Save the event that is currently being bundled
 
         Expected message object is:
@@ -2114,17 +2107,13 @@ class RunEngine:
             Msg('save')
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
-            # sanity check -- this should be caught by 'create' which makes
-            # this code path impossible
+        if isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
+            await current_run.save(msg)
+        else:
             ims_msg = "A 'save' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
-        else:
-            await current_run.save(msg)
 
-    async def _drop(self, msg):
+    async def _drop(self, msg: Msg):
         """Drop the event that is currently being bundled
 
         Expected message object is:
@@ -2132,15 +2121,13 @@ class RunEngine:
             Msg('drop')
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "A 'drop' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
         else:
             await current_run.drop(msg)
 
-    async def _prepare(self, msg):
+    async def _prepare(self, msg: Msg):
         """Prepare a flyer for a flyscan
 
         Expected message object is:
@@ -2161,7 +2148,7 @@ class RunEngine:
 
         return ret
 
-    async def _kickoff(self, msg):
+    async def _kickoff(self, msg: Msg):
         """Start a flyscan object
 
         Special kwargs for the 'Msg' object in this function:
@@ -2182,9 +2169,7 @@ class RunEngine:
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             ims_msg = "A 'kickoff' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
 
@@ -2201,7 +2186,7 @@ class RunEngine:
         return ret
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} complete")
-    async def _complete(self, msg):
+    async def _complete(self, msg: Msg):
         """
         Tell a flyer, 'stop collecting, whenever you are ready'.
 
@@ -2229,7 +2214,7 @@ class RunEngine:
         return ret
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} collect")
-    async def _collect(self, msg):
+    async def _collect(self, msg: Msg):
         """
         Collect data cached by a flyer and emit documents
 
@@ -2240,29 +2225,27 @@ class RunEngine:
         """
         _set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             # TODO add test exercising this path
             ims_msg = "A 'collect' message was sent but no run is open."
             raise IllegalMessageSequence(ims_msg)
 
         return await current_run.collect(msg)
 
-    async def _null(self, msg):
+    async def _null(self, msg: Msg):
         """
         A no-op message, mainly for debugging and testing.
         """
         pass
 
-    async def _RE_class(self, msg):
+    async def _RE_class(self, msg: Msg):
         """
         A no-op message, mainly for debugging and testing.
         """
         return type(self)
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
-    async def _set(self, msg):
+    async def _set(self, msg: Msg):
         """
         Set a device and cache the returned status object.
 
@@ -2303,7 +2286,7 @@ class RunEngine:
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
         return ret
 
-    async def _trigger(self, msg):
+    async def _trigger(self, msg: Msg):
         """
         Trigger a device and cache the returned status object.
 
@@ -2422,7 +2405,7 @@ class RunEngine:
             done = True
         return done
 
-    def _status_object_completed(self, ret, fut: asyncio.Future, pardon_failures):
+    def _status_object_completed(self, ret, fut: asyncio.Future, pardon_failures: asyncio.Event):
         """
         Task to run when a status object is finished.
 
@@ -2451,7 +2434,7 @@ class RunEngine:
         else:
             fut.set_result(None)
 
-    async def _sleep(self, msg):
+    async def _sleep(self, msg: Msg):
         """
         Sleep the event loop.
 
@@ -2461,9 +2444,14 @@ class RunEngine:
 
         where `sleep_time` is in seconds
         """
-        await asyncio.sleep(*msg.args)
+        if len(msg.args) != 1 or not isinstance(msg.args[0], (int, float)):
+            raise ValueError(
+                "The 'sleep' message must have a single numeric argument for the sleep time in seconds."
+            )
+        sleep_time = msg.args[0]
+        await asyncio.sleep(sleep_time)
 
-    async def _pause(self, msg):
+    async def _pause(self, msg: Msg):
         """Request the run engine to pause
 
         Expected message object is:
@@ -2481,7 +2469,7 @@ class RunEngine:
             if isinstance(obj, Pausable):
                 await maybe_await(obj.resume())
 
-    async def _resume(self, msg):
+    async def _resume(self, msg: Msg):
         """The suspension is over: tell the devices.
 
         Expected message object is:
@@ -2495,7 +2483,7 @@ class RunEngine:
         """
         await self._resume_objects()
 
-    async def _checkpoint(self, msg):
+    async def _checkpoint(self, msg: Msg):
         """Instruct the RunEngine to create a checkpoint so that we can rewind
         to this point if necessary
 
@@ -2530,7 +2518,7 @@ class RunEngine:
     async def _reset_checkpoint_state_coro(self):
         self._reset_checkpoint_state()
 
-    async def _clear_checkpoint(self, msg):
+    async def _clear_checkpoint(self, msg: Msg):
         """Clear a set checkpoint
 
         Expected message object is:
@@ -2543,7 +2531,7 @@ class RunEngine:
         for current_run in self._run_bundlers.values():
             await current_run.clear_checkpoint(msg)
 
-    async def _rewindable(self, msg):
+    async def _rewindable(self, msg: Msg):
         """Set rewindable state of RunEngine
 
         Expected message object is:
@@ -2557,7 +2545,7 @@ class RunEngine:
 
         return self.rewindable
 
-    async def _configure(self, msg):
+    async def _configure(self, msg: Msg):
         """Configure an object
 
         Expected message object is:
@@ -2569,9 +2557,7 @@ class RunEngine:
             object.configure(*args, **kwargs)
         """
         run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is key_absence_sentinel:
+        if not isinstance(current_run := self._run_bundlers.get(run_key, object()), RunBundler):
             current_run = None
         elif current_run.bundling:
             ims_msg = "Cannot configure after 'create' but before 'save' Aborting!"
@@ -2600,7 +2586,7 @@ class RunEngine:
         self._groups[group].add(lambda: fut)
         self._status_objs[group].add(status_object)
 
-    async def _stage(self, msg):
+    async def _stage(self, msg: Msg):
         """Instruct the RunEngine to stage the object
 
         Expected message object is:
@@ -2623,7 +2609,7 @@ class RunEngine:
 
         return ret
 
-    async def _unstage(self, msg):
+    async def _unstage(self, msg: Msg):
         """Instruct the RunEngine to unstage the object
 
         Expected message object is:
@@ -2647,7 +2633,7 @@ class RunEngine:
 
         return ret
 
-    async def _stop(self, msg):
+    async def _stop(self, msg: Msg):
         """
         Stop a device.
 
@@ -2658,7 +2644,7 @@ class RunEngine:
         obj = check_supports(msg.obj, Stoppable)
         return await maybe_await(obj.stop())  # nominally, this returns None
 
-    async def _subscribe(self, msg):
+    async def _subscribe(self, msg: Msg):
         """
         Add a subscription after the run has started.
 
@@ -2690,7 +2676,7 @@ class RunEngine:
         await self._reset_checkpoint_state_coro()
         return token
 
-    async def _unsubscribe(self, msg):
+    async def _unsubscribe(self, msg: Msg):
         """
         Remove a subscription during a call -- useful for a multi-run call
         where subscriptions are wanted for some runs but not others.
@@ -2710,7 +2696,7 @@ class RunEngine:
         self._temp_callback_ids.remove(token)
         await self._reset_checkpoint_state_coro()
 
-    async def _input(self, msg):
+    async def _input(self, msg: Msg):
         """
         Process a 'input' Msg. Expected Msg:
 
@@ -2820,7 +2806,7 @@ class Dispatcher:
         self._token_mapping[public_token] = [private_token]
         return public_token
 
-    def unsubscribe(self, token):
+    def unsubscribe(self, token: int):
         """
         Unregister a callback function using its integer ID.
 
@@ -2955,5 +2941,6 @@ def autoawait_in_bluesky_event_loop(ip=None):
         import IPython
 
         ip = IPython.get_ipython()  # type: ignore
-    assert ip, "Couldn't import IPython"
+    if not ip:
+        raise RuntimeError("Couldn't import Ipython")
     ip.loop_runner = call_in_bluesky_event_loop
