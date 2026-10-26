@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Plans &#8212; bluesky 1.15.2.dev287+gc3b883b5c documentation</title>
+    <title>Plans &#8212; bluesky 1.15.2.dev290+ge5f1092e2 documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d75e9073"></script>
+    <script src="_static/documentation_options.js?v=bc1ef210"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'plans';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev287+gc3b883b5c';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev290+ge5f1092e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="Tutorial" href="tutorial.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev287+gc3b883b5c" />
+  <meta name="docsearch:version" content="1.15.2.dev290+ge5f1092e2" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -1169,21 +1169,24 @@ the tutorial for a practical introduction to these components.</p>
 <td><p>Reads a single-value non-triggered object</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.locate.html#bluesky.plan_stubs.locate" title="bluesky.plan_stubs.locate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">locate</span></code></a></p></td>
-<td><p>Locate some Movables and return their locations.</p></td>
+<td><p>Locate some Movables in parallel and return their locations by name.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.stage.html#bluesky.plan_stubs.stage" title="bluesky.plan_stubs.stage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stage</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.loc.html#bluesky.plan_stubs.loc" title="bluesky.plan_stubs.loc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loc</span></code></a></p></td>
+<td><p>Locate a Movable and return its location.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.stage.html#bluesky.plan_stubs.stage" title="bluesky.plan_stubs.stage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stage</span></code></a></p></td>
 <td><p>'Stage' a device (i.e., prepare it for use, 'arm' it).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.unstage.html#bluesky.plan_stubs.unstage" title="bluesky.plan_stubs.unstage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unstage</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.unstage.html#bluesky.plan_stubs.unstage" title="bluesky.plan_stubs.unstage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unstage</span></code></a></p></td>
 <td><p>'Unstage' a device (i.e., put it in standby, 'disarm' it).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.configure.html#bluesky.plan_stubs.configure" title="bluesky.plan_stubs.configure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.configure.html#bluesky.plan_stubs.configure" title="bluesky.plan_stubs.configure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure</span></code></a></p></td>
 <td><p>Change Device configuration and emit an updated Event Descriptor document.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.stop.html#bluesky.plan_stubs.stop" title="bluesky.plan_stubs.stop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.stop.html#bluesky.plan_stubs.stop" title="bluesky.plan_stubs.stop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop</span></code></a></p></td>
 <td><p>Stop a device.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.prepare.html#bluesky.plan_stubs.prepare" title="bluesky.plan_stubs.prepare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prepare</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/bluesky.plan_stubs.prepare.html#bluesky.plan_stubs.prepare" title="bluesky.plan_stubs.prepare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prepare</span></code></a></p></td>
 <td><p>Prepare a device ready for trigger or kickoff.</p></td>
 </tr>
 </tbody>
@@ -1736,7 +1739,7 @@ end of the section, some example plans.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev287+gc3b883b5c/docs/plans.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev290+ge5f1092e2/docs/plans.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.loc
+=======================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: loc

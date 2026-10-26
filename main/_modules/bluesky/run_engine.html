@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev287+gc3b883b5c documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev290+ge5f1092e2 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d75e9073"></script>
+    <script src="../../_static/documentation_options.js?v=bc1ef210"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev287+gc3b883b5c';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev290+ge5f1092e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev287+gc3b883b5c" />
+  <meta name="docsearch:version" content="1.15.2.dev290+ge5f1092e2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -3005,17 +3005,22 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        Expected message object is:</span>
 
-<span class="sd">            Msg('locate', obj1, ..., objn, squeeze=True)</span>
+<span class="sd">            Msg('locate', obj1, ..., objn)</span>
 
 <span class="sd">        If a single obj is passed, obj.locate() is returned. If multiple objs</span>
 <span class="sd">        are passed, obj.locate() is called in parallel for all objs and a list</span>
-<span class="sd">        of the results returned. If squeeze is supplied and is False then it</span>
-<span class="sd">        will always return a list of results even with a single object.</span>
+<span class="sd">        of the results returned.</span>
 <span class="sd">        """</span>
+        <span class="k">if</span> <span class="s2">"squeeze"</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">warn</span><span class="p">(</span>  <span class="c1"># noqa: B028</span>
+                <span class="s2">"The locate message ignores squeeze: one object returns a single "</span>
+                <span class="s2">"location and several objects return a list. squeeze will be removed "</span>
+                <span class="s2">"in a future version."</span>
+            <span class="p">)</span>
         <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_supports</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Locatable</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,)</span> <span class="o">+</span> <span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">]</span>
         <span class="c1"># actually _locate_ the objects</span>
         <span class="n">coros</span> <span class="o">=</span> <span class="p">[</span><span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">locate</span><span class="p">())</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coros</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"squeeze"</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coros</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">await</span> <span class="n">coros</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">coros</span><span class="p">))</span>

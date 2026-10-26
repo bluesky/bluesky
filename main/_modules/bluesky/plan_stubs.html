@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev287+gc3b883b5c documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev290+ge5f1092e2 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d75e9073"></script>
+    <script src="../../_static/documentation_options.js?v=bc1ef210"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev287+gc3b883b5c';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev290+ge5f1092e2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev287+gc3b883b5c" />
+  <meta name="docsearch:version" content="1.15.2.dev290+ge5f1092e2" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -913,12 +913,11 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">operator</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
 
@@ -939,6 +938,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">Configurable</span><span class="p">,</span>
     <span class="n">Executable</span><span class="p">,</span>
     <span class="n">Flyable</span><span class="p">,</span>
+    <span class="n">HasName</span><span class="p">,</span>
     <span class="n">Locatable</span><span class="p">,</span>
     <span class="n">Location</span><span class="p">,</span>
     <span class="n">Movable</span><span class="p">,</span>
@@ -1109,30 +1109,79 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="nd">@typing</span><span class="o">.</span><span class="n">overload</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">squeeze</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Location</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># type: ignore[overload-overlap]</span>
-<span class="nd">@typing</span><span class="o">.</span><span class="n">overload</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">,</span> <span class="n">squeeze</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Location</span><span class="p">]:</span> <span class="o">...</span>
 <div class="viewcode-block" id="locate">
 <a class="viewcode-back" href="../../generated/bluesky.plan_stubs.locate.html#bluesky.plan_stubs.locate">[docs]</a>
 <span class="nd">@plan</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">,</span> <span class="n">squeeze</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locate</span><span class="p">(</span><span class="o">*</span><span class="n">objs</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">squeeze</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Location</span><span class="p">[</span><span class="n">Any</span><span class="p">]]]:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Locate some Movables and return their locations.</span>
+<span class="sd">    Locate some Movables in parallel and return their locations by name.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    obj : Device or Signal</span>
-<span class="sd">    sqeeze: bool</span>
-<span class="sd">        If True, return the result as a list.</span>
-<span class="sd">        If False, always return a list of retults even with a single object.</span>
+<span class="sd">    *objs : Locatable[Any]</span>
+<span class="sd">        One or more objects implementing the locate() method.</span>
+<span class="sd">        They must also have a ``name`` property.</span>
+<span class="sd">    squeeze : bool, optional</span>
+<span class="sd">        Ignored, with a warning. Use ``loc`` to get a single location.</span>
 
 <span class="sd">    Yields</span>
 <span class="sd">    ------</span>
-<span class="sd">     msg : Msg</span>
-<span class="sd">        ``Msg('locate', obj1, ..., objn, squeeze=True)``</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        ``Msg('locate', obj1, ..., objn)``</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    locations : Mapping[str, Location]</span>
+<span class="sd">        The location of each object, keyed by its name.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If an object has no ``name``.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If two objects have the same name.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"locate"</span><span class="p">,</span> <span class="o">*</span><span class="n">objs</span><span class="p">,</span> <span class="n">squeeze</span><span class="o">=</span><span class="n">squeeze</span><span class="p">))</span></div>
+    <span class="k">if</span> <span class="n">squeeze</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">"locate() ignores squeeze and always returns a mapping from name to location; "</span>
+            <span class="s2">"use loc() for a single location. squeeze will be removed in a future version."</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">locations</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"locate"</span><span class="p">,</span> <span class="o">*</span><span class="n">objs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">locations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># list-ify mode</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">objs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">locations</span> <span class="o">=</span> <span class="p">[</span><span class="n">locations</span><span class="p">]</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">HasName</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">obj</span><span class="si">!r}</span><span class="s2"> has no name to key its location by"</span><span class="p">)</span>
+        <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Objects to locate must have unique names, got </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">locations</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="loc">
+<a class="viewcode-back" href="../../generated/bluesky.plan_stubs.loc.html#bluesky.plan_stubs.loc">[docs]</a>
+<span class="nd">@plan</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">loc</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Locatable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Location</span><span class="p">[</span><span class="n">T</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Locate a Movable and return its location.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        ``Msg('locate', obj)``</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    location : Location</span>
+<span class="sd">        Where the Movable was asked to move to and where it is now.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"locate"</span><span class="p">,</span> <span class="n">obj</span><span class="p">))</span></div>
 
 
 
