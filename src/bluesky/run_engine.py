@@ -2041,17 +2041,22 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('locate', obj1, ..., objn, squeeze=True)
+            Msg('locate', obj1, ..., objn)
 
         If a single obj is passed, obj.locate() is returned. If multiple objs
         are passed, obj.locate() is called in parallel for all objs and a list
-        of the results returned. If squeeze is supplied and is False then it
-        will always return a list of results even with a single object.
+        of the results returned.
         """
+        if "squeeze" in msg.kwargs:
+            warn(  # noqa: B028
+                "The locate message ignores squeeze: one object returns a single "
+                "location and several objects return a list. squeeze will be removed "
+                "in a future version."
+            )
         objs = [check_supports(obj, Locatable) for obj in (msg.obj,) + msg.args]
         # actually _locate_ the objects
         coros = [maybe_await(obj.locate()) for obj in objs]
-        if len(coros) == 1 and msg.kwargs.get("squeeze", True):
+        if len(coros) == 1:
             return await coros[0]
         else:
             return list(await asyncio.gather(*coros))
