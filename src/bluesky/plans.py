@@ -2323,6 +2323,7 @@ def fly(
     md: CustomPlanMetadata | None = None,
     collect_flush_period: float | None = None,
     stream_name: str | None = None,
+    collect: bool = False,
     watch: Sequence[str] = (),
 ) -> MsgGenerator[str]:
     """
@@ -2338,6 +2339,10 @@ def fly(
         If set, will use `collect_while_completing` with the given flush period
     stream_name : str, optional
         If set, will declare a stream with the given name for all flyers
+    collect : bool, optional
+        If set, declare the stream from the flyers' `describe_collect`
+        rather than `describe`. Only used if `stream_name` is set.
+        Default is `False`.
     watch: set of watch groups, optional
         Additional groups to monitor while collecting from flyers.
         Will only be used if `collect_flush_period` is set.
@@ -2356,7 +2361,11 @@ def fly(
     @bpp.run_decorator(md=md)
     def _inner():
         yield from bps.fly_stub(
-            flyers, collect_flush_period=collect_flush_period, stream_name=stream_name, watch=watch
+            flyers,
+            collect_flush_period=collect_flush_period,
+            stream_name=stream_name,
+            collect=collect,
+            watch=watch,
         )
 
     return (yield from _inner())
