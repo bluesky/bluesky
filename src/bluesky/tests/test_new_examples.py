@@ -14,6 +14,7 @@ from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
     abs_set,
     caching_repeater,
+    check_value,
     checkpoint,
     clear_checkpoint,
     close_run,
@@ -296,43 +297,38 @@ class CheckedAxis(UncheckedAxis):
             raise ValueError(f"{value} is outside the limits of {self.name}")
 
 
-def test_mv_checks_before_setting(RE):
-    """Check the value before setting it when mv is called with check."""
+def test_check_value_then_move(RE):
+    """Check the value on the device before a following mv sets it."""
     calls = []
-    RE(mv(CheckedAxis("x", 0.0, calls), 3.0, check=True))
+    x = CheckedAxis("x", 0.0, calls)
+
+    def plan():
+        yield from check_value(x, 3.0)
+        yield from mv(x, 3.0)
+
+    RE(plan())
     assert calls == [("check", 3.0), ("set", 3.0)]
 
 
-def test_mv_check_rejects_value_without_moving(RE):
-    """Raise the device's error and leave it in place when the check fails."""
+def test_check_value_rejects_value_without_moving(RE):
+    """Raise the device's error and stop the plan before it moves."""
     calls = []
     x = CheckedAxis("x", 0.0, calls)
+
+    def plan():
+        yield from check_value(x, 20.0)
+        yield from mv(x, 20.0)
+
     with pytest.raises(ValueError, match="outside the limits"):
-        RE(mv(x, 20.0, check=True))
+        RE(plan())
     assert calls == [("check", 20.0)]
     assert x.position == 0.0
 
 
-def test_abs_set_checks_value(RE):
-    """Check the value itself, not the argument tuple, before abs_set sets it."""
-    calls = []
-    RE(abs_set(CheckedAxis("x", 0.0, calls), 3.0, check=True, wait=True))
-    assert calls == [("check", 3.0), ("set", 3.0)]
-
-
-def test_mvr_checks_absolute_target(RE):
-    """Check the absolute target, not the relative step, before mvr moves."""
-    calls = []
-    RE(mvr(CheckedAxis("x", 5.0, calls), 2.0, check=True))
-    assert calls == [("check", 7.0), ("set", 7.0)]
-
-
-def test_check_warns_for_device_without_check_value(RE):
-    """Warn and still move a device that cannot check its value."""
-    calls = []
-    with pytest.warns(UserWarning, match="has no check_value"):
-        RE(mv(UncheckedAxis("x", 0.0, calls), 3.0, check=True))
-    assert calls == [("set", 3.0)]
+def test_check_value_rejects_device_without_check_value(RE):
+    """Fail on a device that does not implement check_value."""
+    with pytest.raises(AssertionError, match="Checkable"):
+        RE(check_value(UncheckedAxis("x", 0.0, []), 3.0))
 
 
 class UnnamedAxis:

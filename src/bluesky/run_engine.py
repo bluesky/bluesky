@@ -2279,10 +2279,6 @@ class RunEngine:
         it should raise a detailed exception with a rationale.
         """
         obj = check_supports(msg.obj, Checkable)
-
-        # TODO: for reviewer, should this be wrapped
-        # in a try-except clause or let it raise naturally
-        # inside a plan?
         await maybe_await(obj.check_value(*msg.args, **msg.kwargs))
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")

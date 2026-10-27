@@ -19,15 +19,12 @@ Added
   event types, so a caller asking for one would otherwise get a suspender
   watching something else with nothing said.
 - ``bluesky.plan_stubs.check_value`` checks a value with
-  ``obj.check_value(value)`` through the new ``check_value`` message.  It
-  warns if the object is not ``Checkable``.
-- ``bluesky.plan_stubs.abs_set``, ``rel_set``, ``mv`` and ``mvr`` take
-  ``check=True`` to check each value before setting it.  ``rel_set`` and
-  ``mvr`` check the absolute target.
+  ``obj.check_value(value)`` through the new ``check_value`` message.
 
   .. code-block:: python
 
-      yield from bps.mv(motor, 5, check=True)
+      yield from bps.check_value(motor, 5)
+      yield from bps.mv(motor, 5)
 
 - ``bluesky.plan_stubs.loc`` locates one object and returns its ``Location``.
 
