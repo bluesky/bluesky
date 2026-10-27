@@ -43,7 +43,13 @@ jobs:
 
       - name: Set pixi environment name
         id: set-pixi-env
-        run: echo "pyenv=py${PYTHON_VERSION//./}" >> $GITHUB_OUTPUT
+        # "min" is the lowest-versions environment; other values are Python versions
+        run: |
+          if [ "$PYTHON_VERSION" = "min" ]; then
+            echo "pyenv=min" >> $GITHUB_OUTPUT
+          else
+            echo "pyenv=py${PYTHON_VERSION//./}" >> $GITHUB_OUTPUT
+          fi
         shell: bash
         env:
           PYTHON_VERSION: ${{ inputs.python-version }}

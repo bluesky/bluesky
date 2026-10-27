@@ -40,6 +40,9 @@ jobs:
           - runs-on: "ubuntu-latest"
             python-version: "3.13"
             full-suite: true
+          # Test the lowest version of every dependency that pyproject.toml allows
+          - runs-on: "ubuntu-latest"
+            python-version: "min"
       fail-fast: false
     uses: ./.github/workflows/_test.yml
     with:
