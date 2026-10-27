@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Release History &#8212; bluesky 1.15.2.dev300+gad31339df documentation</title>
+    <title>Release History &#8212; bluesky 1.15.2.dev316+g73ecc771f documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d34b29a2"></script>
+    <script src="_static/documentation_options.js?v=f5ebae9b"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api_changes';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev300+gad31339df';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev316+g73ecc771f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="The RunEngine run loop" href="run_engine.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev300+gad31339df" />
+  <meta name="docsearch:version" content="1.15.2.dev316+g73ecc771f" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -584,7 +584,7 @@
 <h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">#</a></h2>
 <section id="added">
 <h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
-<ul class="simple">
+<ul>
 <li><p>Suspenders accept signals implementing <code class="docutils literal notranslate"><span class="pre">bluesky.protocols.Subscribable</span></code>,
 such as ophyd-async signals, as well as ophyd ones.  <code class="docutils literal notranslate"><span class="pre">install</span></code> picks the
 subscription style from the signal.  For a <code class="docutils literal notranslate"><span class="pre">Subscribable</span></code> it subscribes,
@@ -595,6 +595,13 @@ neither now raises a <code class="docutils literal notranslate"><span class="pre
 signal also raises, rather than being silently ignored: that style has no
 event types, so a caller asking for one would otherwise get a suspender
 watching something else with nothing said.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bluesky.plan_stubs.check_value</span></code> checks a value with
+<code class="docutils literal notranslate"><span class="pre">obj.check_value(value)</span></code> through the new <code class="docutils literal notranslate"><span class="pre">check_value</span></code> message.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">check_value</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="n">motor</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
 <li><p><code class="docutils literal notranslate"><span class="pre">bluesky.plan_stubs.loc</span></code> locates one object and returns its <code class="docutils literal notranslate"><span class="pre">Location</span></code>.</p></li>
 </ul>
 </section>
@@ -3067,7 +3074,7 @@ not have any effect on user code.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev300+gad31339df/docs/api_changes.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev316+g73ecc771f/docs/api_changes.rst">
       <i class="fa-solid fa-pencil"></i>
       
       

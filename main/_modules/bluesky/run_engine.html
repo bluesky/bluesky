@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev300+gad31339df documentation</title>
+    <title>bluesky.run_engine &#8212; bluesky 1.15.2.dev316+g73ecc771f documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d34b29a2"></script>
+    <script src="../../_static/documentation_options.js?v=f5ebae9b"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev300+gad31339df';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev316+g73ecc771f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev300+gad31339df" />
+  <meta name="docsearch:version" content="1.15.2.dev316+g73ecc771f" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -941,6 +941,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.bundlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunBundler</span><span class="p">,</span> <span class="n">maybe_await</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComposableLogAdapter</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">msg_logger</span><span class="p">,</span> <span class="n">state_logger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Checkable</span><span class="p">,</span>
     <span class="n">Executable</span><span class="p">,</span>
     <span class="n">Flyable</span><span class="p">,</span>
     <span class="n">Locatable</span><span class="p">,</span>
@@ -1478,6 +1479,7 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"input"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input</span><span class="p">,</span>
             <span class="s2">"install_suspender"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_install_suspender</span><span class="p">,</span>
             <span class="s2">"remove_suspender"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_suspender</span><span class="p">,</span>
+            <span class="s2">"check_value"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_value</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># public dispatcher for callbacks</span>
@@ -3224,6 +3226,24 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        A no-op message, mainly for debugging and testing.</span>
 <span class="sd">        """</span>
         <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_check_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Msg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check that a value is acceptable to a Checkable object.</span>
+
+<span class="sd">        Should be used before attempting a `set()` operation</span>
+<span class="sd">        with the given value.</span>
+
+<span class="sd">        Expected message object is:</span>
+
+<span class="sd">            Msg('check_value', obj, value)</span>
+
+<span class="sd">        where arguments are passed through to `obj.check_value(value)`.</span>
+
+<span class="sd">        If the value is not acceptable by the device,</span>
+<span class="sd">        it should raise a detailed exception with a rationale.</span>
+<span class="sd">        """</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">check_supports</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">Checkable</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">maybe_await</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">check_value</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">msg</span><span class="o">.</span><span class="n">kwargs</span><span class="p">))</span>
 
     <span class="nd">@tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_SPAN_NAME_PREFIX</span><span class="si">}</span><span class="s2"> set"</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>

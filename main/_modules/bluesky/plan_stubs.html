@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev300+gad31339df documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.15.2.dev316+g73ecc771f documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=d34b29a2"></script>
+    <script src="../../_static/documentation_options.js?v=f5ebae9b"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev300+gad31339df';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev316+g73ecc771f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev300+gad31339df" />
+  <meta name="docsearch:version" content="1.15.2.dev316+g73ecc771f" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -934,6 +934,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">event_model.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDescriptor</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Checkable</span><span class="p">,</span>
     <span class="n">Collectable</span><span class="p">,</span>
     <span class="n">Configurable</span><span class="p">,</span>
     <span class="n">Executable</span><span class="p">,</span>
@@ -952,6 +953,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">StatusWithResult</span><span class="p">,</span>
     <span class="n">Stoppable</span><span class="p">,</span>
     <span class="n">T</span><span class="p">,</span>
+    <span class="n">T_co</span><span class="p">,</span>
     <span class="n">Triggerable</span><span class="p">,</span>
     <span class="n">WritesStreamAssets</span><span class="p">,</span>
     <span class="n">check_supports</span><span class="p">,</span>
@@ -2199,6 +2201,29 @@ window.runMermaid = runMermaid;</script>
     <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
         <span class="n">done</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">flush_period</span><span class="p">,</span> <span class="n">error_on_timeout</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">watch</span><span class="o">=</span><span class="n">watch</span><span class="p">)</span>
         <span class="k">yield from</span> <span class="n">collect_all</span><span class="p">(</span><span class="o">*</span><span class="n">dets</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_value">
+<a class="viewcode-back" href="../../generated/bluesky.plan_stubs.check_value.html#bluesky.plan_stubs.check_value">[docs]</a>
+<span class="nd">@plan</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_value</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Checkable</span><span class="p">[</span><span class="n">T_co</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">T_co</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Check that a valid setpoint has been given.</span>
+
+<span class="sd">    Calls ``obj.check_value(value)``, routing the check</span>
+<span class="sd">    to the device implementation.</span>
+
+<span class="sd">    This plan should be used before calling ``set(value)``</span>
+<span class="sd">    to ensure that the value is acceptable for the device.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obj : Checkable[T_co]</span>
+<span class="sd">        The object to check.</span>
+<span class="sd">    value : T_co</span>
+<span class="sd">        The value to check.</span>
+<span class="sd">    """</span>
+    <span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"check_value"</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
 
 
 

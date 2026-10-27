@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Message Protocol &#8212; bluesky 1.15.2.dev300+gad31339df documentation</title>
+    <title>Message Protocol &#8212; bluesky 1.15.2.dev316+g73ecc771f documentation</title>
   
   
   
@@ -39,14 +39,14 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=d34b29a2"></script>
+    <script src="_static/documentation_options.js?v=f5ebae9b"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'msg';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev300+gad31339df';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.15.2.dev316+g73ecc771f';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="How Bluesky Interfaces with Hardware" href="hardware.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.15.2.dev300+gad31339df" />
+  <meta name="docsearch:version" content="1.15.2.dev316+g73ecc771f" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -729,6 +729,16 @@ the algebra work.</p>
 <p>Tells a <code class="docutils literal notranslate"><span class="pre">Mover</span></code> object to move.  Currently this mimics the epics-like logic
 of immediate motion.</p>
 </section>
+<section id="check-value">
+<h3>check_value<a class="headerlink" href="#check-value" title="Link to this heading">#</a></h3>
+<p>Asks a <code class="docutils literal notranslate"><span class="pre">Checkable</span></code> object whether it accepts a value, without moving it.
+This calls <code class="docutils literal notranslate"><span class="pre">obj.check_value(value)</span></code>, which raises an exception if the value
+is not acceptable.</p>
+<p>Expected message object is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Msg</span><span class="p">(</span><span class="s1">'check_value'</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
 <section id="stage-and-unstage">
 <h3>stage and unstage<a class="headerlink" href="#stage-and-unstage" title="Link to this heading">#</a></h3>
 <p>Instruct the RunEngine to stage/unstage the object. This calls
@@ -1118,6 +1128,7 @@ commands.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#read">read</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#null">null</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#set">set</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#check-value">check_value</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-and-unstage">stage and unstage</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#trigger">trigger</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sleep">sleep</a></li>
@@ -1150,7 +1161,7 @@ commands.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev300+gad31339df/docs/msg.rst">
+    <a href="https://github.com/bluesky/bluesky/edit/1.15.2.dev316+g73ecc771f/docs/msg.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
