@@ -19,14 +19,17 @@ jobs:
       - name: Install system packages
         run: sudo apt-get install graphviz
 
-      - uses: prefix-dev/setup-pixi@v0.9.5
+      - name: Fetch tags
+        uses: ./.github/actions/fetch_tags
+
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
-          pixi-version: v0.66.0
-          environments: >-
-            default
-      
-      - name: Build docs with pixi
-        run: pixi run --frozen -e default docs
+          pixi-version: v0.83.0
+          locked: true
+          environments: default
+
+      - name: Build docs
+        run: pixi run --locked -e default docs
 
       - name: Remove environment.pickle
         run: rm build/html/.doctrees/environment.pickle

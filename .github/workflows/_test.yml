@@ -38,20 +38,24 @@ jobs:
           # Need this to get version number from last tag
           fetch-depth: 0
 
-      - name: Set Python environment variable
+      - name: Fetch tags
+        uses: ./.github/actions/fetch_tags
+
+      - name: Set pixi environment name
         id: set-pixi-env
         run: echo "pyenv=py${PYTHON_VERSION//./}" >> $GITHUB_OUTPUT
+        shell: bash
         env:
           PYTHON_VERSION: ${{ inputs.python-version }}
 
-
-      - uses: prefix-dev/setup-pixi@v0.9.5
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
-          pixi-version: v0.66.0
+          pixi-version: v0.83.0
+          locked: true
           environments: ${{ steps.set-pixi-env.outputs.pyenv }}
 
-      - name: Run tests for given python version
-        run: pixi run --frozen -e ${{ steps.set-pixi-env.outputs.pyenv }} tests
+      - name: Run tests
+        run: pixi run --locked -e ${{ steps.set-pixi-env.outputs.pyenv }} tests ${{ inputs.full-suite && '--include-call-returns-result-false' || '' }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

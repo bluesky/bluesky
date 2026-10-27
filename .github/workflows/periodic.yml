@@ -10,4 +10,4 @@ jobs:
   linkcheck:
     uses: ./.github/workflows/_pixi.yml
     with:
-      task: docs build -- -b linkcheck
+      task: linkcheck
