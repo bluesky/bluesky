@@ -89,7 +89,6 @@ dev = [
     "suitcase-msgpack",
     "tifffile",
     "tiled[server]",
-    "tox-direct",
     "types-mock",
     "vendoring",
     "zict",
@@ -149,9 +148,6 @@ exclude_lines = ["if __name__ == '__main__':"]
 # Tests are run from installed location, map back to the src directory
 source = ["src", "**/site-packages/"]
 
-# tox must currently be configured via an embedded ini string
-# See: https://github.com/tox-dev/tox/issues/999
-
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 115
@@ -195,29 +191,6 @@ protected-files = ["__init__.py", "README.rst", "vendor.txt"]
 
 [tool.vendoring.license.fallback-urls]
 super_state_machine = "https://github.com/beregond/super_state_machine/blob/master/LICENSE"
-
-[tool.tox]
-legacy_tox_ini = """
-
-[tox]
-skipsdist=True
-
-[testenv:{pre-commit,type-checking,tests,docs}]
-# Don't create a virtualenv for the command, requires tox-direct plugin
-direct = True
-passenv = *
-allowlist_externals =
-    pytest
-    pre-commit
-    mypy
-    sphinx-build
-    sphinx-autobuild
-commands =
-    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: mypy src {posargs}
-    tests: pytest -n 2 --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
-    docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
-"""
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
