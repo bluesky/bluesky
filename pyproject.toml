@@ -194,10 +194,11 @@ super_state_machine = "https://github.com/beregond/super_state_machine/blob/mast
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+platforms = ["linux-64", "win-64"]
+requires-pixi = ">=0.83.0"
 
 [tool.pixi.dependencies]
-python =  "*"
+python = "*"
 
 [tool.pixi.pypi-dependencies]
 bluesky = { path = ".", editable = true }
@@ -228,5 +229,6 @@ py314 = { features = ["py314", "dev"], solve-group = "py314" }
 [tool.pixi.tasks]
 lint = "pre-commit run --all-files --show-diff-on-failure"
 type-checking = "mypy src"
-tests = "pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml"
-docs = "sphinx-build -EW --keep-going docs build/html"
+tests = "pytest -n 2 --cov=bluesky --cov-report term --cov-report xml:cov.xml"
+docs = "sphinx-build -EW --keep-going -T docs build/html"
+linkcheck = "sphinx-build -b linkcheck -T docs build/linkcheck"
