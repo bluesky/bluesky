@@ -10,10 +10,9 @@ from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 
-# TypedDict and Unpack are imported from typing_extensions rather than typing:
-# until Python 3.12, typing_extensions.TypedDict carries backported fixes and
-# typing_extensions.Unpack supports unpacking a TypedDict into **kwargs.
-from typing_extensions import TypedDict, Unpack
+# TypedDict is imported from typing_extensions rather than typing because it
+# carries backported fixes recommended until Python 3.12.
+from typing_extensions import TypedDict
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
@@ -355,7 +354,7 @@ class EventPageCollectable(Collectable, Protocol):
 @runtime_checkable
 class Movable(Protocol[T_co]):
     @abstractmethod
-    def set(self, *args: Unpack[tuple[T_co]]) -> Status:
+    def set(self, *args: *tuple[T_co]) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
