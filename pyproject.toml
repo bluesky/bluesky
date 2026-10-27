@@ -36,7 +36,7 @@ dev = [
     "bluesky-tiled-plugins>=2.0.0",
     "cloudpickle>=3.0.0",
     "copier>=6.0.0",
-    "coverage>=7.4.0",
+    "coverage>=7.6.1",
     "databroker>=1.2.4",
     "doct>=1.1.0",
     "doctr>=1.9.0",
@@ -54,7 +54,7 @@ dev = [
     "networkx>=2.7",
     "numpydoc>=1.2",
     "opentelemetry-sdk>=1.16.0",
-    "ophyd>=1.6.3",
+    "ophyd>=1.10.0",
     "ophyd-async>=0.13.5 ; python_full_version >= '3.11'", # for async suspenders
     "orjson>=3.6.5",
     "packaging>=21.3",
@@ -101,7 +101,7 @@ zmq = [
     "pyzmq>=23.0.0",
 ]
 common = [
-    "ophyd>=1.6.3",
+    "ophyd>=1.10.0",
     "databroker>=1.2.4",
 ]
 tools = [
