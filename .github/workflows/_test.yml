@@ -61,7 +61,7 @@ jobs:
           environments: ${{ steps.set-pixi-env.outputs.pyenv }}
 
       - name: Run tests
-        run: pixi run --locked -e ${{ steps.set-pixi-env.outputs.pyenv }} tests ${{ inputs.full-suite && '--include-call-returns-result-false' || '' }}
+        run: pixi run --locked -e ${{ steps.set-pixi-env.outputs.pyenv }} tests -o faulthandler_timeout=300 ${{ inputs.full-suite && '--include-call-returns-result-false' || '' }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
