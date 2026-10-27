@@ -244,7 +244,7 @@ python = "3.14.*"
 python = "3.10.*"
 
 [tool.pixi.environments]
-default = { features = ["dev"], solve-group = "default" }
+default = { features = ["py313", "dev"], solve-group = "py313" }
 py310 = { features = ["py310", "dev"], solve-group = "py310" }
 py311 = { features = ["py311", "dev"], solve-group = "py311" }
 py312 = { features = ["py312", "dev"], solve-group = "py312" }
