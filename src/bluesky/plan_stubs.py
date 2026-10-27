@@ -23,6 +23,7 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    Checkable,
     Collectable,
     Configurable,
     Executable,
@@ -41,6 +42,7 @@ from .protocols import (
     StatusWithResult,
     Stoppable,
     T,
+    T_co,
     Triggerable,
     WritesStreamAssets,
     check_supports,
@@ -1205,6 +1207,26 @@ def collect_while_completing(
     while not done:
         done = yield from wait(group=group, timeout=flush_period, error_on_timeout=False, watch=watch)
         yield from collect_all(*dets, name=stream_name)
+
+
+@plan
+def check_value(obj: Checkable[T_co], value: T_co) -> MsgGenerator[None]:
+    """Check that a valid setpoint has been given.
+
+    Calls ``obj.check_value(value)``, routing the check
+    to the device implementation.
+
+    This plan should be used before calling ``set(value)``
+    to ensure that the value is acceptable for the device.
+
+    Parameters
+    ----------
+    obj : Checkable[T_co]
+        The object to check.
+    value : T_co
+        The value to check.
+    """
+    yield Msg("check_value", obj, value)
 
 
 @plan
