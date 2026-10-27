@@ -36,12 +36,12 @@ dev = [
     "bluesky-tiled-plugins>=2.0.0",
     "cloudpickle>=3.0.0",
     "copier>=6.0.0",
-    "coverage>=6.0.1",
+    "coverage>=7.4.0",
     "databroker>=1.2.4",
     "doct>=1.1.0",
     "doctr>=1.9.0",
     "flake8>=4.0.0",
-    "ipython>=7.16.2",
+    "ipython>=8.0.0",
     "ipywidgets>=7.6.6",
     "jinja2>=3.1.1",
     "lmfit>=1.1.0",
@@ -95,7 +95,7 @@ dev = [
     "pytest-mock>=3.15.1",
 ]
 ipython = [
-    "ipython>=7.16.2",
+    "ipython>=8.0.0",
 ]
 zmq = [
     "pyzmq>=23.0.0",
