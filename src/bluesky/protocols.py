@@ -11,8 +11,8 @@ from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 
 # TypedDict and Unpack are imported from typing_extensions rather than typing:
-# typing_extensions.TypedDict carries backported fixes recommended until Python
-# 3.12, and typing.Unpack is only available from Python 3.11 (floor is 3.10).
+# until Python 3.12, typing_extensions.TypedDict carries backported fixes and
+# typing_extensions.Unpack supports unpacking a TypedDict into **kwargs.
 from typing_extensions import TypedDict, Unpack
 
 # Squashes warning
