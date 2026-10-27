@@ -23,9 +23,11 @@ from enum import Enum
 from functools import partial, reduce, wraps
 from typing import (
     Any,
+    ParamSpec,
     TypeAlias,
     TypedDict,
     TypeVar,
+    overload,
 )
 from weakref import WeakKeyDictionary, ref
 
@@ -143,6 +145,7 @@ def msg_to_json_safe_dict(msg: Msg) -> dict[str, Any]:
 
 #: Return type of a plan, usually None. Always optional for dry-runs.
 P = TypeVar("P")
+PlanArgs = ParamSpec("PlanArgs")
 
 #: Object usually returned from plan functions that is fed to the RunEngine
 MsgGenerator = Generator[Msg, Any, P]
@@ -2076,44 +2079,51 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
         return ret
 
 
-class Plan:
+class Plan(MsgGenerator[P]):
     __slots__ = ("_iter", "_stack")
 
-    def __init__(self, f, *args, **kwargs) -> None:
+    def __init__(
+        self, f: Callable[PlanArgs, MsgGenerator[P]], *args: PlanArgs.args, **kwargs: PlanArgs.kwargs
+    ) -> None:
         self._iter = f(*args, **kwargs)
-        self._stack = traceback.format_stack()
-        self._stack = self._stack[:-2]
+        self._stack: list[str] | None = traceback.format_stack()[:-2]
         self._stack += [
             f"RuntimeWarning: plan `{f.__name__}` was never iterated, did you mean to use `yield from`?"
         ]
 
-    def __iter__(self):
+    def __iter__(self) -> MsgGenerator[P]:
         self._stack = None
         return (yield from self._iter)
 
-    def __next__(self):
+    def __next__(self) -> Msg:
         self._stack = None
         return next(self._iter)
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self._stack:
             warning_message = "\n" + "".join(self._stack)
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
-    def send(self, value):
+    def send(self, value: Any) -> Msg:
         self._stack = None
         return self._iter.send(value)
 
+    @overload
+    def throw(
+        self, typ: type[BaseException], val: object = None, tb: types.TracebackType | None = None, /
+    ) -> Msg: ...
+    @overload
+    def throw(self, typ: BaseException, val: None = None, tb: types.TracebackType | None = None, /) -> Msg: ...
     def throw(self, typ, val=None, tb=None):
         self._stack = None
         return self._iter.throw(typ, val, tb)
 
-    def close(self):
+    def close(self) -> None:
         self._stack = None
-        return self._iter.close()
+        self._iter.close()
 
 
-def plan(bs_plan):
+def plan(bs_plan: Callable[PlanArgs, MsgGenerator[P]]) -> Callable[PlanArgs, MsgGenerator[P]]:
     """Decorator that warns user if a `yield from` is not called
 
     Parameters
@@ -2128,10 +2138,10 @@ def plan(bs_plan):
     """
 
     @wraps(bs_plan)
-    def wrapper(*args, **kwargs) -> Plan:
+    def wrapper(*args: PlanArgs.args, **kwargs: PlanArgs.kwargs) -> Plan[P]:
         return Plan(bs_plan, *args, **kwargs)
 
-    wrapper._is_plan_ = True
+    wrapper._is_plan_ = True  # type: ignore[attr-defined]
 
     return wrapper
 
