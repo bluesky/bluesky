@@ -1,0 +1,6 @@
+﻿bluesky.utils.NoReplayAllowed
+=============================
+
+.. currentmodule:: bluesky.utils
+
+.. autoexception:: NoReplayAllowed

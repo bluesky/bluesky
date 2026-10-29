@@ -1,0 +1,6 @@
+﻿bluesky.utils.MsgGenerator
+==========================
+
+.. currentmodule:: bluesky.utils
+
+.. autodata:: MsgGenerator

@@ -1,0 +1,6 @@
+﻿bluesky.run\_engine.RunEngine.register\_command
+===============================================
+
+.. currentmodule:: bluesky.run_engine
+
+.. automethod:: RunEngine.register_command

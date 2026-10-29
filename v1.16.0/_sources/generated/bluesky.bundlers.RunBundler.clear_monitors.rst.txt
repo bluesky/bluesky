@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.clear\_monitors
+===========================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.clear_monitors

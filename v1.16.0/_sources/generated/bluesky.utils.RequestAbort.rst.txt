@@ -1,0 +1,6 @@
+﻿bluesky.utils.RequestAbort
+==========================
+
+.. currentmodule:: bluesky.utils
+
+.. autoexception:: RequestAbort

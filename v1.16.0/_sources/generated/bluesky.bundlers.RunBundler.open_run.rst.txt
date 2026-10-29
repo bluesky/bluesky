@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.open\_run
+=====================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.open_run

@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.trigger\_and\_read
+======================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: trigger_and_read

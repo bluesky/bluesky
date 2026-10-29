@@ -1,0 +1,6 @@
+﻿bluesky.utils.RequestStop
+=========================
+
+.. currentmodule:: bluesky.utils
+
+.. autoexception:: RequestStop

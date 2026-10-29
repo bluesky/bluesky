@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.collect
+===========================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: collect

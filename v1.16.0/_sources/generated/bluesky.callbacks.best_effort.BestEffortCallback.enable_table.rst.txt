@@ -1,0 +1,6 @@
+﻿bluesky.callbacks.best\_effort.BestEffortCallback.enable\_table
+===============================================================
+
+.. currentmodule:: bluesky.callbacks.best_effort
+
+.. automethod:: BestEffortCallback.enable_table

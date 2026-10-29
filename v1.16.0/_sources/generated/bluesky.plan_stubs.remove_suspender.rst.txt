@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.remove\_suspender
+=====================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: remove_suspender

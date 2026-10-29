@@ -1,0 +1,6 @@
+﻿bluesky.simulators.summarize\_plan
+==================================
+
+.. currentmodule:: bluesky.simulators
+
+.. autofunction:: summarize_plan

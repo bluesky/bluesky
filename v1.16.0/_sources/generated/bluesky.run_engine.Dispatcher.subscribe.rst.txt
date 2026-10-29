@@ -1,0 +1,6 @@
+﻿bluesky.run\_engine.Dispatcher.subscribe
+========================================
+
+.. currentmodule:: bluesky.run_engine
+
+.. automethod:: Dispatcher.subscribe

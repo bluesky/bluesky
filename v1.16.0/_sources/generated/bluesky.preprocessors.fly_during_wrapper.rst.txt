@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.fly\_during\_wrapper
+==========================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: fly_during_wrapper

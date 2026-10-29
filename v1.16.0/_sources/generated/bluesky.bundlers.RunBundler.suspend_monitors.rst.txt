@@ -1,0 +1,6 @@
+﻿bluesky.bundlers.RunBundler.suspend\_monitors
+=============================================
+
+.. currentmodule:: bluesky.bundlers
+
+.. automethod:: RunBundler.suspend_monitors

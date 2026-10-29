@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.subs\_wrapper
+===================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: subs_wrapper

@@ -1,0 +1,6 @@
+﻿bluesky.simulators.check\_limits
+================================
+
+.. currentmodule:: bluesky.simulators
+
+.. autofunction:: check_limits

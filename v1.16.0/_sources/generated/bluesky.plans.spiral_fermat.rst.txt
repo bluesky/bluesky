@@ -1,0 +1,6 @@
+﻿bluesky.plans.spiral\_fermat
+============================
+
+.. currentmodule:: bluesky.plans
+
+.. autofunction:: spiral_fermat

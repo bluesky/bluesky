@@ -1,0 +1,6 @@
+﻿bluesky.plans.scan\_nd
+======================
+
+.. currentmodule:: bluesky.plans
+
+.. autofunction:: scan_nd

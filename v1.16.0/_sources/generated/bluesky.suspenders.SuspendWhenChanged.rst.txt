@@ -1,0 +1,31 @@
+﻿bluesky.suspenders.SuspendWhenChanged
+=====================================
+
+.. currentmodule:: bluesky.suspenders
+
+.. autoclass:: SuspendWhenChanged
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SuspendWhenChanged.__init__
+      ~SuspendWhenChanged.get_futures
+      ~SuspendWhenChanged.install
+      ~SuspendWhenChanged.remove
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SuspendWhenChanged.tripped
+   
+   

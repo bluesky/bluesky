@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.caching\_repeater
+=====================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: caching_repeater

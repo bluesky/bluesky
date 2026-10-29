@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.locate
+==========================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: locate

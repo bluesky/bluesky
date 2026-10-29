@@ -1,0 +1,6 @@
+﻿bluesky.preprocessors.finalize\_wrapper
+=======================================
+
+.. currentmodule:: bluesky.preprocessors
+
+.. autofunction:: finalize_wrapper

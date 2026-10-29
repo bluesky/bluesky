@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.abs\_set
+============================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: abs_set

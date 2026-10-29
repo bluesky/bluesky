@@ -1,0 +1,6 @@
+﻿bluesky.run\_engine.RunEngine.stop
+==================================
+
+.. currentmodule:: bluesky.run_engine
+
+.. automethod:: RunEngine.stop

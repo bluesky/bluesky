@@ -1,0 +1,23 @@
+﻿bluesky.utils.DefaultDuringTask
+===============================
+
+.. currentmodule:: bluesky.utils
+
+.. autoclass:: DefaultDuringTask
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DefaultDuringTask.__init__
+      ~DefaultDuringTask.block
+   
+   
+
+   
+   
+   

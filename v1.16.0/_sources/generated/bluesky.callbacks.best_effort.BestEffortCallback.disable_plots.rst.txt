@@ -1,0 +1,6 @@
+﻿bluesky.callbacks.best\_effort.BestEffortCallback.disable\_plots
+================================================================
+
+.. currentmodule:: bluesky.callbacks.best_effort
+
+.. automethod:: BestEffortCallback.disable_plots

@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.one\_shot
+=============================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: one_shot

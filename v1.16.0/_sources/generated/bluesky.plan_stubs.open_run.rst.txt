@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.open\_run
+=============================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: open_run

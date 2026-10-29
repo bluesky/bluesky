@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.save
+========================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: save

@@ -1,0 +1,6 @@
+﻿bluesky.plans.spiral\_square
+============================
+
+.. currentmodule:: bluesky.plans
+
+.. autofunction:: spiral_square

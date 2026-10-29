@@ -1,0 +1,6 @@
+﻿bluesky.plans.rel\_list\_grid\_scan
+===================================
+
+.. currentmodule:: bluesky.plans
+
+.. autofunction:: rel_list_grid_scan
