@@ -8,6 +8,18 @@ Unreleased
 Added
 -----
 
+- ``bluesky.callbacks.BestEffortTable`` prints the heading, the table and the
+  baseline readings of ``BestEffortCallback`` without plotting.
+  ``BestEffortCallback`` now subclasses it, and
+  ``hinted_fields`` moved to ``bluesky.callbacks.core``; it can still be
+  imported from ``bluesky.callbacks.best_effort``.
+
+  .. code-block:: python
+
+      from bluesky.callbacks import BestEffortTable
+
+      RE.subscribe(BestEffortTable())
+
 - Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
   such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
   subscription style from the signal.  For a ``Subscribable`` it subscribes,

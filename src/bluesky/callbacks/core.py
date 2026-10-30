@@ -3,6 +3,7 @@ Useful callbacks for the Run Engine
 """
 
 import logging
+import sys
 import time as ttime
 import warnings
 from collections import OrderedDict, deque, namedtuple
@@ -10,13 +11,21 @@ from datetime import datetime
 from enum import Enum
 from functools import partial as _partial
 from functools import wraps as _wraps
+from io import StringIO
 from itertools import count
+from typing import TYPE_CHECKING, Any, cast
 
 from event_model import DocumentRouter
 
 from bluesky.env_vars import BLUESKY_DEBUG_CALLBACKS
 
 from ..utils import ensure_uid
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from typing import TextIO
+
+    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 logger = logging.getLogger(__name__)
 
@@ -469,3 +478,214 @@ class LiveTable(CallbackBase):
     def _print(self, out_str):
         self._rows.append(out_str)
         self._out(out_str)
+
+
+def _object_fields(descriptor: "EventDescriptor", obj_name: str) -> list[str]:
+    """Return the fields an object hints at, or all its fields if it hints at none."""
+    obj_hints = cast("Mapping[str, list[str]] | None", descriptor.get("hints", {}).get(obj_name))
+    if obj_hints is not None and "fields" in obj_hints:
+        return obj_hints["fields"]
+    return descriptor["object_keys"][obj_name]
+
+
+def hinted_fields(descriptor: "EventDescriptor") -> list[str]:
+    # Figure out which columns to put in the table.
+    # We will see if these objects hint at whether
+    # a subset of their data keys ('fields') are interesting. If they
+    # did, we'll use those. If these didn't, we know that the RunEngine
+    # *always* records their complete list of fields, so we can use
+    # them all unselectively.
+    return [field for obj_name in descriptor["object_keys"] for field in _object_fields(descriptor, obj_name)]
+
+
+@make_class_safe(logger=logger)
+class BestEffortTable(CallbackBase):
+    """Print a heading, a table and the baseline readings of every run.
+
+    The table shows the hinted fields of the stream that holds the
+    dimensions of the plan, chosen the same way as in `BestEffortCallback`.
+    Nothing is plotted.
+
+    Parameters
+    ----------
+    table_enabled : bool, optional
+        Print the table. Defaults to True.
+    """
+
+    def __init__(self, *, table_enabled: bool = True, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._start_doc: Any = None
+        self._descriptors: dict[str, EventDescriptor] = {}
+        self._table: LiveTable | None = None
+        self._heading_enabled = True
+        self._table_enabled = table_enabled
+        self._baseline_enabled = True
+        self._cleanup_motor_heuristic = False
+        self._stream_names_seen: set[str] = set()
+        self.plan_hints: Mapping[str, Any] = {}
+        self.dim_fields: list[str] = []
+        self.all_dim_fields: list[str] = []
+        self.dim_stream = "primary"
+
+        # hack to handle the bottom border of the table
+        self._buffer = StringIO()
+        self._baseline_toggle = True
+
+    def enable_heading(self) -> None:
+        "Print timestamp and IDs at the top of a run."
+        self._heading_enabled = True
+
+    def disable_heading(self) -> None:
+        "Opposite of enable_heading()"
+        self._heading_enabled = False
+
+    def enable_table(self) -> None:
+        "Print hinted readings from the 'primary' stream in a LiveTable."
+        self._table_enabled = True
+
+    def disable_table(self) -> None:
+        "Opposite of enable_table()"
+        self._table_enabled = False
+
+    def enable_baseline(self) -> None:
+        "Print hinted fields from the 'baseline' stream."
+        self._baseline_enabled = True
+
+    def disable_baseline(self) -> None:
+        "Opposite of enable_baseline()"
+        self._baseline_enabled = False
+
+    def start(self, doc: "RunStart") -> None:
+        self.clear()
+        self._start_doc = doc
+        self.plan_hints = doc.get("hints", {})
+
+        # Prepare a guess about the dimensions (independent variables) in case
+        # we need it.
+        motors = cast("list[str] | None", doc.get("motors"))
+        if motors is not None and len(motors) > 0:
+            GUESS: list[tuple[list[str], str]] = [([motor], "primary") for motor in motors]
+        else:
+            GUESS = [(["time"], "primary")]
+
+        # Ues the guess if there is not hint about dimensions.
+        dimensions: list[Any] | None = self.plan_hints.get("dimensions")
+        if dimensions is None:
+            self._cleanup_motor_heuristic = True
+            dimensions = GUESS
+
+        # We can only cope with all the dimensions belonging to the same
+        # stream unless we resample. We are not doing to handle that yet.
+        if len(set(d[1] for d in dimensions)) != 1:  # noqa: C401
+            self._cleanup_motor_heuristic = True
+            dimensions = GUESS  # Fall back on our GUESS.
+            warnings.warn(
+                "We are ignoring the dimensions hinted because we cannot combine streams.",
+                stacklevel=1,
+            )
+
+        # for each dimension, choose one field only
+        # the plan can supply a list of fields. It's assumed the first
+        # of the list is always the one plotted against
+        default_field_name = "time"
+        self.dim_fields = [fields[0] if len(fields) else default_field_name for fields, stream_name in dimensions]
+
+        # make distinction between flattened fields and plotted fields
+        # motivation for this is that when plotting, we find dependent variable
+        # by finding elements that are not independent variables
+        self.all_dim_fields = [field for fields, stream_name in dimensions for field in fields]
+
+        _, self.dim_stream = dimensions[0]
+
+        # Print heading.
+        tt = datetime.fromtimestamp(doc["time"]).utctimetuple()
+        if self._heading_enabled:
+            scan_id = doc.get("scan_id", "")
+            scan_time = ttime.strftime("%Y-%m-%d %H:%M:%S", tt)
+            print(f"\n\nTransient Scan ID: {scan_id}     Time: {scan_time}")
+            print(f"Persistent Unique Scan ID: '{doc['uid']}'")
+
+    def _columns(self, descriptor: "EventDescriptor") -> list[str]:
+        """Return the hinted fields of a descriptor that are not dimensions."""
+        return [c for c in hinted_fields(descriptor) if c not in self.all_dim_fields]
+
+    def descriptor(self, doc: "EventDescriptor") -> None:
+        self._descriptors[doc["uid"]] = doc
+        stream_name = doc.get("name", "primary")  # fall back for old docs
+
+        if stream_name not in self._stream_names_seen:
+            self._stream_names_seen.add(stream_name)
+            if self._table_enabled:
+                print(f"New stream: {stream_name!r}")
+
+        # ## This deals with old documents. ## #
+        if stream_name == "primary" and self._cleanup_motor_heuristic:
+            # We stashed object names in self.dim_fields, which we now need to
+            # look up the actual fields for.
+            self._cleanup_motor_heuristic = False
+            fixed_dim_fields: list[str] = []
+            for obj_name in self.dim_fields:
+                # Special case: 'time' can be a dim_field, but it's not an
+                # object name. Just add it directly to the list of fields.
+                if obj_name == "time":
+                    fixed_dim_fields.append("time")
+                    continue
+                fixed_dim_fields.extend(_object_fields(doc, obj_name))
+            self.dim_fields = fixed_dim_fields
+
+        if stream_name == self.dim_stream and self._table_enabled:
+            # plot everything, independent or dependent variables
+            self._table = LiveTable(list(self.all_dim_fields) + self._columns(doc), separator_lines=False)
+            self._table("start", self._start_doc)
+            self._table("descriptor", cast(dict, doc))
+
+    def event(self, doc: "Event") -> "Event":
+        descriptor = self._descriptors[doc["descriptor"]]
+        if descriptor.get("name") == "primary":
+            if self._table is not None:
+                self._table("event", cast(dict, doc))
+
+        # Show the baseline readings.
+        if descriptor.get("name") == "baseline":
+            columns = hinted_fields(descriptor)
+            self._baseline_toggle = not self._baseline_toggle
+            file: TextIO
+            if self._baseline_toggle:
+                file = self._buffer
+                subject = "End-of-run"
+            else:
+                file = sys.stdout
+                subject = "Start-of-run"
+            if self._baseline_enabled:
+                print(f"{subject} baseline readings:", file=file)
+                border = "+" + "-" * 32 + "+" + "-" * 32 + "+"
+                print(border, file=file)
+                for k, v in doc["data"].items():
+                    if k not in columns:
+                        continue
+                    print(f"| {k:>30} | {v:<30} |", file=file)
+                print(border, file=file)
+        return doc
+
+    def stop(self, doc: "RunStop") -> None:
+        self._stop_table(doc)
+        self._print_end_baseline()
+
+    def _stop_table(self, doc: "RunStop") -> None:
+        if self._table is not None:
+            self._table("stop", cast(dict, doc))
+
+    def _print_end_baseline(self) -> None:
+        if self._baseline_enabled:
+            # Print baseline below bottom border of table.
+            self._buffer.seek(0)
+            print(self._buffer.read())
+            print("\n")
+
+    def clear(self) -> None:
+        self._start_doc = None
+        self._descriptors.clear()
+        self._stream_names_seen.clear()
+        self._table = None
+        self._buffer = StringIO()
+        self._baseline_toggle = True

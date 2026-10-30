@@ -1,5 +1,6 @@
 # declare module content to calm pyflakes about unused names
 __all__ = [
+    "BestEffortTable",
     "CallbackBase",
     "CallbackCounter",
     "print_metadata",
@@ -17,6 +18,7 @@ __all__ = [
 ]
 
 from .core import (
+    BestEffortTable,
     CallbackBase,
     CallbackCounter,
     CollectThenCompute,
