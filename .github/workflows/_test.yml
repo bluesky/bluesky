@@ -38,30 +38,30 @@ jobs:
           # Need this to get version number from last tag
           fetch-depth: 0
 
-      - if: inputs.python-version == 'dev'
-        name: Install dev versions of python packages
-        uses: ./.github/actions/install_requirements
+      - name: Fetch tags
+        uses: ./.github/actions/fetch_tags
 
-      - if: inputs.python-version == 'dev'
-        name: Write the requirements as an artifact
-        run: pip freeze --exclude-editable > /tmp/dev-requirements.txt
+      - name: Set pixi environment name
+        id: set-pixi-env
+        # "min" is the lowest-versions environment; other values are Python versions
+        run: |
+          if [ "$PYTHON_VERSION" = "min" ]; then
+            echo "pyenv=min" >> $GITHUB_OUTPUT
+          else
+            echo "pyenv=py${PYTHON_VERSION//./}" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
 
-      - if: inputs.python-version == 'dev'
-        name: Upload dev-requirements.txt
-        uses: actions/upload-artifact@v4
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
-          name: dev-requirements
-          path: /tmp/dev-requirements.txt
-
-      - if: inputs.python-version != 'dev'
-        name: Install latest versions of python packages
-        uses: ./.github/actions/install_requirements
-        with:
-          python-version: ${{ inputs.python-version }}
-          pip-install: ".[dev]"
+          pixi-version: v0.83.0
+          locked: true
+          environments: ${{ steps.set-pixi-env.outputs.pyenv }}
 
       - name: Run tests
-        run: tox -e tests -- ${{ inputs.full-suite && '--include-call-returns-result-false' || '' }}
+        run: pixi run --locked -e ${{ steps.set-pixi-env.outputs.pyenv }} tests -o faulthandler_timeout=300 ${{ inputs.full-suite && '--include-call-returns-result-false' || '' }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

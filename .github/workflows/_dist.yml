@@ -26,11 +26,15 @@ jobs:
       - name: Check for packaging errors
         run: pipx run twine check --strict dist/*
 
-      - name: Install produced wheel
-        uses: ./.github/actions/install_requirements
+      - name: Setup python
+        uses: actions/setup-python@v5
         with:
-          pip-install: dist/*.whl
+          python-version: "3.12"
+
+      - name: Install produced wheel
+        run: pip install dist/*.whl
 
       - name: Test module is importable using the installed wheel
-        # If more than one module in src/ replace with module name to test
-        run: python -c "import $(ls --hide='*.egg-info' src | head -1)"
+        # Run outside the checkout so the import finds the wheel, not src/
+        working-directory: /tmp
+        run: python -c "import bluesky"

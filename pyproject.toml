@@ -14,14 +14,14 @@ classifiers = [
 ]
 description = "Experiment specification & orchestration."
 dependencies = [
-    "cycler",
+    "cycler>=0.11.0",
     "event-model>=1.24.0",
-    "historydict",
-    "msgpack",
-    "msgpack-numpy",
-    "numpy",
-    "opentelemetry-api",
-    "toolz",
+    "historydict>=1.2.6",
+    "msgpack>=1.0.3",
+    "msgpack-numpy>=0.4.8",
+    "numpy>=1.22.0",
+    "opentelemetry-api>=1.45.0",
+    "toolz>=0.11.2",
     "tqdm>=4.44",
     "typing-extensions>=4.10.0",
 ]
@@ -32,78 +32,99 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 dev = [
-    "attrs",
-    "bluesky-tiled-plugins",
-    "cloudpickle",
-    "copier",
-    "coverage",
-    "databroker",
-    "doct",
-    "doctr",
-    "flake8",
-    "ipython",
-    "ipywidgets",
-    "jinja2",
-    "lmfit",
-    "matplotlib >=3.5.0",
-    "mongoquery",
-    "mongomock",
-    "multiprocess",
-    "mypy",
-    "myst-parser",
-    "networkx",
-    "numpydoc",
-    "opentelemetry-sdk",
-    "ophyd",
-    "ophyd-async>=0.13.5;python_version>='3.11'", # for async suspenders
-    "orjson",
-    "packaging",
-    "pandas",
-    "pickleshare",
-    "pipdeptree",
-    "pre-commit",
+    "attrs>=22.2.0",
+    "bluesky-tiled-plugins>=2.0.0",
+    "cloudpickle>=3.0.0",
+    "copier>=6.0.0",
+    "coverage>=7.6.1",
+    "databroker>=1.2.4",
+    "doct>=1.1.0",
+    "doctr>=1.9.0",
+    "flake8>=4.0.0",
+    "ipython>=8.0.0",
+    "ipywidgets>=7.6.6",
+    "jinja2>=3.1.1",
+    "lmfit>=1.1.0",
+    "matplotlib>=3.5.0",
+    "mongoquery>=1.4.0",
+    "mongomock>=4.0.0",
+    "multiprocess>=0.70.13",
+    "mypy>=0.920",
+    "myst-parser>=0.16.0",
+    "networkx>=2.7",
+    "numpydoc>=1.2",
+    "opentelemetry-sdk>=1.45.0",
+    "ophyd>=1.10.0",
+    "ophyd-async>=0.13.5 ; python_full_version >= '3.11'", # for async suspenders
+    "orjson>=3.6.5",
+    "packaging>=21.3",
+    "pandas>=2.0.0",
+    "pickleshare>=0.7.5",
+    "pipdeptree>=2.2.0",
+    "pre-commit>=2.16.0",
     "pydata-sphinx-theme>=0.12",
-    "pyepics",
-    "pyqt5",
-    "pytest",
-    "pytest-cov",
-    "pytest-faulthandler",
+    "pyepics>=3.5.2",
+    "pyqt5>=5.15.5",
+    "pytest>=7.0.0",
+    "pytest-cov>=3.0.0",
+    "pytest-faulthandler>=2.0.1",
     "pytest-xdist>=3.8.0",
-    "pyyaml",
-    "pyzmq",
-    "requests",
-    "ruff",
-    "scikit-image",
-    "scipy",
-    "sphinx<7.3",
-    "sphinx-autobuild",
-    "sphinx-copybutton",
-    "sphinx-design",
-    "sphinxcontrib-mermaid",
-    "sphinx_rtd_theme",
-    "streamz",
+    "pyyaml>=6.0",
+    "pyzmq>=23.0.0",
+    "requests>=2.27.0",
+    "ruff>=0.0.17",
+    "scikit-image>=0.19.0",
+    "scipy>=1.7.2",
+    "sphinx>=4.2.0,<7.3",
+    "sphinx-autobuild>=2024.2.4",
+    "sphinx-copybutton>=0.5.0",
+    "sphinx-design>=0.0.13",
+    "sphinxcontrib-mermaid>=0.8",
+    "sphinx-rtd-theme>=1.1.0",
+    "streamz>=0.6.3",
     # These suitcases are test deps of databroker which we need to access
     # databroker fixtures.
-    "suitcase-jsonl",
-    "suitcase-mongo",
-    "suitcase-msgpack",
-    "tifffile",
-    "tiled[server]",
-    "tox-direct",
-    "types-mock",
-    "vendoring",
-    "zict",
+    "suitcase-jsonl>=0.2.2",
+    "suitcase-mongo>=0.3.1",
+    "suitcase-msgpack>=0.3.0",
+    "tifffile>=2021.10.10",
+    "tiled[server]>=0.2.0",
+    "types-mock>=4.0.2",
+    "vendoring>=1.1.0",
+    "zict>=2.1.0",
     "pytest-mock>=3.15.1",
 ]
-ipython = ["ipython"]
-zmq = ["pyzmq"]
-common = ["ophyd", "databroker"]
-tools = ["doct", "lmfit", "tifffile", "historydict"]
-streamz = ["streamz"]
-plotting = ["matplotlib"]
-cmd = ["colorama"]
-olog = ["jinja2"]
-old_persistentdict = ["zict<3"]
+ipython = [
+    "ipython>=8.0.0",
+]
+zmq = [
+    "pyzmq>=23.0.0",
+]
+common = [
+    "ophyd>=1.10.0",
+    "databroker>=1.2.4",
+]
+tools = [
+    "doct>=1.1.0",
+    "lmfit>=1.1.0",
+    "tifffile>=2021.10.10",
+    "historydict>=1.2.6",
+]
+streamz = [
+    "streamz>=0.6.3",
+]
+plotting = [
+    "matplotlib>=3.5.0",
+]
+cmd = [
+    "colorama>=0.4.5",
+]
+olog = [
+    "jinja2>=3.1.1",
+]
+old_persistentdict = [
+    "zict>=2.1.0,<3",
+]
 all = ["bluesky[dev,ipython,zmq,common,tools,streamz,plotting,cmd,olog]"]
 
 [project.scripts]
@@ -149,9 +170,6 @@ exclude_lines = ["if __name__ == '__main__':"]
 # Tests are run from installed location, map back to the src directory
 source = ["src", "**/site-packages/"]
 
-# tox must currently be configured via an embedded ini string
-# See: https://github.com/tox-dev/tox/issues/999
-
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 115
@@ -196,25 +214,47 @@ protected-files = ["__init__.py", "README.rst", "vendor.txt"]
 [tool.vendoring.license.fallback-urls]
 super_state_machine = "https://github.com/beregond/super_state_machine/blob/master/LICENSE"
 
-[tool.tox]
-legacy_tox_ini = """
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "win-64"]
+requires-pixi = ">=0.83.0"
 
-[tox]
-skipsdist=True
+[tool.pixi.dependencies]
+python = "*"
 
-[testenv:{pre-commit,type-checking,tests,docs}]
-# Don't create a virtualenv for the command, requires tox-direct plugin
-direct = True
-passenv = *
-allowlist_externals =
-    pytest
-    pre-commit
-    mypy
-    sphinx-build
-    sphinx-autobuild
-commands =
-    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: mypy src {posargs}
-    tests: pytest -n 2 --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
-    docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
-"""
+[tool.pixi.pypi-dependencies]
+bluesky = { path = ".", editable = true }
+
+[tool.pixi.feature.py310.dependencies]
+python = "3.10.*"
+
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.feature.py314.dependencies]
+python = "3.14.*"
+
+[tool.pixi.feature.min.dependencies]
+python = "3.10.*"
+
+[tool.pixi.environments]
+default = { features = ["py313", "dev"], solve-group = "py313" }
+py310 = { features = ["py310", "dev"], solve-group = "py310" }
+py311 = { features = ["py311", "dev"], solve-group = "py311" }
+py312 = { features = ["py312", "dev"], solve-group = "py312" }
+py313 = { features = ["py313", "dev"], solve-group = "py313" }
+py314 = { features = ["py314", "dev"], solve-group = "py314" }
+min = { features = ["min", "dev", "ipython", "zmq", "common", "tools", "streamz", "plotting", "cmd", "olog"], solve-group = "min", solve-strategy = "lowest-direct" }
+
+[tool.pixi.tasks]
+lint = "pre-commit run --all-files --show-diff-on-failure"
+type-checking = "mypy src"
+tests = "pytest -n 2 --cov=bluesky --cov-report term --cov-report xml:cov.xml"
+docs = "sphinx-build -EW --keep-going -T docs build/html"
+linkcheck = "sphinx-build -b linkcheck -T docs build/linkcheck"
