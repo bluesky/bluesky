@@ -1,3 +1,5 @@
+import subprocess
+import sys
 import time as ttime
 import warnings
 from datetime import datetime
@@ -8,6 +10,7 @@ from event_model import RunRouter
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from bluesky.callbacks import BestEffortTable
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky.plans import grid_scan, scan, spiral_square
 from bluesky.preprocessors import SupplementalData
@@ -361,3 +364,39 @@ def test_empty_motors(RE, hw):
     RE.subscribe(bec)
     # should not raise
     RE(simple_count([hw.det], md={"motors": []}))
+
+
+def test_best_effort_table_prints_what_bec_prints(RE, hw, capsys):
+    """Print the same heading, table and baseline as BestEffortCallback with plots disabled."""
+    docs = []
+    RE.preprocessors.append(SupplementalData(baseline=[hw.det]))
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5), lambda name, doc: docs.append((name, doc)))
+    capsys.readouterr()
+
+    bec = BestEffortCallback()
+    bec.disable_plots()
+    for name, doc in docs:
+        bec(name, doc)
+    bec_out = capsys.readouterr().out
+
+    table = BestEffortTable()
+    for name, doc in docs:
+        table(name, doc)
+    table_out = capsys.readouterr().out
+
+    assert "Transient Scan ID" in table_out
+    assert "Start-of-run baseline readings:" in table_out
+    assert table_out == bec_out
+
+
+def test_best_effort_table_without_matplotlib():
+    """Import and run BestEffortTable with matplotlib unavailable."""
+    code = (
+        "import sys, time\n"
+        "sys.modules['matplotlib'] = None\n"
+        "from bluesky.callbacks import BestEffortTable\n"
+        "BestEffortTable()('start', {'uid': 'abc', 'time': time.time(), 'scan_id': 1})\n"
+    )
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert "Persistent Unique Scan ID: 'abc'" in result.stdout
