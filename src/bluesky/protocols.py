@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
-from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, TypeVar, runtime_checkable
+from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, runtime_checkable
 
 from event_model.documents import Datum, StreamDatum, StreamResource
 from event_model.documents.event import PartialEvent
@@ -10,10 +10,11 @@ from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 
-# TypedDict and Unpack are imported from typing_extensions rather than typing:
-# typing_extensions.TypedDict carries backported fixes recommended until Python
-# 3.12, and typing.Unpack is only available from Python 3.11 (floor is 3.10).
-from typing_extensions import TypedDict, Unpack
+# TypedDict, TypeVar and Unpack are imported from typing_extensions rather than
+# typing: typing_extensions.TypedDict carries backported fixes recommended until
+# Python 3.12, typing.TypeVar only accepts a default from Python 3.13, and
+# typing.Unpack is only available from Python 3.11 (floor is 3.10).
+from typing_extensions import TypedDict, TypeVar, Unpack
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
@@ -87,6 +88,10 @@ class Status(Protocol):
     def success(self) -> bool:
         """If done return whether the operation was successful."""
         ...
+
+
+#: Type variable for status objects with extended API, ``Status`` when not given
+StatusT = TypeVar("StatusT", bound=Status, covariant=True, default=Status)
 
 
 @runtime_checkable
@@ -220,17 +225,17 @@ class Configurable(Protocol[T]):
 
 
 @runtime_checkable
-class Triggerable(Protocol):
+class Triggerable(Protocol[StatusT]):
     @abstractmethod
-    def trigger(self) -> Status:
+    def trigger(self) -> StatusT:
         """Return a ``Status`` that is marked done when the device is done triggering."""
         ...
 
 
 @runtime_checkable
-class Preparable(Protocol[T_co]):
+class Preparable(Protocol[T_co, StatusT]):
     @abstractmethod
-    def prepare(self, value: T_co) -> Status:
+    def prepare(self, value: T_co) -> StatusT:
         """Prepare a device for scanning.
 
         This method provides similar functionality to ``Stageable.stage`` and
@@ -353,9 +358,9 @@ class EventPageCollectable(Collectable, Protocol):
 
 
 @runtime_checkable
-class Movable(Protocol[T_co]):
+class Movable(Protocol[T_co, StatusT]):
     @abstractmethod
-    def set(self, *args: Unpack[tuple[T_co]]) -> Status:
+    def set(self, *args: Unpack[tuple[T_co]]) -> StatusT:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
@@ -370,7 +375,7 @@ class Location(Generic[T], TypedDict):
 
 
 @runtime_checkable
-class Locatable(Movable[T], Protocol):
+class Locatable(Movable[T, StatusT], Protocol):
     @abstractmethod
     def locate(self) -> SyncOrAsync[Location[T]]:
         """Return the current location of a Device.
@@ -384,9 +389,9 @@ class Locatable(Movable[T], Protocol):
 
 
 @runtime_checkable
-class Flyable(HasName, Protocol):
+class Flyable(HasName, Protocol[StatusT]):
     @abstractmethod
-    def kickoff(self) -> Status:
+    def kickoff(self) -> StatusT:
         """Begin acculumating data.
 
         Return a ``Status`` and mark it done when acqusition has begun.
@@ -394,17 +399,17 @@ class Flyable(HasName, Protocol):
         ...
 
     @abstractmethod
-    def complete(self) -> Status:
+    def complete(self) -> StatusT:
         """Return a ``Status`` and mark it done when acquisition has completed."""
         ...
 
 
 @runtime_checkable
-class Stageable(Protocol):
+class Stageable(Protocol[StatusT]):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     @abstractmethod
-    def stage(self) -> Status | list[Any]:
+    def stage(self) -> StatusT | list[Any]:
         """An optional hook for "setting up" the device for acquisition.
 
         It should return a ``Status`` that is marked done when the device is
@@ -413,7 +418,7 @@ class Stageable(Protocol):
         ...
 
     @abstractmethod
-    def unstage(self) -> Status | list[Any]:
+    def unstage(self) -> StatusT | list[Any]:
         """A hook for "cleaning up" the device after acquisition.
 
         It should return a ``Status`` that is marked done when the device is finished
@@ -529,7 +534,7 @@ class HasHints(HasName, Protocol):
 
 
 @runtime_checkable
-class NamedMovable(Movable[T_co], HasHints, Protocol):
+class NamedMovable(Movable[T_co, StatusT], HasHints, Protocol):
     """A movable object that has a name and hints."""
 
     ...
