@@ -1,6 +1,7 @@
 import atexit
 import logging
 import threading
+import time
 from collections.abc import Callable
 from queue import Empty, Full, Queue
 
@@ -19,6 +20,12 @@ class BufferingWrapper:
     The wrapped callback should be thread-safe and not subscribed to the RE directly.
     If it maintains shared mutable state, it must protect it using internal locking.
 
+    Because documents are processed asynchronously, a run may not be fully written
+    by the time `RE(plan)` returns. Code that reads a run back immediately after
+    it completes (e.g. `db[-1]` or `db[uid]`) must call :meth:`flush` first to
+    wait for the buffer to drain; otherwise it may observe a missing or incomplete
+    run, or silently pick up the previous one.
+
     This is mainly a development feature to allow subscribing (potentially many)
     experimental callbacks to a `RunEngine` without the risk of blocking the experiment.
     The use in production is currently not encouraged (at least not without a proper
@@ -34,7 +41,7 @@ class BufferingWrapper:
 
     Usage
     -----
-        tw = TiltedWriter(client)
+        tw = TiledWriter(client)
         buff_tw = BufferingWrapper(tw)
         RE.subscribe(buff_tw)
     """
@@ -73,15 +80,62 @@ class BufferingWrapper:
     def _process_queue(self):
         while True:
             try:
-                if item := self._queue.get(timeout=1):
-                    self._wrapped_callback(*item)  # Delegate to wrapped callback
-                else:
-                    break  # Received sentinel value to stop processing
+                item = self._queue.get(timeout=1)
             except Empty:
                 if self._stop_event.is_set():
                     break
+                continue
+            try:
+                if item is None:
+                    break  # Received sentinel value to stop processing
+                self._wrapped_callback(*item)  # Delegate to wrapped callback
             except Exception as e:
                 logger.exception(f"Exception in {self._wrapped_callback.__class__.__name__}: {e}")
+            finally:
+                # Account for every retrieved item (including the sentinel and items whose
+                # processing raised), so that `flush` can rely on the queue's unfinished-task counter.
+                self._queue.task_done()
+
+    def flush(self, timeout: "float | None" = None) -> bool:
+        """Block until all documents enqueued so far have been processed.
+
+        This provides a synchronization barrier for read-after-write patterns:
+        a plan or script that reads a run back (e.g. `db[uid]`) immediately
+        after `RE(plan)` returns must call `flush()` first, because the
+        wrapped callback processes documents asynchronously and may not have
+        written the run yet by the time the plan finishes.
+
+        Documents enqueued by another thread *while* flushing extend the wait:
+        the method returns once the queue has no unfinished items.
+
+        Parameters
+        ----------
+        timeout : float, optional
+            Maximum time to wait, in seconds. By default, wait indefinitely.
+
+        Returns
+        -------
+        bool
+            True if the buffer was fully drained; False if the timeout expired
+            (or the worker thread is no longer running) with items remaining.
+        """
+        if timeout is not None:
+            deadline = time.monotonic() + timeout
+        with self._queue.all_tasks_done:
+            while self._queue.unfinished_tasks:
+                if not self._thread.is_alive():
+                    # The worker has exited (e.g. after shutdown); any items
+                    # still in the queue will never be processed.
+                    return not self._queue.unfinished_tasks
+                if timeout is None:
+                    # Wake up periodically to recheck worker liveness.
+                    self._queue.all_tasks_done.wait(timeout=1)
+                else:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        return False
+                    self._queue.all_tasks_done.wait(timeout=min(remaining, 1))
+        return True
 
     def shutdown(self, wait: bool = True):
         if self._stop_event.is_set():
