@@ -170,7 +170,7 @@ class MachineDescriptor:
     def __set__(self, obj: "RunEngine", value: str | RunEngineState) -> None:
         with obj._state_lock:
             old, new = self._get_or_create(obj).set(value)
-        tags = {"old_state": old, "new_state": new, "RE": self}
+        tags = {"old_state": old, "new_state": new, "RE": obj}
         state_logger.info("Change state on %r from %r -> %r", obj, old, new, extra=tags)
         if obj.state_hook is not None:
             obj.state_hook(new, old)

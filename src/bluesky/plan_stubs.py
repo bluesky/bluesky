@@ -23,6 +23,7 @@ from event_model import ComposeEvent
 from event_model.documents import EventDescriptor
 
 from .protocols import (
+    Checkable,
     Collectable,
     Configurable,
     Executable,
@@ -41,6 +42,7 @@ from .protocols import (
     StatusWithResult,
     Stoppable,
     T,
+    T_co,
     Triggerable,
     WritesStreamAssets,
     check_supports,
@@ -68,26 +70,30 @@ TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]
 
 @plan
 def declare_stream(
-    *objs: Readable, name: str, collect: bool = False
+    *objs: Readable[Any] | Collectable, name: str, collect: bool = False
 ) -> MsgGenerator[tuple[EventDescriptor, ComposeEvent]]:
     """
-    Bundle future readings into a new Event document.
+    Declare an event stream and emit its EventDescriptor.
 
     Parameters
     ----------
-    objs :
-        objects whose readings will be present in the stream
-    name : string, optional
-        name given to event stream, used for convenient identification
-        default is 'primary'
+    *objs : Readable[Any] | Collectable
+        Objects whose data keys make up the stream.
+    name : str
+        Name of the event stream.
     collect : bool, optional
-        collect as well as describe when declaring the stream
-        default is `False`
+        If True, take the data keys from ``describe_collect()`` instead of
+        ``describe()``. Default is False.
 
     Yields
     ------
     msg : Msg
-        Msg('create', name=name)
+        ``Msg('declare_stream', None, *objs, name=name, collect=collect)``
+
+    Returns
+    -------
+    descriptor : tuple[EventDescriptor, ComposeEvent]
+        The EventDescriptor of the stream and the factory for its Events.
 
     See Also
     --------
@@ -155,13 +161,14 @@ def drop() -> MsgGenerator[None]:
 
 
 @plan
-def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[str, Reading]]:
+def read(*objs: Readable[Any]) -> MsgGenerator[Mapping[str, Reading[Any]]]:
     """
     Read from devices and add to the current bundle of readings.
 
     Parameters
     ----------
-    objs : Readable objects.
+    *objs : Readable[Any]
+        Objects to read.
 
     Yields
     ------
@@ -170,8 +177,8 @@ def read(*objs: Sequence[Readable[Any]]) -> MsgGenerator[Mapping[str, Reading]]:
 
     Returns
     -------
-    reading:
-        dict of device name to recorded information.
+    reading : Mapping[str, Reading[Any]]
+        The reading of each data key, keyed by its name.
     """
 
     # If ``True`` then there will be one Msg per device, which means that
@@ -1203,6 +1210,26 @@ def collect_while_completing(
 
 
 @plan
+def check_value(obj: Checkable[T_co], value: T_co) -> MsgGenerator[None]:
+    """Check that a valid setpoint has been given.
+
+    Calls ``obj.check_value(value)``, routing the check
+    to the device implementation.
+
+    This plan should be used before calling ``set(value)``
+    to ensure that the value is acceptable for the device.
+
+    Parameters
+    ----------
+    obj : Checkable[T_co]
+        The object to check.
+    value : T_co
+        The value to check.
+    """
+    yield Msg("check_value", obj, value)
+
+
+@plan
 def configure(
     obj: Configurable,
     *args: Any,
@@ -1983,6 +2010,7 @@ def fly_stub(
     *,
     collect_flush_period: float | None = None,
     stream_name: str | None = None,
+    collect: bool = False,
     watch: Sequence[str] = (),
 ) -> MsgGenerator[None]:
     """
@@ -1996,6 +2024,10 @@ def fly_stub(
         If set, will use `collect_while_completing` with the given flush period
     stream_name : str, optional
         If set, will declare a stream with the given name for all flyers
+    collect : bool, optional
+        If set, declare the stream from the flyers' `describe_collect`
+        rather than `describe`. Only used if `stream_name` is set.
+        Default is `False`.
     watch: set of watch groups, optional
         Additional groups to monitor while collecting from flyers.
         Will only be used if `collect_flush_period` is set.
@@ -2017,7 +2049,7 @@ def fly_stub(
     # If provided, attempt to declare single stream for all collectable detectors
     # note that if set, all detectors must produce the same number of events.
     if stream_name is not None:
-        yield from declare_stream(*dets, name=stream_name)
+        yield from declare_stream(*dets, name=stream_name, collect=collect)
 
     # Kickoff all flyers
     yield from kickoff_all(*flyers, wait=True)

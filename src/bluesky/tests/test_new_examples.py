@@ -14,6 +14,7 @@ from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
     abs_set,
     caching_repeater,
+    check_value,
     checkpoint,
     clear_checkpoint,
     close_run,
@@ -271,6 +272,63 @@ def test_locatable_message_multiple_objects(RE, hw):
         # And now it will skip one as they both incremented above
         dict(setpoint=5.0, readback=5.0),  # noqa: C408
     ]
+
+
+class UncheckedAxis:
+    def __init__(self, name: str, position: float, calls: list) -> None:
+        self.name = name
+        self.parent = None
+        self.position = position
+        self.calls = calls
+
+    def set(self, value: float) -> NullStatus:
+        self.calls.append(("set", value))
+        self.position = value
+        return NullStatus()
+
+    def locate(self) -> Location[float]:
+        return {"setpoint": self.position, "readback": self.position}
+
+
+class CheckedAxis(UncheckedAxis):
+    def check_value(self, value: float) -> None:
+        self.calls.append(("check", value))
+        if not 0 <= value <= 10:
+            raise ValueError(f"{value} is outside the limits of {self.name}")
+
+
+def test_check_value_then_move(RE):
+    """Check the value on the device before a following mv sets it."""
+    calls = []
+    x = CheckedAxis("x", 0.0, calls)
+
+    def plan():
+        yield from check_value(x, 3.0)
+        yield from mv(x, 3.0)
+
+    RE(plan())
+    assert calls == [("check", 3.0), ("set", 3.0)]
+
+
+def test_check_value_rejects_value_without_moving(RE):
+    """Raise the device's error and stop the plan before it moves."""
+    calls = []
+    x = CheckedAxis("x", 0.0, calls)
+
+    def plan():
+        yield from check_value(x, 20.0)
+        yield from mv(x, 20.0)
+
+    with pytest.raises(ValueError, match="outside the limits"):
+        RE(plan())
+    assert calls == [("check", 20.0)]
+    assert x.position == 0.0
+
+
+def test_check_value_rejects_device_without_check_value(RE):
+    """Fail on a device that does not implement check_value."""
+    with pytest.raises(AssertionError, match="Checkable"):
+        RE(check_value(UncheckedAxis("x", 0.0, []), 3.0))
 
 
 class UnnamedAxis:

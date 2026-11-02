@@ -188,6 +188,17 @@ set
 Tells a ``Mover`` object to move.  Currently this mimics the epics-like logic
 of immediate motion.
 
+check_value
++++++++++++
+
+Asks a ``Checkable`` object whether it accepts a value, without moving it.
+This calls ``obj.check_value(value)``, which raises an exception if the value
+is not acceptable.
+
+Expected message object is::
+
+    Msg('check_value', obj, value)
+
 stage and unstage
 +++++++++++++++++
 Instruct the RunEngine to stage/unstage the object. This calls
