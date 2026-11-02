@@ -253,8 +253,13 @@ def test_flush_waits_for_processing(make_wrapper):
 
 
 def test_flush_empty_buffer_returns_immediately(make_wrapper):
+    """flush() on an empty buffer is an idempotent no-op, however many times
+    it is called, with or without a timeout."""
     buff_cb = make_wrapper(SlowDummyCallback(delay=0))
-    assert buff_cb.flush(timeout=1) is True
+    for _ in range(3):
+        assert buff_cb.flush(timeout=1) is True
+        assert buff_cb.flush() is True
+    assert buff_cb._thread.is_alive()
 
 
 def test_flush_timeout(make_wrapper):
@@ -291,6 +296,7 @@ def test_flush_after_shutdown(make_wrapper):
     buff_cb.shutdown(wait=True)
 
     assert buff_cb.flush(timeout=1) is True
+    assert buff_cb.flush(timeout=1) is True  # repeated calls remain safe
     assert len(cb.called) == 5
 
 
