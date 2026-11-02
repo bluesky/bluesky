@@ -221,12 +221,6 @@ def test_publisher_custom_serializer(mock_ctx):
     p.close()
 
 
-# NOTE: Skipping a weird race condition with unhandled exceptions from pytest on linux on python 3.10
-#  where exceptions are raised in the thread.
-@pytest.mark.skipif(
-    sys.version_info < (3, 11) and sys.platform == "linux",
-    reason="Skip on Linux when Python == 3.10",
-)
 def test_dispatcher_custom_deserializer():
     """Verify RemoteDispatcher uses the custom deserializer."""
     custom_deserializer = MagicMock(return_value={"uid": "abc123"})
