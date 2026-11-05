@@ -56,6 +56,13 @@ def test_all(RE, hw):
     assert c.value == 10 + 1 + 2
 
 
+def test_pprint_docs(RE, hw, capsys):
+    RE(count([hw.det]), core_callbacks.pprint_docs)
+    out = capsys.readouterr().out
+    for name in ("start", "descriptor", "event", "stop"):
+        assert f"{{'{name}':" in out
+
+
 def test_raising_ignored_or_not(RE, hw):
     RE.ignore_callback_exceptions = True
     assert RE.ignore_callback_exceptions

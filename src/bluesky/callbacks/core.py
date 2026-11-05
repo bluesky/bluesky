@@ -4,6 +4,7 @@ Useful callbacks for the Run Engine
 
 import logging
 import time as ttime
+from typing import Any
 import warnings
 from collections import OrderedDict, deque, namedtuple
 from datetime import datetime
@@ -17,8 +18,28 @@ from event_model import DocumentRouter
 from bluesky.env_vars import BLUESKY_DEBUG_CALLBACKS
 
 from ..utils import ensure_uid
+from pprint import pprint
 
 logger = logging.getLogger(__name__)
+
+
+def pprint_docs(name: str, doc: dict[str, Any]):
+    """
+    Pretty-print the bluesky document stream for debugging purposes.
+
+    This function is useful for debugging and inspecting the contents of bluesky documents.
+    Generally, it should be passed to the ``RE`` as a second argument, rather than used
+    as a permanent subscrition.
+
+    Parameters
+    ----------
+    name : str
+        The name of the document.
+    doc : dict[str, Any]
+        The document to print.
+    """
+
+    pprint({name: doc})
 
 
 def make_callback_safe(func=None, *, logger=None):

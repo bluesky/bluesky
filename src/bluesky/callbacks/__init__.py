@@ -23,6 +23,7 @@ from .core import (
     LiveTable,
     collector,
     get_obj_fields,
+    pprint_docs,
     print_metadata,
 )
 from .fitting import LiveFit
