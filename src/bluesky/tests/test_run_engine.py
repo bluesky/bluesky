@@ -2263,6 +2263,36 @@ def test_hints(RE):
     assert doc["hints"]["det"] == {"vis": "placeholder"}
 
 
+def test_hinted_fields_missing_from_data_keys_are_dropped(RE, caplog):
+    class Detector:
+        def __init__(self, name):
+            self.name = name
+            self.parent = None
+            self.hints = {"fields": ["det_a", "det_b"], "vis": "placeholder"}
+
+        async def read(self):
+            return {"det_a": {"value": 1, "timestamp": 0}}
+
+        async def describe(self):
+            return {"det_a": {"source": "det_a", "dtype": "number", "shape": []}}
+
+        async def read_configuration(self):
+            return {}
+
+        async def describe_configuration(self):
+            return {}
+
+    det = Detector("det")
+
+    collector = []
+
+    RE(count([det]), {"descriptor": lambda name, doc: collector.append(doc)})
+    doc = collector.pop()
+    assert doc["hints"]["det"] == {"fields": ["det_a"], "vis": "placeholder"}
+    assert det.hints["fields"] == ["det_a", "det_b"]
+    assert any("det_b" in r.getMessage() and r.levelname == "WARNING" for r in caplog.records)
+
+
 def test_filled(RE, hw, db):
     collector = []
 
