@@ -1552,30 +1552,54 @@ def get_metadata(*keys: str, context: bool = False) -> MsgGenerator[Any]:
     return (yield Msg("get_metadata", None, *keys, context=context))
 
 
-# The format (key1, value1, key2, value2, ...)
-# is not currently able to be represented in python's type system
 @plan
-def set_metadata(*args: str | Any, context: bool = False) -> MsgGenerator[None]:
+def set_metadata(*, context: bool = False, **md: Any) -> MsgGenerator[None]:
     """
     Set values in the RunEngine's metadata.
 
     Parameters
     ----------
-    args :
-        key1, value1, key2, value2, ...
     context : bool, optional
         If True, set in ``RE.context_md``, otherwise in ``RE.md``
+    **md : Any
+        Keys and values to set, e.g. ``sample='Si', operator='jdoe'``
 
     Yields
     ------
     msg : Msg
-        Msg('set_metadata', None, key1, value1, key2, value2, ..., context=context)
+        Msg('set_metadata', None, md, context=context)
 
     See Also
     --------
     :func:`bluesky.plan_stubs.get_metadata`
     """
-    return (yield Msg("set_metadata", None, *args, context=context))
+    return (yield Msg("set_metadata", None, md, context=context))
+
+
+@plan
+def del_metadata(*keys: str, context: bool = False) -> MsgGenerator[None]:
+    """
+    Delete keys from the RunEngine's metadata.
+
+    Keys that are not present are ignored.
+
+    Parameters
+    ----------
+    *keys : str
+        Keys to delete from the metadata
+    context : bool, optional
+        If True, delete from ``RE.context_md``, otherwise from ``RE.md``
+
+    Yields
+    ------
+    msg : Msg
+        ``Msg('del_metadata', None, *keys, context=context)``
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.set_metadata`
+    """
+    return (yield Msg("del_metadata", None, *keys, context=context))
 
 
 @plan

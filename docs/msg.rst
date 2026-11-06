@@ -312,14 +312,26 @@ set_metadata
 ++++++++++++
 
 Write values to ``RE.md``, or to ``RE.context_md`` if ``context=True``.
-Keys and values alternate, as in ``mv``.
+The values are given as a single mapping of keys to values.
 
 Expected message object is::
 
-    Msg('set_metadata', None, key1, value1, key2, value2, ..., context=False)
+    Msg('set_metadata', None, {key1: value1, key2: value2, ...}, context=False)
 
 This message is replayed when the RunEngine rewinds to a checkpoint on resume,
 so it overwrites any change made to the same keys while paused.
+
+
+del_metadata
+++++++++++++
+
+Delete keys from ``RE.md``, or from ``RE.context_md`` if ``context=True``.
+Keys that are not present are ignored, so the message can be safely replayed
+when the RunEngine rewinds to a checkpoint on resume.
+
+Expected message object is::
+
+    Msg('del_metadata', None, key1, key2, ..., context=False)
 
 
 checkpoint

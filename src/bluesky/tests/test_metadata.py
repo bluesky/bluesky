@@ -149,7 +149,7 @@ def test_set_and_get_metadata(RE: RunEngine, context: bool) -> None:
 
     def plan() -> MsgGenerator[None]:
         nonlocal result
-        yield from bps.set_metadata("a", 1, "b", [2, 3], context=context)
+        yield from bps.set_metadata(a=1, b=[2, 3], context=context)
         result = yield from bps.get_metadata("a", "b", context=context)
 
     RE(plan())
@@ -177,7 +177,7 @@ def test_get_metadata_single_key_returns_value(RE: RunEngine) -> None:
 
 def test_set_metadata_overwrites_existing(RE: RunEngine) -> None:
     RE.md["sample"] = "Si"
-    RE(bps.set_metadata("sample", "Ge"))
+    RE(bps.set_metadata(sample="Ge"))
     assert RE.md["sample"] == "Ge"
 
 
@@ -186,19 +186,53 @@ def test_get_metadata_missing_key_raises(RE: RunEngine) -> None:
         RE(bps.get_metadata("missing"))
 
 
-@pytest.mark.parametrize("args", [("a",), ("a", 1, "b")])
-def test_set_metadata_odd_number_of_args_raises(RE: RunEngine, args: tuple[Any, ...]) -> None:
-    with pytest.raises(ValueError, match="alternating keys and values"):
-        RE(bps.set_metadata(*args))
+@pytest.mark.parametrize("context", [False, True])
+def test_del_metadata(RE: RunEngine, context: bool) -> None:
+    target, other = (RE.context_md, RE.md) if context else (RE.md, RE.context_md)
+    target.update(a=1, b=2, c=3)
+    other["a"] = 1
+
+    RE(bps.del_metadata("a", "b", context=context))
+
+    assert "a" not in target
+    assert "b" not in target
+    assert target["c"] == 3
+    assert other["a"] == 1
+
+
+def test_del_metadata_missing_key_ignored(RE: RunEngine) -> None:
+    RE.md["a"] = 1
+    RE(bps.del_metadata("missing", "a"))
     assert "a" not in RE.md
+
+
+def test_del_metadata_replayed_on_rewind(RE: RunEngine) -> None:
+    commands: list[str] = []
+    RE.msg_hook = lambda msg: commands.append(msg.command)
+    RE.md["sample"] = "Si"
+
+    def plan() -> MsgGenerator[None]:
+        yield from bps.checkpoint()
+        yield from bps.del_metadata("sample")
+        yield from bps.pause()
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    assert "sample" not in RE.md
+
+    RE.md["sample"] = "Ge"
+    RE.resume()
+
+    assert "sample" not in RE.md
+    assert commands.count("del_metadata") == 2
 
 
 def test_set_metadata_in_plan_is_included_in_next_start_doc(RE: RunEngine) -> None:
     start_docs: list[dict[str, Any]] = []
 
     def plan() -> MsgGenerator[None]:
-        yield from bps.set_metadata("sample", "Si")
-        yield from bps.set_metadata("calib", "xyz", context=True)
+        yield from bps.set_metadata(sample="Si")
+        yield from bps.set_metadata(calib="xyz", context=True)
         yield from count([])
 
     RE(plan(), lambda name, doc: start_docs.append(doc) if name == "start" else None)
@@ -208,7 +242,7 @@ def test_set_metadata_in_plan_is_included_in_next_start_doc(RE: RunEngine) -> No
 
 
 def test_set_metadata_persists_across_plans(RE: RunEngine) -> None:
-    RE(bps.set_metadata("operator", "jdoe", context=True))
+    RE(bps.set_metadata(operator="jdoe", context=True))
     result: Any = None
 
     def plan() -> MsgGenerator[None]:
@@ -224,7 +258,7 @@ def test_metadata_msgs_with_raw_msg(RE: RunEngine) -> None:
 
     def plan() -> MsgGenerator[None]:
         nonlocal result
-        yield Msg("set_metadata", None, "x", 5)
+        yield Msg("set_metadata", None, {"x": 5})
         result = yield Msg("get_metadata", None, "x")
 
     RE(plan())
@@ -233,7 +267,7 @@ def test_metadata_msgs_with_raw_msg(RE: RunEngine) -> None:
 
 def _pausing_metadata_plan(results: list[Any], context: bool) -> MsgGenerator[None]:
     yield from bps.checkpoint()
-    yield from bps.set_metadata("sample", "Si", context=context)
+    yield from bps.set_metadata(sample="Si", context=context)
     results.append((yield from bps.get_metadata("sample", context=context)))
     yield from bps.pause()
     results.append((yield from bps.get_metadata("sample", context=context)))

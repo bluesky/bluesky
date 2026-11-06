@@ -430,8 +430,9 @@ Store it in ``RE.context_md``, which can be passed to the RunEngine like ``md``:
     RE = RunEngine({}, context_md={'calibration': 'calib-2026-11-05'})
 
 Plans can read and write both ``RE.md`` and ``RE.context_md`` with
-:func:`bluesky.plan_stubs.get_metadata` and
-:func:`bluesky.plan_stubs.set_metadata`:
+:func:`bluesky.plan_stubs.get_metadata`,
+:func:`bluesky.plan_stubs.set_metadata` and
+:func:`bluesky.plan_stubs.del_metadata`:
 
 .. code-block:: python
 
@@ -439,7 +440,8 @@ Plans can read and write both ``RE.md`` and ``RE.context_md`` with
 
     def plan():
         calib = yield from bps.get_metadata('calibration', context=True)
-        yield from bps.set_metadata('sample', 'Si', 'operator', 'jdoe')
+        yield from bps.set_metadata(sample='Si', operator='jdoe')
+        yield from bps.del_metadata('calibration', context=True)
 
 Values in ``RE.md`` go into the start document of every subsequent run; values
 in ``RE.context_md`` never do. To record context metadata only in the runs it

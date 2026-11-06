@@ -582,6 +582,7 @@ class RunEngine:
             "remove_suspender": self._remove_suspender,
             "get_metadata": self._get_metadata,
             "set_metadata": self._set_metadata,
+            "del_metadata": self._del_metadata,
             "check_value": self._check_value,
         }
 
@@ -2779,16 +2780,24 @@ class RunEngine:
         """
         Process a 'set_metadata' Msg. Expected Msg:
 
-            Msg('set_metadata', None, key1, value1, key2, value2, ..., context=False)
+            Msg('set_metadata', None, {key1: value1, key2: value2, ...}, context=False)
         """
-        if len(msg.args) % 2:
-            raise ValueError(
-                "set_metadata expects alternating keys and values (key1, value1, key2, value2, ...), "
-                f"got {msg.args}"
-            )
+        (updates,) = msg.args
         md = self.context_md if msg.kwargs.get("context", False) else self.md
-        for key, value in zip(msg.args[::2], msg.args[1::2], strict=True):
-            md[key] = value
+        md.update(updates)
+
+    async def _del_metadata(self, msg):
+        """
+        Process a 'del_metadata' Msg. Expected Msg:
+
+            Msg('del_metadata', None, key1, key2, ..., context=False)
+
+        Missing keys are ignored.
+        """
+        md = self.context_md if msg.kwargs.get("context", False) else self.md
+        # Ignoring missing keys lets this be replayed on rewind after it already ran.
+        for key in msg.args:
+            md.pop(key, None)
 
     def emit_sync(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
