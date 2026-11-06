@@ -1543,7 +1543,8 @@ def get_metadata(*keys: str, context: bool = False) -> MsgGenerator[Any]:
     -------
     values : Any
         The value for a single key, or a tuple of values (in the order of
-        the requested keys) if more than one key is given
+        the requested keys) if more than one key is given. Missing keys give
+        ``None``, like ``dict.get``.
 
     See Also
     --------

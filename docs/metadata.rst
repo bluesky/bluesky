@@ -448,6 +448,15 @@ in ``RE.context_md`` never do. To record context metadata only in the runs it
 applies to, fetch it with ``bps.get_metadata(..., context=True)`` and pass it
 through a plan's ``md`` argument or ``bps.open_run``.
 
+.. note::
+
+    ``get_metadata`` is intended only for attaching metadata to runs, not for
+    controlling how a plan behaves. Anything that affects a plan's behavior
+    should be an explicit argument to that plan, so its dependencies are visible
+    in its signature. ``get_metadata`` returns ``None`` for missing keys, like
+    ``dict.get``, so a plan that only attaches metadata does not fail when a key
+    is not set.
+
 
 Allowed Data Types
 ------------------

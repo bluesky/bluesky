@@ -181,9 +181,16 @@ def test_set_metadata_overwrites_existing(RE: RunEngine) -> None:
     assert RE.md["sample"] == "Ge"
 
 
-def test_get_metadata_missing_key_raises(RE: RunEngine) -> None:
-    with pytest.raises(KeyError, match="missing"):
-        RE(bps.get_metadata("missing"))
+def test_get_metadata_missing_key_returns_none(RE: RunEngine) -> None:
+    RE.md["a"] = 1
+    result: Any = None
+
+    def plan() -> MsgGenerator[None]:
+        nonlocal result
+        result = yield from bps.get_metadata("missing", "a")
+
+    RE(plan())
+    assert result == (None, 1)
 
 
 @pytest.mark.parametrize("context", [False, True])

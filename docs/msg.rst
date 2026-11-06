@@ -301,7 +301,7 @@ get_metadata
 
 Read values from ``RE.md``, or from ``RE.context_md`` if ``context=True``.
 Returns the value for a single key, or a tuple of values for multiple keys.
-Raises ``KeyError`` if a key is missing.
+Missing keys give ``None``, like ``dict.get``.
 
 Expected message object is::
 

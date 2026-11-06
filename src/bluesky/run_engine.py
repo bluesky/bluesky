@@ -2771,9 +2771,10 @@ class RunEngine:
             Msg('get_metadata', None, key1, key2, ..., context=False)
 
         Returns the value for a single key, or a tuple of values for multiple keys.
+        Missing keys give ``None``, like ``dict.get``.
         """
         md = self.context_md if msg.kwargs.get("context", False) else self.md
-        values = tuple(md[key] for key in msg.args)
+        values = tuple(md.get(key) for key in msg.args)
         return values[0] if len(values) == 1 else values
 
     async def _set_metadata(self, msg):
