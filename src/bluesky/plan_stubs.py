@@ -1340,6 +1340,62 @@ def remove_suspender(suspender: SuspenderBase) -> MsgGenerator:
 
 
 @plan
+def get_metadata(*keys: str, context: bool = False) -> MsgGenerator[Any]:
+    """
+    Retrieve value from the RunEngine's metadata.
+
+    Parameters
+    ----------
+    *keys : str
+        Keys to retrieve from the metadata
+    context : bool, optional
+        If True, retrieve from ``RE.context_md``, otherwise from ``RE.md``
+
+    Yields
+    ------
+    msg : Msg
+        Msg('get_metadata', None, *keys, context=context)
+
+    Returns
+    -------
+    values : Any
+        The value for a single key, or a tuple of values (in the order of
+        the requested keys) if more than one key is given
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.set_metadata`
+    """
+    return (yield Msg("get_metadata", None, *keys, context=context))
+
+
+# The format (key1, value1, key2, value2, ...)
+# is not currently able to be represented in python's type system
+@plan
+def set_metadata(*args: str | Any, context: bool = False) -> MsgGenerator[None]:
+    """
+    Set values in the RunEngine's metadata.
+
+    Parameters
+    ----------
+    args :
+        key1, value1, key2, value2, ...
+    context : bool, optional
+        If True, set in ``RE.context_md``, otherwise in ``RE.md``
+
+    Yields
+    ------
+    msg : Msg
+        Msg('set_metadata', None, key1, value1, key2, value2, ..., context=context)
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.get_metadata`
+    """
+    return (yield Msg("set_metadata", None, *args, context=context))
+
+
+@plan
 def open_run(md: CustomPlanMetadata | None = None) -> MsgGenerator[str]:
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
