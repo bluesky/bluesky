@@ -214,10 +214,20 @@ class RunEngine:
     Parameters
     ----------
     md : MutableMapping[str, Any], optional
+        The metadata to be associated with each run start document.
         The default is a standard Python dictionary, but fancier
         objects can be used to store long-term history and persist
         it between sessions. Any object adhering to the MutableMapping
         Protocol will work.
+
+    context_md : MutableMapping[str, Any], optional
+        Contextual metadata attached to the RunEngine that persists across
+        runs but is never included in the start document. For example, it
+        could store references to calibration data or other resources for a
+        specific experiment or setup that plans can look up at runtime.
+        Accessible from within a plan via
+        ``bluesky.plan_stubs.get_metadata(..., context=True)`` and
+        ``bluesky.plan_stubs.set_metadata(..., context=True)``.
 
     loop : asyncio event loop
         e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
@@ -292,7 +302,11 @@ class RunEngine:
     Attributes
     ----------
     md
-        Direct access to the dict-like persistent storage described above
+        Direct access to the dict-like persistent storage described above.
+
+    context_md
+        Direct access to the contextual metadata storage described above,
+        which is not included in start documents.
 
     record_interruptions
         False by default. Set to True to generate an extra event stream
@@ -399,6 +413,7 @@ class RunEngine:
     def __init__(
         self,
         md: RunEngineMetadata | None = None,
+        context_md: RunEngineMetadata | None = None,
         *,
         loop: asyncio.AbstractEventLoop | None = None,
         preprocessors: list | None = None,
@@ -442,6 +457,10 @@ class RunEngine:
         self.md = md
         self.md.setdefault("versions", {})
 
+        if context_md is None:
+            context_md = {}
+        self.context_md = context_md
+
         try:
             import ophyd
 
@@ -469,16 +488,16 @@ class RunEngine:
         self.context_managers = context_managers
         if md_validator is None:
             md_validator = _default_md_validator
-        self.md_validator = md_validator
+        self.md_validator: Callable[[RunEngineMetadata], None] = md_validator
         if md_normalizer is None:
             md_normalizer = _default_md_normalizer
-        self.md_normalizer = md_normalizer
+        self.md_normalizer: Callable[[RunEngineMetadata], RunEngineMetadata] = md_normalizer
         self.scan_id_source = scan_id_source
 
-        self.max_depth = None
-        self.msg_hook = None
-        self.state_hook = None
-        self.waiting_hook = None
+        self.max_depth: int | None = None
+        self.msg_hook: Callable[[Msg], None] | None = None
+        self.state_hook: Callable[[str], None] | None = None
+        self.waiting_hook: Callable[[set[Status] | None], None] | None = None
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
         self.NO_PLAN_RETURN = object()
@@ -561,6 +580,9 @@ class RunEngine:
             "input": self._input,
             "install_suspender": self._install_suspender,
             "remove_suspender": self._remove_suspender,
+            "get_metadata": self._get_metadata,
+            "set_metadata": self._set_metadata,
+            "del_metadata": self._del_metadata,
             "check_value": self._check_value,
         }
 
@@ -2741,6 +2763,42 @@ class RunEngine:
         async_input = AsyncInput(self.loop)
         async_input = functools.partial(async_input, end="", flush=True)
         return await async_input(prompt)
+
+    async def _get_metadata(self, msg):
+        """
+        Process a 'get_metadata' Msg. Expected Msg:
+
+            Msg('get_metadata', None, key1, key2, ..., context=False)
+
+        Returns the value for a single key, or a tuple of values for multiple keys.
+        Missing keys give ``None``, like ``dict.get``.
+        """
+        md = self.context_md if msg.kwargs.get("context", False) else self.md
+        values = tuple(md.get(key) for key in msg.args)
+        return values[0] if len(values) == 1 else values
+
+    async def _set_metadata(self, msg):
+        """
+        Process a 'set_metadata' Msg. Expected Msg:
+
+            Msg('set_metadata', None, {key1: value1, key2: value2, ...}, context=False)
+        """
+        (updates,) = msg.args
+        md = self.context_md if msg.kwargs.get("context", False) else self.md
+        md.update(updates)
+
+    async def _del_metadata(self, msg):
+        """
+        Process a 'del_metadata' Msg. Expected Msg:
+
+            Msg('del_metadata', None, key1, key2, ..., context=False)
+
+        Missing keys are ignored.
+        """
+        md = self.context_md if msg.kwargs.get("context", False) else self.md
+        # Ignoring missing keys lets this be replayed on rewind after it already ran.
+        for key in msg.args:
+            md.pop(key, None)
 
     def emit_sync(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."

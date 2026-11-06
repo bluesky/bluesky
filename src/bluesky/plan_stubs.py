@@ -1523,6 +1523,87 @@ def remove_suspender(suspender: SuspenderBase) -> MsgGenerator[None]:
 
 
 @plan
+def get_metadata(*keys: str, context: bool = False) -> MsgGenerator[Any]:
+    """
+    Retrieve value from the RunEngine's metadata.
+
+    Parameters
+    ----------
+    *keys : str
+        Keys to retrieve from the metadata
+    context : bool, optional
+        If True, retrieve from ``RE.context_md``, otherwise from ``RE.md``
+
+    Yields
+    ------
+    msg : Msg
+        ``Msg('get_metadata', None, *keys, context=context)``
+
+    Returns
+    -------
+    values : Any
+        The value for a single key, or a tuple of values (in the order of
+        the requested keys) if more than one key is given. Missing keys give
+        ``None``, like ``dict.get``.
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.set_metadata`
+    """
+    return (yield Msg("get_metadata", None, *keys, context=context))
+
+
+@plan
+def set_metadata(*, context: bool = False, **md: Any) -> MsgGenerator[None]:
+    """
+    Set values in the RunEngine's metadata.
+
+    Parameters
+    ----------
+    context : bool, optional
+        If True, set in ``RE.context_md``, otherwise in ``RE.md``
+    **md : Any
+        Keys and values to set, e.g. ``sample='Si', operator='jdoe'``
+
+    Yields
+    ------
+    msg : Msg
+        Msg('set_metadata', None, md, context=context)
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.get_metadata`
+    """
+    return (yield Msg("set_metadata", None, md, context=context))
+
+
+@plan
+def del_metadata(*keys: str, context: bool = False) -> MsgGenerator[None]:
+    """
+    Delete keys from the RunEngine's metadata.
+
+    Keys that are not present are ignored.
+
+    Parameters
+    ----------
+    *keys : str
+        Keys to delete from the metadata
+    context : bool, optional
+        If True, delete from ``RE.context_md``, otherwise from ``RE.md``
+
+    Yields
+    ------
+    msg : Msg
+        ``Msg('del_metadata', None, *keys, context=context)``
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.set_metadata`
+    """
+    return (yield Msg("del_metadata", None, *keys, context=context))
+
+
+@plan
 def open_run(md: CustomPlanMetadata | None = None) -> MsgGenerator[str]:
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
