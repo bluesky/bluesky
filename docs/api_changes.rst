@@ -8,6 +8,14 @@ Unreleased
 Added
 -----
 
+- ``RunEngine`` accepts a ``context_md`` mapping, exposed as
+  ``RE.context_md``, for metadata that persists across runs but is never
+  included in start documents.
+- New plan stubs ``bluesky.plan_stubs.get_metadata`` and
+  ``bluesky.plan_stubs.set_metadata``, backed by new ``get_metadata`` and
+  ``set_metadata`` Msg commands, read and write ``RE.md`` (or
+  ``RE.context_md`` with ``context=True``) from within a plan.
+  ``set_metadata`` takes alternating keys and values, like ``mv``.
 - Suspenders accept signals implementing ``bluesky.protocols.Subscribable``,
   such as ophyd-async signals, as well as ophyd ones.  ``install`` picks the
   subscription style from the signal.  For a ``Subscribable`` it subscribes,

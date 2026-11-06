@@ -417,6 +417,36 @@ to the new system, you must run bluesky v1.5.6 or higher.
     result in data loss! If you aren't sure, it's safer to use ``RE.md = ...``.
 
 
+Contextual Metadata
+-------------------
+
+Some state should persist on the RunEngine across runs without being recorded
+in every start document. For example, references to calibration or dark/flat
+data for the current experiment, that does not necessarily apply to every run.
+Store it in ``RE.context_md``, which can be passed to the RunEngine like ``md``:
+
+.. code-block:: python
+
+    RE = RunEngine({}, context_md={'calibration': 'calib-2026-11-05'})
+
+Plans can read and write both ``RE.md`` and ``RE.context_md`` with
+:func:`bluesky.plan_stubs.get_metadata` and
+:func:`bluesky.plan_stubs.set_metadata`:
+
+.. code-block:: python
+
+    import bluesky.plan_stubs as bps
+
+    def plan():
+        calib = yield from bps.get_metadata('calibration', context=True)
+        yield from bps.set_metadata('sample', 'Si', 'operator', 'jdoe')
+
+Values in ``RE.md`` go into the start document of every subsequent run; values
+in ``RE.context_md`` never do. To record context metadata only in the runs it
+applies to, fetch it with ``bps.get_metadata(..., context=True)`` and pass it
+through a plan's ``md`` argument or ``bps.open_run``.
+
+
 Allowed Data Types
 ------------------
 

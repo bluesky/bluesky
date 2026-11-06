@@ -521,6 +521,8 @@ Plans that control the RunEngine:
     unsubscribe
     install_suspender
     remove_suspender
+    get_metadata
+    set_metadata
     wait
     wait_for
     null

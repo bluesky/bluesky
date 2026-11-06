@@ -285,6 +285,32 @@ Examples::
     Msg('input', None, prompt='>')  # customize prompt
 
 
+get_metadata
+++++++++++++
+
+Read values from ``RE.md``, or from ``RE.context_md`` if ``context=True``.
+Returns the value for a single key, or a tuple of values for multiple keys.
+Raises ``KeyError`` if a key is missing.
+
+Expected message object is::
+
+    Msg('get_metadata', None, key1, key2, ..., context=False)
+
+
+set_metadata
+++++++++++++
+
+Write values to ``RE.md``, or to ``RE.context_md`` if ``context=True``.
+Keys and values alternate, as in ``mv``.
+
+Expected message object is::
+
+    Msg('set_metadata', None, key1, value1, key2, value2, ..., context=False)
+
+This message is replayed when the RunEngine rewinds to a checkpoint on resume,
+so it overwrites any change made to the same keys while paused.
+
+
 checkpoint
 ++++++++++
 
