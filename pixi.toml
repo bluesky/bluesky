@@ -6,6 +6,7 @@ platforms = ["linux-64"]
 version = "1.15.1"
 
 [tasks]
+lint = "pre-commit run --all-files"
 
 [dependencies]
 python = "*"

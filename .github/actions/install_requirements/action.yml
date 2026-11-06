@@ -11,6 +11,19 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Fetch tags from upstream if this checkout has none
+      run: |
+        # GitHub does not copy tags into a fork, so setuptools-scm computes
+        # bluesky==0.1.devN there, which conflicts with ophyd-async requiring
+        # bluesky>=1.13.1rc2. Fetch tags from upstream here, which is a no-op
+        # for upstream and for any checkout that already has them.
+        if [ -z "$(git tag)" ]; then
+          git remote add upstream https://github.com/bluesky/bluesky.git 2>/dev/null || true
+          git fetch --quiet --tags --no-recurse-submodules upstream
+          echo "No tags in this checkout; fetched $(git tag | wc -l) from upstream."
+        fi
+      shell: bash
+
     - name: Get version of python
       run: |
         PYTHON_VERSION="${{ inputs.python-version }}"

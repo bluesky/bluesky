@@ -7,12 +7,14 @@ from unittest.mock import Mock
 
 import pytest
 from event_model.documents.event_descriptor import DataKey
+from ophyd.sim import NullStatus
 
 import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
     abs_set,
     caching_repeater,
+    check_value,
     checkpoint,
     clear_checkpoint,
     close_run,
@@ -22,8 +24,10 @@ from bluesky.plan_stubs import (
     deferred_pause,
     drop,
     get_metadata,
+    execute,
     install_suspender,
     kickoff,
+    loc,
     locate,
     monitor,
     mv,
@@ -86,13 +90,9 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         (save, (), {}, [Msg("save")]),
         (drop, (), {}, [Msg("drop")]),
         (read, ("det",), {}, [Msg("read", "det")]),
-        (locate, (), {}, [Msg("locate", squeeze=True)]),
-        (
-            locate,
-            ("foo",),
-            {"squeeze": False},
-            [Msg("locate", "foo", squeeze=False)],
-        ),
+        (locate, ("foo",), {}, [Msg("locate", "foo")]),
+        (locate, ("foo", "bar"), {}, [Msg("locate", "foo", "bar")]),
+        (loc, ("foo",), {}, [Msg("locate", "foo")]),
         (monitor, ("foo",), {}, [Msg("monitor", "foo", name=None)]),
         (monitor, ("foo",), {"name": "c"}, [Msg("monitor", "foo", name="c")]),
         (unmonitor, ("foo",), {}, [Msg("unmonitor", "foo")]),
@@ -136,6 +136,36 @@ from bluesky.utils import IllegalMessageSequence, all_safe_rewind
         ),
         (trigger, ("det",), {}, [Msg("trigger", "det", group=None)]),
         (trigger, ("det",), {"group": "A"}, [Msg("trigger", "det", group="A")]),
+        (
+            execute,
+            ("det",),
+            {},
+            [Msg("execute", "det", group=None, execute_args=(), execute_kwargs={})],
+        ),
+        (
+            execute,
+            ("det", None, False, 1, 2),
+            {"a": 3},
+            [Msg("execute", "det", group=None, execute_args=(1, 2), execute_kwargs={"a": 3})],
+        ),
+        (
+            execute,
+            ("det", "A", True, 1, 2),
+            {},
+            [
+                Msg("execute", "det", group="A", execute_args=(1, 2), execute_kwargs={}),
+                Msg("wait", None, group="A"),
+            ],
+        ),
+        (
+            execute,
+            ("det",),
+            {"group": "A", "wait": True},
+            [
+                Msg("execute", "det", group="A", execute_args=(), execute_kwargs={}),
+                Msg("wait", None, group="A"),
+            ],
+        ),
         (sleep, (2,), {}, [Msg("sleep", None, 2)]),
         (wait, (), {}, [Msg("wait", None, error_on_timeout=True, group=None, timeout=None, watch=())]),
         (wait, ("A",), {}, [Msg("wait", None, group="A", error_on_timeout=True, timeout=None, watch=())]),
@@ -239,20 +269,149 @@ def test_locatable_message_multiple_objects(RE, hw):
     two = AsyncLocatable()
 
     def multi_rd():
-        rds.append((yield Msg("locate", one, squeeze=False)))
+        rds.append((yield Msg("locate", one)))
         rds.append((yield Msg("locate", two)))
         rds.append((yield Msg("locate", one, two)))
         rds.append((yield Msg("locate", one)))
 
     RE(multi_rd())
     assert rds == [
-        [dict(setpoint=1.0, readback=1.0)],  # noqa: C408
+        dict(setpoint=1.0, readback=1.0),  # noqa: C408
         dict(setpoint=2.0, readback=2.0),  # noqa: C408
         # Check they happened at the same time, so have the same value
         [dict(setpoint=3.0, readback=3.0), dict(setpoint=3.0, readback=3.0)],  # noqa: C408
         # And now it will skip one as they both incremented above
         dict(setpoint=5.0, readback=5.0),  # noqa: C408
     ]
+
+
+class UncheckedAxis:
+    def __init__(self, name: str, position: float, calls: list) -> None:
+        self.name = name
+        self.parent = None
+        self.position = position
+        self.calls = calls
+
+    def set(self, value: float) -> NullStatus:
+        self.calls.append(("set", value))
+        self.position = value
+        return NullStatus()
+
+    def locate(self) -> Location[float]:
+        return {"setpoint": self.position, "readback": self.position}
+
+
+class CheckedAxis(UncheckedAxis):
+    def check_value(self, value: float) -> None:
+        self.calls.append(("check", value))
+        if not 0 <= value <= 10:
+            raise ValueError(f"{value} is outside the limits of {self.name}")
+
+
+def test_check_value_then_move(RE):
+    """Check the value on the device before a following mv sets it."""
+    calls = []
+    x = CheckedAxis("x", 0.0, calls)
+
+    def plan():
+        yield from check_value(x, 3.0)
+        yield from mv(x, 3.0)
+
+    RE(plan())
+    assert calls == [("check", 3.0), ("set", 3.0)]
+
+
+def test_check_value_rejects_value_without_moving(RE):
+    """Raise the device's error and stop the plan before it moves."""
+    calls = []
+    x = CheckedAxis("x", 0.0, calls)
+
+    def plan():
+        yield from check_value(x, 20.0)
+        yield from mv(x, 20.0)
+
+    with pytest.raises(ValueError, match="outside the limits"):
+        RE(plan())
+    assert calls == [("check", 20.0)]
+    assert x.position == 0.0
+
+
+def test_check_value_rejects_device_without_check_value(RE):
+    """Fail on a device that does not implement check_value."""
+    with pytest.raises(AssertionError, match="Checkable"):
+        RE(check_value(UncheckedAxis("x", 0.0, []), 3.0))
+
+
+class UnnamedAxis:
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def set(self, value: float) -> NullStatus:
+        self.value = value
+        return NullStatus()
+
+    def locate(self) -> Location[float]:
+        return {"setpoint": self.value, "readback": self.value}
+
+
+class Axis(UnnamedAxis):
+    def __init__(self, name: str, value: float) -> None:
+        super().__init__(value)
+        self.name = name
+
+
+def test_loc_and_locate(RE):
+    """Return one location from loc and a location per name from locate."""
+    x, y = Axis("x", 1.0), Axis("y", 2.0)
+    results = []
+
+    def plan():
+        results.append((yield from loc(x)))
+        results.append((yield from locate(x)))
+        results.append((yield from locate(x, y)))
+
+    RE(plan())
+    assert results == [
+        {"setpoint": 1.0, "readback": 1.0},
+        {"x": {"setpoint": 1.0, "readback": 1.0}},
+        {"x": {"setpoint": 1.0, "readback": 1.0}, "y": {"setpoint": 2.0, "readback": 2.0}},
+    ]
+
+
+def test_locate_rejects_duplicate_names(RE):
+    """Raise ValueError when two located objects have the same name."""
+    with pytest.raises(ValueError, match="unique names"):
+        RE(locate(Axis("x", 1.0), Axis("x", 2.0)))
+
+
+def test_locate_rejects_unnamed_object(RE):
+    """Raise TypeError when a located object has no name."""
+    with pytest.raises(TypeError, match="no name"):
+        RE(locate(UnnamedAxis(1.0)))
+
+
+def test_locate_warns_on_squeeze(RE):
+    """Warn that squeeze is ignored and still return locations by name."""
+    results = []
+
+    def plan():
+        results.append((yield from locate(Axis("x", 1.0), squeeze=True)))
+
+    with pytest.warns(UserWarning, match="ignores squeeze"):
+        RE(plan())
+    assert results == [{"x": {"setpoint": 1.0, "readback": 1.0}}]
+
+
+def test_locate_message_warns_on_squeeze(RE):
+    """Warn that the locate message ignores squeeze and return one location."""
+    results = []
+
+    def plan():
+        results.append((yield Msg("locate", Axis("x", 1.0), squeeze=False)))
+
+    with pytest.warns(UserWarning, match="locate message ignores squeeze"):
+        RE(plan())
+    assert results == [{"setpoint": 1.0, "readback": 1.0}]
 
 
 def test_rd_locatable(RE, hw):
@@ -740,7 +899,10 @@ def test_trigger_and_read(hw):
         Msg("trigger", det),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="primary"),
-        Msg("read", det),
+        Msg(
+            "read",
+            det,
+        ),
         Msg("save"),
     ]
     for msg in msgs:
@@ -753,7 +915,10 @@ def test_trigger_and_read(hw):
         Msg("trigger", det),
         Msg("wait", error_on_timeout=True, watch=()),
         Msg("create", name="custom"),
-        Msg("read", det),
+        Msg(
+            "read",
+            det,
+        ),
         Msg("save"),
     ]
     for msg in msgs:

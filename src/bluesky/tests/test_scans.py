@@ -189,6 +189,38 @@ def test_multi_motor_list_scan(RE, hw):
     multi_traj_checker(RE, scan, expected_data)
 
 
+def test_list_scan_unequal_lengths_raises():
+    """``list_scan`` (inner product) requires equal-length position lists."""
+    from .conftest import MovableSignal, ReadableSignal
+
+    det = ReadableSignal("det")
+    m1 = MovableSignal(name="m1")
+    m2 = MovableSignal(name="m2")
+
+    with pytest.raises(ValueError, match="lengths of all lists"):
+        # Validation runs before the first yield.
+        next(bp.list_scan([det], m1, [1, 2, 3], m2, [10, 20]))
+
+
+def test_list_scan_duplicate_motor_name_raises():
+    """``list_scan`` must reject motors that share a name.
+
+    Regression test: motors are identified by name in the length bookkeeping
+    (a dict keyed by ``motor.name``) and downstream data keys, so a duplicate
+    name silently overwrote an entry and corrupted validation. Duplicate names
+    are invalid and must be rejected explicitly.
+    """
+    from .conftest import MovableSignal, ReadableSignal
+
+    det = ReadableSignal("det")
+    # Two distinct motors that happen to share a name.
+    m_a = MovableSignal(name="dup")
+    m_b = MovableSignal(name="dup")
+
+    with pytest.raises(ValueError, match="unique name"):
+        next(bp.list_scan([det], m_a, [1, 2, 3], m_b, [10, 20, 30]))
+
+
 def test_dscan(RE, hw):
     traj = np.array([1, 2, 3])
     hw.motor.set(-4)
@@ -416,6 +448,32 @@ def test_adaptive_ascan(RE, hw):
     with pytest.raises(ValueError):  # min step < 0
         scan5 = bp.adaptive_scan([hw.det], "det", hw.motor, 5, 0, -0.1, 1.0, 0.1, False)
         RE(scan5)
+
+
+def test_adaptive_scan_accepts_tuple_detectors(RE, hw):
+    """``detectors`` may be a tuple (as documented), not only a list.
+
+    Regression test: ``adaptive_core`` did ``detectors + [motor]``, which raised
+    ``TypeError`` when ``detectors`` was a tuple.
+    """
+    actual_traj = []
+    col = collector("motor", actual_traj)
+    # Pass detectors as a tuple -- this used to raise ``TypeError: can only
+    # concatenate tuple (not "list") to tuple``.
+    RE(bp.adaptive_scan((hw.det,), "det", hw.motor, 0, 5, 0.1, 1, 0.1, False), {"event": col})
+    assert np.all(np.diff(actual_traj) > 0)
+
+
+def test_adaptive_scan_missing_target_field_raises(RE, hw):
+    """A ``target_field`` that no device reports must fail with a clear error.
+
+    Regression test: the read loop left ``cur_I`` as ``None`` when
+    ``target_field`` was never found, silently bypassing the adaptive stepping
+    logic (``past_I`` stayed ``None`` so every step used the fixed initial
+    step) instead of surfacing the problem.
+    """
+    with pytest.raises(ValueError, match="was not found in the readings"):
+        RE(bp.adaptive_scan([hw.det], "NOT_A_REAL_FIELD", hw.motor, 0, 5, 0.1, 1, 0.1, False))
 
 
 def test_adaptive_dscan(RE, hw):

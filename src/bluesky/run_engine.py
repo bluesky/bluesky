@@ -30,6 +30,8 @@ from bluesky._vendor.super_state_machine.machines import StateMachine
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
 from .protocols import (
+    Checkable,
+    Executable,
     Flyable,
     Locatable,
     Movable,
@@ -70,16 +72,6 @@ from .utils import (
 )
 
 _SPAN_NAME_PREFIX = "Bluesky RunEngine"
-
-current_task: typing.Callable[[asyncio.AbstractEventLoop | None], asyncio.Task | None]
-try:
-    from asyncio import current_task
-except ImportError:
-    # handle py < 3,7
-    from asyncio.tasks import Task
-
-    current_task = Task.current_task  # type: ignore
-    del Task
 
 
 class _RunEnginePanic(Exception): ...
@@ -187,7 +179,7 @@ class LoggingPropertyMachine(PropertyMachine):
         with obj._state_lock:
             super().__set__(obj, value)
         value = self.__get__(obj, own)
-        tags = {"old_state": old_value, "new_state": value, "RE": self}
+        tags = {"old_state": old_value, "new_state": value, "RE": obj}
 
         state_logger.info("Change state on %r from %r -> %r", obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
@@ -426,9 +418,9 @@ class RunEngine:
         loop: asyncio.AbstractEventLoop | None = None,
         preprocessors: list | None = None,
         context_managers: list | None = None,
-        md_validator: typing.Callable | None = None,
-        md_normalizer: typing.Callable | None = None,
-        scan_id_source: typing.Callable[[RunEngineMetadata], SyncOrAsync[int]] = default_scan_id_source,
+        md_validator: Callable | None = None,
+        md_normalizer: Callable | None = None,
+        scan_id_source: Callable[[RunEngineMetadata], SyncOrAsync[int]] = default_scan_id_source,
         during_task: DuringTask | None = None,
         call_returns_result: bool = False,
     ):
@@ -438,10 +430,6 @@ class RunEngine:
         self._th = _ensure_event_loop_running(loop)
         self._state_lock = threading.RLock()
         self._loop = loop
-        if sys.version_info < (3, 8):  # noqa: UP036
-            self._loop_for_kwargs = {"loop": self._loop}
-        else:
-            self._loop_for_kwargs: dict[str, asyncio.AbstractEventLoop] = {}
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
 
@@ -453,7 +441,7 @@ class RunEngine:
         setup_event = threading.Event()
 
         def setup_run_permit():
-            self._run_permit = asyncio.Event(**self._loop_for_kwargs)
+            self._run_permit = asyncio.Event()
             self._run_permit.set()
             setup_event.set()
 
@@ -556,6 +544,7 @@ class RunEngine:
         self._require_stream_declaration = False
         self._command_registry = {
             "declare_stream": self._declare_stream,
+            "execute": self._execute,
             "create": self._create,
             "save": self._save,
             "drop": self._drop,
@@ -593,6 +582,7 @@ class RunEngine:
             "remove_suspender": self._remove_suspender,
             "get_metadata": self._get_metadata,
             "set_metadata": self._set_metadata,
+            "check_value": self._check_value,
         }
 
         # public dispatcher for callbacks
@@ -732,11 +722,17 @@ class RunEngine:
 
     @property
     def verbose(self):
-        return not self.log.disabled
+        # The adapter, not the logger, was asked here and written to below.
+        # `logging.LoggerAdapter` has no `disabled` of its own, so reading it
+        # raised until a write had made one, and a write silenced nothing:
+        # every level check logging makes goes to `self.logger.disabled`.
+        # Disabling reaches the whole `bluesky` logger, which is what it has
+        # always claimed to do -- the adapter is per-engine, the logger is not.
+        return not self.log.logger.disabled
 
     @verbose.setter
     def verbose(self, value):
-        self.log.disabled = not value
+        self.log.logger.disabled = not value
 
     @property
     def call_returns_result(self):
@@ -766,7 +762,7 @@ class RunEngine:
         self._reason = ""
         self._task = None
         self._task_fut = None
-        self._pardon_failures = asyncio.Event(**self._loop_for_kwargs)
+        self._pardon_failures = asyncio.Event()
         self._plan = None
         self._interrupted = False
 
@@ -978,7 +974,7 @@ class RunEngine:
             for func in funcs:
                 self._temp_callback_ids.add(self.subscribe(func, name))
 
-        self._plan = plan  # this ref is just used for metadata introspection
+        self._plan = plan  # type: ignore # this ref is just used for metadata introspection
         self._metadata_per_call.update(metadata_kw)
 
         gen = ensure_generator(plan)
@@ -1087,7 +1083,10 @@ class RunEngine:
             if init_func is not None:
                 init_func()
 
-            if self._task_fut is None or self._task_fut.done():
+            if self._task_fut is None:
+                # No task was ever started; nothing to wait on or return.
+                return self.NO_PLAN_RETURN
+            if self._task_fut.done():
                 try:
                     return self._task_fut.result()
                 except concurrent.futures.CancelledError:
@@ -1258,6 +1257,7 @@ class RunEngine:
                 self._state = "aborting"
                 if not was_paused:
                     self._task.cancel()
+                return
             if justification is not None:
                 print(f"Justification for this suspension:\n{justification}")
 
@@ -1277,6 +1277,20 @@ class RunEngine:
 
         self.loop.call_soon_threadsafe(self.loop.create_task, _request_suspend(pre_plan, post_plan, justification))
 
+    async def _pause_objects(self):
+        """Tell every object the plan has touched that it is being held.
+
+        `bluesky.protocols.Pausable` and not ``hasattr(obj, "pause")``: the
+        protocol requires ``resume`` too, and something told a hold has begun
+        must be something that can be told it has ended.
+        """
+        for obj in self._objs_seen:
+            if isinstance(obj, Pausable):
+                try:
+                    await maybe_await(obj.pause())
+                except NoReplayAllowed:
+                    self._reset_checkpoint_state_meth()
+
     async def _start_suspender(self, msg):
         """
         An internal message to do the initial work of starting a suspender
@@ -1288,12 +1302,7 @@ class RunEngine:
         # every object we ever set().
         await self._stop_movable_objects(success=True)
         # Notify Devices of the pause in case they want to clean up.
-        for obj in self._objs_seen:
-            if hasattr(obj, "pause"):
-                try:
-                    await maybe_await(obj.pause())
-                except NoReplayAllowed:
-                    self._reset_checkpoint_state_meth()
+        await self._pause_objects()
         # rewind to the last checkpoint
         rewind_plan = self._rewind()
         was_rewindable = self.rewindable
@@ -1406,7 +1415,7 @@ class RunEngine:
         self._state = "stopping"
         if was_paused:
             with self._state_lock:
-                self._exception = RequestStop
+                self._exception = RequestStop()
         else:
             self._task.cancel()
 
@@ -1470,7 +1479,7 @@ class RunEngine:
         self._state = "halting"
         if was_paused:
             with self._state_lock:
-                self._exception = PlanHalt
+                self._exception = PlanHalt()
                 self._exit_status = "abort"
         else:
             self._task.cancel()
@@ -1515,7 +1524,7 @@ class RunEngine:
         # that acts as a proxy that does not have the correct behavior
         # when `.cancel` is called on it.
         with self._state_lock:
-            self._task = current_task(self.loop)
+            self._task = asyncio.current_task(self.loop)
         stashed_exception = None
         debug = msg_logger.debug
         self._reason = ""
@@ -1551,12 +1560,7 @@ class RunEngine:
                     await self._stop_movable_objects(success=True)
                     # Notify Devices of the pause in case they want to
                     # clean up.
-                    for obj in self._objs_seen:
-                        if isinstance(obj, Pausable):
-                            try:
-                                await maybe_await(obj.pause())
-                            except NoReplayAllowed:
-                                self._reset_checkpoint_state_meth()
+                    await self._pause_objects()
                     self._state = "paused"
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
@@ -1597,7 +1601,7 @@ class RunEngine:
                     # current plan stack before rather than allowing a pause or
                     # suspension to try and finish firing.
                     if stashed_exception is None:
-                        await asyncio.sleep(0, **self._loop_for_kwargs)
+                        await asyncio.sleep(0)
                     # always pop off a result, we are either sending it back in
                     # or throwing an exception in, in either case the left hand
                     # side of the yield in the plan will be moved past
@@ -1765,15 +1769,15 @@ class RunEngine:
             self._exit_status = "success"
             plan_return = e.value
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, **self._loop_for_kwargs)
+            await asyncio.sleep(0)
         except RequestStop:
             self._exit_status = "success"
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, **self._loop_for_kwargs)
+            await asyncio.sleep(0)
         except (FailedPause, RequestAbort, asyncio.CancelledError, PlanHalt):
             self._exit_status = "abort"
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, **self._loop_for_kwargs)
+            await asyncio.sleep(0)
             self.log.exception("Run aborted")
         except GeneratorExit as err:
             self._exit_status = "fail"  # Exception raises during 'running'
@@ -1832,7 +1836,7 @@ class RunEngine:
             raise stashed_exception
         return plan_return
 
-    async def _wait_for(self, msg):
+    async def _wait_for(self, msg: Msg) -> list[asyncio.Future[typing.Any]]:
         """Instruct the RunEngine to wait for futures and return the resulting tasks.
 
         Expected message object is:
@@ -1850,7 +1854,22 @@ class RunEngine:
 
         (futs,) = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        completed, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        # These tasks are ours: nothing else holds a reference with which to
+        # cancel them. `asyncio.wait` does not cancel what it was waiting on
+        # when it is itself cancelled, so a plan aborted while parked here left
+        # them running on a loop about to be closed, and asyncio reported "Task
+        # was destroyed but it is pending!" at some unrelated later moment.
+        #
+        # Only on the way out. A timeout leaves them alone deliberately: the
+        # awaitables are built by factories that work more than once, and
+        # waiting on the same group again after a timeout has to find whatever
+        # it was waiting for still in flight.
+        try:
+            completed, pending = await asyncio.wait(futs, **msg.kwargs)
+        except asyncio.CancelledError:
+            for fut in futs:
+                fut.cancel()
+            raise
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
         return futs
@@ -1918,13 +1937,13 @@ class RunEngine:
 
             Msg('close_run', None, exit_status=None, reason=None)
 
-        if *exit_stats* and *reason* are not provided, use the values
+        if *exit_status* and *reason* are not provided, use the values
         stashed on the RE.
         """
         # TODO extract this from the Msg
         run_key = msg.run
         if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object)
+            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
         ) is key_absence_sentinel:
             ims_msg = "A 'close_run' message was not received before the 'open_run' message"
             raise IllegalMessageSequence(ims_msg)
@@ -1995,18 +2014,10 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
-    async def _read(self, msg):
-        """
-        Add a reading to the open event bundle.
+    async def _perform_single_reading(self, obj, *read_args, **read_kwargs):
+        """Perform a reading on a single device."""
 
-        Expected message object is:
-
-            Msg('read', obj)
-        """
-        obj = check_supports(msg.obj, Readable)
-        # actually _read_ the object
-        warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
-        ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
+        ret = await maybe_await(obj.read(*read_args, **read_kwargs))
 
         if ret is None:
             raise RuntimeError(
@@ -2014,13 +2025,38 @@ class RunEngine:
                 "This is a bug in your object implementation, "
                 "`read` must return a dictionary."
             )
-        run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is not key_absence_sentinel:
-            await current_run.read(msg, ret)
-
         return ret
+
+    async def _read(self, msg):
+        """
+        Add a reading to the open event bundle.
+
+        The obj and args of the read message are all objects to be read.
+
+        Expected message object is:
+
+            Msg('read', *objs)
+
+        """
+
+        run_key = msg.run
+        objs = list((msg.obj,) + msg.args) if msg.obj is not None else []
+        non_readable = [obj for obj in objs if not isinstance(obj, Readable)]
+        if non_readable:
+            raise TypeError(
+                "Run engine received a read message with which contained "
+                f"the following devices which were not readable: {non_readable}"
+            )
+
+        read_returns = await asyncio.gather(*[self._perform_single_reading(obj) for obj in objs])
+
+        if (current_run := self._run_bundlers.get(run_key)) is not None:
+            await current_run.read(msg, list(zip(objs, read_returns)))
+
+        all_readings = {}
+        for read_ret in read_returns:
+            all_readings.update(read_ret)
+        return all_readings
 
     async def _locate(self, msg: Msg):
         """
@@ -2028,17 +2064,22 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('locate', obj1, ..., objn, squeeze=True)
+            Msg('locate', obj1, ..., objn)
 
         If a single obj is passed, obj.locate() is returned. If multiple objs
         are passed, obj.locate() is called in parallel for all objs and a list
-        of the results returned. If squeeze is supplied and is False then it
-        will always return a list of results even with a single object.
+        of the results returned.
         """
+        if "squeeze" in msg.kwargs:
+            warn(  # noqa: B028
+                "The locate message ignores squeeze: one object returns a single "
+                "location and several objects return a list. squeeze will be removed "
+                "in a future version."
+            )
         objs = [check_supports(obj, Locatable) for obj in (msg.obj,) + msg.args]
         # actually _locate_ the objects
         coros = [maybe_await(obj.locate()) for obj in objs]
-        if len(coros) == 1 and msg.kwargs.get("squeeze", True):
+        if len(coros) == 1:
             return await coros[0]
         else:
             return list(await asyncio.gather(*coros))
@@ -2243,6 +2284,24 @@ class RunEngine:
         """
         return type(self)
 
+    async def _check_value(self, msg: Msg) -> None:
+        """Check that a value is acceptable to a Checkable object.
+
+        Should be used before attempting a `set()` operation
+        with the given value.
+
+        Expected message object is:
+
+            Msg('check_value', obj, value)
+
+        where arguments are passed through to `obj.check_value(value)`.
+
+        If the value is not acceptable by the device,
+        it should raise a detailed exception with a rationale.
+        """
+        obj = check_supports(msg.obj, Checkable)
+        await maybe_await(obj.check_value(*msg.args, **msg.kwargs))
+
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
     async def _set(self, msg):
         """
@@ -2266,6 +2325,23 @@ class RunEngine:
 
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="set")
 
+        return ret
+
+    async def _execute(self, msg):
+        """
+        Execute an RCP on a device and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('execute', obj, *args, **kwargs)
+        """
+        obj = check_supports(msg.obj, Executable)
+        group = msg.kwargs.get("group")
+        args = msg.kwargs.get("execute_args", ())
+        kwargs = dict(msg.kwargs.get("execute_kwargs", {}))
+
+        ret = obj.execute(*args, **kwargs)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
         return ret
 
     async def _trigger(self, msg):
@@ -2426,7 +2502,7 @@ class RunEngine:
 
         where `sleep_time` is in seconds
         """
-        await asyncio.sleep(*msg.args, **self._loop_for_kwargs)
+        await asyncio.sleep(*msg.args)
 
     async def _pause(self, msg):
         """Request the run engine to pause
@@ -2440,23 +2516,25 @@ class RunEngine:
         """
         await self._request_pause_coro(*msg.args, **msg.kwargs)
 
-    async def _resume(self, msg):
-        """Request the run engine to resume
-
-        Expected message object is:
-
-            Msg('resume', defer=False, name=None, callback=None)
-
-        See RunEngine.resume() docstring for explanation of the three
-        keyword arguments in the `Msg` signature
-        """
-        # Re-instate monitoring callbacks.
-        for current_run in self._run_bundlers.values():
-            await current_run.restore_monitors()
-        # Notify Devices of the resume in case they want to clean up.
+    async def _resume_objects(self):
+        """The plan is moving again: tell the devices, so they can prepare."""
         for obj in self._objs_seen:
             if isinstance(obj, Pausable):
                 await maybe_await(obj.resume())
+
+    async def _resume(self, msg):
+        """The suspension is over: tell the devices.
+
+        Expected message object is:
+
+            Msg('_resume_from_suspender')
+
+        Sent by the helper plan `_start_suspender` pushes, between the hold and
+        the post-plan. Nothing to do with `RunEngine.resume`.
+
+        Monitors are untouched: a suspension never stopped them.
+        """
+        await self._resume_objects()
 
     async def _checkpoint(self, msg):
         """Instruct the RunEngine to create a checkpoint so that we can rewind
@@ -2476,7 +2554,7 @@ class RunEngine:
             # We are at a checkpoint; we are done deferring the pause.
             # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
-            await asyncio.sleep(0.5, **self._loop_for_kwargs)
+            await asyncio.sleep(0.5)
             await self._request_pause_coro(defer=False)
 
     def _reset_checkpoint_state(self):
@@ -2845,7 +2923,7 @@ Your RunEngine is entering a paused state. These are your options for changing
 the state of the RunEngine:
 
 RE.resume()    Resume the plan.
-RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+RE.abort()     Perform cleanup, then kill plan. Mark exit_status='aborted'.
 RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
 RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 """

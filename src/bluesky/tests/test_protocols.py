@@ -58,6 +58,20 @@ def test_checkable():
     assert isinstance(sim.motor1, bs_protocols.Checkable)
 
 
+def test_executable():
+    class ResultStatus(AlwaysSuccessfulStatus):
+        def result(self) -> int:
+            return 42
+
+    class DummyExecutable:
+        def execute(self, *args, **kwargs) -> ResultStatus:
+            return ResultStatus()
+
+    assert isinstance(DummyExecutable(), bs_protocols.Executable)
+    assert not isinstance(sim.motor1, bs_protocols.Executable)
+    assert not isinstance(sim.flyer1, bs_protocols.Executable)
+
+
 # I think the commented out tests pass because __getattr__ is implemented, but not sure
 @pytest.mark.skip(reason="ophyd missing py.typed to communicate type hints to mypy")
 @pytest.mark.parametrize(

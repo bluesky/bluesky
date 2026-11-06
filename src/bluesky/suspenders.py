@@ -1,7 +1,7 @@
 import asyncio
 import operator
 import threading
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 from concurrent.futures import Future
 from datetime import datetime, timedelta
 from functools import partial
@@ -377,7 +377,8 @@ class _Threshold(SuspenderBase):
     def _should_resume(self, value):
         return not self._op(value, self._resume_thresh)
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def _op(self):
         pass
 

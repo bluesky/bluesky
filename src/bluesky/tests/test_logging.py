@@ -1,6 +1,29 @@
 import logging
 
+import pytest
+
 from bluesky.log import validate_level
+
+
+def test_validate_level_int_and_str():
+    assert validate_level(10) == 10
+    assert validate_level("WARNING") == logging.WARNING
+
+
+def test_validate_level_bad_string_raises_value_error():
+    with pytest.raises(ValueError, match="please use one of python logging"):
+        validate_level("NOT_A_LEVEL")
+
+
+@pytest.mark.parametrize("bad_level", [1.5, None, ["WARNING"]])
+def test_validate_level_wrong_type_raises_type_error(bad_level):
+    """Non int/str inputs must raise a clear ``TypeError``.
+
+    Regression test: ``levelno`` was left unassigned for other types, so the
+    function raised an opaque ``UnboundLocalError`` instead.
+    """
+    with pytest.raises(TypeError):
+        validate_level(bad_level)
 
 
 def make_record(level, doc_name):
