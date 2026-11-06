@@ -27,6 +27,12 @@ Added
       yield from bps.mv(motor, 5)
 
 - ``bluesky.plan_stubs.loc`` locates one object and returns its ``Location``.
+- ``bluesky.callbacks.pprint_docs`` pretty-prints each Document in the
+  stream, for debugging.
+
+  .. code-block:: python
+
+      RE(count([det]), pprint_docs)
 
 Removed
 -------

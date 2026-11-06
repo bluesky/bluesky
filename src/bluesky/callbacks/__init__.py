@@ -2,6 +2,7 @@
 __all__ = [
     "CallbackBase",
     "CallbackCounter",
+    "pprint_docs",
     "print_metadata",
     "collector",
     "get_obj_fields",
@@ -23,6 +24,7 @@ from .core import (
     LiveTable,
     collector,
     get_obj_fields,
+    pprint_docs,
     print_metadata,
 )
 from .fitting import LiveFit
