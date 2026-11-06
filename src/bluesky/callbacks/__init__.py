@@ -2,6 +2,7 @@
 __all__ = [
     "CallbackBase",
     "CallbackCounter",
+    "pprint_docs",
     "print_metadata",
     "collector",
     "get_obj_fields",

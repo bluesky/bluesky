@@ -4,7 +4,6 @@ Useful callbacks for the Run Engine
 
 import logging
 import time as ttime
-from typing import Any
 import warnings
 from collections import OrderedDict, deque, namedtuple
 from datetime import datetime
@@ -12,13 +11,14 @@ from enum import Enum
 from functools import partial as _partial
 from functools import wraps as _wraps
 from itertools import count
+from pprint import pprint
+from typing import Any
 
 from event_model import DocumentRouter
 
 from bluesky.env_vars import BLUESKY_DEBUG_CALLBACKS
 
 from ..utils import ensure_uid
-from pprint import pprint
 
 logger = logging.getLogger(__name__)
 

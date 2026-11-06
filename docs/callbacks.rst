@@ -51,6 +51,28 @@ each Document as it is generated during data collection.
 The ``print`` function is a blunt instrument; it dumps too much information to
 the screen.  See :ref:`LiveTable <livetable>` below for a more refined option.
 
+.. _pprint_docs:
+
+Pretty-printing Documents
++++++++++++++++++++++++++
+
+When debugging, it is often useful to see every Document in full, but in a
+more readable form than ``print`` gives. ``pprint_docs`` pretty-prints each
+Document, keyed by its name.
+
+.. code-block:: python
+
+    from bluesky.callbacks import pprint_docs
+    from bluesky.plans import count
+    from ophyd.sim import det
+
+    RE(count([det]), pprint_docs)
+
+As with ``print``, this is best passed for a single run rather than subscribed
+persistently.
+
+.. autofunction:: bluesky.callbacks.pprint_docs
+
 Ways to Invoke Callbacks
 ------------------------
 
