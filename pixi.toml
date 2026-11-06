@@ -7,6 +7,7 @@ version = "1.15.1"
 
 [tasks]
 lint = "pre-commit run --all-files"
+build-docs = "sphinx-build -EW --keep-going -T docs build/html"
 
 [dependencies]
 python = "*"

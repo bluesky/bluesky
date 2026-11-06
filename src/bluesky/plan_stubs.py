@@ -1537,7 +1537,7 @@ def get_metadata(*keys: str, context: bool = False) -> MsgGenerator[Any]:
     Yields
     ------
     msg : Msg
-        Msg('get_metadata', None, *keys, context=context)
+        ``Msg('get_metadata', None, *keys, context=context)``
 
     Returns
     -------
