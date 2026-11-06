@@ -450,12 +450,15 @@ through a plan's ``md`` argument or ``bps.open_run``.
 
 .. note::
 
-    ``get_metadata`` is intended only for attaching metadata to runs, not for
+    ``get_metadata`` is intended primarily for attaching metadata to runs, not for
     controlling how a plan behaves. Anything that affects a plan's behavior
-    should be an explicit argument to that plan, so its dependencies are visible
-    in its signature. ``get_metadata`` returns ``None`` for missing keys, like
-    ``dict.get``, so a plan that only attaches metadata does not fail when a key
-    is not set.
+    should generally be an explicit argument to that plan, so its dependencies
+    are visible in its signature. In exceptional cases, where a value would
+    otherwise have to be passed through many layers of nested plans that don't
+    use it, reading it with ``get_metadata`` may be the more practical choice,
+    though this should be done sparingly.
+    ``get_metadata`` returns ``None`` for missing keys, like ``dict.get``, so a
+    plan that only uses it for attaching metadata does not fail when a key is not set.
 
 
 Allowed Data Types
