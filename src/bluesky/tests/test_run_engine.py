@@ -3038,3 +3038,16 @@ def test_the_leak_check_stays_quiet_about_a_loop_that_stopped_answering():
         assert task.cancelled()
     finally:
         loop.close()
+
+
+def test_stopping_a_scan_during_a_move_logs_no_asyncio_error(RE, hw, caplog):
+    """Stop a scan while its motor is moving, and let the move finish without an asyncio error."""
+    hw.motor.delay = 0.5
+    threading.Timer(0.1, RE.request_pause, kwargs={"defer": False}).start()
+    with pytest.raises(RunEngineInterrupted):
+        RE(scan([hw.det], hw.motor, 0, 10, 11))
+    RE.stop()
+
+    ttime.sleep(1)
+
+    assert "InvalidStateError" not in caplog.text
