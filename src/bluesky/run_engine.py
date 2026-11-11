@@ -2454,6 +2454,9 @@ class RunEngine:
         pardon_failuers : asyncio.Event
             tells us whether the __call__ this status object is over
         """
+        # An interrupted wait cancels fut; the status finishing later has no one to report to.
+        if fut.done():
+            return
         if not ret.success and not pardon_failures.is_set():
             # TODO: need a better channel to move this information back
             # to the run task.
