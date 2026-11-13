@@ -16,6 +16,20 @@ This project uses the [Diamond Light Source Copier Template](https://github.com/
 
 For more information on common tasks like setting up a developer environment, running the tests, and setting a pre-commit hook, see the template's [How-to guides](https://diamondlightsource.github.io/python-copier-template/2.0.1/how-to.html).
 
+### Developer setup with pixi
+
+The development environments are defined in `pyproject.toml` and locked in `pixi.lock`, so a local environment matches the one CI tests with. After [installing pixi](https://pixi.sh/latest/#installation), run these from the repository root:
+
+```
+pixi install              # create the default environment
+pixi run lint             # pre-commit hooks on every file
+pixi run type-checking    # mypy
+pixi run tests            # the test suite with coverage
+pixi run docs             # build the documentation
+```
+
+`pixi run -e py312 tests` runs the tests with one Python version; the environments `py310` to `py314` are available.
+
 ## Making Changes
 
 * Create a topic branch from where you want to base your work.

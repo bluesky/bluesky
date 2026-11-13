@@ -11,9 +11,18 @@ jobs:
   lint:
     needs: check
     if: needs.check.outputs.branch-pr == ''
-    uses: ./.github/workflows/_tox.yml
+    uses: ./.github/workflows/_pixi.yml
     with:
-      tox: pre-commit,type-checking
+      task: lint
+      environment: py313 # py314 includes some packages without built wheels, so install takes a long time.
+
+  type-checking:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_pixi.yml
+    with:
+      task: type-checking
+      environment: py313 # py314 includes some packages without built wheels, so install takes a long time.
 
   test:
     needs: check
@@ -27,12 +36,13 @@ jobs:
           - runs-on: "windows-latest"
             python-version: "3.14"
         include:
-          # Include one that runs in the dev environment. This job also runs
-          # the full suite (the RE call_returns_result=False variant) so that
-          # branch is exercised at least once per CI run.
+          # Also run the RE call_returns_result=False variant once per CI run
           - runs-on: "ubuntu-latest"
-            python-version: "dev"
+            python-version: "3.13"
             full-suite: true
+          # Test the lowest version of every dependency that pyproject.toml allows
+          - runs-on: "ubuntu-latest"
+            python-version: "min"
       fail-fast: false
     uses: ./.github/workflows/_test.yml
     with:
