@@ -372,7 +372,6 @@ class RunEngine:
         "install_suspender",
         "remove_suspender",
         "_start_suspender",
-        "call_in_thread",
     ]
 
     RunBundler = RunBundler
@@ -559,7 +558,6 @@ class RunEngine:
             "open_run": self._open_run,
             "close_run": self._close_run,
             "wait_for": self._wait_for,
-            "call_in_thread": self._call_in_thread,
             "input": self._input,
             "install_suspender": self._install_suspender,
             "remove_suspender": self._remove_suspender,
@@ -1854,19 +1852,6 @@ class RunEngine:
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
         return futs
-
-    async def _call_in_thread(self, msg):
-        """Start calling ``msg.obj`` in a worker thread and return the task.
-
-        Expected message object is:
-
-            Msg('call_in_thread', func, call_args=(), call_kwargs={})
-
-        The message is never replayed on resume, so ``func`` is called once.
-        """
-        args = msg.kwargs.get("call_args", ())
-        kwargs = msg.kwargs.get("call_kwargs", {})
-        return asyncio.create_task(asyncio.to_thread(msg.obj, *args, **kwargs))
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"

@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any
+from typing import Any, cast
 
 from cycler import cycler
 
@@ -1632,23 +1632,35 @@ def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> M
     Yields
     ------
     msg : Msg
-        ``Msg('call_in_thread', func, call_args=args, call_kwargs=kwargs)``,
-        then ``Msg('wait_for', ...)`` until ``func`` returns
+        ``Msg('wait_for', ...)``. The RunEngine starts ``func`` the first time it
+        processes this message; if a pause interrupts the wait, the message is
+        yielded again until ``func`` returns.
 
     Returns
     -------
     result :
-        the return value of ``func``
+        the return value of ``func``. If no RunEngine runs the plan (for example
+        ``list(plan)``), ``func`` is not called and this is ``None``.
     """
-    task = yield Msg("call_in_thread", func, call_args=args, call_kwargs=kwargs)
-    if not isinstance(task, asyncio.Task):  # e.g. None in list-ify mode: nothing ran
-        return task
+    started: list[asyncio.Task[T]] = []
+
+    def start_or_wait() -> Awaitable[Any]:
+        # Called each time the RunEngine processes the wait_for below, including
+        # replays after a pause: start func only the first time.
+        if not started:
+            started.append(asyncio.create_task(asyncio.to_thread(func, *args, **kwargs)))
+        return asyncio.wait(started)
+
     try:
-        while not task.done():  # a pause interrupts the wait; wait again on resume
-            yield from wait_for([lambda: asyncio.wait([task])])
+        yield from wait_for([start_or_wait])
+        if not started:  # list-ify mode: no RunEngine processed the message
+            return cast(T, None)
+        while not started[0].done():  # a pause interrupted the wait; wait again on resume
+            yield from wait_for([start_or_wait])
+        return started[0].result()
     finally:
-        task.cancel()  # no-op once done; if the plan ends early, stop waiting
-    return task.result()
+        for task in started:
+            task.cancel()  # no-op once done; if the plan ends early, stop waiting
 
 
 @plan
