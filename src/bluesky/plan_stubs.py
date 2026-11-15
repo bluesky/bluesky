@@ -1605,6 +1605,52 @@ def wait_for(
 
 
 @plan
+def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> MsgGenerator[T]:
+    """
+    Call a blocking function in a worker thread and return its result.
+
+    Unlike calling ``func`` directly in a plan, this keeps the RunEngine's event
+    loop free while ``func`` runs. An exception raised by ``func`` is raised in
+    the plan.
+
+    ``func`` is called exactly once. If the plan is paused or suspended while
+    ``func`` runs, ``func`` keeps running, and on resume the plan waits for it
+    instead of calling it again. If the plan is aborted, stopped or halted,
+    ``func`` still runs to completion in the background, since a thread cannot
+    be interrupted; give long-running functions their own timeout.
+
+    Parameters
+    ----------
+    func : callable
+        blocking function to call
+    args :
+        passed to ``func``
+    kwargs :
+        passed to ``func``
+
+    Yields
+    ------
+    msg : Msg
+        ``Msg('call_in_thread', func, call_args=args, call_kwargs=kwargs)``,
+        then ``Msg('wait_for', ...)`` until ``func`` returns
+
+    Returns
+    -------
+    result :
+        the return value of ``func``
+    """
+    task = yield Msg("call_in_thread", func, call_args=args, call_kwargs=kwargs)
+    if not isinstance(task, asyncio.Task):  # e.g. None in list-ify mode: nothing ran
+        return task
+    try:
+        while not task.done():  # a pause interrupts the wait; wait again on resume
+            yield from wait_for([lambda: asyncio.wait([task])])
+    finally:
+        task.cancel()  # no-op once done; if the plan ends early, stop waiting
+    return task.result()
+
+
+@plan
 def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgGenerator[Mapping[str, Reading]]:
     """
     Trigger and read a list of detectors and bundle readings into one Event.

@@ -27,6 +27,10 @@ Added
       yield from bps.mv(motor, 5)
 
 - ``bluesky.plan_stubs.loc`` locates one object and returns its ``Location``.
+- ``bluesky.plan_stubs.call_in_thread`` calls a blocking function in a worker
+  thread through the new ``call_in_thread`` message, keeping the RunEngine's
+  event loop free, and returns the function's result to the plan.  The
+  function is called once: a plan paused while it runs waits for it on resume.
 
 Removed
 -------

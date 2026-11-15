@@ -296,6 +296,19 @@ Examples::
     Msg('input', None, prompt='>')  # customize prompt
 
 
+call_in_thread
+++++++++++++++
+Start calling a blocking function in a worker thread, without blocking the
+RunEngine's event loop, and return the ``asyncio.Task`` running it.
+``bluesky.plan_stubs.call_in_thread`` waits for the task and returns the
+function's result. The message is never replayed on resume, so the function is
+called once even if the plan is paused while it runs.
+
+Examples::
+
+    Msg('call_in_thread', func, call_args=(1,), call_kwargs={'b': 2})
+
+
 checkpoint
 ++++++++++
 
