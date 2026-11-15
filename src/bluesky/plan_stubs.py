@@ -1616,8 +1616,9 @@ def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> M
     ``func`` is called exactly once. If the plan is paused or suspended while
     ``func`` runs, ``func`` keeps running, and on resume the plan waits for it
     instead of calling it again. If the plan is aborted, stopped or halted,
-    ``func`` still runs to completion in the background, since a thread cannot
-    be interrupted; give long-running functions their own timeout.
+    ``func`` is not interrupted: it runs to completion in the background, and
+    the Python process cannot exit until it returns. Give long-running
+    functions their own timeout.
 
     Parameters
     ----------
