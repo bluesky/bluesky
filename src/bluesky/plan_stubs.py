@@ -1642,24 +1642,25 @@ def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> M
         the return value of ``func``. If no RunEngine runs the plan (for example
         ``list(plan)``), ``func`` is not called and this is ``None``.
     """
-    started: list[asyncio.Task[T]] = []
+    task: asyncio.Task[T] | None = None
 
     def start_or_wait() -> Awaitable[Any]:
         # Called each time the RunEngine processes the wait_for below, including
         # replays after a pause: start func only the first time.
-        if not started:
-            started.append(asyncio.create_task(asyncio.to_thread(func, *args, **kwargs)))
-        return asyncio.wait(started)
+        nonlocal task
+        if task is None:
+            task = asyncio.create_task(asyncio.to_thread(func, *args, **kwargs))
+        return asyncio.wait([task])
 
     try:
         yield from wait_for([start_or_wait])
-        if not started:  # list-ify mode: no RunEngine processed the message
+        if task is None:  # list-ify mode: no RunEngine processed the message
             return cast(T, None)
-        while not started[0].done():  # a pause interrupted the wait; wait again on resume
+        while not task.done():  # a pause interrupted the wait; wait again on resume
             yield from wait_for([start_or_wait])
-        return started[0].result()
+        return task.result()
     finally:
-        for task in started:
+        if task is not None:
             task.cancel()  # no-op once done; if the plan ends early, stop waiting
 
 
