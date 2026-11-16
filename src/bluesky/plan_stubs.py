@@ -326,8 +326,9 @@ def null() -> MsgGenerator[None]:
 
 @plan
 def abs_set(
-    obj: Movable[Any],
-    *args: Any,
+    obj: Movable[T],
+    target: T,
+    *args,
     group: Hashable | None = None,
     wait: bool = False,
     **kwargs: Any,
@@ -366,7 +367,7 @@ def abs_set(
     """
     if wait and group is None:
         group = str(uuid.uuid4())
-    ret = yield Msg("set", obj, *args, group=group, **kwargs)
+    ret = yield Msg("set", obj, target, *args, group=group, **kwargs)
     if wait:
         yield Msg("wait", None, group=group)
     return ret
@@ -374,7 +375,8 @@ def abs_set(
 
 @plan
 def rel_set(
-    obj: Movable[Any],
+    obj: Movable[T],
+    target: T,
     *args: Any,
     group: Hashable | None = None,
     wait: bool = False,
@@ -413,7 +415,7 @@ def rel_set(
     """
     from .preprocessors import relative_set_wrapper
 
-    return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
+    return (yield from relative_set_wrapper(abs_set(obj, target, *args, group=group, wait=wait, **kwargs)))
 
 
 # The format (device1, value1, device2, value2, ...)
@@ -867,7 +869,7 @@ def input_plan(prompt: str = "") -> MsgGenerator[str]:
 
 @plan
 def prepare(
-    obj: Preparable[Any], *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any
+    obj: Preparable[T], target: T, *args: Any, group: Hashable | None = None, wait: bool = False, **kwargs: Any
 ) -> MsgGenerator[Status]:
     """
     Prepare a device ready for trigger or kickoff.
@@ -895,7 +897,7 @@ def prepare(
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    ret = yield Msg("prepare", obj, *args, group=group, **kwargs)
+    ret = yield Msg("prepare", obj, target, *args, group=group, **kwargs)
     if wait:
         yield from _wait(group=group)
     return ret
@@ -1805,8 +1807,8 @@ def one_shot(detectors: Sequence[Readable], take_reading: TakeReading | None = N
 @plan
 def one_1d_step(
     detectors: Sequence[Readable],
-    motor: Movable,
-    step: Any,
+    motor: Movable[T],
+    step: T,
     take_reading: TakeReading | None = None,
 ) -> MsgGenerator[Mapping[str, Reading]]:
     """
