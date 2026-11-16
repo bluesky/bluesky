@@ -5,6 +5,7 @@ import time
 from bluesky.plan_stubs import mv
 from bluesky.tests import requires_ophyd
 from bluesky.utils import (
+    PlanProgress,
     ProgressBar,
     ProgressBarManager,
     TerminalProgressBar,
@@ -267,3 +268,35 @@ def test_bottom_anchor_proxy_teardown_emits_buffered_partial_line():
         assert sys.stdout is real
     finally:
         sys.stdout = saved_stdout
+
+
+def test_rebuild_does_not_accumulate_watchers(monkeypatch):
+    """Rebuilding the bar does not add watchers to long-lived statuses."""
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    scan = PlanProgress("scan")
+    bars = []
+
+    def factory(status_objs):
+        bar = TerminalProgressBar(status_objs, delay_draw=0)
+        bars.append(bar)
+        return bar
+
+    manager = ProgressBarManager(factory)
+    progress_hook = manager.new_stream()
+    waiting_hook = manager.new_stream()
+
+    progress_hook([scan])
+    for _ in range(10):
+        # Each move status coming and going triggers a rebuild.
+        waiting_hook([PlanProgress("move")])
+        waiting_hook(None)
+
+    assert len(bars) == 21
+    assert len(scan._watchers) == 1
+    # Bars receive wrappers that expose the real status.
+    assert bars[-1].status_objs[0].status is scan
+
+    scan._notify(current=1, initial=0, target=2)
+    # Only the current bar is updated; it also got the replayed state on creation.
+    assert "scan" in bars[-1].meters[0]
+    assert all(bar.meters[0] == "" or bar.done for bar in bars[:-1])

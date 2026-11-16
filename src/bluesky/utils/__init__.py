@@ -39,7 +39,7 @@ from cycler import Cycler, cycler
 from event_model.documents import Document, Event, EventDescriptor, RunStart, RunStop
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, Unpack
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.env_vars import BLUESKY_HISTORY_PATH
@@ -1750,6 +1750,44 @@ class _BottomAnchorProxy:
         return getattr(self.real, name)
 
 
+class _WatchedStatus(Watchable[T]):
+    """Stand-in for a status that `ProgressBarManager` passes to its progress bars.
+
+    The manager watches the real status once and forwards updates to whichever
+    bar currently watches this wrapper, so rebuilding the bar does not pile up
+    callbacks on long-lived statuses. The real status is available as ``status``;
+    other attributes are looked up on it.
+    """
+
+    def __init__(self, status: Watchable[T]):
+        self.status = status
+        self._watchers: list[Watcher[T]] = []
+        self._last_state: WatcherUpdate[T] | None = None
+
+    @property
+    def done(self) -> bool:
+        return self.status.done
+
+    def watch(self, func: Watcher[T]) -> None:
+        self._watchers.append(func)
+        # Replay the last update so a rebuilt bar can display immediately.
+        if self._last_state is not None:
+            func(**self._last_state)
+
+    def _forward(self, **kwargs: Unpack[WatcherUpdate[T]]) -> None:
+        self._last_state = kwargs
+        for watcher in list(self._watchers):
+            watcher(**kwargs)
+
+    def _reset(self) -> None:
+        self._watchers = []
+
+    def __getattr__(self, name: str) -> Any:
+        if name == "status":
+            raise AttributeError(name)
+        return getattr(self.status, name)
+
+
 class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
     pbar: ProgressBarBase | None
@@ -1788,6 +1826,9 @@ class ProgressBarManager:
         self._current_key: tuple = ()
         self._lock = threading.RLock()
         self._proxy: _BottomAnchorProxy | None = None
+        # Wrappers for the live statuses, keyed by id(status), reused across
+        # rebuilds so each status is watched only once by the manager.
+        self._wrappers: dict[int, _WatchedStatus[Any]] = {}
 
     @property
     def _statuses(self) -> list[Watchable]:
@@ -1855,14 +1896,28 @@ class ProgressBarManager:
             if self.pbar is not None:
                 self.pbar.clear()
                 self.pbar = None
-            if self._statuses:
+            # Detach the old bar from every wrapper so it stops receiving updates.
+            for wrapper in self._wrappers.values():
+                wrapper._reset()
+            statuses = self._statuses
+            self._wrappers = {id(st): self._wrapper_for(st) for st in statuses if hasattr(st, "watch")}
+            if statuses:
                 # Build the bar while sys.stdout is the real terminal so it
                 # captures the real stream, then anchor external output beneath.
                 self._remove_proxy()
-                self.pbar = self.pbar_factory(list(self._statuses))
+                self.pbar = self.pbar_factory([self._wrappers.get(id(st), st) for st in statuses])
                 self._install_proxy()
             else:
                 self._remove_proxy()
+
+    def _wrapper_for(self, status: Watchable[T]) -> "_WatchedStatus[T]":
+        wrapper = self._wrappers.get(id(status))
+        if wrapper is None or wrapper.status is not status:
+            wrapper = _WatchedStatus(status)
+            # The only watcher the manager ever registers on this status;
+            # successive bars watch the wrapper instead.
+            status.watch(wrapper._forward)
+        return wrapper
 
     def _install_proxy(self):
         if self._proxy is not None or not isinstance(self.pbar, TerminalProgressBar):
