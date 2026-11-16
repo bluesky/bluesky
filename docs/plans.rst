@@ -790,7 +790,7 @@ optional arguments:
 * ``parent_progress_scope``: the name of an existing progress indicator to nest
   this one under.
 * ``progress_units``: the unit label shown in the progress display. The default
-  is ``"steps"``, or ``"counts"`` for ``count``.
+  is ``"step"``, or ``"count"`` for ``count``.
 
 ``grid_scan``, ``rel_grid_scan``, ``list_grid_scan`` and ``rel_list_grid_scan``
 also accept ``per_dim_progress=True``, which
@@ -807,7 +807,7 @@ trajectory.
     RE(scan([det], motor, -1, 1, 11, progress_scope="scan"))
 
     RE(grid_scan([det], motor1, -1, 1, 5, motor2, -1, 1, 5,
-                 progress_scope="grid", progress_units="points",
+                 progress_scope="grid", progress_units="point",
                  per_dim_progress=True))
 
 Custom plans
@@ -837,14 +837,14 @@ both its overall progress and the progress of the current scan:
         total = len(positions)
         yield from declare_progress("samples")
         yield from update_progress("samples", current=0, initial=0, target=total,
-                                   unit="samples")
+                                   unit="sample")
         for i, position in enumerate(positions):
             yield from mv(sample_stage, position)
             yield from scan(detectors, motor, -1, 1, 11,
                             progress_scope=f"sample {i + 1}",
                             parent_progress_scope="samples")
             yield from update_progress("samples", current=i + 1, initial=0,
-                                       target=total, unit="samples")
+                                       target=total, unit="sample")
         yield from update_progress("samples", done=True)
 
     RE(scan_samples([det], motor, sample_stage, [0, 10, 20]))

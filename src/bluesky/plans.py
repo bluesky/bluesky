@@ -73,7 +73,7 @@ def count(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "counts",
+    progress_units: str = "count",
 ) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
@@ -100,7 +100,7 @@ def count(
     parent_progress_scope : str, optional
         name of a parent progress scope to nest under
     progress_units : str, optional
-        the unit label shown in progress updates; default is ``"counts"``.
+        the unit label shown in progress updates; default is ``"count"``.
 
     Notes
     -----
@@ -159,7 +159,7 @@ def list_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one or more variables in steps simultaneously (inner product).
@@ -269,7 +269,7 @@ def rel_list_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in steps relative to current position.
@@ -340,7 +340,7 @@ def list_grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
     per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
@@ -378,7 +378,7 @@ def list_grid_scan(
     parent_progress_scope: str, optional
         the name of the parent progress scope, if any.
     progress_units: str, optional
-        the unit label shown in progress updates; default is ``"steps"``.
+        the unit label shown in progress updates; default is ``"step"``.
     per_dim_progress: bool, optional
         whether to show progress for each dimension separately, in addition to overall progress.
 
@@ -444,7 +444,7 @@ def rel_list_grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
     per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
@@ -527,7 +527,7 @@ def _scan_1d(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps.
@@ -616,7 +616,7 @@ def _rel_scan_1d(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps relative to current positon.
@@ -679,7 +679,7 @@ def log_scan(
     md=None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
@@ -772,7 +772,7 @@ def rel_log_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps relative to current position.
@@ -839,7 +839,7 @@ def adaptive_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable with adaptively tuned step size.
@@ -992,7 +992,7 @@ def rel_adaptive_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Relative scan over one variable with adaptively tuned step size.
@@ -1068,7 +1068,7 @@ def tune_centroid(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
@@ -1244,7 +1244,7 @@ def scan_nd(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
     progress_dims: Sequence[tuple[str, int]] | None = None,
 ) -> MsgGenerator[str]:
     """
@@ -1266,7 +1266,7 @@ def scan_nd(
     parent_progress_scope : str, optional
         the name of the parent progress scope, if any.
     progress_units : str, optional
-        the unit label shown in progress updates; default is ``"steps"``.
+        the unit label shown in progress updates; default is ``"step"``.
     progress_dims : list of (name, num) tuples, optional
         If given, also report progress for each dimension of an outer-product
         trajectory, as child scopes ``f"{progress_scope}/{name}"``. Dimensions
@@ -1451,7 +1451,7 @@ def inner_product_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[None]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1477,7 +1477,7 @@ def scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory.
@@ -1599,7 +1599,7 @@ def grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
     per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
@@ -1637,7 +1637,7 @@ def grid_scan(
     parent_progress_scope: str, optional
         the name of the parent progress scope, if any.
     progress_units: str, optional
-        the unit label shown in progress updates; default is ``"steps"``.
+        the unit label shown in progress updates; default is ``"step"``.
     per_dim_progress: bool, optional
         whether to show progress for each dimension separately, in addition to overall progress.
 
@@ -1803,7 +1803,7 @@ def rel_grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
     per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
@@ -1878,7 +1878,7 @@ def relative_inner_product_scan(  # type: ignore
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1904,7 +1904,7 @@ def rel_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory relative to current position.
@@ -2068,7 +2068,7 @@ def spiral_fermat(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """Absolute fermat spiral scan, centered around (x_start, y_start)
 
@@ -2185,7 +2185,7 @@ def rel_spiral_fermat(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """Relative fermat spiral scan
 
@@ -2270,7 +2270,7 @@ def spiral(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """Spiral scan, centered around (x_start, y_start)
 
@@ -2385,7 +2385,7 @@ def rel_spiral(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """Relative spiral scan
 
@@ -2465,7 +2465,7 @@ def spiral_square(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """Absolute square spiral scan, centered around (x_center, y_center)
 
@@ -2574,7 +2574,7 @@ def rel_spiral_square(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """Relative square spiral scan, centered around current (x, y) position.
 
@@ -2794,7 +2794,7 @@ def x2x_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
-    progress_units: str = "steps",
+    progress_units: str = "step",
 ) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio

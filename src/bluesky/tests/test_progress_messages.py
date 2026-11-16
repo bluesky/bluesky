@@ -412,7 +412,7 @@ def test_tune_centroid_emits_progress_messages(RE, hw):
     assert all(0.0 <= f <= 1.0 for f in fractions)
     assert all(b >= a for a, b in zip(fractions, fractions[1:]))
     assert fractions[-1] == pytest.approx(1.0)
-    assert all(m.kwargs["unit"] == "steps" for m in steps)
+    assert all(m.kwargs["unit"] == "step" for m in steps)
 
     dones = [m for m in updates if m.kwargs.get("done")]
     assert len(dones) == 1
@@ -487,7 +487,7 @@ def test_update_progress_replayed_on_resume(RE):
 
 
 def test_builtin_plans_progress_units(RE, hw):
-    """progress_units sets the unit of every update; count defaults to counts, scans to steps."""
+    """progress_units sets the unit of every update; count defaults to count, scans to step."""
     msgs = []
     RE.msg_hook = lambda msg: msgs.append(msg)
 
@@ -497,9 +497,9 @@ def test_builtin_plans_progress_units(RE, hw):
         return found
 
     RE(bp.count([hw.det], num=2, progress_scope="count"))
-    assert units() == {"counts"}
+    assert units() == {"count"}
     RE(bp.scan([hw.det], hw.motor, -1, 1, 3, progress_scope="scan"))
-    assert units() == {"steps"}
+    assert units() == {"step"}
     RE(
         bp.grid_scan(
             [hw.det],
@@ -513,10 +513,10 @@ def test_builtin_plans_progress_units(RE, hw):
             2,
             progress_scope="grid",
             per_dim_progress=True,
-            progress_units="points",
+            progress_units="point",
         )
     )
-    assert units() == {"points"}
+    assert units() == {"point"}
 
 
 def test_update_progress_replay_shows_rewind(RE):

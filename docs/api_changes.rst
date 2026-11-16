@@ -35,7 +35,7 @@ Added
   suspension and are not re-declared when the plan is replayed.
 - Most built-in plans accept ``progress_scope`` and ``parent_progress_scope`` to
   report their progress, optionally nested under another indicator, and
-  ``progress_units`` to set the unit label (default ``"steps"``, or ``"counts"``
+  ``progress_units`` to set the unit label (default ``"step"``, or ``"count"``
   for ``count``).
   ``grid_scan``, ``rel_grid_scan``, ``list_grid_scan`` and ``rel_list_grid_scan``
   also accept ``per_dim_progress`` to report
