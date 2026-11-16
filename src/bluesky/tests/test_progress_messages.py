@@ -251,6 +251,106 @@ def test_grid_scan_per_dim_progress_positions(RE, hw):
     assert outer == [0, 0, 0, 1, 1, 1, 2]
 
 
+def test_grid_scan_per_dim_progress_1d_per_step(RE, hw):
+    """A 1-D per_step(detectors, motor, step) receives the motor and scalar step."""
+    calls = []
+
+    def per_step(detectors, motor, step):
+        calls.append((motor, step))
+        yield from bps.one_1d_step(detectors, motor, step)
+
+    RE(
+        bp.grid_scan(
+            [hw.det],
+            hw.motor1,
+            -1,
+            1,
+            3,
+            per_step=per_step,
+            progress_scope="grid",
+            per_dim_progress=True,
+        )
+    )
+
+    assert calls == [(hw.motor1, -1.0), (hw.motor1, 0.0), (hw.motor1, 1.0)]
+
+
+def test_grid_scan_per_dim_progress_validates_per_step(RE, hw):
+    """per_step signatures are still validated when wrapped for per-dimension progress."""
+
+    def bad_per_step(a, b, c): ...
+
+    with pytest.raises(TypeError, match="per_step must be a callable"):
+        RE(
+            bp.grid_scan(
+                [hw.det],
+                hw.motor1,
+                -1,
+                1,
+                3,
+                per_step=bad_per_step,
+                progress_scope="grid",
+                per_dim_progress=True,
+            )
+        )
+
+    def per_step_1d(detectors, motor, step): ...
+
+    with pytest.raises(TypeError, match="assumes 1D trajectory"):
+        RE(
+            bp.grid_scan(
+                [hw.det],
+                hw.motor1,
+                -1,
+                1,
+                2,
+                hw.motor2,
+                -1,
+                1,
+                3,
+                per_step=per_step_1d,
+                progress_scope="grid",
+                per_dim_progress=True,
+            )
+        )
+
+
+@pytest.mark.parametrize("per_dim_progress", [False, True])
+def test_grid_scan_per_dim_progress_keeps_predeclare(RE, hw, monkeypatch, per_dim_progress):
+    """Per-dimension progress does not change whether the primary stream is predeclared."""
+    monkeypatch.setattr(bp, "BLUESKY_PREDECLARE", True)
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+    RE(
+        bp.grid_scan(
+            [hw.det],
+            hw.motor1,
+            -1,
+            1,
+            2,
+            hw.motor2,
+            -1,
+            1,
+            3,
+            progress_scope="grid",
+            per_dim_progress=per_dim_progress,
+        )
+    )
+
+    commands = [m.command for m in msgs]
+    assert commands[commands.index("open_run") + 1] == "declare_stream"
+
+
+def test_scan_nd_progress_dims_validation(RE, hw):
+    from cycler import cycler
+
+    cy = cycler(hw.motor1, [1, 2]) * cycler(hw.motor2, [1, 2, 3])
+    with pytest.raises(ValueError, match="requires progress_scope"):
+        RE(bp.scan_nd([hw.det], cy, progress_dims=[("motor1", 2), ("motor2", 3)]))
+    with pytest.raises(ValueError, match="does not match"):
+        RE(bp.scan_nd([hw.det], cy, progress_scope="s", progress_dims=[("motor1", 2), ("motor2", 2)]))
+
+
 def test_count_emits_progress_messages(RE, hw):
     """bp.count threads progress_scope through repeat."""
     msgs = []

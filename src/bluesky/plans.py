@@ -1199,6 +1199,7 @@ def scan_nd(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_dims: Sequence[tuple[str, int]] | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over an arbitrary N-dimensional trajectory.
@@ -1214,6 +1215,15 @@ def scan_nd(
         for details.
     md : dict, optional
         metadata
+    progress_scope : str, optional
+        the name to use for progress updates for this scan.
+    parent_progress_scope : str, optional
+        the name of the parent progress scope, if any.
+    progress_dims : list of (name, num) tuples, optional
+        If given, also report progress for each dimension of an outer-product
+        trajectory, as child scopes ``f"{progress_scope}/{name}"``. Dimensions
+        are listed slowest first, and the product of their ``num`` values must
+        equal the length of ``cycler``. Requires ``progress_scope``.
 
     See Also
     --------
@@ -1326,23 +1336,58 @@ def scan_nd(
     pos_cache: dict = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
+    num_steps = len(cycler)
+
+    dim_list = list(progress_dims or [])
+    if dim_list:
+        if progress_scope is None:
+            raise ValueError("progress_dims requires progress_scope to be set.")
+        if int(np.prod([count for _, count in dim_list])) != num_steps:
+            raise ValueError(
+                f"The product of the progress_dims counts {[count for _, count in dim_list]} "
+                f"does not match the number of points in the trajectory ({num_steps})."
+            )
+
+    def _update_dim_progress(flat_index: int):
+        # flat_index is the 1-based count of completed points
+        remaining = flat_index - 1  # zero-based index of the point just completed
+        dim_counts = [count for _, count in dim_list]
+        for dim_i, (name, count) in enumerate(dim_list):
+            suffix = int(np.prod(dim_counts[dim_i + 1 :])) if dim_i + 1 < len(dim_list) else 1
+            dim_pos = (remaining // suffix) % count
+            # The dimension only ticks over once all faster dimensions complete
+            ticked = flat_index % suffix == 0 or dim_i == len(dim_list) - 1
+            yield from bps.update_progress(
+                f"{progress_scope}/{name}",
+                current=dim_pos + 1 if ticked else dim_pos,
+                initial=0,
+                target=count,
+                unit="step",
+            )
 
     @bpp.stage_decorator(list(detectors) + motors)
     @bpp.run_decorator(md=_md)
     def inner_scan_nd():
         if predeclare:
             yield from bps.declare_stream(*motors, *detectors, name="primary")
-        num_steps = len(cycler)
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
             yield from bps.update_progress(progress_scope, current=0, initial=0, target=num_steps, unit="step")
+            for name, count in dim_list:
+                yield from bps.declare_progress(name=f"{progress_scope}/{name}", parent=progress_scope)
+                yield from bps.update_progress(
+                    f"{progress_scope}/{name}", current=0, initial=0, target=count, unit="step"
+                )
         for i, step in enumerate(cycler):
             yield from per_step(detectors, step, pos_cache)
             if progress_scope is not None:
                 yield from bps.update_progress(
                     progress_scope, current=i + 1, initial=0, target=num_steps, unit="step"
                 )
+                yield from _update_dim_progress(i + 1)
         if progress_scope is not None:
+            for name, _ in reversed(dim_list):
+                yield from bps.update_progress(f"{progress_scope}/{name}", done=True)
             yield from bps.update_progress(progress_scope, done=True)
 
     return (yield from inner_scan_nd())
@@ -1675,75 +1720,9 @@ def grid_scan(
     except (AttributeError, KeyError):
         ...
 
+    progress_dims = None
     if per_dim_progress and progress_scope is not None:
-        dim_counts = [num for motor, start, stop, num, snake in chunk_args]
-        dim_names = [motor.name for motor, start, stop, num, snake in chunk_args]
-        total_steps = len(full_cycler)
-
-        def _per_dim_wrapper(inner_per_step):
-            """Wrap per_step to update per-dimension progress bars."""
-            flat_index = 0
-
-            def wrapped(detectors, step, pos_cache):
-                nonlocal flat_index
-                yield from inner_per_step(detectors, step, pos_cache)
-                flat_index += 1
-                yield from bps.update_progress(
-                    progress_scope,
-                    current=flat_index,
-                    initial=0,
-                    target=total_steps,
-                    unit="step",
-                )
-                remaining = flat_index - 1  # zero-based index of the point just completed
-                for dim_i, (name, count) in enumerate(zip(dim_names, dim_counts)):
-                    suffix = int(np.prod(dim_counts[dim_i + 1 :])) if dim_i + 1 < len(dim_counts) else 1
-                    dim_pos = (remaining // suffix) % count
-                    # Only update if this dimension ticked over
-                    yield from bps.update_progress(
-                        f"{progress_scope}/{name}",
-                        current=dim_pos + 1
-                        if flat_index % suffix == 0 or dim_i == len(dim_counts) - 1
-                        else dim_pos,
-                        initial=0,
-                        target=count,
-                        unit="step",
-                    )
-
-            return wrapped
-
-        def _setup_dim_progress():
-            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
-            yield from bps.update_progress(
-                progress_scope,
-                current=0,
-                initial=0,
-                target=total_steps,
-                unit="step",
-            )
-            for name, count in zip(dim_names, dim_counts):
-                yield from bps.declare_progress(name=f"{progress_scope}/{name}", parent=progress_scope)
-                yield from bps.update_progress(
-                    f"{progress_scope}/{name}",
-                    current=0,
-                    initial=0,
-                    target=count,
-                    unit="step",
-                )
-
-        def _teardown_dim_progress():
-            for name in reversed(dim_names):
-                yield from bps.update_progress(f"{progress_scope}/{name}", done=True)
-            yield from bps.update_progress(progress_scope, done=True)
-
-        wrapped_per_step = _per_dim_wrapper(per_step or bps.one_nd_step)
-
-        def _grid_with_dim_progress():
-            yield from _setup_dim_progress()
-            yield from scan_nd(detectors, full_cycler, per_step=wrapped_per_step, md=_md)
-            yield from _teardown_dim_progress()
-
-        return (yield from _grid_with_dim_progress())
+        progress_dims = [(motor.name, num) for motor, start, stop, num, snake in chunk_args]
 
     return (
         yield from scan_nd(
@@ -1753,6 +1732,7 @@ def grid_scan(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_dims=progress_dims,
         )
     )
 
