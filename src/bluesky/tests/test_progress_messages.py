@@ -5,7 +5,7 @@ import pytest
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from bluesky import Msg
-from bluesky.utils import IllegalMessageSequence, PlanProgress
+from bluesky.utils import IllegalMessageSequence, PlanProgress, RunEngineInterrupted
 
 
 def test_declare_progress_returns_status(RE):
@@ -418,3 +418,85 @@ def test_finish_preserves_scale_and_unit():
     assert status.done is True
     assert states[-1]["current"] == states[-1]["target"] == 10
     assert states[-1]["unit"] == "step"
+
+
+def test_declare_progress_not_replayed_on_resume(RE):
+    """A scope declared after a checkpoint is not re-declared when the plan is rewound."""
+    statuses = []
+
+    def plan():
+        yield Msg("checkpoint")
+        status = yield Msg("declare_progress", name="scan")
+        statuses.append(status)
+        yield Msg("pause")
+        yield Msg("update_progress", name="scan", done=True)
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    RE.resume()
+
+    assert len(statuses) == 1
+    assert statuses[0].done
+    assert RE._progress_scopes == {}
+
+
+def test_update_progress_replayed_on_resume(RE):
+    """Replayed updates reach their original scope; a replayed done=True is a no-op."""
+    updates = []
+
+    def plan():
+        status = yield Msg("declare_progress", name="scan")
+        status.watch(lambda **kw: updates.append(kw["current"]))
+        yield Msg("checkpoint")
+        yield Msg("update_progress", name="scan", current=1, initial=0, target=2)
+        yield Msg("update_progress", name="scan", done=True)
+        yield Msg("pause")
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    RE.resume()
+
+    # The scope finished before the pause, so neither replayed message reaches it.
+    assert updates == [1, 2]
+    assert RE._progress_scopes == {}
+
+
+def test_update_progress_replay_shows_rewind(RE):
+    """A replayed update to a still-open scope moves the bar back to its earlier value."""
+    updates = []
+
+    def plan():
+        status = yield Msg("declare_progress", name="scan")
+        status.watch(lambda **kw: updates.append(kw["current"]))
+        yield Msg("checkpoint")
+        yield Msg("update_progress", name="scan", current=1, initial=0, target=3)
+        yield Msg("update_progress", name="scan", current=2, initial=0, target=3)
+        yield Msg("pause")
+        yield Msg("update_progress", name="scan", done=True)
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    RE.resume()
+
+    assert updates == [1, 2, 1, 2, 3]
+
+
+def test_replayed_done_does_not_close_reused_scope_name(RE):
+    """A replayed done=True for a finished scope leaves a new scope with the same name open."""
+    statuses = []
+
+    def plan():
+        yield Msg("checkpoint")
+        statuses.append((yield Msg("declare_progress", name="scan")))
+        yield Msg("update_progress", name="scan", done=True)
+        statuses.append((yield Msg("declare_progress", name="scan")))
+        yield Msg("pause")
+        assert not statuses[1].done
+        yield Msg("update_progress", name="scan", done=True)
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    RE.resume()
+
+    assert all(st.done for st in statuses)
+    assert RE._progress_scopes == {}

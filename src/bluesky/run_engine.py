@@ -373,6 +373,9 @@ class RunEngine:
         "install_suspender",
         "remove_suspender",
         "_start_suspender",
+        # Progress scopes survive a pause, so re-declaring one on replay would
+        # fail with "already open".
+        "declare_progress",
     ]
 
     RunBundler = RunBundler
@@ -529,6 +532,9 @@ class RunEngine:
         # A mapping of progress scope names to their corresponding PlanProgress objects.
         self._progress_scopes: dict[str, PlanProgress] = {}
         self._progress_hook_active = False
+        # The scope each cached 'update_progress' message was applied to, keyed by
+        # id(msg), so that a replay after a rewind targets the same scope.
+        self._cached_progress_targets: dict[int, tuple[Msg, PlanProgress]] = {}
 
         self._command_registry = {
             "declare_stream": self._declare_stream,
@@ -760,6 +766,7 @@ class RunEngine:
                 status.finish()
         self._progress_scopes.clear()
         self._progress_hook_active = False
+        self._cached_progress_targets.clear()
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -1825,6 +1832,7 @@ class RunEngine:
                     self._call_progress_hook(None)
             self._progress_scopes.clear()
             self._progress_hook_active = False
+            self._cached_progress_targets.clear()
 
             for p in self._plan_stack:
                 try:
@@ -2337,15 +2345,27 @@ class RunEngine:
             Msg('update_progress', name='scan', done=True)
         """
         name = msg.kwargs["name"]
-        status = self._progress_scopes.get(name)
-        if status is None:
-            raise IllegalMessageSequence(
-                f"No progress scope named {name!r} is open. Use 'declare_progress' first."
-            )
+        cached = self._cached_progress_targets.get(id(msg))
+        if cached is not None and cached[0] is msg:
+            # Replayed after a rewind: apply it to the scope it originally
+            # targeted, which may since have finished (or had its name reused).
+            status = cached[1]
+            if status.done:
+                return
+        else:
+            open_status = self._progress_scopes.get(name)
+            if open_status is None:
+                raise IllegalMessageSequence(
+                    f"No progress scope named {name!r} is open. Use 'declare_progress' first."
+                )
+            status = open_status
+            if self._msg_cache and self._msg_cache[-1] is msg:
+                self._cached_progress_targets[id(msg)] = (msg, status)
         done = msg.kwargs.get("done", False)
         if done:
             status.finish()
-            del self._progress_scopes[name]
+            if self._progress_scopes.get(name) is status:
+                del self._progress_scopes[name]
             self._rebuild_progress_hook()
         else:
             status._notify(
@@ -2656,6 +2676,7 @@ class RunEngine:
             return
 
         self._msg_cache = deque()
+        self._cached_progress_targets.clear()
         for current_run in self._run_bundlers.values():
             current_run.reset_checkpoint_state()
 
@@ -2671,6 +2692,7 @@ class RunEngine:
         """
         # clear message cache
         self._msg_cache = None
+        self._cached_progress_targets.clear()
         # clear stashed
         for current_run in self._run_bundlers.values():
             await current_run.clear_checkpoint(msg)
