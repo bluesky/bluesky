@@ -3,12 +3,13 @@ from collections import defaultdict
 
 import pytest
 from event_model import EventModelValueError
-from event_model.documents.event_descriptor import DataKey
+from event_model.documents.event_descriptor import DataKey, EventDescriptor
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
 from ophyd.sim import StatusBase
 
 from bluesky.plans import fly
+from bluesky.run_engine import RunEngine
 
 
 def call_counter(func):
@@ -115,3 +116,43 @@ def test_fly_disparate_event_counts_into_one_stream_fails(RE):
         match=r"are of a different width `\d+` than other detectors in the same collect\(\) or save\(\)",
     ):
         RE(fly([det1, det2], stream_name="main"))
+
+
+class StreamDatumFlyerWithReading(StreamDatumFlyer):
+    """A StreamDatumFlyer whose describe also has a key that only read produces."""
+
+    def describe(self) -> dict[str, DataKey]:
+        return {
+            **super().describe(),
+            f"{self.name}-total": DataKey(source="sim", dtype="number", shape=[]),
+        }
+
+    def describe_collect(self) -> dict[str, DataKey]:
+        return super().describe()
+
+
+@pytest.mark.parametrize(
+    "collect, data_keys",
+    [(False, {"flyer-sd", "flyer-total"}), (True, {"flyer-sd"})],
+)
+def test_fly_plan_declares_stream_from_describe_or_describe_collect(
+    RE: RunEngine, collect: bool, data_keys: set[str]
+) -> None:
+    """Declare the fly stream from describe by default and from describe_collect with collect=True."""
+    flyer = StreamDatumFlyerWithReading(name="flyer")
+    descriptors: list[EventDescriptor] = []
+
+    def record(name: str, doc: EventDescriptor) -> None:
+        descriptors.append(doc)
+
+    RE.subscribe(record, "descriptor")
+
+    RE(fly([flyer], stream_name="primary", collect=collect))
+
+    assert [set(d["data_keys"]) for d in descriptors] == [data_keys]
+
+
+def test_fly_plan_without_stream_name_says_how_to_declare(RE: RunEngine) -> None:
+    """Name the stream_name argument in the error when fly collects an undeclared stream."""
+    with pytest.raises(AssertionError, match="stream_name and collect=True arguments of fly"):
+        RE(fly([StreamDatumFlyer(name="flyer")]))

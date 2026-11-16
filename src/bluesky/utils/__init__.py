@@ -1,9 +1,11 @@
 import abc
 import asyncio
 import collections.abc
+import dataclasses
 import datetime
 import inspect
 import itertools
+import math
 import operator
 import os
 import signal
@@ -19,13 +21,14 @@ from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, G
 from collections.abc import Iterable as TypingIterable
 from enum import Enum
 from functools import partial, reduce, wraps
-from inspect import Parameter, Signature
 from typing import (
     Any,
+    ParamSpec,
     TextIO,
     TypeAlias,
     TypedDict,
     TypeVar,
+    overload,
 )
 from weakref import WeakKeyDictionary, ref
 
@@ -39,6 +42,7 @@ from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 from typing_extensions import TypeIs
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky.env_vars import BLUESKY_HISTORY_PATH
 from bluesky.protocols import (
     Asset,
     HasHints,
@@ -51,6 +55,8 @@ from bluesky.protocols import (
     SyncOrAsyncIterator,
     T,
     Watchable,
+    Watcher,
+    WatcherUpdate,
     WritesExternalAssets,
     WritesStreamAssets,
     check_supports,
@@ -84,8 +90,66 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return f"Msg({self.command!r}, obj={self.obj!r}, args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
 
 
+def _to_json_safe(value: Any) -> list | dict | str | float | int | bool | None:
+    """Recursively convert a value into a json-safe structure."""
+
+    match value:
+        case Enum():
+            return _to_json_safe(value.value)
+        case None | bool() | int() | str():
+            return value
+        case float():
+            if math.isnan(value):
+                return None
+            if math.isinf(value):
+                return "Infinity" if value > 0 else "-Infinity"
+            return float(value)
+        case np.generic():
+            return _to_json_safe(value.item())
+        case np.ndarray():
+            return _to_json_safe(value.tolist())
+        case list() | tuple() | set():
+            return [_to_json_safe(v) for v in value]
+        case dict():
+            return {str(k): _to_json_safe(v) for k, v in value.items()}
+        case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
+            return _to_json_safe(dataclasses.asdict(value))
+        case _:
+            try:
+                return str(value)
+            except Exception:
+                return None
+
+
+def msg_to_json_safe_dict(msg: Msg) -> dict[str, Any]:
+    """Return a JSON-safe dictionary representation of this message.
+
+    Devices, enums, numpy scalars and other values in ``obj``/``args``/``kwargs``/
+    ``run`` that are not natively JSON-serializable are coerced to JSON-safe forms.
+
+    Parameters
+    ----------
+    msg : Msg
+        The message to be converted to a JSON-safe dictionary.
+
+    Returns
+    -------
+    dict[str, Any]
+        A JSON-safe dictionary representation of the message.
+    """
+
+    return {
+        "command": msg.command,
+        "obj": _to_json_safe(msg.obj),
+        "args": [_to_json_safe(a) for a in msg.args],
+        "kwargs": {str(k): _to_json_safe(v) for k, v in msg.kwargs.items()},
+        "run": _to_json_safe(msg.run),
+    }
+
+
 #: Return type of a plan, usually None. Always optional for dry-runs.
 P = TypeVar("P")
+PlanArgs = ParamSpec("PlanArgs")
 
 #: Object usually returned from plan functions that is fed to the RunEngine
 MsgGenerator = Generator[Msg, Any, P]
@@ -647,43 +711,6 @@ class _BoundMethodProxy:
         return self._hash
 
 
-# The following two code blocks are adapted from David Beazley's
-# 'Python 3 Metaprogramming' https://www.youtube.com/watch?v=sPiWg5jSoZI
-
-
-class StructMeta(type):
-    def __new__(cls, name, bases, clsdict):
-        clsobj = super().__new__(cls, name, bases, clsdict)
-        args_params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in clsobj._fields]
-        kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None) for name in ["md"]]
-        sig = Signature(args_params + kwargs_params)
-        clsobj.__signature__ = sig
-        return clsobj
-
-
-class Struct(metaclass=StructMeta):
-    "The _fields of any subclass become its attritubes and __init__ args."
-
-    _fields: list[str] = []
-
-    def __init__(self, *args, **kwargs):
-        # Now bind default values of optional arguments.
-        # If it seems like there should be a cleaner way to do this, see
-        # http://bugs.python.org/msg221104
-        bound = self.__signature__.bind(*args, **kwargs)
-        for name, param in self.__signature__.parameters.items():
-            if name not in bound.arguments and param.default is not inspect._empty:
-                bound.arguments[name] = param.default
-        for name, val in bound.arguments.items():
-            setattr(self, name, val)
-        self.flyers = []
-
-    def set(self, **kwargs):
-        "Update attributes as keyword arguments."
-        for attr, val in kwargs.items():
-            setattr(self, attr, val)
-
-
 SUBS_NAMES = ["all", "start", "stop", "event", "descriptor"]
 
 
@@ -1009,9 +1036,8 @@ class PersistentDict(collections.abc.MutableMapping):
 
 
 SEARCH_PATH = []
-ENV_VAR = "BLUESKY_HISTORY_PATH"
-if ENV_VAR in os.environ:
-    SEARCH_PATH.append(os.environ[ENV_VAR])
+if BLUESKY_HISTORY_PATH:
+    SEARCH_PATH.append(BLUESKY_HISTORY_PATH)
 SEARCH_PATH.extend(
     [
         os.path.expanduser("~/.config/bluesky/bluesky_history.db"),
@@ -1062,8 +1088,8 @@ def get_history():
             return historydict.HistoryDict(":memory:")
 
 
-_QT_KICKER_INSTALLED: dict = {}
-_NB_KICKER_INSTALLED: dict = {}
+_QT_KICKER_INSTALLED: Any = {}
+_NB_KICKER_INSTALLED: Any = {}
 
 
 def install_kicker(loop=None, update_rate=0.03):
@@ -1398,7 +1424,7 @@ def apply_to_dict_recursively(d, f):
     return d
 
 
-class PlanProgress(Watchable):
+class PlanProgress(Watchable[Any]):
     """A Watchable object for plan-driven progress reporting.
 
     Implements ``watch()`` so it can be used with the existing
@@ -1411,8 +1437,8 @@ class PlanProgress(Watchable):
         self.name = name
         self.parent = parent
         self._done = False
-        self._watchers: list[Callable] = []
-        self._last_state: dict | None = None
+        self._watchers: list[Watcher[Any]] = []
+        self._last_state: WatcherUpdate[Any] | None = None
         # Measured on the status, not the transient TerminalProgressBar, so the
         # rate/ETA survive progress-bar rebuilds instead of resetting to ~0.
         self._start_time = time.time()
@@ -1421,7 +1447,7 @@ class PlanProgress(Watchable):
     def done(self) -> bool:
         return self._done
 
-    def watch(self, func: Callable) -> None:
+    def watch(self, func: Watcher[Any]) -> None:
         self._watchers.append(func)
         # Replay last known state so the watcher can display immediately.
         if self._last_state is not None:
@@ -2310,44 +2336,51 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
         return ret
 
 
-class Plan:
+class Plan(MsgGenerator[P]):
     __slots__ = ("_iter", "_stack")
 
-    def __init__(self, f, *args, **kwargs) -> None:
+    def __init__(
+        self, f: Callable[PlanArgs, MsgGenerator[P]], *args: PlanArgs.args, **kwargs: PlanArgs.kwargs
+    ) -> None:
         self._iter = f(*args, **kwargs)
-        self._stack = traceback.format_stack()
-        self._stack = self._stack[:-2]
+        self._stack: list[str] | None = traceback.format_stack()[:-2]
         self._stack += [
             f"RuntimeWarning: plan `{f.__name__}` was never iterated, did you mean to use `yield from`?"
         ]
 
-    def __iter__(self):
+    def __iter__(self) -> MsgGenerator[P]:
         self._stack = None
         return (yield from self._iter)
 
-    def __next__(self):
+    def __next__(self) -> Msg:
         self._stack = None
         return next(self._iter)
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self._stack:
             warning_message = "\n" + "".join(self._stack)
             warnings.warn(warning_message, RuntimeWarning, stacklevel=1)
 
-    def send(self, value):
+    def send(self, value: Any) -> Msg:
         self._stack = None
         return self._iter.send(value)
 
+    @overload
+    def throw(
+        self, typ: type[BaseException], val: object = None, tb: types.TracebackType | None = None, /
+    ) -> Msg: ...
+    @overload
+    def throw(self, typ: BaseException, val: None = None, tb: types.TracebackType | None = None, /) -> Msg: ...
     def throw(self, typ, val=None, tb=None):
         self._stack = None
         return self._iter.throw(typ, val, tb)
 
-    def close(self):
+    def close(self) -> None:
         self._stack = None
-        return self._iter.close()
+        self._iter.close()
 
 
-def plan(bs_plan):
+def plan(bs_plan: Callable[PlanArgs, MsgGenerator[P]]) -> Callable[PlanArgs, MsgGenerator[P]]:
     """Decorator that warns user if a `yield from` is not called
 
     Parameters
@@ -2362,10 +2395,10 @@ def plan(bs_plan):
     """
 
     @wraps(bs_plan)
-    def wrapper(*args, **kwargs) -> Plan:
+    def wrapper(*args: PlanArgs.args, **kwargs: PlanArgs.kwargs) -> Plan[P]:
         return Plan(bs_plan, *args, **kwargs)
 
-    wrapper._is_plan_ = True
+    wrapper._is_plan_ = True  # type: ignore[attr-defined]
 
     return wrapper
 

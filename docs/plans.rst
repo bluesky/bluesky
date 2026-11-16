@@ -477,10 +477,12 @@ Plans for interacting with hardware:
     rel_set
     mv
     mvr
+    check_value
     trigger
     read
     rd
     locate
+    loc
     stage
     unstage
     configure

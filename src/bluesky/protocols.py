@@ -34,8 +34,10 @@ class ReadingOptional(TypedDict, total=False):
 
 
 T = TypeVar("T")
+T_co = TypeVar("T_co", contravariant=True)
 P = ParamSpec("P")
 R_co = TypeVar("R_co", covariant=True)
+T_contra = TypeVar("T_contra", contravariant=True)
 
 
 class Reading(Generic[T], ReadingOptional):
@@ -59,8 +61,40 @@ SyncOrAsync: TypeAlias = T | Awaitable[T]
 SyncOrAsyncIterator: TypeAlias = Iterator[T] | AsyncIterator[T]
 
 
+class WatcherUpdate(TypedDict, Generic[T]):
+    """The keyword arguments passed to a `Watcher` on each progress update.
+
+    ``current``, ``initial`` and ``target`` share the same type ``T``.
+    """
+
+    #: Name of the operation being watched
+    name: str | None
+    #: Current position/value
+    current: T | None
+    #: Position/value at the start of the operation
+    initial: T | None
+    #: Position/value at which the operation will be complete
+    target: T | None
+    #: Units of ``current``, ``initial`` and ``target``
+    unit: str
+    #: Number of decimal places to display
+    precision: int | None
+    #: Explicit 0-1 progress fraction
+    fraction: float | None
+    #: Seconds since the operation started
+    time_elapsed: float | None
+    #: Estimated seconds until the operation completes
+    time_remaining: float | None
+
+
+class Watcher(Protocol[T_contra]):
+    """A callback registered with `Watchable.watch` to receive progress updates."""
+
+    def __call__(self, **kwargs: Unpack[WatcherUpdate[T_contra]]) -> None: ...
+
+
 @runtime_checkable
-class Watchable(Protocol):
+class Watchable(Protocol[R_co]):
     """An object whose progress can be monitored via ``watch()``."""
 
     @property
@@ -68,12 +102,11 @@ class Watchable(Protocol):
     def done(self) -> bool: ...
 
     @abstractmethod
-    def watch(self, func: Callable) -> None:
+    def watch(self, func: Watcher[R_co]) -> None:
         """Register a callback to receive progress updates.
 
-        The callback will be called with keyword arguments:
-        ``name``, ``current``, ``initial``, ``target``, ``unit``,
-        ``precision``, ``fraction``, ``time_elapsed``, ``time_remaining``.
+        The callback will be called with the keyword arguments described by
+        `WatcherUpdate`.
         """
         ...
 
@@ -253,9 +286,9 @@ class Triggerable(Protocol):
 
 
 @runtime_checkable
-class Preparable(Protocol):
+class Preparable(Protocol[T_co]):
     @abstractmethod
-    def prepare(self, value) -> Status:
+    def prepare(self, value: T_co) -> Status:
         """Prepare a device for scanning.
 
         This method provides similar functionality to ``Stageable.stage`` and
@@ -375,9 +408,6 @@ class EventPageCollectable(Collectable, Protocol):
         A 'uid' is added by the RunEngine.
         """
         ...
-
-
-T_co = TypeVar("T_co", contravariant=True)
 
 
 @runtime_checkable
@@ -580,3 +610,18 @@ def check_supports(obj: T, protocol: type[Any]) -> T:
 
 # Descriptor with previous name on imports for backwards compatibility.
 Descriptor = DataKey
+
+
+@runtime_checkable
+class Executable(Protocol[P, R_co]):
+    @abstractmethod
+    def execute(self, *args: P.args, **kwargs: P.kwargs) -> StatusWithResult[R_co]:
+        """Execute a remote procedural call on a device
+
+        execute should be a method that wraps an RPC which takes any
+        number of positional and keyword arguments and returns a status.
+        When awaited, the status may return an object.
+
+        This can be a standard function or an ``async`` function.
+        """
+        ...

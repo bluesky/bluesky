@@ -1,6 +1,5 @@
 import collections
 import inspect
-import os
 import sys
 import time
 from collections import defaultdict
@@ -12,6 +11,8 @@ from typing import Any, TypeAlias
 import numpy as np
 from cycler import Cycler
 
+from bluesky.env_vars import BLUESKY_PREDECLARE
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
@@ -21,7 +22,7 @@ except ImportError:
 from . import plan_patterns, utils
 from . import plan_stubs as bps
 from . import preprocessors as bpp
-from .protocols import Collectable, Flyable, Movable, NamedMovable, Readable
+from .protocols import Flyable, Movable, NamedMovable, Readable
 from .utils import (
     CustomPlanMetadata,
     Msg,
@@ -120,7 +121,7 @@ def count(
     _md["hints"].setdefault("dimensions", [(("time",), "primary")])  # type: ignore
 
     # per_shot might define a different stream, so do not predeclare primary
-    predeclare = per_shot is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_shot is None and BLUESKY_PREDECLARE
     msg_per_step: PerShot = per_shot if per_shot else bps.one_shot
 
     @bpp.stage_decorator(detectors)
@@ -697,7 +698,7 @@ def log_scan(
     else:
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_step is None and BLUESKY_PREDECLARE
     if per_step is None:
         per_step = bps.one_1d_step
 
@@ -872,7 +873,7 @@ def adaptive_scan(
         else:
             direction_sign = -1
         devices = tuple(utils.separate_devices([*detectors, motor]))
-        if os.environ.get("BLUESKY_PREDECLARE", False):
+        if BLUESKY_PREDECLARE:
             yield from bps.declare_stream(*devices, name="primary")
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
@@ -1125,7 +1126,7 @@ def tune_centroid(
         cur_I = None
         sum_I = 0  # for peak centroid calculation, I(x)
         sum_xI = 0
-        if os.environ.get("BLUESKY_PREDECLARE", False):
+        if BLUESKY_PREDECLARE:
             yield from bps.declare_stream(motor, *detectors, name="primary")  # type: ignore
 
         if progress_scope is not None:
@@ -1253,7 +1254,7 @@ def scan_nd(
         # change it, else set it to the one generated above
         _md["hints"].setdefault("dimensions", dimensions)  # type: ignore
 
-    predeclare = per_step is None and os.environ.get("BLUESKY_PREDECLARE", False)
+    predeclare = per_step is None and BLUESKY_PREDECLARE
     if per_step is None:
         per_step = bps.one_nd_step
     else:
@@ -2677,6 +2678,7 @@ def fly(
     md: CustomPlanMetadata | None = None,
     collect_flush_period: float | None = None,
     stream_name: str | None = None,
+    collect: bool = False,
     watch: Sequence[str] = (),
 ) -> MsgGenerator[str]:
     """
@@ -2686,12 +2688,16 @@ def fly(
     ----------
     flyers : collection
         objects that support the flyer interface
-    md : dict, optional
-        metadata
+    md : CustomPlanMetadata, optional
+        Additional metadata to include in the run start document
     collect_flush_period : float, optional
         If set, will use `collect_while_completing` with the given flush period
     stream_name : str, optional
         If set, will declare a stream with the given name for all flyers
+    collect : bool, optional
+        If set, declare the stream from the flyers' `describe_collect`
+        rather than `describe`. Only used if `stream_name` is set.
+        Default is `False`.
     watch: set of watch groups, optional
         Additional groups to monitor while collecting from flyers.
         Will only be used if `collect_flush_period` is set.
@@ -2699,38 +2705,25 @@ def fly(
     Yields
     ------
     msg : Msg
-        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+        bluesky messages for opening/closing run, optionally declaring stream, and controlling flyers
 
     See Also
     --------
     :func:`bluesky.preprocessors.fly_during_wrapper`
     :func:`bluesky.preprocessors.fly_during_decorator`
     """
-    uid = yield from bps.open_run(md)
 
-    # Extract list of collectable detectors from flyers
-    dets = [flyer for flyer in flyers if isinstance(flyer, Collectable)]
-
-    # If provided, attempt to declare single stream for all collectable detectors
-    # note that if set, all detectors must produce the same number of events.
-    if stream_name is not None:
-        yield from bps.declare_stream(*dets, name=stream_name)
-
-    # Kickoff all flyers
-    yield from bps.kickoff_all(*flyers, wait=True)
-
-    # If flush period given, collect while completing.
-    if collect_flush_period is not None:
-        yield from bps.collect_while_completing(
-            flyers, dets, flush_period=collect_flush_period, stream_name=stream_name, watch=watch
+    @bpp.run_decorator(md=md)
+    def _inner():
+        yield from bps.fly_stub(
+            flyers,
+            collect_flush_period=collect_flush_period,
+            stream_name=stream_name,
+            collect=collect,
+            watch=watch,
         )
-    else:
-        # Otherwise, wait for all flyers to complete before collecting.
-        yield from bps.complete_all(*flyers, wait=True)
-        yield from bps.collect_all(*dets, name=stream_name)
 
-    yield from bps.close_run()
-    return uid
+    return (yield from _inner())
 
 
 def x2x_scan(

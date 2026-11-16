@@ -30,6 +30,8 @@ from bluesky._vendor.super_state_machine.machines import StateMachine
 from .bundlers import RunBundler, maybe_await
 from .log import ComposableLogAdapter, logger, msg_logger, state_logger
 from .protocols import (
+    Checkable,
+    Executable,
     Flyable,
     Locatable,
     Movable,
@@ -178,7 +180,7 @@ class LoggingPropertyMachine(PropertyMachine):
         with obj._state_lock:
             super().__set__(obj, value)
         value = self.__get__(obj, own)
-        tags = {"old_state": old_value, "new_state": value, "RE": self}
+        tags = {"old_state": old_value, "new_state": value, "RE": obj}
 
         state_logger.info("Change state on %r from %r -> %r", obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
@@ -530,6 +532,7 @@ class RunEngine:
 
         self._command_registry = {
             "declare_stream": self._declare_stream,
+            "execute": self._execute,
             "create": self._create,
             "save": self._save,
             "drop": self._drop,
@@ -567,6 +570,7 @@ class RunEngine:
             "remove_suspender": self._remove_suspender,
             "declare_progress": self._declare_progress,
             "update_progress": self._update_progress,
+            "check_value": self._check_value,
         }
 
         # public dispatcher for callbacks
@@ -965,7 +969,7 @@ class RunEngine:
             for func in funcs:
                 self._temp_callback_ids.add(self.subscribe(func, name))
 
-        self._plan = plan  # this ref is just used for metadata introspection
+        self._plan = plan  # type: ignore # this ref is just used for metadata introspection
         self._metadata_per_call.update(metadata_kw)
 
         gen = ensure_generator(plan)
@@ -1835,7 +1839,7 @@ class RunEngine:
             raise stashed_exception
         return plan_return
 
-    async def _wait_for(self, msg):
+    async def _wait_for(self, msg: Msg) -> list[asyncio.Future[typing.Any]]:
         """Instruct the RunEngine to wait for futures and return the resulting tasks.
 
         Expected message object is:
@@ -1853,7 +1857,22 @@ class RunEngine:
 
         (futs,) = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        completed, pending = await asyncio.wait(futs, **msg.kwargs)
+        # These tasks are ours: nothing else holds a reference with which to
+        # cancel them. `asyncio.wait` does not cancel what it was waiting on
+        # when it is itself cancelled, so a plan aborted while parked here left
+        # them running on a loop about to be closed, and asyncio reported "Task
+        # was destroyed but it is pending!" at some unrelated later moment.
+        #
+        # Only on the way out. A timeout leaves them alone deliberately: the
+        # awaitables are built by factories that work more than once, and
+        # waiting on the same group again after a timeout has to find whatever
+        # it was waiting for still in flight.
+        try:
+            completed, pending = await asyncio.wait(futs, **msg.kwargs)
+        except asyncio.CancelledError:
+            for fut in futs:
+                fut.cancel()
+            raise
         if pending:
             raise WaitForTimeoutError("Plan failed to complete in the specified time")
         return futs
@@ -1921,7 +1940,7 @@ class RunEngine:
 
             Msg('close_run', None, exit_status=None, reason=None)
 
-        if *exit_stats* and *reason* are not provided, use the values
+        if *exit_status* and *reason* are not provided, use the values
         stashed on the RE.
         """
         # TODO extract this from the Msg
@@ -1998,18 +2017,10 @@ class RunEngine:
             raise IllegalMessageSequence(ims_msg)
         return await current_run.declare_stream(msg)
 
-    async def _read(self, msg):
-        """
-        Add a reading to the open event bundle.
+    async def _perform_single_reading(self, obj, *read_args, **read_kwargs):
+        """Perform a reading on a single device."""
 
-        Expected message object is:
-
-            Msg('read', obj)
-        """
-        obj = check_supports(msg.obj, Readable)
-        # actually _read_ the object
-        warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
-        ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
+        ret = await maybe_await(obj.read(*read_args, **read_kwargs))
 
         if ret is None:
             raise RuntimeError(
@@ -2017,13 +2028,38 @@ class RunEngine:
                 "This is a bug in your object implementation, "
                 "`read` must return a dictionary."
             )
-        run_key = msg.run
-        if (
-            current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
-        ) is not key_absence_sentinel:
-            await current_run.read(msg, ret)
-
         return ret
+
+    async def _read(self, msg):
+        """
+        Add a reading to the open event bundle.
+
+        The obj and args of the read message are all objects to be read.
+
+        Expected message object is:
+
+            Msg('read', *objs)
+
+        """
+
+        run_key = msg.run
+        objs = list((msg.obj,) + msg.args) if msg.obj is not None else []
+        non_readable = [obj for obj in objs if not isinstance(obj, Readable)]
+        if non_readable:
+            raise TypeError(
+                "Run engine received a read message with which contained "
+                f"the following devices which were not readable: {non_readable}"
+            )
+
+        read_returns = await asyncio.gather(*[self._perform_single_reading(obj) for obj in objs])
+
+        if (current_run := self._run_bundlers.get(run_key)) is not None:
+            await current_run.read(msg, list(zip(objs, read_returns)))
+
+        all_readings = {}
+        for read_ret in read_returns:
+            all_readings.update(read_ret)
+        return all_readings
 
     async def _locate(self, msg: Msg):
         """
@@ -2031,17 +2067,22 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('locate', obj1, ..., objn, squeeze=True)
+            Msg('locate', obj1, ..., objn)
 
         If a single obj is passed, obj.locate() is returned. If multiple objs
         are passed, obj.locate() is called in parallel for all objs and a list
-        of the results returned. If squeeze is supplied and is False then it
-        will always return a list of results even with a single object.
+        of the results returned.
         """
+        if "squeeze" in msg.kwargs:
+            warn(  # noqa: B028
+                "The locate message ignores squeeze: one object returns a single "
+                "location and several objects return a list. squeeze will be removed "
+                "in a future version."
+            )
         objs = [check_supports(obj, Locatable) for obj in (msg.obj,) + msg.args]
         # actually _locate_ the objects
         coros = [maybe_await(obj.locate()) for obj in objs]
-        if len(coros) == 1 and msg.kwargs.get("squeeze", True):
+        if len(coros) == 1:
             return await coros[0]
         else:
             return list(await asyncio.gather(*coros))
@@ -2330,6 +2371,24 @@ class RunEngine:
         """
         return type(self)
 
+    async def _check_value(self, msg: Msg) -> None:
+        """Check that a value is acceptable to a Checkable object.
+
+        Should be used before attempting a `set()` operation
+        with the given value.
+
+        Expected message object is:
+
+            Msg('check_value', obj, value)
+
+        where arguments are passed through to `obj.check_value(value)`.
+
+        If the value is not acceptable by the device,
+        it should raise a detailed exception with a rationale.
+        """
+        obj = check_supports(msg.obj, Checkable)
+        await maybe_await(obj.check_value(*msg.args, **msg.kwargs))
+
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} set")
     async def _set(self, msg):
         """
@@ -2353,6 +2412,23 @@ class RunEngine:
 
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="set")
 
+        return ret
+
+    async def _execute(self, msg):
+        """
+        Execute an RCP on a device and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('execute', obj, *args, **kwargs)
+        """
+        obj = check_supports(msg.obj, Executable)
+        group = msg.kwargs.get("group")
+        args = msg.kwargs.get("execute_args", ())
+        kwargs = dict(msg.kwargs.get("execute_kwargs", {}))
+
+        ret = obj.execute(*args, **kwargs)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="execute")
         return ret
 
     async def _trigger(self, msg):
@@ -2531,23 +2607,25 @@ class RunEngine:
         """
         await self._request_pause_coro(*msg.args, **msg.kwargs)
 
-    async def _resume(self, msg):
-        """Request the run engine to resume
-
-        Expected message object is:
-
-            Msg('resume', defer=False, name=None, callback=None)
-
-        See RunEngine.resume() docstring for explanation of the three
-        keyword arguments in the `Msg` signature
-        """
-        # Re-instate monitoring callbacks.
-        for current_run in self._run_bundlers.values():
-            await current_run.restore_monitors()
-        # Notify Devices of the resume in case they want to clean up.
+    async def _resume_objects(self):
+        """The plan is moving again: tell the devices, so they can prepare."""
         for obj in self._objs_seen:
             if isinstance(obj, Pausable):
                 await maybe_await(obj.resume())
+
+    async def _resume(self, msg):
+        """The suspension is over: tell the devices.
+
+        Expected message object is:
+
+            Msg('_resume_from_suspender')
+
+        Sent by the helper plan `_start_suspender` pushes, between the hold and
+        the post-plan. Nothing to do with `RunEngine.resume`.
+
+        Monitors are untouched: a suspension never stopped them.
+        """
+        await self._resume_objects()
 
     async def _checkpoint(self, msg):
         """Instruct the RunEngine to create a checkpoint so that we can rewind
@@ -2909,7 +2987,7 @@ Your RunEngine is entering a paused state. These are your options for changing
 the state of the RunEngine:
 
 RE.resume()    Resume the plan.
-RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+RE.abort()     Perform cleanup, then kill plan. Mark exit_status='aborted'.
 RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
 RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 """

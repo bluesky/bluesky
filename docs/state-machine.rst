@@ -53,7 +53,7 @@ Pause Now: Ctrl+C twice
     the state of the RunEngine:
 
     RE.resume()    Resume the plan.
-    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_status='aborted'.
     RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
     RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 
@@ -107,7 +107,7 @@ to complete before execution is paused.
     the state of the RunEngine:
 
     RE.resume()    Resume the plan.
-    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_status='aborted'.
     RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
     RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 
