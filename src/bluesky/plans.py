@@ -73,6 +73,7 @@ def count(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "counts",
 ) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
@@ -98,6 +99,8 @@ def count(
         metadata
     parent_progress_scope : str, optional
         name of a parent progress scope to nest under
+    progress_units : str, optional
+        the unit label shown in progress updates; default is ``"counts"``.
 
     Notes
     -----
@@ -132,7 +135,9 @@ def count(
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
             if num is not None:
-                yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="event")
+                yield from bps.update_progress(
+                    progress_scope, current=0, initial=0, target=num, unit=progress_units
+                )
 
         return (
             yield from bps.repeat(
@@ -140,7 +145,7 @@ def count(
                 num=num,
                 delay=delay,
                 progress_scope=progress_scope,
-                progress_units="event",
+                progress_units=progress_units,
             )
         )
 
@@ -154,6 +159,7 @@ def list_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one or more variables in steps simultaneously (inner product).
@@ -251,6 +257,7 @@ def list_scan(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
         )
     )
 
@@ -262,6 +269,7 @@ def rel_list_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in steps relative to current position.
@@ -317,6 +325,7 @@ def rel_list_scan(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -331,6 +340,8 @@ def list_grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
+    per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -362,6 +373,14 @@ def list_grid_scan(
         for details.
     md: dict, optional
         metadata
+    progress_scope: str, optional
+        the name to use for progress updates for this scan.
+    parent_progress_scope: str, optional
+        the name of the parent progress scope, if any.
+    progress_units: str, optional
+        the unit label shown in progress updates; default is ``"steps"``.
+    per_dim_progress: bool, optional
+        whether to show progress for each dimension separately, in addition to overall progress.
 
     See Also
     --------
@@ -399,6 +418,10 @@ def list_grid_scan(
     except (AttributeError, KeyError):
         ...
 
+    progress_dims = None
+    if per_dim_progress and progress_scope is not None:
+        progress_dims = [(motor.name, len(pos_list)) for motor, pos_list in partition(2, args)]
+
     return (
         yield from scan_nd(
             detectors,
@@ -407,6 +430,8 @@ def list_grid_scan(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
+            progress_dims=progress_dims,
         )
     )
 
@@ -419,6 +444,8 @@ def rel_list_grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
+    per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory. Each point is
@@ -454,6 +481,8 @@ def rel_list_grid_scan(
         for details.
     md : dict, optional
         metadata
+    per_dim_progress : bool, optional
+        whether to show progress for each dimension separately, in addition to overall progress.
 
     See Also
     --------
@@ -479,6 +508,8 @@ def rel_list_grid_scan(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
+                per_dim_progress=per_dim_progress,
             )
         )
 
@@ -496,6 +527,7 @@ def _scan_1d(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps.
@@ -560,11 +592,13 @@ def _scan_1d(
     def inner_scan():
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
-            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="step")
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit=progress_units)
         for i, step in enumerate(steps):
             yield from per_step(detectors, motor, step)
             if progress_scope is not None:
-                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="step")
+                yield from bps.update_progress(
+                    progress_scope, current=i + 1, initial=0, target=num, unit=progress_units
+                )
         if progress_scope is not None:
             yield from bps.update_progress(progress_scope, done=True)
 
@@ -582,6 +616,7 @@ def _rel_scan_1d(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps relative to current positon.
@@ -626,6 +661,7 @@ def _rel_scan_1d(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -643,6 +679,7 @@ def log_scan(
     md=None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
@@ -711,11 +748,13 @@ def log_scan(
             yield from bps.declare_stream(motor, *detectors, name="primary")
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
-            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit="step")
+            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num, unit=progress_units)
         for i, step in enumerate(steps):
             yield from per_step(detectors, motor, step)
             if progress_scope is not None:
-                yield from bps.update_progress(progress_scope, current=i + 1, initial=0, target=num, unit="step")
+                yield from bps.update_progress(
+                    progress_scope, current=i + 1, initial=0, target=num, unit=progress_units
+                )
         if progress_scope is not None:
             yield from bps.update_progress(progress_scope, done=True)
 
@@ -733,6 +772,7 @@ def rel_log_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps relative to current position.
@@ -777,6 +817,7 @@ def rel_log_scan(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -798,6 +839,7 @@ def adaptive_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one variable with adaptively tuned step size.
@@ -950,6 +992,7 @@ def rel_adaptive_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Relative scan over one variable with adaptively tuned step size.
@@ -1004,6 +1047,7 @@ def rel_adaptive_scan(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -1024,6 +1068,7 @@ def tune_centroid(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
@@ -1131,7 +1176,7 @@ def tune_centroid(
 
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
-            yield from bps.update_progress(progress_scope, fraction=0.0, unit="step")
+            yield from bps.update_progress(progress_scope, fraction=0.0, unit=progress_units)
 
         # tune_centroid converges by shrinking the step each pass until it
         # reaches min_step, so progress is the fraction of that shrink (on a
@@ -1154,7 +1199,7 @@ def tune_centroid(
                 completed = np.log(initial_step / abs(step))
                 frac = (completed + min(points_in_pass / num, 1.0) * np.log(step_factor)) / total_reduction
                 yield from bps.update_progress(
-                    progress_scope, fraction=float(np.clip(frac, 0.0, 1.0)), unit="step"
+                    progress_scope, fraction=float(np.clip(frac, 0.0, 1.0)), unit=progress_units
                 )
 
             next_pos += step
@@ -1199,6 +1244,7 @@ def scan_nd(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
     progress_dims: Sequence[tuple[str, int]] | None = None,
 ) -> MsgGenerator[str]:
     """
@@ -1219,6 +1265,8 @@ def scan_nd(
         the name to use for progress updates for this scan.
     parent_progress_scope : str, optional
         the name of the parent progress scope, if any.
+    progress_units : str, optional
+        the unit label shown in progress updates; default is ``"steps"``.
     progress_dims : list of (name, num) tuples, optional
         If given, also report progress for each dimension of an outer-product
         trajectory, as child scopes ``f"{progress_scope}/{name}"``. Dimensions
@@ -1362,7 +1410,7 @@ def scan_nd(
                 current=dim_pos + 1 if ticked else dim_pos,
                 initial=0,
                 target=count,
-                unit="step",
+                unit=progress_units,
             )
 
     @bpp.stage_decorator(list(detectors) + motors)
@@ -1372,17 +1420,19 @@ def scan_nd(
             yield from bps.declare_stream(*motors, *detectors, name="primary")
         if progress_scope is not None:
             yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
-            yield from bps.update_progress(progress_scope, current=0, initial=0, target=num_steps, unit="step")
+            yield from bps.update_progress(
+                progress_scope, current=0, initial=0, target=num_steps, unit=progress_units
+            )
             for name, count in dim_list:
                 yield from bps.declare_progress(name=f"{progress_scope}/{name}", parent=progress_scope)
                 yield from bps.update_progress(
-                    f"{progress_scope}/{name}", current=0, initial=0, target=count, unit="step"
+                    f"{progress_scope}/{name}", current=0, initial=0, target=count, unit=progress_units
                 )
         for i, step in enumerate(cycler):
             yield from per_step(detectors, step, pos_cache)
             if progress_scope is not None:
                 yield from bps.update_progress(
-                    progress_scope, current=i + 1, initial=0, target=num_steps, unit="step"
+                    progress_scope, current=i + 1, initial=0, target=num_steps, unit=progress_units
                 )
                 yield from _update_dim_progress(i + 1)
         if progress_scope is not None:
@@ -1401,6 +1451,7 @@ def inner_product_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[None]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1414,6 +1465,7 @@ def inner_product_scan(
         md=md,
         progress_scope=progress_scope,
         parent_progress_scope=parent_progress_scope,
+        progress_units=progress_units,
     )
 
 
@@ -1425,6 +1477,7 @@ def scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory.
@@ -1533,6 +1586,7 @@ def scan(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
         )
     )
 
@@ -1545,6 +1599,7 @@ def grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
     per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
@@ -1581,6 +1636,8 @@ def grid_scan(
         the name to use for progress updates for this scan.
     parent_progress_scope: str, optional
         the name of the parent progress scope, if any.
+    progress_units: str, optional
+        the unit label shown in progress updates; default is ``"steps"``.
     per_dim_progress: bool, optional
         whether to show progress for each dimension separately, in addition to overall progress.
 
@@ -1732,6 +1789,7 @@ def grid_scan(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
             progress_dims=progress_dims,
         )
     )
@@ -1745,6 +1803,7 @@ def rel_grid_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
     per_dim_progress: bool = False,
 ) -> MsgGenerator[str]:
     """
@@ -1803,6 +1862,7 @@ def rel_grid_scan(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
                 per_dim_progress=per_dim_progress,
             )
         )
@@ -1818,6 +1878,7 @@ def relative_inner_product_scan(  # type: ignore
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1831,6 +1892,7 @@ def relative_inner_product_scan(  # type: ignore
         md=md,
         progress_scope=progress_scope,
         parent_progress_scope=parent_progress_scope,
+        progress_units=progress_units,
     )
 
 
@@ -1842,6 +1904,7 @@ def rel_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory relative to current position.
@@ -1895,6 +1958,7 @@ def rel_scan(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -2004,6 +2068,7 @@ def spiral_fermat(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """Absolute fermat spiral scan, centered around (x_start, y_start)
 
@@ -2100,6 +2165,7 @@ def spiral_fermat(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
         )
     )
 
@@ -2119,6 +2185,7 @@ def rel_spiral_fermat(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """Relative fermat spiral scan
 
@@ -2179,6 +2246,7 @@ def rel_spiral_fermat(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -2202,6 +2270,7 @@ def spiral(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """Spiral scan, centered around (x_start, y_start)
 
@@ -2296,6 +2365,7 @@ def spiral(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
         )
     )
 
@@ -2315,6 +2385,7 @@ def rel_spiral(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """Relative spiral scan
 
@@ -2372,6 +2443,7 @@ def rel_spiral(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -2393,6 +2465,7 @@ def spiral_square(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """Absolute square spiral scan, centered around (x_center, y_center)
 
@@ -2483,6 +2556,7 @@ def spiral_square(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
         )
     )
 
@@ -2500,6 +2574,7 @@ def rel_spiral_square(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """Relative square spiral scan, centered around current (x, y) position.
 
@@ -2555,6 +2630,7 @@ def rel_spiral_square(
                 md=_md,
                 progress_scope=progress_scope,
                 parent_progress_scope=parent_progress_scope,
+                progress_units=progress_units,
             )
         )
 
@@ -2718,6 +2794,7 @@ def x2x_scan(
     md: CustomPlanMetadata | None = None,
     progress_scope: str | None = None,
     parent_progress_scope: str | None = None,
+    progress_units: str = "steps",
 ) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio
@@ -2777,6 +2854,7 @@ def x2x_scan(
             md=_md,
             progress_scope=progress_scope,
             parent_progress_scope=parent_progress_scope,
+            progress_units=progress_units,
         )
     )
 

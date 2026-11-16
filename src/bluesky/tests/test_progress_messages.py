@@ -251,6 +251,31 @@ def test_grid_scan_per_dim_progress_positions(RE, hw):
     assert outer == [0, 0, 0, 1, 1, 1, 2]
 
 
+@pytest.mark.parametrize("snake_axes", [False, True])
+def test_list_grid_scan_per_dim_progress_positions(RE, hw, snake_axes):
+    """list_grid_scan reports per-axis progress like grid_scan, with or without snaking."""
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+    RE(
+        bp.list_grid_scan(
+            [hw.det],
+            hw.motor1,
+            [-1, 1],
+            hw.motor2,
+            [-1, 0, 1],
+            snake_axes=snake_axes,
+            progress_scope="grid",
+            per_dim_progress=True,
+        )
+    )
+
+    updates = [m for m in msgs if m.command == "update_progress" and not m.kwargs.get("done")]
+    outer = [m.kwargs["current"] for m in updates if m.kwargs["name"] == f"grid/{hw.motor1.name}"]
+    inner = [m.kwargs["current"] for m in updates if m.kwargs["name"] == f"grid/{hw.motor2.name}"]
+    assert inner == [0, 1, 2, 3, 1, 2, 3]
+    assert outer == [0, 0, 0, 1, 1, 1, 2]
+
+
 def test_grid_scan_per_dim_progress_1d_per_step(RE, hw):
     """A 1-D per_step(detectors, motor, step) receives the motor and scalar step."""
     calls = []
@@ -387,7 +412,7 @@ def test_tune_centroid_emits_progress_messages(RE, hw):
     assert all(0.0 <= f <= 1.0 for f in fractions)
     assert all(b >= a for a, b in zip(fractions, fractions[1:]))
     assert fractions[-1] == pytest.approx(1.0)
-    assert all(m.kwargs["unit"] == "step" for m in steps)
+    assert all(m.kwargs["unit"] == "steps" for m in steps)
 
     dones = [m for m in updates if m.kwargs.get("done")]
     assert len(dones) == 1
@@ -459,6 +484,39 @@ def test_update_progress_replayed_on_resume(RE):
     # The scope finished before the pause, so neither replayed message reaches it.
     assert updates == [1, 2]
     assert RE._progress_scopes == {}
+
+
+def test_builtin_plans_progress_units(RE, hw):
+    """progress_units sets the unit of every update; count defaults to counts, scans to steps."""
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+
+    def units():
+        found = {m.kwargs["unit"] for m in msgs if m.command == "update_progress" and not m.kwargs.get("done")}
+        msgs.clear()
+        return found
+
+    RE(bp.count([hw.det], num=2, progress_scope="count"))
+    assert units() == {"counts"}
+    RE(bp.scan([hw.det], hw.motor, -1, 1, 3, progress_scope="scan"))
+    assert units() == {"steps"}
+    RE(
+        bp.grid_scan(
+            [hw.det],
+            hw.motor1,
+            -1,
+            1,
+            2,
+            hw.motor2,
+            -1,
+            1,
+            2,
+            progress_scope="grid",
+            per_dim_progress=True,
+            progress_units="points",
+        )
+    )
+    assert units() == {"points"}
 
 
 def test_update_progress_replay_shows_rewind(RE):

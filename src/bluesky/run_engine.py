@@ -330,6 +330,15 @@ class RunEngine:
         (trigger, set, kickoff, complete) to complete. This hook is useful to
         incorporate a progress bar.
 
+    progress_hook
+        Callable with signature ``f(progress_objects)`` that will be called
+        with the list of open plan-driven progress indicators
+        (:class:`bluesky.utils.PlanProgress`) whenever one is declared or
+        finished, and with ``None`` when the previous list is no longer
+        current. Like ``waiting_hook``, this is useful to incorporate a
+        progress bar; see :meth:`bluesky.utils.ProgressBarManager.new_stream`
+        to drive both hooks from one display.
+
     ignore_callback_exceptions
         Boolean, False by default.
 
