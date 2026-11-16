@@ -759,6 +759,37 @@ def rewindable_wrapper(plan, rewindable):
         return (yield from plan)
 
 
+def nest_progress_wrapper(plan, parent):
+    """Nest a plan's top-level progress scopes under a parent scope.
+
+    Every ``declare_progress`` message in the plan that has no parent is given
+    ``parent`` as its parent. Scopes declared with a parent are left alone, so
+    the plan's own nesting is kept.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    parent : str or None
+        name of an already-declared progress scope; if None, the plan is
+        passed through unchanged
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with parentless ``declare_progress`` messages altered
+    """
+    if parent is None:
+        return (yield from plan)
+
+    def nest(msg):
+        if msg.command == "declare_progress" and msg.kwargs.get("parent") is None:
+            return msg._replace(kwargs={**msg.kwargs, "parent": parent})
+        return msg
+
+    return (yield from msg_mutator(plan, nest))
+
+
 def inject_md_wrapper(plan, md):
     """
     Inject additional metadata into a run.
@@ -1281,6 +1312,7 @@ run_decorator = make_decorator(run_wrapper)
 contingency_decorator = make_decorator(contingency_wrapper)
 stub_decorator = make_decorator(stub_wrapper)
 configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
+nest_progress_decorator = make_decorator(nest_progress_wrapper)
 
 
 class SupplementalData:

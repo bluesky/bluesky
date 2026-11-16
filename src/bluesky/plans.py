@@ -132,12 +132,6 @@ def count(
     def inner_count() -> MsgGenerator[str]:
         if predeclare:
             yield from bps.declare_stream(*detectors, name="primary")
-        if progress_scope is not None:
-            yield from bps.declare_progress(name=progress_scope, parent=parent_progress_scope)
-            if num is not None:
-                yield from bps.update_progress(
-                    progress_scope, current=0, initial=0, target=num, unit=progress_units
-                )
 
         return (
             yield from bps.repeat(
@@ -145,6 +139,7 @@ def count(
                 num=num,
                 delay=delay,
                 progress_scope=progress_scope,
+                parent_progress_scope=parent_progress_scope,
                 progress_units=progress_units,
             )
         )

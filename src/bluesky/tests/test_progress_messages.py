@@ -614,3 +614,61 @@ def test_replayed_done_does_not_close_reused_scope_name(RE):
 
     assert all(st.done for st in statuses)
     assert RE._progress_scopes == {}
+
+
+def test_repeat_nests_parentless_scopes_under_its_scope(RE, hw):
+    """Scopes declared without a parent inside repeat() are nested under the repeat's scope."""
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+
+    def inner():
+        yield from bps.declare_progress("other")
+        yield from bp.scan([hw.det], hw.motor, -1, 1, 2, progress_scope="scan", parent_progress_scope="other")
+        yield from bps.update_progress("other", done=True)
+
+    def plan():
+        yield from bps.declare_progress("experiment")
+        yield from bps.repeat(inner, num=2, progress_scope="repeats", parent_progress_scope="experiment")
+        yield from bps.update_progress("experiment", done=True)
+
+    RE(plan())
+
+    parents = {(m.kwargs["name"], m.kwargs["parent"]) for m in msgs if m.command == "declare_progress"}
+    assert parents == {("experiment", None), ("repeats", "experiment"), ("other", "repeats"), ("scan", "other")}
+    assert RE._progress_scopes == {}
+
+
+def test_repeat_without_scope_leaves_declarations_alone(RE):
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+
+    def inner():
+        yield from bps.declare_progress("inner")
+        yield from bps.update_progress("inner", done=True)
+
+    RE(bps.repeat(inner, num=2))
+    assert [m.kwargs["parent"] for m in msgs if m.command == "declare_progress"] == [None, None]
+
+
+def test_nest_progress_decorator(RE):
+    """Parentless scopes are nested under the given parent; others keep their parent."""
+    import bluesky.preprocessors as bpp
+
+    msgs = []
+    RE.msg_hook = lambda msg: msgs.append(msg)
+
+    @bpp.nest_progress_decorator("outer")
+    def inner():
+        yield from bps.declare_progress("a")
+        yield from bps.declare_progress("b", parent="a")
+        yield from bps.update_progress("b", done=True)
+        yield from bps.update_progress("a", done=True)
+
+    def plan():
+        yield from bps.declare_progress("outer")
+        yield from inner()
+        yield from bps.update_progress("outer", done=True)
+
+    RE(plan())
+    parents = [(m.kwargs["name"], m.kwargs["parent"]) for m in msgs if m.command == "declare_progress"]
+    assert parents == [("outer", None), ("a", "outer"), ("b", "a")]

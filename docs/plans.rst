@@ -663,6 +663,8 @@ a generator instance. The corresponding functions named
     lazily_stage_wrapper
     monitor_during_decorator
     monitor_during_wrapper
+    nest_progress_decorator
+    nest_progress_wrapper
     relative_set_decorator
     relative_set_wrapper
     reset_positions_decorator

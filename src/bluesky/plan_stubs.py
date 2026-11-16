@@ -2023,6 +2023,7 @@ def repeat(
     delay: ScalarOrIterableFloat = 0.0,
     *,
     progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
     progress_units: str = "repeat",
 ) -> MsgGenerator[Any]:
     """
@@ -2044,8 +2045,13 @@ def repeat(
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
     progress_scope : str, optional
-        Name of an already-declared progress status to update after each
-        repetition. If None, no progress updates are emitted.
+        Name of a progress scope to declare and update after each repetition.
+        If None, no progress is reported. Progress scopes that the repeated
+        plan declares without a parent are nested under it.
+    parent_progress_scope : str, optional
+        Name of an existing progress scope to nest ``progress_scope`` under.
+    progress_units : str, optional
+        Unit label for the progress updates; default is ``"repeat"``.
 
     Yields
     ------
@@ -2081,11 +2087,19 @@ def repeat(
                 raise ValueError("num=%r but delays only provides %r entries" % (num, num_delays))  # noqa: UP031
         delay = iter(delay)
 
+    from .preprocessors import nest_progress_wrapper
+
     def repeated_plan():
+        if progress_scope is not None:
+            yield from declare_progress(progress_scope, parent=parent_progress_scope)
+            if num is not None:
+                yield from update_progress(
+                    progress_scope, current=0, initial=0, target=num, precision=0, unit=progress_units
+                )
         for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg("checkpoint")
-            yield from ensure_generator(plan())
+            yield from nest_progress_wrapper(ensure_generator(plan()), progress_scope)
             if progress_scope is not None and num is not None:
                 yield from update_progress(
                     name=progress_scope,
