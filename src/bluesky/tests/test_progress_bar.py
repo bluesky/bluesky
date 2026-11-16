@@ -300,3 +300,24 @@ def test_rebuild_does_not_accumulate_watchers(monkeypatch):
     # Only the current bar is updated; it also got the replayed state on creation.
     assert "scan" in bars[-1].meters[0]
     assert all(bar.meters[0] == "" or bar.done for bar in bars[:-1])
+
+
+def test_proxy_does_not_split_a_line_around_the_first_draw(monkeypatch):
+    """A bar first drawn while a line is half-printed must not land inside that line."""
+    out = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", out)
+    status = PlanProgress("scan")
+    manager = ProgressBarManager(lambda objs: TerminalProgressBar(objs, delay_draw=10))
+    manager([status])
+    assert not manager.pbar.drawn
+
+    sys.stdout.write("abc")
+    # The bar's first draw arrives (e.g. from another thread) before the newline.
+    manager.pbar._force_draw = True
+    status._notify(current=1, initial=0, target=2)
+    sys.stdout.write("\n")
+    manager(None)
+
+    text = out.getvalue()
+    assert "abc\n" in text
+    assert "abc\r" not in text

@@ -28,6 +28,7 @@ from typing import (
     TypeAlias,
     TypedDict,
     TypeVar,
+    cast,
     overload,
 )
 from weakref import WeakKeyDictionary, ref
@@ -1424,21 +1425,22 @@ def apply_to_dict_recursively(d, f):
     return d
 
 
-class PlanProgress(Watchable[Any]):
+class PlanProgress(Watchable[T]):
     """A Watchable object for plan-driven progress reporting.
 
     Implements ``watch()`` so it can be used with the existing
     ``ProgressBarManager`` / ``TerminalProgressBar`` infrastructure.
     Created by the ``declare_progress`` message and updated by
-    ``update_progress``.
+    ``update_progress``. Generic in the type of ``current``, ``initial`` and
+    ``target``.
     """
 
-    def __init__(self, name: str, *, parent: "PlanProgress | None" = None):
+    def __init__(self, name: str, *, parent: "PlanProgress[Any] | None" = None):
         self.name = name
         self.parent = parent
         self._done = False
-        self._watchers: list[Watcher[Any]] = []
-        self._last_state: WatcherUpdate[Any] | None = None
+        self._watchers: list[Watcher[T]] = []
+        self._last_state: WatcherUpdate[T] | None = None
         # Measured on the status, not the transient TerminalProgressBar, so the
         # rate/ETA survive progress-bar rebuilds instead of resetting to ~0.
         self._start_time = time.time()
@@ -1447,7 +1449,7 @@ class PlanProgress(Watchable[Any]):
     def done(self) -> bool:
         return self._done
 
-    def watch(self, func: Watcher[Any]) -> None:
+    def watch(self, func: Watcher[T]) -> None:
         self._watchers.append(func)
         # Replay last known state so the watcher can display immediately.
         if self._last_state is not None:
@@ -1456,21 +1458,20 @@ class PlanProgress(Watchable[Any]):
     def _notify(
         self,
         *,
-        current: Any = None,
-        initial: Any = None,
-        target: Any = None,
+        current: T | None = None,
+        initial: T | None = None,
+        target: T | None = None,
         unit: str = "unit",
-        precision: Any = None,
-        fraction: Any = None,
+        precision: int | None = None,
+        fraction: float | None = None,
         time_elapsed: float | None = None,
         time_remaining: float | None = None,
     ) -> None:
         # TerminalProgressBar needs current/initial/target to show a bar.
         # Synthesize them from fraction if not provided.
         if fraction is not None and current is None and initial is None and target is None:
-            current = fraction
-            initial = 0
-            target = 1
+            # A fraction-only update is drawn as a 0-1 bar.
+            current, initial, target = cast(T, fraction), cast(T, 0), cast(T, 1)
         if time_elapsed is None:
             time_elapsed = time.time() - self._start_time
         self._last_state = {
@@ -1584,7 +1585,7 @@ class TerminalProgressBar(ProgressBarBase):
         current=None,
         initial=None,
         target=None,
-        unit="unit",
+        unit="units",
         precision=None,
         fraction=None,
         time_elapsed=None,
@@ -1641,6 +1642,9 @@ class TerminalProgressBar(ProgressBarBase):
                 tqdm.status_printer(self.fp)(meter)
                 self.fp.write("\n")
             self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+            # Flush the cursor-up too, so it reaches the terminal before any
+            # output that does not go through this stream object.
+            self.fp.flush()
             self.drawn = True
 
     def _ensure_draw(self):
@@ -1662,6 +1666,7 @@ class TerminalProgressBar(ProgressBarBase):
                 self.fp.write("\r")
                 self.fp.write("\n")
             self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+            self.fp.flush()
 
     def clear(self):
         with self.lock:
@@ -1703,22 +1708,30 @@ class _BottomAnchorProxy:
         manager = self._manager
         with manager._lock:
             pbar = manager.pbar
-            if not isinstance(pbar, TerminalProgressBar) or pbar.done or not pbar.drawn:
+            if not isinstance(pbar, TerminalProgressBar) or pbar.done:
                 return self.real.write(s)
-            # Buffer partial lines; only reflow the bars on complete lines so we
-            # never redraw them in the middle of someone else's output.
+            # Buffer partial lines and only emit complete ones, so a bar drawn
+            # from another thread can never land in the middle of a line.
             self._buffer += s
             split = self._buffer.rfind("\n")
             if split == -1:
                 return len(s)
             text = self._buffer[: split + 1]
             self._buffer = self._buffer[split + 1 :]
-            with pbar.lock:
+            self._emit(pbar, text)
+            return len(s)
+
+    def _emit(self, pbar: "TerminalProgressBar", text: str) -> None:
+        # Hold the bar's lock for the whole check-and-write, so its first draw
+        # (e.g. from its delayed-draw thread) cannot interleave with the text.
+        with pbar.lock:
+            if pbar.drawn and not pbar.done:
                 pbar._erase()
                 self.real.write(text)
                 pbar.draw()
-                self.real.flush()
-            return len(s)
+            else:
+                self.real.write(text)
+            self.real.flush()
 
     def _drain(self) -> None:
         """Emit any buffered partial line, reflowing around an active bar."""
@@ -1729,13 +1742,10 @@ class _BottomAnchorProxy:
             text = self._buffer
             self._buffer = ""
             pbar = manager.pbar
-            if not isinstance(pbar, TerminalProgressBar) or pbar.done or not pbar.drawn:
+            if not isinstance(pbar, TerminalProgressBar) or pbar.done:
                 self.real.write(text)
                 return
-            with pbar.lock:
-                pbar._erase()
-                self.real.write(text)
-                pbar.draw()
+            self._emit(pbar, text)
 
     def detach(self) -> None:
         """Flush pending text before this proxy is removed from ``sys.stdout``."""
@@ -1759,8 +1769,12 @@ class _WatchedStatus(Watchable[T]):
     other attributes are looked up on it.
     """
 
-    def __init__(self, status: Watchable[T]):
+    def __init__(self, status: Watchable[T], lock: "threading.RLock"):
         self.status = status
+        # The manager's lock: updates may arrive on a device's thread, and
+        # holding it keeps their draws from interleaving with the manager's
+        # rebuilds and the stdout proxy's writes.
+        self._lock = lock
         self._watchers: list[Watcher[T]] = []
         self._last_state: WatcherUpdate[T] | None = None
 
@@ -1775,9 +1789,10 @@ class _WatchedStatus(Watchable[T]):
             func(**self._last_state)
 
     def _forward(self, **kwargs: Unpack[WatcherUpdate[T]]) -> None:
-        self._last_state = kwargs
-        for watcher in list(self._watchers):
-            watcher(**kwargs)
+        with self._lock:
+            self._last_state = kwargs
+            for watcher in list(self._watchers):
+                watcher(**kwargs)
 
     def _reset(self) -> None:
         self._watchers = []
@@ -1900,7 +1915,19 @@ class ProgressBarManager:
             for wrapper in self._wrappers.values():
                 wrapper._reset()
             statuses = self._statuses
-            self._wrappers = {id(st): self._wrapper_for(st) for st in statuses if hasattr(st, "watch")}
+            live_ids = {id(st) for st in statuses}
+            # Keep wrappers for statuses that are still running even after they
+            # leave every stream (e.g. a hook called with None and then the same
+            # statuses again), so they are not watched a second time if they
+            # come back. A kept wrapper holds its status, so its id stays unique.
+            self._wrappers = {
+                key_id: wrapper
+                for key_id, wrapper in self._wrappers.items()
+                if key_id in live_ids or not wrapper.status.done
+            }
+            for st in statuses:
+                if hasattr(st, "watch"):
+                    self._wrappers[id(st)] = self._wrapper_for(st)
             if statuses:
                 # Build the bar while sys.stdout is the real terminal so it
                 # captures the real stream, then anchor external output beneath.
@@ -1913,7 +1940,7 @@ class ProgressBarManager:
     def _wrapper_for(self, status: Watchable[T]) -> "_WatchedStatus[T]":
         wrapper = self._wrappers.get(id(status))
         if wrapper is None or wrapper.status is not status:
-            wrapper = _WatchedStatus(status)
+            wrapper = _WatchedStatus(status, self._lock)
             # The only watcher the manager ever registers on this status;
             # successive bars watch the wrapper instead.
             status.watch(wrapper._forward)

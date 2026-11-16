@@ -1,3 +1,5 @@
+import io
+import sys
 import time
 
 import pytest
@@ -5,7 +7,7 @@ import pytest
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from bluesky import Msg
-from bluesky.utils import IllegalMessageSequence, PlanProgress, RunEngineInterrupted
+from bluesky.utils import IllegalMessageSequence, PlanProgress, ProgressBarManager, RunEngineInterrupted
 
 
 def test_declare_progress_returns_status(RE):
@@ -98,6 +100,60 @@ def test_progress_hook_called(RE):
     (status,) = hook_calls[0]
     assert isinstance(status, PlanProgress)
     assert hook_calls[1] is None
+
+
+def test_progress_hook_lists_children_under_their_parent(RE):
+    hook_calls = []
+    RE.progress_hook = hook_calls.append
+
+    def plan():
+        yield Msg("declare_progress", name="p1")
+        yield Msg("declare_progress", name="p2")
+        yield Msg("declare_progress", name="c1", parent="p1")
+        yield Msg("declare_progress", name="c2", parent="p2")
+
+    RE(plan())
+    # The last list sent before the end-of-plan cleanup (which sends None).
+    assert [s.name for s in hook_calls[-2]] == ["p1", "c1", "p2", "c2"]
+    assert hook_calls[-1] is None
+
+
+def test_progress_hidden_while_paused(RE):
+    hook_calls = []
+    RE.progress_hook = hook_calls.append
+
+    def plan():
+        yield Msg("declare_progress", name="scan")
+        yield Msg("checkpoint")
+        yield Msg("pause")
+        yield Msg("update_progress", name="scan", done=True)
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
+    assert hook_calls[-1] is None
+    calls_while_paused = len(hook_calls)
+
+    RE.resume()
+    assert [s.name for s in hook_calls[calls_while_paused]] == ["scan"]
+    assert hook_calls[-1] is None
+
+
+def test_progress_manager_does_not_accumulate_watchers_on_open_scopes(RE, monkeypatch):
+    """Declaring and finishing child scopes does not add watchers to their open parent."""
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    RE.progress_hook = ProgressBarManager().new_stream()
+    watcher_counts = []
+
+    def plan():
+        parent = yield Msg("declare_progress", name="experiment")
+        for i in range(5):
+            yield Msg("declare_progress", name=f"scan_{i}", parent="experiment")
+            yield Msg("update_progress", name=f"scan_{i}", done=True)
+        watcher_counts.append(len(parent._watchers))
+        yield Msg("update_progress", name="experiment", done=True)
+
+    RE(plan())
+    assert watcher_counts == [1]
 
 
 def test_progress_hook_orders_parents_before_children(RE):

@@ -333,11 +333,13 @@ class RunEngine:
     progress_hook
         Callable with signature ``f(progress_objects)`` that will be called
         with the list of open plan-driven progress indicators
-        (:class:`bluesky.utils.PlanProgress`) whenever one is declared or
-        finished, and with ``None`` when the previous list is no longer
-        current. Like ``waiting_hook``, this is useful to incorporate a
-        progress bar; see :meth:`bluesky.utils.ProgressBarManager.new_stream`
-        to drive both hooks from one display.
+        (:class:`bluesky.utils.PlanProgress`), each followed by its open
+        children, whenever one is declared or finished or the RunEngine
+        resumes, and with ``None`` when the previous list is no longer current
+        or the RunEngine pauses. Like ``waiting_hook``, this is useful to
+        incorporate a progress bar; see
+        :meth:`bluesky.utils.ProgressBarManager.new_stream` to drive both hooks
+        from one display.
 
     ignore_callback_exceptions
         Boolean, False by default.
@@ -539,11 +541,11 @@ class RunEngine:
         self._require_stream_declaration = False
 
         # A mapping of progress scope names to their corresponding PlanProgress objects.
-        self._progress_scopes: dict[str, PlanProgress] = {}
+        self._progress_scopes: dict[str, PlanProgress[typing.Any]] = {}
         self._progress_hook_active = False
         # The scope each cached 'update_progress' message was applied to, keyed by
         # id(msg), so that a replay after a rewind targets the same scope.
-        self._cached_progress_targets: dict[int, tuple[Msg, PlanProgress]] = {}
+        self._cached_progress_targets: dict[int, tuple[Msg, PlanProgress[typing.Any]]] = {}
 
         self._command_registry = {
             "declare_stream": self._declare_stream,
@@ -1572,6 +1574,9 @@ class RunEngine:
                     # Notify Devices of the pause in case they want to
                     # clean up.
                     await self._pause_objects()
+                    # Take plan progress off screen so it does not draw over
+                    # the user's prompt while paused.
+                    self._hide_progress_hook()
                     self._state = "paused"
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
@@ -1583,6 +1588,7 @@ class RunEngine:
                     if self._state == "paused":
                         # may be called by 'resume', 'stop', 'abort', 'halt'
                         self._state = "running"
+                        self._rebuild_progress_hook()
 
                     # If we are here, we have come back to life either to
                     # continue (resume) or to clean up before exiting.
@@ -1838,9 +1844,8 @@ class RunEngine:
             for status in self._progress_scopes.values():
                 if not status.done:
                     status.finish()
-                    self._call_progress_hook(None)
+            self._hide_progress_hook()
             self._progress_scopes.clear()
-            self._progress_hook_active = False
             self._cached_progress_targets.clear()
 
             for p in self._plan_stack:
@@ -2311,7 +2316,7 @@ class RunEngine:
                     f"Parent progress scope {parent_name!r} does not exist. "
                     f"It must be declared before its children."
                 )
-        status = PlanProgress(name, parent=parent)
+        status: PlanProgress[typing.Any] = PlanProgress(name, parent=parent)
         self._progress_scopes[name] = status
         self._rebuild_progress_hook()
         return status
@@ -2319,30 +2324,43 @@ class RunEngine:
     def _rebuild_progress_hook(self):
         """Clear and rebuild the progress display with all active progress scopes.
 
-        Progress scopes are ordered parents-before-children (by ancestor depth, then
-        declaration order) so consumers of the progress updates receive them in a
-        consistent and predictable order.
+        Progress scopes are listed depth-first: each scope is followed by its open
+        children, in declaration order, so every child appears directly beneath
+        its parent. A scope whose parent has finished is listed at the top level.
         """
         if self.progress_hook is not None:
-
-            def _depth(status: PlanProgress):
-                depth = 0
-                parent = status.parent
-                while parent is not None:
-                    depth += 1
-                    parent = parent.parent
-                return depth
-
-            # Stable sort preserves declaration order within each depth level.
             active = [s for s in self._progress_scopes.values() if not s.done]
-            active.sort(key=_depth)
+            active_ids = {id(s) for s in active}
+            children: dict[int, list[PlanProgress[typing.Any]]] = defaultdict(list)
+            roots: list[PlanProgress[typing.Any]] = []
+            for status in active:
+                if status.parent is not None and id(status.parent) in active_ids:
+                    children[id(status.parent)].append(status)
+                else:
+                    roots.append(status)
+            ordered: list[PlanProgress[typing.Any]] = []
+
+            def _visit(status: PlanProgress[typing.Any]) -> None:
+                ordered.append(status)
+                for child in children[id(status)]:
+                    _visit(child)
+
+            for root in roots:
+                _visit(root)
+
             if self._progress_hook_active:
                 self.progress_hook(None)
-            if active:
-                self.progress_hook(active)
+            if ordered:
+                self.progress_hook(ordered)
                 self._progress_hook_active = True
             else:
                 self._progress_hook_active = False
+
+    def _hide_progress_hook(self):
+        """Tell the progress hook the open scopes are no longer being displayed."""
+        if self._progress_hook_active:
+            self._call_progress_hook(None)
+            self._progress_hook_active = False
 
     async def _update_progress(self, msg: Msg):
         """Update a plan-driven progress scope.

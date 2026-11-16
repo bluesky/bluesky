@@ -81,8 +81,10 @@ See :ref:`plan_progress` for how built-in and custom plans report progress.
 
 The RunEngine calls ``progress_hook`` with every open progress indicator
 whenever one is declared or finished, so each indicator gets a bar while it is
-open and its bar is removed once it finishes. Nested indicators are listed after
-their parents, so a scan's bar appears beneath the overall experiment's bar.
+open and its bar is removed once it finishes. Each indicator is listed directly
+after its parent, so a scan's bar appears beneath the overall experiment's bar.
+While the RunEngine is paused, the plan's progress bars are taken off screen,
+and they return when it resumes.
 
 A bar is drawn when the plan reports ``current``, ``initial`` and ``target``
 (numbers, or tuples, lists or arrays, whose distance is used), or a ``fraction``

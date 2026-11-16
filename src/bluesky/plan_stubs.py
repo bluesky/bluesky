@@ -2021,6 +2021,7 @@ def repeat(
     plan: Callable[[], MsgGenerator],
     num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
+    *,
     progress_scope: str | None = None,
     progress_units: str = "repeat",
 ) -> MsgGenerator[Any]:
