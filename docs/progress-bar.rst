@@ -56,6 +56,52 @@ The implementation of the progress bar itself makes use of
 a progress bar out of any iterable.
 
 
+Plan-driven progress
+--------------------
+
+Plans can also report their own progress, such as the number of points
+completed in a scan, independently of any hardware. The RunEngine passes these
+progress indicators to its ``progress_hook``, in the same way it passes status
+objects to its ``waiting_hook``.
+
+A single ``ProgressBarManager`` can drive both hooks so that motor moves and plan
+progress share one display. Give each hook its own stream with
+:meth:`~bluesky.utils.ProgressBarManager.new_stream`, so that one hook finishing
+removes only its own progress bars:
+
+.. code-block:: python
+
+    from bluesky.utils import ProgressBarManager
+
+    manager = ProgressBarManager()
+    RE.waiting_hook = manager.new_stream()
+    RE.progress_hook = manager.new_stream()
+
+See :ref:`plan_progress` for how built-in and custom plans report progress.
+
+The RunEngine calls ``progress_hook`` with every open progress indicator
+whenever one is declared or finished, so each indicator gets a bar while it is
+open and its bar is removed once it finishes. Nested indicators are listed after
+their parents, so a scan's bar appears beneath the overall experiment's bar.
+
+A bar is drawn when the plan reports ``current``, ``initial`` and ``target``
+(numbers, or tuples, lists or arrays, whose distance is used), or a ``fraction``
+between 0 and 1. Otherwise the bar only shows that the indicator is in progress.
+
+Writing your own progress display
++++++++++++++++++++++++++++++++++
+
+Each plan-driven progress indicator is a :class:`bluesky.utils.PlanProgress`,
+which implements the :class:`bluesky.protocols.Watchable` protocol: callbacks
+registered with ``watch()`` receive the keyword arguments described by
+:class:`bluesky.protocols.WatcherUpdate`. A callback registered on an indicator
+that has already been updated is called immediately with its latest state.
+
+Progress bars built by ``ProgressBarManager`` receive wrappers around the status
+objects rather than the objects themselves; the original object is available as
+the wrapper's ``status`` attribute.
+
+
 Progress Bar API details
 ------------------------
 
@@ -64,3 +110,6 @@ Progress Bar API details
 
 .. autoclass:: bluesky.utils.ProgressBarManager
    :members:
+
+.. autoclass:: bluesky.utils.PlanProgress
+   :members: done, watch, finish

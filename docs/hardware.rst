@@ -71,6 +71,18 @@ conforms to the following definition
             A fraction of zero indicates completion.
             A fraction of one indicates progress has not started.
 
+These are captured by the following protocols. ``Watchable`` and ``Watcher`` are
+generic in the type of ``current``, ``initial`` and ``target``.
+
+.. autoclass:: bluesky.protocols.Watchable
+   :members:
+
+.. autoclass:: bluesky.protocols.Watcher
+   :members: __call__
+
+.. autoclass:: bluesky.protocols.WatcherUpdate
+   :members:
+
 A ``Status`` may also carry a result produced by the operation it tracks, by
 implementing ``result()`` in addition to the members above.
 
