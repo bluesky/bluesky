@@ -1844,6 +1844,8 @@ class ProgressBarManager:
         # Wrappers for the live statuses, keyed by id(status), reused across
         # rebuilds so each status is watched only once by the manager.
         self._wrappers: dict[int, _WatchedStatus[Any]] = {}
+        # Only warn once about another manager drawing in the same terminal.
+        self._warned_other_manager = False
 
     @property
     def _statuses(self) -> list[Watchable]:
@@ -1949,8 +1951,28 @@ class ProgressBarManager:
     def _install_proxy(self):
         if self._proxy is not None or not isinstance(self.pbar, TerminalProgressBar):
             return
+        self._warn_if_other_manager_active()
         self._proxy = _BottomAnchorProxy(sys.stdout, self)
         sys.stdout = self._proxy
+
+    def _warn_if_other_manager_active(self):
+        # Each manager assumes its bars are the only ones at the bottom of the
+        # terminal, so two managers drawing at once overwrite each other.
+        if self._warned_other_manager:
+            return
+        stream = sys.stdout
+        while isinstance(stream, _BottomAnchorProxy):
+            if stream._manager is not self and stream._manager.pbar is not None:
+                warnings.warn(
+                    "Another ProgressBarManager is already displaying progress bars in this "
+                    "terminal, so their displays will overwrite each other. To show progress "
+                    "for several RunEngine hooks, use one ProgressBarManager and give each "
+                    "hook its own stream with ProgressBarManager.new_stream().",
+                    stacklevel=2,
+                )
+                self._warned_other_manager = True
+                return
+            stream = stream.real
 
     def _remove_proxy(self):
         if self._proxy is None:

@@ -1,6 +1,7 @@
 import io
 import sys
 import time
+import warnings
 
 from bluesky.plan_stubs import mv
 from bluesky.tests import requires_ophyd
@@ -321,3 +322,30 @@ def test_proxy_does_not_split_a_line_around_the_first_draw(monkeypatch):
     text = out.getvalue()
     assert "abc\n" in text
     assert "abc\r" not in text
+
+
+def test_second_manager_warns_once(monkeypatch):
+    import pytest
+
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    first, second = ProgressBarManager(), ProgressBarManager()
+    first([PlanProgress("a")])
+    with pytest.warns(UserWarning, match="new_stream"):
+        second([PlanProgress("b")])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        second([PlanProgress("c")])  # rebuilds do not warn again
+    second(None)
+    first(None)
+
+
+def test_one_manager_with_two_streams_does_not_warn(monkeypatch):
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    manager = ProgressBarManager()
+    waiting, progress = manager.new_stream(), manager.new_stream()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        progress([PlanProgress("scan")])
+        waiting([PlanProgress("move")])
+        waiting(None)
+        progress(None)
