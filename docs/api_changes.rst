@@ -43,6 +43,9 @@ Removed
 Fixed
 -----
 
+- An Event Descriptor's ``hints`` only list fields that are among its
+  ``data_keys``.  A device hinting a field it did not describe produced a
+  descriptor whose hints named data that was never recorded.
 - A plan aborted while parked in a ``wait_for`` cancels the tasks that wait was
   running.  Nothing else held a reference to them, and ``asyncio.wait`` does not
   cancel what it was waiting on when it is itself cancelled, so they outlived

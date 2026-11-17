@@ -279,6 +279,18 @@ class RunBundler:
 
         for obj, dks in objs_dks.items():
             maybe_update_hints(hints, obj)
+            obj_hints = hints.get(obj.name)
+            if obj_hints and "fields" in obj_hints:
+                dropped = [f for f in obj_hints["fields"] if f not in dks]
+                if dropped:
+                    doc_logger.warning(
+                        "Device %r hints fields %r that are not in its data keys for stream %r; "
+                        "dropping them from the descriptor hints.",
+                        obj.name,
+                        dropped,
+                        desc_key,
+                    )
+                hints[obj.name] = {**obj_hints, "fields": [f for f in obj_hints["fields"] if f in dks]}
             # dks is an OrderedDict. Record that order as a list.
             object_keys[obj.name] = list(dks)
             for key in dks.keys():
