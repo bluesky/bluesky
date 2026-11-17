@@ -354,7 +354,7 @@ class EventPageCollectable(Collectable, Protocol):
 @runtime_checkable
 class Movable(Protocol[T_co]):
     @abstractmethod
-    def set(self, *args: *tuple[T_co]) -> Status:
+    def set(self, value: T_co, /) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
