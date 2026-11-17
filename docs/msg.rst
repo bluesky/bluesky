@@ -475,6 +475,36 @@ Expected message object is::
 This amounts to calling ``obj.stop()``.
 
 
+declare_progress
+++++++++++++++++
+
+Open a plan-driven progress indicator, optionally nested under an existing one.
+Returns a :class:`bluesky.utils.PlanProgress` and passes all open indicators to
+the RunEngine's ``progress_hook``.
+
+Expected message object is::
+
+    Msg('declare_progress', name='scan', parent=None)
+
+This message is not replayed when the RunEngine rewinds after a pause or
+suspension, because the indicator stays open.
+
+update_progress
++++++++++++++++
+
+Update or finish a plan-driven progress indicator. ``current``, ``initial`` and
+``target`` must share a type; ``fraction`` is an alternative 0-1 value.
+
+Expected message object is::
+
+    Msg('update_progress', name='scan', current=5, initial=0, target=10, unit='step')
+    Msg('update_progress', name='scan', fraction=0.5)
+    Msg('update_progress', name='scan', done=True)
+
+When replayed after a pause or suspension, the update is applied to the indicator
+it originally updated, and ignored if that indicator has since finished.
+
+
 Registering Custom Commands
 ---------------------------
 

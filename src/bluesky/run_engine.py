@@ -59,6 +59,7 @@ from .utils import (
     Msg,
     NoReplayAllowed,
     PlanHalt,
+    PlanProgress,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
@@ -329,6 +330,17 @@ class RunEngine:
         (trigger, set, kickoff, complete) to complete. This hook is useful to
         incorporate a progress bar.
 
+    progress_hook
+        Callable with signature ``f(progress_objects)`` that will be called
+        with the list of open plan-driven progress indicators
+        (:class:`bluesky.utils.PlanProgress`), each followed by its open
+        children, whenever one is declared or finished or the RunEngine
+        resumes, and with ``None`` when the previous list is no longer current
+        or the RunEngine pauses. Like ``waiting_hook``, this is useful to
+        incorporate a progress bar; see
+        :meth:`bluesky.utils.ProgressBarManager.new_stream` to drive both hooks
+        from one display.
+
     ignore_callback_exceptions
         Boolean, False by default.
 
@@ -372,6 +384,9 @@ class RunEngine:
         "install_suspender",
         "remove_suspender",
         "_start_suspender",
+        # Progress scopes survive a pause, so re-declaring one on replay would
+        # fail with "already open".
+        "declare_progress",
     ]
 
     RunBundler = RunBundler
@@ -479,6 +494,7 @@ class RunEngine:
         self.msg_hook = None
         self.state_hook = None
         self.waiting_hook = None
+        self.progress_hook = None
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
         self.NO_PLAN_RETURN = object()
@@ -523,6 +539,14 @@ class RunEngine:
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan: typing.Iterable[Msg] | None = None  # the plan instance from __call__
         self._require_stream_declaration = False
+
+        # A mapping of progress scope names to their corresponding PlanProgress objects.
+        self._progress_scopes: dict[str, PlanProgress[typing.Any]] = {}
+        self._progress_hook_active = False
+        # The scope each cached 'update_progress' message was applied to, keyed by
+        # id(msg), so that a replay after a rewind targets the same scope.
+        self._cached_progress_targets: dict[int, tuple[Msg, PlanProgress[typing.Any]]] = {}
+
         self._command_registry = {
             "declare_stream": self._declare_stream,
             "execute": self._execute,
@@ -561,6 +585,8 @@ class RunEngine:
             "input": self._input,
             "install_suspender": self._install_suspender,
             "remove_suspender": self._remove_suspender,
+            "declare_progress": self._declare_progress,
+            "update_progress": self._update_progress,
             "check_value": self._check_value,
         }
 
@@ -744,6 +770,14 @@ class RunEngine:
         self._pardon_failures = asyncio.Event()
         self._plan = None
         self._interrupted = False
+
+        # Finish any open plan-driven progress scopes.
+        for status in self._progress_scopes.values():
+            if not status.done:
+                status.finish()
+        self._progress_scopes.clear()
+        self._progress_hook_active = False
+        self._cached_progress_targets.clear()
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -1540,6 +1574,9 @@ class RunEngine:
                     # Notify Devices of the pause in case they want to
                     # clean up.
                     await self._pause_objects()
+                    # Take plan progress off screen so it does not draw over
+                    # the user's prompt while paused.
+                    self._hide_progress_hook()
                     self._state = "paused"
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
@@ -1551,6 +1588,7 @@ class RunEngine:
                     if self._state == "paused":
                         # may be called by 'resume', 'stop', 'abort', 'halt'
                         self._state = "running"
+                        self._rebuild_progress_hook()
 
                     # If we are here, we have come back to life either to
                     # continue (resume) or to clean up before exiting.
@@ -1801,6 +1839,14 @@ class RunEngine:
                     except Exception:
                         self.log.error("Failed to close run %r.", current_run)
             self._run_bundlers.clear()
+
+            # Finish any open plan-driven progress scopes.
+            for status in self._progress_scopes.values():
+                if not status.done:
+                    status.finish()
+            self._hide_progress_hook()
+            self._progress_scopes.clear()
+            self._cached_progress_targets.clear()
 
             for p in self._plan_stack:
                 try:
@@ -2251,7 +2297,116 @@ class RunEngine:
 
         return await current_run.collect(msg)
 
-    async def _null(self, msg):
+    async def _declare_progress(self, msg: Msg):
+        """Declare a new plan-driven progress scope.
+
+        Expected message object is:
+
+            Msg('declare_progress', name='scan', parent=None)
+        """
+        name = msg.kwargs["name"]
+        if name in self._progress_scopes:
+            raise IllegalMessageSequence(f"A progress scope named {name!r} is already open.")
+        parent_name = msg.kwargs.get("parent")
+        parent = None
+        if parent_name is not None:
+            parent = self._progress_scopes.get(parent_name)
+            if parent is None:
+                raise IllegalMessageSequence(
+                    f"Parent progress scope {parent_name!r} does not exist. "
+                    f"It must be declared before its children."
+                )
+        status: PlanProgress[typing.Any] = PlanProgress(name, parent=parent)
+        self._progress_scopes[name] = status
+        self._rebuild_progress_hook()
+        return status
+
+    def _rebuild_progress_hook(self):
+        """Clear and rebuild the progress display with all active progress scopes.
+
+        Progress scopes are listed depth-first: each scope is followed by its open
+        children, in declaration order, so every child appears directly beneath
+        its parent. A scope whose parent has finished is listed at the top level.
+        """
+        if self.progress_hook is not None:
+            active = [s for s in self._progress_scopes.values() if not s.done]
+            active_ids = {id(s) for s in active}
+            children: dict[int, list[PlanProgress[typing.Any]]] = defaultdict(list)
+            roots: list[PlanProgress[typing.Any]] = []
+            for status in active:
+                if status.parent is not None and id(status.parent) in active_ids:
+                    children[id(status.parent)].append(status)
+                else:
+                    roots.append(status)
+            ordered: list[PlanProgress[typing.Any]] = []
+
+            def _visit(status: PlanProgress[typing.Any]) -> None:
+                ordered.append(status)
+                for child in children[id(status)]:
+                    _visit(child)
+
+            for root in roots:
+                _visit(root)
+
+            if self._progress_hook_active:
+                self.progress_hook(None)
+            if ordered:
+                self.progress_hook(ordered)
+                self._progress_hook_active = True
+            else:
+                self._progress_hook_active = False
+
+    def _hide_progress_hook(self):
+        """Tell the progress hook the open scopes are no longer being displayed."""
+        if self._progress_hook_active:
+            self._call_progress_hook(None)
+            self._progress_hook_active = False
+
+    async def _update_progress(self, msg: Msg):
+        """Update a plan-driven progress scope.
+
+        Expected message object is:
+
+            Msg('update_progress', name='scan', current=5, initial=0, target=10)
+            Msg('update_progress', name='scan', fraction=0.5)
+            Msg('update_progress', name='scan', done=True)
+        """
+        name = msg.kwargs["name"]
+        cached = self._cached_progress_targets.get(id(msg))
+        if cached is not None and cached[0] is msg:
+            # Replayed after a rewind: apply it to the scope it originally
+            # targeted, which may since have finished (or had its name reused).
+            status = cached[1]
+            if status.done:
+                return
+        else:
+            open_status = self._progress_scopes.get(name)
+            if open_status is None:
+                raise IllegalMessageSequence(
+                    f"No progress scope named {name!r} is open. Use 'declare_progress' first."
+                )
+            status = open_status
+            if self._msg_cache and self._msg_cache[-1] is msg:
+                self._cached_progress_targets[id(msg)] = (msg, status)
+        done = msg.kwargs.get("done", False)
+        if done:
+            status.finish()
+            if self._progress_scopes.get(name) is status:
+                del self._progress_scopes[name]
+            self._rebuild_progress_hook()
+        else:
+            status._notify(
+                current=msg.kwargs.get("current"),
+                initial=msg.kwargs.get("initial"),
+                target=msg.kwargs.get("target"),
+                unit=msg.kwargs.get("unit", "unit"),
+                precision=msg.kwargs.get("precision"),
+                fraction=msg.kwargs.get("fraction"),
+                time_elapsed=msg.kwargs.get("time_elapsed"),
+                time_remaining=msg.kwargs.get("time_remaining"),
+            )
+
+    async def _null(self, msg: Msg):
         """
         A no-op message, mainly for debugging and testing.
         """
@@ -2344,6 +2499,10 @@ class RunEngine:
     def _call_waiting_hook(self, *args, **kwargs):
         if self.waiting_hook is not None:
             self.waiting_hook(*args, **kwargs)
+
+    def _call_progress_hook(self, *args, **kwargs):
+        if self.progress_hook is not None:
+            self.progress_hook(*args, **kwargs)
 
     @tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} wait")
     async def _wait(self, msg: Msg) -> bool:
@@ -2544,6 +2703,7 @@ class RunEngine:
             return
 
         self._msg_cache = deque()
+        self._cached_progress_targets.clear()
         for current_run in self._run_bundlers.values():
             current_run.reset_checkpoint_state()
 
@@ -2559,6 +2719,7 @@ class RunEngine:
         """
         # clear message cache
         self._msg_cache = None
+        self._cached_progress_targets.clear()
         # clear stashed
         for current_run in self._run_bundlers.values():
             await current_run.clear_checkpoint(msg)

@@ -526,6 +526,8 @@ Plans that control the RunEngine:
     wait
     wait_for
     null
+    declare_progress
+    update_progress
 
 Combinations of the above that are often convenient:
 
@@ -661,6 +663,8 @@ a generator instance. The corresponding functions named
     lazily_stage_wrapper
     monitor_during_decorator
     monitor_during_wrapper
+    nest_progress_decorator
+    nest_progress_wrapper
     relative_set_decorator
     relative_set_wrapper
     reset_positions_decorator
@@ -766,6 +770,95 @@ For multi-dimensional plans, the default inner loop is:
 
 Likewise, a custom function with the same signature may be passed into the
 ``per_step`` argument of any of the multi-dimensional plans.
+
+.. _plan_progress:
+
+Reporting Plan Progress
+=======================
+
+Plans can report how far through their work they are, for display by a progress
+bar attached to the RunEngine's ``progress_hook`` (see :doc:`progress-bar` for
+the setup).
+
+Pre-assembled plans
+-------------------
+
+Most pre-assembled plans, such as ``count``, ``scan``, ``list_scan``,
+``grid_scan``, ``scan_nd``, the spiral scans and ``adaptive_scan``, accept these
+optional arguments:
+
+* ``progress_scope``: a name for the plan's progress indicator. No progress is
+  reported if it is not given.
+* ``parent_progress_scope``: the name of an existing progress indicator to nest
+  this one under.
+* ``progress_units``: the unit label shown in the progress display. The default
+  is ``"step"``, or ``"count"`` for ``count``.
+
+``grid_scan``, ``rel_grid_scan``, ``list_grid_scan`` and ``rel_list_grid_scan``
+also accept ``per_dim_progress=True``, which
+adds an indicator for each motor, named ``"<progress_scope>/<motor name>"``,
+under the overall one. ``scan_nd`` accepts the same per-dimension progress
+through ``progress_dims``: a list of ``(name, num)`` pairs listed slowest
+dimension first, whose ``num`` values multiply to the number of points in the
+trajectory.
+
+.. code-block:: python
+
+    from bluesky.plans import grid_scan, scan
+
+    RE(scan([det], motor, -1, 1, 11, progress_scope="scan"))
+
+    RE(grid_scan([det], motor1, -1, 1, 5, motor2, -1, 1, 5,
+                 progress_scope="grid", progress_units="point",
+                 per_dim_progress=True))
+
+Custom plans
+------------
+
+Custom plans declare their own progress indicator with
+:func:`~bluesky.plan_stubs.declare_progress`, update it with
+:func:`~bluesky.plan_stubs.update_progress`, and finish it with ``done=True``.
+``current``, ``initial`` and ``target`` must all have the same type: numbers,
+strings, tuples, lists or numpy arrays. Alternatively, pass ``fraction`` as a
+value between 0 and 1.
+
+An indicator must be declared before it is updated, and a parent must be
+declared before its children. Any indicators a plan leaves open are finished
+automatically when it ends.
+
+Pass an indicator's name as ``parent_progress_scope`` to nest a pre-assembled
+plan's progress beneath it. This plan scans each of several samples and shows
+both its overall progress and the progress of the current scan:
+
+.. code-block:: python
+
+    from bluesky.plan_stubs import declare_progress, mv, update_progress
+    from bluesky.plans import scan
+
+    def scan_samples(detectors, motor, sample_stage, positions):
+        total = len(positions)
+        yield from declare_progress("samples")
+        yield from update_progress("samples", current=0, initial=0, target=total,
+                                   unit="sample")
+        for i, position in enumerate(positions):
+            yield from mv(sample_stage, position)
+            yield from scan(detectors, motor, -1, 1, 11,
+                            progress_scope=f"sample {i + 1}",
+                            parent_progress_scope="samples")
+            yield from update_progress("samples", current=i + 1, initial=0,
+                                       target=total, unit="sample")
+        yield from update_progress("samples", done=True)
+
+    RE(scan_samples([det], motor, sample_stage, [0, 10, 20]))
+
+Pausing and resuming
+--------------------
+
+Progress indicators stay open while the RunEngine is paused or suspended. When it
+resumes and replays the plan from the last checkpoint, ``declare_progress`` is not
+replayed. Replayed ``update_progress`` messages are applied to the indicator they
+originally updated, so its progress moves back to the replayed point and then
+continues. Updates to an indicator that has since finished are ignored.
 
 Asynchronous Plans: "Fly Scans" and "Monitoring"
 ================================================

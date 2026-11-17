@@ -6,8 +6,9 @@ import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any
+from typing import Any, TypeVar
 
+import numpy.typing as npt
 from cycler import cycler
 
 from bluesky.env_vars import BLUESKY_FORCE_READ_ALL_ONE_MSG_PER_DEVICE
@@ -66,6 +67,10 @@ from .utils import (
 
 #: Any plan function that takes a reading given a list of Readables
 TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
+
+#: Progress position type; constrained so ``current``, ``initial`` and ``target``
+#: of a single `update_progress` call must all share one of these types
+ProgressT = TypeVar("ProgressT", float, str, tuple[float, ...], list[float], npt.NDArray[Any])
 
 
 @plan
@@ -1665,6 +1670,95 @@ def trigger_and_read(devices: Sequence[Readable], name: str = "primary") -> MsgG
 
 
 @plan
+def declare_progress(name: str, *, parent: str | None = None) -> MsgGenerator:
+    """Declare a new plan-driven progress status.
+
+    Parameters
+    ----------
+    name : str
+        Display name for the progress indicator.
+    parent : str, optional
+        Name of an already-declared progress status to nest under.
+
+    Yields
+    ------
+    msg : Msg
+        A message with command ``declare_progress``.
+
+    Returns
+    -------
+    status : PlanProgress
+        A status-like object compatible with ``ProgressBarManager``.
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.update_progress`
+    """
+    return (yield Msg("declare_progress", name=name, parent=parent))
+
+
+@plan
+def update_progress(
+    name: str,
+    *,
+    current: ProgressT | None = None,
+    initial: ProgressT | None = None,
+    target: ProgressT | None = None,
+    unit: str = "unit",
+    precision: int | None = None,
+    fraction: float | None = None,
+    time_elapsed: float | None = None,
+    time_remaining: float | None = None,
+    done: bool = False,
+) -> MsgGenerator:
+    """Update a plan-driven progress status.
+
+    Parameters
+    ----------
+    name : str
+        Name of the progress status to update (must already be declared).
+    current, initial, target :
+        Position values for computing progress. All three must be the same
+        type: ``float``/``int``, ``str``, ``tuple[float, ...]``,
+        ``list[float]`` or a numpy array.
+    unit : str
+        Unit label, default ``'unit'``.
+    precision :
+        Decimal precision for progress display.
+    fraction : float, optional
+        Explicit 0-1 progress fraction.
+    time_elapsed, time_remaining : float, optional
+        Timing information for display.
+    done : bool
+        If True, mark this progress status as finished.
+
+    Yields
+    ------
+    msg : Msg
+        A message with command ``update_progress``.
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.declare_progress`
+    """
+    return (
+        yield Msg(
+            "update_progress",
+            name=name,
+            current=current,
+            initial=initial,
+            target=target,
+            unit=unit,
+            precision=precision,
+            fraction=fraction,
+            time_elapsed=time_elapsed,
+            time_remaining=time_remaining,
+            done=done,
+        )
+    )
+
+
+@plan
 def broadcast_msg(
     command: str,
     objs: Iterable[Any],
@@ -1927,6 +2021,10 @@ def repeat(
     plan: Callable[[], MsgGenerator],
     num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
+    *,
+    progress_scope: str | None = None,
+    parent_progress_scope: str | None = None,
+    progress_units: str = "repeat",
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
@@ -1946,6 +2044,14 @@ def repeat(
         If None, capture data until canceled
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
+    progress_scope : str, optional
+        Name of a progress scope to declare and update after each repetition.
+        If None, no progress is reported. Progress scopes that the repeated
+        plan declares without a parent are nested under it.
+    parent_progress_scope : str, optional
+        Name of an existing progress scope to nest ``progress_scope`` under.
+    progress_units : str, optional
+        Unit label for the progress updates; default is ``"repeat"``.
 
     Yields
     ------
@@ -1981,11 +2087,29 @@ def repeat(
                 raise ValueError("num=%r but delays only provides %r entries" % (num, num_delays))  # noqa: UP031
         delay = iter(delay)
 
+    from .preprocessors import nest_progress_wrapper
+
     def repeated_plan():
+        if progress_scope is not None:
+            yield from declare_progress(progress_scope, parent=parent_progress_scope)
+            if num is not None:
+                yield from update_progress(
+                    progress_scope, current=0, initial=0, target=num, precision=0, unit=progress_units
+                )
         for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg("checkpoint")
-            yield from ensure_generator(plan())
+            yield from nest_progress_wrapper(ensure_generator(plan()), progress_scope)
+            if progress_scope is not None and num is not None:
+                yield from update_progress(
+                    name=progress_scope,
+                    current=i + 1,
+                    target=num,
+                    initial=0,
+                    done=i + 1 == num,
+                    precision=0,
+                    unit=progress_units,
+                )
             try:
                 d = next(delay)
             except StopIteration as stop:

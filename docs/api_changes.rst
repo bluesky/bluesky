@@ -27,6 +27,25 @@ Added
       yield from bps.mv(motor, 5)
 
 - ``bluesky.plan_stubs.loc`` locates one object and returns its ``Location``.
+- Plans can report their own progress through the new ``declare_progress`` and
+  ``update_progress`` messages (``bluesky.plan_stubs.declare_progress`` and
+  ``bluesky.plan_stubs.update_progress``). The RunEngine passes the open progress
+  indicators, ``bluesky.utils.PlanProgress`` objects, to the new
+  ``RunEngine.progress_hook``. Progress indicators stay open across a pause or
+  suspension and are not re-declared when the plan is replayed.
+- Most built-in plans accept ``progress_scope`` and ``parent_progress_scope`` to
+  report their progress, optionally nested under another indicator, and
+  ``progress_units`` to set the unit label (default ``"step"``, or ``"count"``
+  for ``count``).
+  ``grid_scan``, ``rel_grid_scan``, ``list_grid_scan`` and ``rel_list_grid_scan``
+  also accept ``per_dim_progress`` to report
+  progress for each motor, and ``scan_nd`` accepts the equivalent
+  ``progress_dims``.
+- ``ProgressBarManager.new_stream`` lets one manager drive both
+  ``RunEngine.waiting_hook`` and ``RunEngine.progress_hook`` in a single display.
+- ``bluesky.protocols.Watcher`` and ``bluesky.protocols.WatcherUpdate`` describe
+  the callbacks passed to ``Watchable.watch``. ``Watchable`` is now generic in the
+  type of the reported positions.
 
 Removed
 -------
