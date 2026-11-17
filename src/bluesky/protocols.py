@@ -10,11 +10,11 @@ from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 
-# TypedDict, TypeVar and Unpack are imported from typing_extensions rather than
-# typing: typing_extensions.TypedDict carries backported fixes recommended until
-# Python 3.12, typing.TypeVar only accepts a default from Python 3.13, and
-# typing.Unpack is only available from Python 3.11 (floor is 3.10).
-from typing_extensions import TypedDict, TypeVar, Unpack
+# TypedDict and TypeVar are imported from typing_extensions rather than typing:
+# typing_extensions.TypedDict carries backported fixes recommended until Python
+# 3.12, and typing.TypeVar only accepts a default from Python 3.13 (floor is
+# 3.10).
+from typing_extensions import TypedDict, TypeVar
 
 # Squashes warning
 Dtype = Dtype  # type: ignore
@@ -360,7 +360,7 @@ class EventPageCollectable(Collectable, Protocol):
 @runtime_checkable
 class Movable(Protocol[T_co, StatusT]):
     @abstractmethod
-    def set(self, *args: Unpack[tuple[T_co]]) -> StatusT:
+    def set(self, value: T_co, /) -> StatusT:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
