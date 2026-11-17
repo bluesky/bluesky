@@ -1620,6 +1620,10 @@ def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> M
     the Python process cannot exit until it returns. Give long-running
     functions their own timeout.
 
+    ``func`` runs outside the RunEngine's message stream: devices it moves are
+    not stopped on pause, abort or halt, statuses it creates are not tracked by
+    ``wait``, and values it reads are not recorded in documents.
+
     Parameters
     ----------
     func : callable
