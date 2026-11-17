@@ -1,5 +1,8 @@
 import asyncio
+import contextlib
+import functools
 import gc
+import io
 import operator
 import time
 import warnings
@@ -521,6 +524,32 @@ def test_CallbackRegistry_bound_method_still_unsubscribes_on_death():
     gc.collect()
 
     assert "sig" not in reg.callbacks
+
+
+@pytest.mark.parametrize(
+    "make_callback",
+    [
+        pytest.param(lambda sink: print, id="builtin_function"),
+        pytest.param(lambda sink: sink.write, id="bound_builtin_method"),
+        pytest.param(lambda sink: functools.partial(print, file=sink), id="partial"),
+    ],
+)
+def test_CallbackRegistry_connects_builtins_and_partials(make_callback):
+    """Callables that are not bound methods can be connected and called (#2117)."""
+    sink = io.StringIO()
+    callback = make_callback(sink)
+    reg = CallbackRegistry()
+
+    cid = reg.connect("sig", callback)
+    # redirect_stdout is how the builtin print reaches the sink
+    with contextlib.redirect_stdout(sink):
+        reg.process("sig", "called")
+    assert sink.getvalue().count("called") == 1
+
+    reg.disconnect(cid)
+    with contextlib.redirect_stdout(sink):
+        reg.process("sig", "again")
+    assert "again" not in sink.getvalue()
 
 
 def test_CallbackRegistry_2():
