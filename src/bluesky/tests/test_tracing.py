@@ -1,3 +1,4 @@
+import json
 from collections.abc import Generator
 
 import pytest
@@ -15,17 +16,16 @@ def with_otl_instrumentation():
 
     from opentelemetry import trace
     from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import (
-        ConsoleSpanExporter,
-        SimpleSpanProcessor,
-    )
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
+    exporter = InMemorySpanExporter()
     provider = TracerProvider()
-    processor = SimpleSpanProcessor(ConsoleSpanExporter())
-    provider.add_span_processor(processor)
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
 
     # Sets the global default tracer provider
     trace.set_tracer_provider(provider)
+    return exporter
 
 
 @trace_plan(tracer, "test_plan")
@@ -59,3 +59,23 @@ def test_trace_plan_correctly_sends_sanitized_args(RE, caplog, with_otl_instrume
     RE(test_plan_np())
 
     assert "Invalid type" not in caplog.text
+
+
+@requires_ophyd
+@pytest.mark.parametrize("trace_msg_payloads", [True, False])
+def test_trace_msg_payloads_controls_payload_attributes(RE, hw, with_otl_instrumentation, trace_msg_payloads):
+    with_otl_instrumentation.clear()
+    RE.trace_msg_payloads = trace_msg_payloads
+
+    RE(bp.scan([hw.det], hw.motor, -1, 1, num=2, md={"sample": "md-marker"}))
+
+    spans = [s for s in with_otl_instrumentation.get_finished_spans() if s.name.startswith("Bluesky RunEngine")]
+    by_command = {s.attributes["msg.command"]: s.attributes for s in spans}
+    assert set(by_command) == {"open_run", "set", "wait"}
+    assert "exit_status" in by_command["open_run"]
+    assert "group" in by_command["wait"]
+    for span in spans:
+        assert ("msg.args" in span.attributes) is trace_msg_payloads
+        assert ("msg.kwargs" in span.attributes) is trace_msg_payloads
+    recorded = json.dumps([dict(s.attributes) for s in spans], default=repr)
+    assert ("md-marker" in recorded) is trace_msg_payloads

@@ -298,6 +298,12 @@ class RunEngine:
         False by default. Set to True to generate an extra event stream
         that records any interruptions (pauses, suspensions).
 
+    trace_msg_payloads
+        True by default. Set to False to omit ``msg.args`` and ``msg.kwargs``,
+        which carry plan metadata and message payloads, from OpenTelemetry
+        tracing spans. Structural attributes such as ``msg.command`` are
+        still recorded.
+
     state
         {'idle', 'running', 'paused'}
 
@@ -480,6 +486,7 @@ class RunEngine:
         self.state_hook = None
         self.waiting_hook = None
         self.record_interruptions = False
+        self.trace_msg_payloads = True
         self.pause_msg = PAUSE_MSG
         self.NO_PLAN_RETURN = object()
 
@@ -1487,6 +1494,13 @@ class RunEngine:
             _span.set_attribute("exit_status", "aborted")
             _span.end()
 
+    def _set_span_msg_attributes(self, span: Span, msg: Msg):
+        span.set_attribute("msg.command", msg.command)
+        if self.trace_msg_payloads:
+            span.set_attribute("msg.args", sanitize_np(msg.args))
+            span.set_attribute("msg.kwargs", json.dumps(msg.kwargs, default=repr))
+        span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
+
     async def _run(self):
         """Pull messages from the plan, process them, send results back.
 
@@ -1864,7 +1878,7 @@ class RunEngine:
         the RunStart document
         """
         _span = tracer.start_span(f"{_SPAN_NAME_PREFIX} run")
-        _set_span_msg_attributes(_span, msg)
+        self._set_span_msg_attributes(_span, msg)
 
         self._run_tracing_spans.append(_span)
 
@@ -2219,7 +2233,7 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        self._set_span_msg_attributes(trace.get_current_span(), msg)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         obj = check_supports(msg.obj, Flyable)
@@ -2240,7 +2254,7 @@ class RunEngine:
             Msg('collect', flyer_object)
             Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        self._set_span_msg_attributes(trace.get_current_span(), msg)
         run_key = msg.run
         if (
             current_run := self._run_bundlers.get(run_key, key_absence_sentinel := object())
@@ -2295,7 +2309,7 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        self._set_span_msg_attributes(trace.get_current_span(), msg)
         obj = check_supports(msg.obj, Movable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
@@ -2359,7 +2373,7 @@ class RunEngine:
 
         where ``<GROUP>`` is any hashable key and ``<ERROR_ON_TIMEOUT>`` is a boolean.
         """
-        _set_span_msg_attributes(trace.get_current_span(), msg)
+        self._set_span_msg_attributes(trace.get_current_span(), msg)
         done = False  # boolean that tracks whether waiting is complete
         if msg.args:
             (group,) = msg.args
@@ -2891,13 +2905,6 @@ instead:
 
 http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
-
-
-def _set_span_msg_attributes(span, msg):
-    span.set_attribute("msg.command", msg.command)
-    span.set_attribute("msg.args", sanitize_np(msg.args))
-    span.set_attribute("msg.kwargs", json.dumps(msg.kwargs, default=repr))
-    span.set_attribute("msg.obj", repr(msg.obj)) if msg.obj else span.set_attribute("msg.no_obj_given", True)
 
 
 def _default_md_validator(md: RunEngineMetadata) -> None:
