@@ -27,6 +27,10 @@ Added
       yield from bps.mv(motor, 5)
 
 - ``bluesky.plan_stubs.loc`` locates one object and returns its ``Location``.
+- ``RunEngine.trace_msg_payloads`` controls whether OpenTelemetry spans record
+  ``msg.args`` and ``msg.kwargs``, which carry plan metadata and message
+  payloads.  It defaults to ``True``.  Set it to ``False`` to keep only
+  structural attributes such as ``msg.command``, ``group`` and ``exit_status``.
 
 Removed
 -------
