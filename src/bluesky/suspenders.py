@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeAlias, TypeVar, ca
 from warnings import warn
 
 from bluesky.protocols import Subscribable
+from bluesky.utils import Msg
 
 if TYPE_CHECKING:
     from bluesky.run_engine import RunEngine
-    from bluesky.utils import Msg
 
 # How long install() and remove() wait for the RunEngine's event loop to
 # subscribe to a Subscribable signal, or unsubscribe from it, before giving up.
@@ -47,11 +47,11 @@ class _OphydSubscribable(Protocol[_T_co]):
 
 
 #: A signal a suspender can watch: a `Subscribable` or an ophyd-style signal.
-SuspenderSignal: TypeAlias = "Subscribable[T] | _OphydSubscribable[T]"
+SuspenderSignal: TypeAlias = Subscribable[T] | _OphydSubscribable[T]
 
 #: A plan to run around a suspension (a generator, list or similar of `Msg`
 #: objects), or a callable returning one.
-SuspenderPlan: TypeAlias = "Iterable[Msg] | Callable[[], Iterable[Msg]] | None"
+SuspenderPlan: TypeAlias = Iterable[Msg] | Callable[[], Iterable[Msg]] | None
 
 
 class SuspenderBase(Generic[T], metaclass=ABCMeta):
