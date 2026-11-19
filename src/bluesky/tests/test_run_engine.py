@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import logging.handlers
 import os
+import queue
 import re
 import signal
 import sys
@@ -591,6 +593,17 @@ def test_call_in_thread_returns_result_without_blocking_loop(RE):
     assert results == [(1, "r", True)]
 
 
+def test_call_in_thread_passes_keywords_named_like_its_own_parameters(RE):
+    results = []
+
+    def plan():
+        # func is call_in_thread's own parameter; f and self are the plan decorator's
+        results.append((yield from call_in_thread(dict, func=1, f=2, self=3)))
+
+    RE(plan())
+    assert results == [{"func": 1, "f": 2, "self": 3}]
+
+
 def test_call_in_thread_raises_in_plan(RE):
     def func():
         raise ValueError("boom")
@@ -600,6 +613,23 @@ def test_call_in_thread_raises_in_plan(RE):
             yield from call_in_thread(func)
 
     RE(plan())
+
+
+def test_call_in_thread_raises_stop_iteration_as_runtime_error(RE):
+    def func():
+        raise StopIteration
+
+    def plan():
+        with pytest.raises(RuntimeError) as exc_info:
+            yield from call_in_thread(func)
+        assert isinstance(exc_info.value.__cause__, StopIteration)
+
+    watchdog = threading.Timer(5, RE.request_pause, kwargs={"defer": False})  # fail rather than hang
+    watchdog.start()
+    try:
+        RE(plan())
+    finally:
+        watchdog.cancel()
 
 
 def test_call_in_thread_not_replayed_on_resume(RE):
@@ -616,12 +646,16 @@ def test_call_in_thread_not_replayed_on_resume(RE):
     assert calls == [None]
 
 
-def test_call_in_thread_pause_waits_for_original_call(RE):
+@pytest.mark.parametrize("rewindable", [True, False])
+def test_call_in_thread_pause_waits_for_original_call(RE, rewindable):
+    RE.rewindable = rewindable
+    release = threading.Event()
     calls = []
 
     def func():
         calls.append(None)
-        RE.request_pause()  # while this call is in flight
+        RE.request_pause(defer=False)  # pause while this call is in flight
+        release.wait(5)
         return "result"
 
     results = []
@@ -632,6 +666,12 @@ def test_call_in_thread_pause_waits_for_original_call(RE):
     with pytest.raises(RunEngineInterrupted):
         RE(plan())
     assert RE.state == "paused"
+
+    def release_once_resumed_plan_waits(msg):
+        if msg.command == "wait_for":
+            release.set()
+
+    RE.msg_hook = release_once_resumed_plan_waits
     RE.resume()
     assert results == ["result"]
     assert calls == [None]
@@ -651,6 +691,30 @@ def test_call_in_thread_abort_ends_run(RE):
         RE(plan())
     assert RE.state == "idle"
     assert results == []
+
+
+def test_call_in_thread_logs_failure_after_plan_ends(RE):
+    release = threading.Event()
+
+    def func():
+        RE.request_pause(defer=False)  # pause while this call is in flight
+        release.wait(5)
+        raise ValueError("boom")
+
+    records = queue.Queue()
+    handler = logging.handlers.QueueHandler(records)
+    logger = logging.getLogger("bluesky.plan_stubs")
+    logger.addHandler(handler)
+    try:
+        with pytest.raises(RunEngineInterrupted):
+            RE(call_in_thread(func))
+        RE.abort()
+        release.set()  # func fails after its plan has ended
+        record = records.get(timeout=5)
+    finally:
+        logger.removeHandler(handler)
+    assert record.levelno == logging.ERROR
+    assert "ValueError: boom" in record.getMessage()
 
 
 def test_bad_call_args(RE):

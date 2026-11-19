@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import logging
 import operator
 import time
 import uuid
@@ -63,6 +64,8 @@ from .utils import (
 from .utils import (
     short_uid as _short_uid,
 )
+
+logger = logging.getLogger(__name__)
 
 #: Any plan function that takes a reading given a list of Readables
 TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
@@ -1605,7 +1608,7 @@ def wait_for(
 
 
 @plan
-def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> MsgGenerator[T]:
+def call_in_thread(func: Callable[P, T], /, *args: P.args, **kwargs: P.kwargs) -> MsgGenerator[T]:
     """
     Call a blocking function in a worker thread and return its result.
 
@@ -1648,13 +1651,25 @@ def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> M
     """
     task: asyncio.Task[T] | None = None
 
+    def call() -> T:
+        try:
+            return func(*args, **kwargs)
+        except StopIteration as exc:
+            # An asyncio future cannot hold StopIteration: before Python 3.12 the
+            # task never finishes, and from 3.12 asyncio raises this instead.
+            raise RuntimeError(f"{func!r} raised StopIteration") from exc
+
     def start_or_wait() -> Awaitable[Any]:
         # Called each time the RunEngine processes the wait_for below, including
         # replays after a pause: start func only the first time.
         nonlocal task
         if task is None:
-            task = asyncio.create_task(asyncio.to_thread(func, *args, **kwargs))
+            task = asyncio.create_task(asyncio.to_thread(call))
         return asyncio.wait([task])
+
+    def log_failure(done: asyncio.Task[T]) -> None:
+        if not done.cancelled() and (exc := done.exception()) is not None:
+            logger.error("call_in_thread: %r failed after its plan ended", func, exc_info=exc)
 
     try:
         yield from wait_for([start_or_wait])
@@ -1664,8 +1679,9 @@ def call_in_thread(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> M
             yield from wait_for([start_or_wait])
         return task.result()
     finally:
-        if task is not None:
-            task.cancel()  # no-op once done; if the plan ends early, stop waiting
+        if task is not None and not task.done():
+            # The plan ended while func runs; nothing else will see it fail.
+            task.add_done_callback(log_failure)
 
 
 @plan

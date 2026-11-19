@@ -47,6 +47,10 @@ Removed
 Fixed
 -----
 
+- A plan decorated with ``bluesky.utils.plan`` passes keyword arguments named
+  ``f`` or ``self`` through to the plan function instead of raising
+  ``TypeError``.
+
 - A plan aborted while parked in a ``wait_for`` cancels the tasks that wait was
   running.  Nothing else held a reference to them, and ``asyncio.wait`` does not
   cancel what it was waiting on when it is itself cancelled, so they outlived
