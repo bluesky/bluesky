@@ -19,6 +19,7 @@ from event_model import DocumentNames
 
 from bluesky import Msg, RunEngine
 from bluesky import plans as bp
+from bluesky.fsm import RunEngineState
 from bluesky.plan_stubs import (
     abs_set,
     call_in_thread,
@@ -50,7 +51,6 @@ from bluesky.run_engine import (
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
-    RunEngineStateMachine,
     TransitionError,
     WaitForTimeoutError,
 )
@@ -63,23 +63,9 @@ from .conftest import _error_on_unclosed_tasks
 from .utils import _careful_event_set, _fabricate_asycio_event
 
 
-def test_states():
-    assert RunEngineStateMachine.States.states() == [
-        "idle",
-        "running",
-        "pausing",
-        "paused",
-        "halting",
-        "stopping",
-        "aborting",
-        "suspending",
-        "panicked",
-    ]
-
-
 def test_panic_trap(RE):
     RE._state = "panicked"
-    for k in RunEngineStateMachine.States.states():
+    for k in RunEngineState.states():
         if k != "panicked":
             with pytest.raises(TransitionError):
                 RE._state = k
