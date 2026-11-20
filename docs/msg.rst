@@ -103,7 +103,8 @@ directly, they should also never employ long blocking calls like
 ``RunEngine._sleep``, integrates with the RunEngine's event loop to sleep in a
 non-blocking way that allows for the RunEngine to stay responsive in the
 meantime --- watching for user interruptions and possibility collecting data
-asynchronously in the background.
+asynchronously in the background. A blocking call that cannot be avoided can
+run in a worker thread with :func:`~bluesky.plan_stubs.call_in_thread`.
 
 Other commands are used to control metadata and I/O. For example,
 ``Msg('open_run')`` and ``Msg('close_run')`` delineate the scope of one run.

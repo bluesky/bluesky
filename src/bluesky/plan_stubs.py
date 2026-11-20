@@ -1,12 +1,13 @@
 import asyncio
 import itertools
+import logging
 import operator
 import time
 import uuid
 import warnings
 from collections.abc import Awaitable, Callable, Hashable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Any
+from typing import Any, cast
 
 from cycler import cycler
 
@@ -63,6 +64,8 @@ from .utils import (
 from .utils import (
     short_uid as _short_uid,
 )
+
+logger = logging.getLogger(__name__)
 
 #: Any plan function that takes a reading given a list of Readables
 TakeReading = Callable[[Sequence[Readable]], MsgGenerator[Mapping[str, Reading]]]
@@ -1602,6 +1605,83 @@ def wait_for(
     :func:`bluesky.plan_stubs.wait`
     """
     return (yield Msg("wait_for", None, futures, **kwargs))
+
+
+@plan
+def call_in_thread(func: Callable[P, T], /, *args: P.args, **kwargs: P.kwargs) -> MsgGenerator[T]:
+    """
+    Call a blocking function in a worker thread and return its result.
+
+    Unlike calling ``func`` directly in a plan, this keeps the RunEngine's event
+    loop free while ``func`` runs. An exception raised by ``func`` is raised in
+    the plan.
+
+    ``func`` is called exactly once. If the plan is paused or suspended while
+    ``func`` runs, ``func`` keeps running, and on resume the plan waits for it
+    instead of calling it again. If the plan is aborted, stopped or halted,
+    ``func`` is not interrupted: it runs to completion in the background, and
+    the Python process cannot exit until it returns. Give long-running
+    functions their own timeout.
+
+    ``func`` runs outside the RunEngine's message stream: devices it moves are
+    not stopped on pause, abort or halt, statuses it creates are not tracked by
+    ``wait``, and values it reads are not recorded in documents.
+
+    Parameters
+    ----------
+    func : callable
+        blocking function to call
+    args :
+        passed to ``func``
+    kwargs :
+        passed to ``func``
+
+    Yields
+    ------
+    msg : Msg
+        ``Msg('wait_for', ...)``. The RunEngine starts ``func`` the first time it
+        processes this message; if a pause interrupts the wait, the message is
+        yielded again until ``func`` returns.
+
+    Returns
+    -------
+    result :
+        the return value of ``func``. If no RunEngine runs the plan (for example
+        ``list(plan)``), ``func`` is not called and this is ``None``.
+    """
+    task: asyncio.Task[T] | None = None
+
+    def call() -> T:
+        try:
+            return func(*args, **kwargs)
+        except StopIteration as exc:
+            # An asyncio future cannot hold StopIteration: before Python 3.12 the
+            # task never finishes, and from 3.12 asyncio raises this instead.
+            raise RuntimeError(f"{func!r} raised StopIteration") from exc
+
+    def start_or_wait() -> Awaitable[Any]:
+        # Called each time the RunEngine processes the wait_for below, including
+        # replays after a pause: start func only the first time.
+        nonlocal task
+        if task is None:
+            task = asyncio.create_task(asyncio.to_thread(call))
+        return asyncio.wait([task])
+
+    def log_failure(done: asyncio.Task[T]) -> None:
+        if not done.cancelled() and (exc := done.exception()) is not None:
+            logger.error("call_in_thread: %r failed after its plan ended", func, exc_info=exc)
+
+    try:
+        yield from wait_for([start_or_wait])
+        if task is None:  # list-ify mode: no RunEngine processed the message
+            return cast(T, None)
+        while not task.done():  # a pause interrupted the wait; wait again on resume
+            yield from wait_for([start_or_wait])
+        return task.result()
+    finally:
+        if task is not None and not task.done():
+            # The plan ended while func runs; nothing else will see it fail.
+            task.add_done_callback(log_failure)
 
 
 @plan
