@@ -9,7 +9,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeAlias, TypeVar, cast
 from warnings import warn
 
-from bluesky.protocols import Subscribable
+from bluesky.protocols import Reading, Subscribable
 from bluesky.utils import Msg
 
 if TYPE_CHECKING:
@@ -226,21 +226,27 @@ class SuspenderBase(Generic[T], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def __call__(self, value: Any, **kwargs: Any) -> None:
-        """Make the class callable so that we can
-        pass it off to the ophyd callback stack.
+    def __call__(self, value: T | dict[str, Reading[T]], **kwargs: Any) -> None:
+        """Receive a new value from the watched signal.
 
-        This expects the massive blob that comes from ophyd
+        The signal calls this, not the user. An ophyd-style signal passes the
+        value itself, plus keyword arguments (``old_value``, ``timestamp``, ...)
+        that are ignored here. A `Subscribable` signal passes a single
+        ``{name: Reading}`` dict, which is unwrapped to the reading's value.
         """
         with self._lock:
             if self.RE is None:
                 return
             loop = self.RE._loop
+            # Which form arrived depends on how install() subscribed, not on the
+            # value's type: T could itself be a dict.
             if self._implements_protocol:
-                # Subscribable calls back with {name: Reading}
-                value = value[self._sig.name]["value"]
-            self._last_value = value
-            if self._should_suspend(value):
+                reading = cast(dict[str, Reading[T]], value)[self._sig.name]
+                signal_value = reading["value"]
+            else:
+                signal_value = cast(T, value)
+            self._last_value = signal_value
+            if self._should_suspend(signal_value):
                 self._tripped = True
                 # this does dirty things with internal state
                 if self._ev is None and self.RE is not None:
@@ -256,7 +262,7 @@ class SuspenderBase(Generic[T], metaclass=ABCMeta):
                     )
                     if self.RE.state.is_running:
                         loop.call_soon_threadsafe(cb)
-            elif self._should_resume(value):
+            elif self._should_resume(signal_value):
                 self.__set_event(loop)
                 self._tripped = False
 
