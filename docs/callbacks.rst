@@ -631,6 +631,18 @@ It provides best-effort plots and visualization for *any* plan. It uses the
 'hints' key provided by the plan, if present. (See the source code of the
 plans in :mod:`bluesky.plans` for examples.)
 
+When only the printed output is wanted, subscribe
+:class:`~bluesky.callbacks.core.BestEffortTable` instead. It prints the same
+heading, table and baseline readings as ``BestEffortCallback`` and takes the
+table columns from the same hints, but it draws no plots. The methods that
+turn the heading, the table and the baseline on and off work the same way on
+both callbacks.
+
+.. code-block:: python
+
+    from bluesky.callbacks import BestEffortTable
+    RE.subscribe(BestEffortTable())
+
 .. ipython:: python
     :suppress:
 
@@ -674,6 +686,13 @@ Use these methods to toggle on or off parts of the functionality.
     BestEffortCallback.disable_baseline
     BestEffortCallback.enable_plots
     BestEffortCallback.disable_plots
+
+.. currentmodule:: bluesky.callbacks.core
+
+.. autosummary::
+    :toctree: generated
+
+    BestEffortTable
 
 Blacklist plotting certain streams using the ``bec.noplot_streams`` attribute,
 which is a list of stream names.  The blacklist is set to ``['baseline']`` by
