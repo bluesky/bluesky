@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky.plan_stubs &#8212; bluesky 1.16.1.dev4+gdb3650aae documentation</title>
+    <title>bluesky.plan_stubs &#8212; bluesky 1.16.1.dev11+gd960763a1 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=147c4221"></script>
+    <script src="../../_static/documentation_options.js?v=a459c5a5"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
@@ -403,7 +403,7 @@ window.runMermaid = runMermaid;</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://blueskyproject.io/bluesky/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.16.1.dev4+gdb3650aae';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.16.1.dev11+gd960763a1';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -412,7 +412,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.16.1.dev4+gdb3650aae" />
+  <meta name="docsearch:version" content="1.16.1.dev11+gd960763a1" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -911,13 +911,14 @@ window.runMermaid = runMermaid;</script>
   <h1>Source code for bluesky.plan_stubs</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">operator</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cycler</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
 
@@ -974,6 +975,8 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">short_uid</span> <span class="k">as</span> <span class="n">_short_uid</span><span class="p">,</span>
 <span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="c1">#: Any plan function that takes a reading given a list of Readables</span>
 <span class="n">TakeReading</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Readable</span><span class="p">]],</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reading</span><span class="p">]]]</span>
@@ -2629,6 +2632,86 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    :func:`bluesky.plan_stubs.wait`</span>
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="p">(</span><span class="k">yield</span> <span class="n">Msg</span><span class="p">(</span><span class="s2">"wait_for"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">futures</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="call_in_thread">
+<a class="viewcode-back" href="../../generated/bluesky.plan_stubs.call_in_thread.html#bluesky.plan_stubs.call_in_thread">[docs]</a>
+<span class="nd">@plan</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">call_in_thread</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Call a blocking function in a worker thread and return its result.</span>
+
+<span class="sd">    Unlike calling ``func`` directly in a plan, this keeps the RunEngine's event</span>
+<span class="sd">    loop free while ``func`` runs. An exception raised by ``func`` is raised in</span>
+<span class="sd">    the plan.</span>
+
+<span class="sd">    ``func`` is called exactly once. If the plan is paused or suspended while</span>
+<span class="sd">    ``func`` runs, ``func`` keeps running, and on resume the plan waits for it</span>
+<span class="sd">    instead of calling it again. If the plan is aborted, stopped or halted,</span>
+<span class="sd">    ``func`` is not interrupted: it runs to completion in the background, and</span>
+<span class="sd">    the Python process cannot exit until it returns. Give long-running</span>
+<span class="sd">    functions their own timeout.</span>
+
+<span class="sd">    ``func`` runs outside the RunEngine's message stream: devices it moves are</span>
+<span class="sd">    not stopped on pause, abort or halt, statuses it creates are not tracked by</span>
+<span class="sd">    ``wait``, and values it reads are not recorded in documents.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    func : callable</span>
+<span class="sd">        blocking function to call</span>
+<span class="sd">    args :</span>
+<span class="sd">        passed to ``func``</span>
+<span class="sd">    kwargs :</span>
+<span class="sd">        passed to ``func``</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    msg : Msg</span>
+<span class="sd">        ``Msg('wait_for', ...)``. The RunEngine starts ``func`` the first time it</span>
+<span class="sd">        processes this message; if a pause interrupts the wait, the message is</span>
+<span class="sd">        yielded again until ``func`` returns.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    result :</span>
+<span class="sd">        the return value of ``func``. If no RunEngine runs the plan (for example</span>
+<span class="sd">        ``list(plan)``), ``func`` is not called and this is ``None``.</span>
+<span class="sd">    """</span>
+    <span class="n">task</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="c1"># An asyncio future cannot hold StopIteration: before Python 3.12 the</span>
+            <span class="c1"># task never finishes, and from 3.12 asyncio raises this instead.</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">func</span><span class="si">!r}</span><span class="s2"> raised StopIteration"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_or_wait</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="c1"># Called each time the RunEngine processes the wait_for below, including</span>
+        <span class="c1"># replays after a pause: start func only the first time.</span>
+        <span class="k">nonlocal</span> <span class="n">task</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait</span><span class="p">([</span><span class="n">task</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_failure</span><span class="p">(</span><span class="n">done</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="o">.</span><span class="n">cancelled</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">exc</span> <span class="o">:=</span> <span class="n">done</span><span class="o">.</span><span class="n">exception</span><span class="p">())</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"call_in_thread: </span><span class="si">%r</span><span class="s2"> failed after its plan ended"</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">wait_for</span><span class="p">([</span><span class="n">start_or_wait</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># list-ify mode: no RunEngine processed the message</span>
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>  <span class="c1"># a pause interrupted the wait; wait again on resume</span>
+            <span class="k">yield from</span> <span class="n">wait_for</span><span class="p">([</span><span class="n">start_or_wait</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">task</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+            <span class="c1"># The plan ended while func runs; nothing else will see it fail.</span>
+            <span class="n">task</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">log_failure</span><span class="p">)</span></div>
 
 
 

@@ -1,0 +1,6 @@
+﻿bluesky.plan\_stubs.call\_in\_thread
+====================================
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autofunction:: call_in_thread
