@@ -6,8 +6,10 @@ import pytest
 from event_model.documents.event import PartialEvent
 from ophyd import Component as Cpt
 from ophyd import Device
-from ophyd.sim import NullStatus, StatusBase, TrivialFlyer
+from ophyd.sim import MockFlyer, NullStatus, StatusBase, TrivialFlyer, det, det1, motor
 
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from bluesky import Msg
 from bluesky.plan_stubs import (
     close_run,
@@ -286,6 +288,37 @@ def test_flyer_descriptor(RE, hw):
     print(f"trivial flyer descriptor: {trivial_flyer_descriptor}")
     assert len(trivial_flyer_descriptor["configuration"]) == 1
     assert "trivial_flyer" in trivial_flyer_descriptor["object_keys"]
+
+
+@requires_ophyd
+def test_collect_between_read_and_save_keeps_stream_caches_isolated(RE):
+    flyer = MockFlyer("flyer1", det1, motor, 1, 5, 20)
+    documents = defaultdict(list)
+
+    @bpp.run_decorator()
+    @bpp.stage_decorator([det, flyer])
+    def plan():
+        yield from bps.create()
+        yield from bps.kickoff(flyer)
+        yield from bps.read(det1)
+        yield from bps.collect(flyer)
+        yield from bps.save()
+
+    RE(plan(), lambda name, doc: documents[name].append(doc))
+
+    descriptors = {doc["uid"]: doc for doc in documents["descriptor"]}
+    events = [*documents["event"], *documents["event_page"]]
+    primary = next(doc for doc in documents["descriptor"] if doc["name"] == "primary")
+    assert set(primary["data_keys"]) == {"det1"}
+    assert any(
+        set(doc["data"]) == set(doc["timestamps"]) == {"det1"}
+        for doc in events
+        if doc["descriptor"] == primary["uid"]
+    )
+    assert all(
+        set(doc["data"]) == set(doc["timestamps"]) == set(descriptors[doc["descriptor"]]["data_keys"])
+        for doc in events
+    )
 
 
 @requires_ophyd
