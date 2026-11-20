@@ -10,9 +10,8 @@ from event_model.documents.event_descriptor import DataKey, Dtype
 from event_model.documents.event_page import PartialEventPage
 from event_model.documents.resource import PartialResource
 
-# TypedDict is imported from typing_extensions rather than typing:
-# typing_extensions.TypedDict carries backported fixes recommended until Python
-# 3.12 (floor is 3.10).
+# TypedDict is imported from typing_extensions rather than typing because it
+# carries backported fixes recommended until Python 3.12.
 from typing_extensions import TypedDict
 
 # Squashes warning

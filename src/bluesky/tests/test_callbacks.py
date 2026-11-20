@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from enum import Enum
+from enum import StrEnum
 from io import StringIO
 from itertools import permutations
 from unittest.mock import MagicMock
@@ -253,7 +253,7 @@ def test_evil_table_names(RE):
     fout.close()
 
 
-class TableTestEnum(str, Enum):
+class TableTestEnum(StrEnum):
     """Enum for testing LiveTable with enum values."""
 
     OK = "OK"
