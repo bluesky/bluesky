@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 from time import time
 from unittest.mock import ANY
@@ -6,6 +7,7 @@ import pytest
 
 from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import declare_stream, trigger_and_read
+from bluesky.plans import scan
 from bluesky.preprocessors import run_decorator
 from bluesky.protocols import Callback, Descriptor, Reading
 from bluesky.tests import ophyd, ophyd_async, requires_ophyd, requires_ophyd_async
@@ -31,7 +33,8 @@ if ophyd:
 
 
 if ophyd_async:
-    from ophyd_async.core import soft_signal_rw
+    from ophyd_async.core import AsyncStatus, StandardReadable, init_devices, soft_signal_rw
+    from ophyd_async.sim import SimMotor
 
 
 class SigNew:
@@ -306,3 +309,38 @@ def test_read_clash(RE):
                 Msg("close_run"),
             ]
         )
+
+
+@requires_ophyd_async
+def test_slow_describe(RE):
+    class SlowDescribeDevice(StandardReadable):
+        def __init__(self, *, name=""):
+            with self.add_children_as_readables():
+                self.signal_A = soft_signal_rw(float, initial_value=0.5)
+                self.signal_B = soft_signal_rw(float, initial_value=1.3)
+            super().__init__(name=name)
+
+        @AsyncStatus.wrap
+        async def describe(self):
+            await asyncio.sleep(0.1)
+            return await super().describe()
+
+    with init_devices(mock=False):
+        detector = SlowDescribeDevice()
+        sim_motor_2 = SimMotor()
+        sim_motor_3 = SimMotor()
+
+    docs = {}
+
+    def stash_docs(name, doc):
+        docs.setdefault(name, []).append(doc)
+
+    RE.subscribe(stash_docs)
+    RE(scan([detector], sim_motor_2, -10, 10, sim_motor_3, -5, 5, num=3))
+    assert len(docs["event"]) == 3
+    # Check that the event doc keys are in the same order for every event
+    events = docs["event"]
+    assert list(events[0]["data"].keys()) == list(events[1]["data"].keys())
+    assert list(events[1]["data"].keys()) == list(events[2]["data"].keys())
+    assert list(events[0]["timestamps"].keys()) == list(events[1]["timestamps"].keys())
+    assert list(events[1]["timestamps"].keys()) == list(events[2]["timestamps"].keys())
