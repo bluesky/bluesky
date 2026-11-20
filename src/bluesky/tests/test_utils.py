@@ -1,5 +1,8 @@
 import asyncio
+import contextlib
+import functools
 import gc
+import io
 import operator
 import time
 import warnings
@@ -181,7 +184,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
 
     The following behavior is expected when connecting callbacks to Callback Registry:
 
-    GROUP 1 (bound methods) - weak reference is held internally (using proxy), deleting external
+    GROUP 1 (bound methods) - weak reference is held internally, deleting external
     references invalidates the weak reference and the respective callback is removed
     from the registry. Callback can be removed manually in a standard way by using `disconnect`
     function.
@@ -190,13 +193,11 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     deleting all external references does not influence the callbacks in CB registry,
     callback can be used until they are removed by 'disconnect' function.
 
-    The dictionaries of Callback registry: callbacks, _func_cid_map. Both dictionaries
-    are using signal names as keys. In the current implementation, the entries in the two dictionaries
-    are deleted if all callbacks for the respective signals are automatically disconnected
-    (callbacks are bound methods and external references are deleted for a bound method).
+    The `callbacks` dictionary of the registry uses signal names as keys. In the current
+    implementation, the entry for a signal is deleted if all its callbacks are automatically
+    disconnected (callbacks are bound methods and external references are deleted for a bound method).
     If all callbacks (actually the last callback) for a signal are manually disconnected,
-    then the respective items in the dictionaries will remain in both dictionaries (they will
-    hold ZERO callback references).
+    then the item will remain in the dictionary (it will hold ZERO callback references).
     """
     if set_allowed_signals:
         allowed_sigs = {"sig1", "sig2", "sig3"}
@@ -347,10 +348,8 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             del o_subscribe, o_delete
 
     # Verify that the right number of callbacks was initially set
-    assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
     assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
     for sig_name, n_objects in signals.items():
-        assert len(cb._func_cid_map[sig_name]) == n_objects, f"Incorrect number of callbacks for '{sig_name}'"
         assert len(cb.callbacks[sig_name]) == n_objects, f"Incorrect number of callbacks for '{sig_name}'"
 
     def _process_each_signal(n_start_check=0):
@@ -398,12 +397,8 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 "callable_object_static_method",
             ]:
                 # Deleting objects should change nothing
-                assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
                 assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():
-                    assert len(cb._func_cid_map[sig_name]) == n_objects, (
-                        f"Incorrect number of callbacks for '{sig_name}'"
-                    )
                     assert len(cb.callbacks[sig_name]) == n_objects, (
                         f"Incorrect number of callbacks for '{sig_name}'"
                     )
@@ -413,13 +408,9 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             elif callable_type == "bound_method":
                 # Callbacks should be removed as they get deleted
                 sigs_remaining = list(set(obj_signal[n + 1 :]))
-                assert len(cb._func_cid_map) == len(sigs_remaining), "Incorrect number of signals"
                 assert len(cb.callbacks) == len(sigs_remaining), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():  # noqa: B007
                     if sig_name in sigs_remaining:
-                        assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
-                            f"Incorrect number of callbacks for '{sig_name}'"
-                        )
                         assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
                             f"Incorrect number of callbacks for '{sig_name}'"
                         )
@@ -432,19 +423,14 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     if delete_objects and callable_type == "bound_method":
         # Dictionary entries for signals are deleted when the objects are deleted
         #   and callbacks are unsubscribed
-        assert len(cb._func_cid_map) == 0, "Not all callbacks were automatically unsubscribed"
         assert len(cb.callbacks) == 0, "Not all callbacks were automatically unsubscribed"
     else:
         # Now disconnect the callbacks one by one and verify dictionary content
         for n in range(len(obj_to_delete)):
             cb.disconnect(obj_cid[n])
             # NOTE: as the objects are deleted, the dictionary entries for the signals still remain
-            assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
             assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
             for sig_name, n_objects in signals.items():  # noqa: B007
-                assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
-                    f"Incorrect number of callbacks for '{sig_name}'"
-                )
                 assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(sig_name), (
                     f"Incorrect number of callbacks for '{sig_name}'"
                 )
@@ -521,6 +507,32 @@ def test_CallbackRegistry_bound_method_still_unsubscribes_on_death():
     gc.collect()
 
     assert "sig" not in reg.callbacks
+
+
+@pytest.mark.parametrize(
+    "make_callback",
+    [
+        pytest.param(lambda sink: print, id="builtin_function"),
+        pytest.param(lambda sink: sink.write, id="bound_builtin_method"),
+        pytest.param(lambda sink: functools.partial(print, file=sink), id="partial"),
+    ],
+)
+def test_CallbackRegistry_connects_builtins_and_partials(make_callback):
+    """Callables that are not bound methods can be connected and called (#2117)."""
+    sink = io.StringIO()
+    callback = make_callback(sink)
+    reg = CallbackRegistry()
+
+    cid = reg.connect("sig", callback)
+    # redirect_stdout is how the builtin print reaches the sink
+    with contextlib.redirect_stdout(sink):
+        reg.process("sig", "called")
+    assert sink.getvalue().count("called") == 1
+
+    reg.disconnect(cid)
+    with contextlib.redirect_stdout(sink):
+        reg.process("sig", "again")
+    assert "again" not in sink.getvalue()
 
 
 def test_CallbackRegistry_2():

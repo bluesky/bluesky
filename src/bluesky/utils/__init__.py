@@ -29,7 +29,7 @@ from typing import (
     TypeVar,
     overload,
 )
-from weakref import WeakKeyDictionary, ref
+from weakref import WeakKeyDictionary, WeakMethod
 
 import msgpack
 import msgpack_numpy
@@ -464,10 +464,37 @@ class SigintHandler:
         self._request_event.set()
 
 
+class _StrongRef:
+    """Hold a callback strongly behind the same call interface as a weak reference."""
+
+    def __init__(self, cb):
+        self._cb = cb
+
+    def __call__(self):
+        return self._cb
+
+
+def _callback_ref(cb, on_death):
+    """Weakly reference an instance's bound method, strongly reference anything else.
+
+    :param cb: The callback to reference
+    :param on_death: Called when a weakly referenced instance is collected
+    """
+    cb_ref = _StrongRef(cb)
+    # A class method's __self__ is its class, which must not unsubscribe it
+    if isinstance(cb, types.MethodType) and not isinstance(cb.__self__, type):
+        try:
+            cb_ref = WeakMethod(cb, on_death)
+        except TypeError:
+            pass  # __self__ cannot be weakly referenced, e.g. __slots__ without __weakref__
+    return cb_ref
+
+
 class CallbackRegistry:
     """
-    See matplotlib.cbook.CallbackRegistry. This is a simplified since
-    ``bluesky`` is python3.4+ only!
+    See matplotlib.cbook.CallbackRegistry. Bound methods of instances are held
+    weakly, and disconnected automatically when the instance is collected. Every
+    other callable is held strongly until it is disconnected.
     """
 
     def __init__(self, ignore_exceptions=False, allowed_sigs=None):
@@ -475,7 +502,6 @@ class CallbackRegistry:
         self.allowed_sigs = allowed_sigs
         self.callbacks = dict()  # noqa: C408
         self._cid = 0
-        self._func_cid_map = {}
 
     def __getstate__(self):
         # We cannot currently pickle the callables in the registry, so
@@ -504,42 +530,20 @@ class CallbackRegistry:
         if self.allowed_sigs is not None:
             if sig not in self.allowed_sigs:
                 raise ValueError(f"Allowed signals are {self.allowed_sigs}")
-        self._func_cid_map.setdefault(sig, WeakKeyDictionary())
-        # Note proxy not needed in python 3.
-        # TODO rewrite this when support for python2.x gets dropped.
-        # Following discussion with TC: weakref.WeakMethod can not be used to
-        #   replace the custom 'BoundMethodProxy', because it does not accept
-        #   the 'destroy callback' as a parameter. The 'destroy callback' is
-        #   necessary to automatically unsubscribe CB registry from the callback
-        #   when the class object is destroyed and this is the main purpose of
-        #   BoundMethodProxy.
-        proxy = _BoundMethodProxy(func)
-        if proxy in self._func_cid_map[sig]:
-            return self._func_cid_map[sig][proxy]
-
-        proxy.add_destroy_callback(self._remove_proxy)
+        refs = self.callbacks.setdefault(sig, {})
+        existing = [cid for cid, cb_ref in refs.items() if cb_ref() == func]
+        if existing:
+            return existing[0]
         self._cid += 1
         cid = self._cid
-        self._func_cid_map[sig][proxy] = cid
-        self.callbacks.setdefault(sig, dict())  # noqa: C408
-        self.callbacks[sig][cid] = proxy
+        refs[cid] = _callback_ref(func, partial(self._remove_dead, sig, cid))
         return cid
 
-    def _remove_proxy(self, proxy):
-        # need the list because `del self._func_cid_map[sig]` mutates the dict
-        for sig, proxies in list(self._func_cid_map.items()):
-            try:
-                # Here we need to delete the last reference to proxy (in 'self.callbacks[sig]')
-                #   The respective entries in 'self._func_cid_map' are deleted automatically,
-                #   since 'self._func_cid_map[sig]' entries are WeakKeyDictionary objects.
-                del self.callbacks[sig][proxies[proxy]]
-            except KeyError:
-                pass
-
-            # Remove dictionary items for signals with no assigned callbacks
-            if len(self.callbacks[sig]) == 0:
-                del self.callbacks[sig]
-                del self._func_cid_map[sig]
+    def _remove_dead(self, sig, cid, _ref):
+        refs = self.callbacks.get(sig, {})
+        refs.pop(cid, None)
+        if not refs:
+            self.callbacks.pop(sig, None)
 
     def disconnect(self, cid):
         """Disconnect the callback registered with callback id *cid*
@@ -549,19 +553,8 @@ class CallbackRegistry:
         cid : int
             The callback index and return value from ``connect``
         """
-        for eventname, callbackd in self.callbacks.items():  # noqa: B007
-            try:
-                # This may or may not remove entries in 'self._func_cid_map'.
-                del callbackd[cid]
-            except KeyError:
-                continue
-            else:
-                # Look for cid in 'self._func_cid_map' as well. It may still be there.
-                for sig, functions in self._func_cid_map.items():  # noqa: B007
-                    for function, value in list(functions.items()):
-                        if value == cid:
-                            del functions[function]
-                return
+        for refs in self.callbacks.values():
+            refs.pop(cid, None)
 
     def process(self, sig, *args, **kwargs):
         """Process ``sig``
@@ -579,132 +572,18 @@ class CallbackRegistry:
             if sig not in self.allowed_sigs:
                 raise ValueError(f"Allowed signals are {self.allowed_sigs}")
         exceptions = []
-        if sig in self.callbacks:
-            for cid, func in list(self.callbacks[sig].items()):  # noqa: B007
+        for cb_ref in list(self.callbacks.get(sig, {}).values()):
+            func = cb_ref()
+            # None means the instance died: its weakref callback removes the entry
+            if func is not None:
                 try:
                     func(*args, **kwargs)
-                except ReferenceError:
-                    self._remove_proxy(func)
                 except Exception as e:
                     if self.ignore_exceptions:
                         exceptions.append((e, sys.exc_info()[2]))
                     else:
                         raise
         return exceptions
-
-
-class _BoundMethodProxy:
-    """
-    Our own proxy object which enables weak references to bound and unbound
-    methods and arbitrary callables. Pulls information about the function,
-    class, and instance out of a bound method. Stores a weak reference to the
-    instance to support garbage collection.
-    @organization: IBM Corporation
-    @copyright: Copyright (c) 2005, 2006 IBM Corporation
-    @license: The BSD License
-    Minor bugfixes by Michael Droettboom
-    """
-
-    def __init__(self, cb):
-        self._hash = hash(cb)
-        self._destroy_callbacks = []
-        cb_self = getattr(cb, "__self__", None)
-
-        if cb_self is None:
-            # 'cb' is a function, callable object or static method.
-            # No weak reference is created, strong reference is stored instead.
-            self.inst = None
-            self.func = cb
-            self.klass = None
-        elif isinstance(cb_self, type):
-            # 'cb' is a class method, so __self__ is the class rather than an
-            # instance of it. A class is weakly referenceable, so the branch below
-            # would succeed and then silently unsubscribe the callback when the
-            # class was collected -- and there is no instance whose death was
-            # supposed to mean anything. Hold it strongly, as for a plain function.
-            self.inst = None
-            self.func = cb
-            self.klass = cb_self
-        else:
-            try:
-                self.inst = ref(cb_self, self._destroy)
-            except TypeError:
-                # 'obj' cannot be weakly referenced, e.g. it uses __slots__ without
-                # __weakref__. Hold the bound method strongly rather than an unbound
-                # function that we would later call without its instance.
-                self.inst = None
-                self.func = cb
-            else:
-                self.func = cb.__func__
-            self.klass = cb_self.__class__
-
-    def add_destroy_callback(self, callback):
-        self._destroy_callbacks.append(_BoundMethodProxy(callback))
-
-    def _destroy(self, wk):
-        for callback in self._destroy_callbacks:
-            try:
-                callback(self)
-            except ReferenceError:
-                pass
-
-    def __getstate__(self):
-        d = self.__dict__.copy()
-        # de-weak reference inst
-        inst = d["inst"]
-        if inst is not None:
-            d["inst"] = inst()
-        return d
-
-    def __setstate__(self, statedict):
-        self.__dict__ = statedict
-        inst = statedict["inst"]
-        # turn inst back into a weakref
-        if inst is not None:
-            self.inst = ref(inst)
-
-    def __call__(self, *args, **kwargs):
-        """
-        Proxy for a call to the weak referenced object. Take
-        arbitrary params to pass to the callable.
-        Raises `ReferenceError`: When the weak reference refers to
-        a dead object
-        """
-        if self.inst is not None and self.inst() is None:
-            raise ReferenceError
-        elif self.inst is not None:
-            # build a new instance method with a strong reference to the
-            # instance
-
-            mtd = types.MethodType(self.func, self.inst())
-
-        else:
-            # not a bound method, just return the func
-            mtd = self.func
-        # invoke the callable and return the result
-        return mtd(*args, **kwargs)
-
-    def __eq__(self, other):
-        """
-        Compare the held function and instance with that held by
-        another proxy.
-        """
-        try:
-            if self.inst is None:
-                return self.func == other.func and other.inst is None
-            else:
-                return self.func == other.func and self.inst() == other.inst()
-        except Exception:
-            return False
-
-    def __ne__(self, other):
-        """
-        Inverse of __eq__.
-        """
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return self._hash
 
 
 SUBS_NAMES = ["all", "start", "stop", "event", "descriptor"]
