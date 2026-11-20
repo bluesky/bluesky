@@ -1426,7 +1426,8 @@ continue its business during the sleep.
 The RunEngine uses an event loop to concurrently manage many tasks. It assumes
 that none of those tasks blocks for very long. (A good figure for "very long"
 is 0.2 seconds.) Therefore, you should never incorporate long blocking function
-calls in your plan, such as ``time.sleep(1)``.
+calls in your plan, such as ``time.sleep(1)``. If a blocking call is
+unavoidable, run it with :func:`~bluesky.plan_stubs.call_in_thread`.
 
 .. _tutorial_capture_data:
 
