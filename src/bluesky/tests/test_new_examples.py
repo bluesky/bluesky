@@ -881,34 +881,44 @@ def test_repeat_using_RE(RE):
     RE(repeat(plan, 2))
 
 
-def _slow_plan():
-    ttime.sleep(0.2)
-    yield Msg("null")
+@pytest.fixture
+def fake_clock(monkeypatch):
+    """Replace the clock ``repeat`` reads; advance it with ``fake_clock.now += seconds``."""
+    clock = SimpleNamespace(now=1000.0)
+    clock.time = lambda: clock.now
+    monkeypatch.setattr("bluesky.plan_stubs.time", clock)
+    return clock
+
+
+def _plan_taking(clock, seconds):
+    def plan():
+        clock.now += seconds
+        yield Msg("null")
+
+    return plan
 
 
 def _sleeps(msgs):
     return [msg.args[0] for msg in msgs if msg.command == "sleep"]
 
 
-def test_repeat_delay_subtracts_elapsed_time_by_default():
-    slept = _sleeps(repeat(_slow_plan, num=2, delay=1.0))
-    assert len(slept) == 2
-    assert all(s < 0.9 for s in slept)
+def test_repeat_delay_subtracts_elapsed_time_by_default(fake_clock):
+    plan = _plan_taking(fake_clock, 0.2)
+    assert _sleeps(repeat(plan, num=2, delay=1.0)) == pytest.approx([0.8, 0.8])
 
 
-def test_repeat_delay_after_completion():
+def test_repeat_delay_after_completion(fake_clock):
+    plan = _plan_taking(fake_clock, 0.2)
     # A scalar delay is also applied after the last repetition; a list stops when it runs out.
-    assert _sleeps(repeat(_slow_plan, num=3, delay=1.0, delay_after_completion=True)) == [1.0, 1.0, 1.0]
-    assert _sleeps(repeat(_slow_plan, num=3, delay=[0.5, 0.25], delay_after_completion=True)) == [0.5, 0.25]
-    assert _sleeps(repeat(_slow_plan, num=2, delay=0.0, delay_after_completion=True)) == []
+    assert _sleeps(repeat(plan, num=3, delay=1.0, delay_after_completion=True)) == [1.0, 1.0, 1.0]
+    assert _sleeps(repeat(plan, num=3, delay=[0.5, 0.25], delay_after_completion=True)) == [0.5, 0.25]
+    assert _sleeps(repeat(plan, num=2, delay=0.0, delay_after_completion=True)) == []
 
 
-def test_count_delay_after_completion(RE, hw):
+def test_count_delay_after_completion(hw):
     from bluesky.plans import count
 
-    msgs = []
-    RE.msg_hook = msgs.append
-    RE(count([hw.det], num=3, delay=0.1, delay_after_completion=True))
+    msgs = count([hw.det], num=3, delay=0.1, delay_after_completion=True)
     assert _sleeps(msgs) == [0.1, 0.1, 0.1]
 
 
