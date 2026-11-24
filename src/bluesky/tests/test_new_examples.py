@@ -881,6 +881,53 @@ def test_repeat_using_RE(RE):
     RE(repeat(plan, 2))
 
 
+def _slow_plan():
+    ttime.sleep(0.2)
+    yield Msg("null")
+
+
+def _sleeps(msgs):
+    return [msg.args[0] for msg in msgs if msg.command == "sleep"]
+
+
+def test_repeat_delay_subtracts_elapsed_time_by_default():
+    slept = _sleeps(repeat(_slow_plan, num=2, delay=1.0))
+    assert len(slept) == 2
+    assert all(s < 0.9 for s in slept)
+
+
+def test_repeat_delay_after_completion():
+    # A scalar delay is also applied after the last repetition; a list stops when it runs out.
+    assert _sleeps(repeat(_slow_plan, num=3, delay=1.0, delay_after_completion=True)) == [1.0, 1.0, 1.0]
+    assert _sleeps(repeat(_slow_plan, num=3, delay=[0.5, 0.25], delay_after_completion=True)) == [0.5, 0.25]
+    assert _sleeps(repeat(_slow_plan, num=2, delay=0.0, delay_after_completion=True)) == []
+
+
+def test_count_delay_after_completion(RE, hw):
+    from bluesky.plans import count
+
+    msgs = []
+    RE.msg_hook = msgs.append
+    RE(count([hw.det], num=3, delay=0.1, delay_after_completion=True))
+    assert _sleeps(msgs) == [0.1, 0.1, 0.1]
+
+
+@pytest.mark.parametrize(
+    "num, delay, recorded",
+    [(3, 0.1, True), (None, 0.1, True), (3, [0.1, 0.1], True), (1, 0.1, False), (3, 0, False)],
+)
+def test_count_records_delay_after_completion(hw, num, delay, recorded):
+    from bluesky.plans import count
+
+    # The run metadata travels on the open_run message, so no need to run the plan.
+    open_run = next(
+        msg
+        for msg in count([hw.det], num=num, delay=delay, delay_after_completion=True)
+        if msg.command == "open_run"
+    )
+    assert ("delay_after_completion" in open_run.kwargs["plan_args"]) is recorded
+
+
 def test_trigger_and_read(hw):
     det = hw.det
     msgs = list(trigger_and_read([det]))
