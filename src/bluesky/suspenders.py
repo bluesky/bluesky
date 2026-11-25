@@ -2,19 +2,59 @@ import asyncio
 import operator
 import threading
 from abc import ABCMeta, abstractmethod
+from collections.abc import Awaitable, Callable, Iterable
 from concurrent.futures import Future
 from datetime import datetime, timedelta
 from functools import partial
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeAlias, TypeVar, cast
 from warnings import warn
 
-from bluesky.protocols import Subscribable
+from bluesky.protocols import Reading, Subscribable
+from bluesky.utils import Msg
+
+if TYPE_CHECKING:
+    from bluesky.run_engine import RunEngine
 
 # How long install() and remove() wait for the RunEngine's event loop to
 # subscribe to a Subscribable signal, or unsubscribe from it, before giving up.
 SUBSCRIPTION_TIMEOUT = 10
 
+#: The type of value a suspender's signal reports.
+T = TypeVar("T")
+_T_co = TypeVar("_T_co", covariant=True)
+_T_contra = TypeVar("_T_contra", contravariant=True)
+#: A numeric value type; int and float signals both fit.
+_NumT = TypeVar("_NumT", bound=float)
 
-class SuspenderBase(metaclass=ABCMeta):
+
+class _OphydCallback(Protocol[_T_contra]):
+    """A callback that ophyd calls with a signal's new value."""
+
+    def __call__(self, value: _T_contra, **kwargs: Any) -> None: ...
+
+
+class _OphydSubscribable(Protocol[_T_co]):
+    """A signal following ophyd's subscription pattern, reporting values of type ``_T_co``."""
+
+    @property
+    def name(self) -> str: ...
+
+    def subscribe(
+        self, callback: _OphydCallback[_T_co], event_type: str | None = None, run: bool = True
+    ) -> Any: ...
+
+    def clear_sub(self, cb: Callable[..., Any]) -> None: ...
+
+
+#: A signal a suspender can watch: a `Subscribable` or an ophyd-style signal.
+SuspenderSignal: TypeAlias = Subscribable[T] | _OphydSubscribable[T]
+
+#: A plan to run around a suspension (a generator, list or similar of `Msg`
+#: objects), or a callable returning one.
+SuspenderPlan: TypeAlias = Iterable[Msg] | Callable[[], Iterable[Msg]] | None
+
+
+class SuspenderBase(Generic[T], metaclass=ABCMeta):
     """An ABC to manage the callbacks between asyincio and pyepics.
 
 
@@ -38,10 +78,18 @@ class SuspenderBase(metaclass=ABCMeta):
         Message to include in the trip notification
     """
 
-    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message=""):
+    def __init__(
+        self,
+        signal: SuspenderSignal[T],
+        *,
+        sleep: float = 0,
+        pre_plan: SuspenderPlan = None,
+        post_plan: SuspenderPlan = None,
+        tripped_message: str = "",
+    ) -> None:
         """ """
-        self.RE = None
-        self._ev = None
+        self.RE: RunEngine | None = None
+        self._ev: asyncio.Event | None = None
         self._tripped = False
         self._tripped_message = tripped_message
         self._sleep = sleep
@@ -49,10 +97,10 @@ class SuspenderBase(metaclass=ABCMeta):
         self._sig = signal
         self._pre_plan = pre_plan
         self._post_plan = post_plan
-        self._last_value = None
+        self._last_value: T | None = None
         self._implements_protocol = isinstance(signal, Subscribable)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}({!r}, sleep={}, pre_plan={}, post_plan={}, tripped_message={})".format(  # noqa: UP032
             type(self).__name__,
             self._sig,
@@ -62,7 +110,7 @@ class SuspenderBase(metaclass=ABCMeta):
             self._tripped_message,
         )
 
-    def install(self, RE, *, event_type=None):
+    def install(self, RE: "RunEngine", *, event_type: str | None = None) -> None:
         """Install callback on signal
 
         This (re)installs the required callbacks at the pyepics level
@@ -87,15 +135,15 @@ class SuspenderBase(metaclass=ABCMeta):
         with self._lock:
             self.RE = RE
         if self._implements_protocol:
-            self.__on_loop(RE, partial(self._sig.subscribe_reading, self))
+            self.__on_loop(RE, partial(cast(Subscribable[T], self._sig).subscribe_reading, self))
         elif callable(getattr(self._sig, "subscribe", None)):
-            self._sig.subscribe(self, event_type=event_type, run=True)
+            cast(_OphydSubscribable[T], self._sig).subscribe(self, event_type=event_type, run=True)
         else:
             raise RuntimeError(
                 "%s does not implement Subscribable protocol or adhere to ophyd subscription pattern." % self._sig
             )
 
-    def __on_loop(self, RE, func):
+    def __on_loop(self, RE: "RunEngine", func: Callable[[], object]) -> None:
         """Call ``func`` on the RunEngine's event loop, and wait for it.
 
         Subscribing to a Subscribable signal, and unsubscribing from it, both
@@ -111,9 +159,9 @@ class SuspenderBase(metaclass=ABCMeta):
             func()
             return
 
-        future: Future = Future()
+        future: Future[object] = Future()
 
-        def call():
+        def call() -> None:
             try:
                 future.set_result(func())
             except BaseException as exc:
@@ -122,7 +170,7 @@ class SuspenderBase(metaclass=ABCMeta):
         RE._loop.call_soon_threadsafe(call)
         future.result(timeout=SUBSCRIPTION_TIMEOUT)
 
-    def remove(self):
+    def remove(self) -> None:
         """Disable the suspender
 
         Removes the callback at the pyepics level
@@ -141,7 +189,7 @@ class SuspenderBase(metaclass=ABCMeta):
             self._tripped = False
 
     @abstractmethod
-    def _should_suspend(self, value):
+    def _should_suspend(self, value: T) -> bool:
         """
         Determine if the current value of the signal is such
         that we need to tell the scan to suspend
@@ -160,7 +208,7 @@ class SuspenderBase(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def _should_resume(self, value):
+    def _should_resume(self, value: T) -> bool:
         """
         Determine if the scan is ready to automatically
         restart.
@@ -178,21 +226,27 @@ class SuspenderBase(metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def __call__(self, value, **kwargs):
-        """Make the class callable so that we can
-        pass it off to the ophyd callback stack.
+    def __call__(self, value: T | dict[str, Reading[T]], **kwargs: Any) -> None:
+        """Receive a new value from the watched signal.
 
-        This expects the massive blob that comes from ophyd
+        The signal calls this, not the user. An ophyd-style signal passes the
+        value itself, plus keyword arguments (``old_value``, ``timestamp``, ...)
+        that are ignored here. A `Subscribable` signal passes a single
+        ``{name: Reading}`` dict, which is unwrapped to the reading's value.
         """
         with self._lock:
             if self.RE is None:
                 return
             loop = self.RE._loop
+            # Which form arrived depends on how install() subscribed, not on the
+            # value's type: T could itself be a dict.
             if self._implements_protocol:
-                # Subscribable calls back with {name: Reading}
-                value = value[self._sig.name]["value"]
-            self._last_value = value
-            if self._should_suspend(value):
+                reading = cast(dict[str, Reading[T]], value)[self._sig.name]
+                signal_value = reading["value"]
+            else:
+                signal_value = cast(T, value)
+            self._last_value = signal_value
+            if self._should_suspend(signal_value):
                 self._tripped = True
                 # this does dirty things with internal state
                 if self._ev is None and self.RE is not None:
@@ -208,11 +262,11 @@ class SuspenderBase(metaclass=ABCMeta):
                     )
                     if self.RE.state.is_running:
                         loop.call_soon_threadsafe(cb)
-            elif self._should_resume(value):
+            elif self._should_resume(signal_value):
                 self.__set_event(loop)
                 self._tripped = False
 
-    def __make_event(self):
+    def __make_event(self) -> asyncio.Event | None:
         """Make or return the asyncio.Event to use as a bridge."""
         assert self._lock.locked()
         if self._ev is None and self.RE is not None:
@@ -222,7 +276,7 @@ class SuspenderBase(metaclass=ABCMeta):
             else:
                 th_ev = threading.Event()
 
-                def really_make_the_event():
+                def really_make_the_event() -> None:
                     self._ev = asyncio.Event()
                     th_ev.set()
 
@@ -231,14 +285,14 @@ class SuspenderBase(metaclass=ABCMeta):
                     h.cancel()
         return self._ev
 
-    def __set_event(self, loop):
+    def __set_event(self, loop: asyncio.AbstractEventLoop) -> None:
         """Notify the event that it can resume"""
         assert self._lock.locked()
         if self._ev:
             ev = self._ev
             sleep = self._sleep
 
-            def local():
+            def local() -> None:
                 ts = (datetime.now() + timedelta(seconds=sleep)).strftime("%Y-%m-%d %H:%M:%S")
                 print(
                     f"Suspender {self!r} reports a return to nominal "
@@ -254,7 +308,7 @@ class SuspenderBase(metaclass=ABCMeta):
         # clear that we have an event
         self._ev = None
 
-    def get_futures(self):
+    def get_futures(self) -> tuple[list[Callable[[], Awaitable[Any]]], str]:
         """Return a list of futures to wait on.
 
         This will only work correctly if this suspender is 'installed'
@@ -271,13 +325,16 @@ class SuspenderBase(metaclass=ABCMeta):
         if not self.tripped:
             return [], ""
         with self._lock:
-            return [self.__make_event().wait], self._get_justification()
+            ev = self.__make_event()
+            if ev is None:
+                raise RuntimeError("Could not create the suspender event")
+            return [ev.wait], self._get_justification()
 
     @property
-    def tripped(self):
+    def tripped(self) -> bool:
         return self._tripped
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
@@ -286,13 +343,13 @@ class SuspenderBase(metaclass=ABCMeta):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class SuspendBoolHigh(SuspenderBase):
+class SuspendBoolHigh(SuspenderBase[T]):
     """
     Suspend when a boolean signal goes high; resume when it goes low.
 
     Parameters
     ----------
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -307,13 +364,13 @@ class SuspendBoolHigh(SuspenderBase):
             a generator, list, or similar containing `Msg` objects
     """
 
-    def _should_suspend(self, value):
+    def _should_suspend(self, value: T) -> bool:
         return bool(value)
 
-    def _should_resume(self, value):
+    def _should_resume(self, value: T) -> bool:
         return not bool(value)
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
@@ -321,13 +378,13 @@ class SuspendBoolHigh(SuspenderBase):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class SuspendBoolLow(SuspenderBase):
+class SuspendBoolLow(SuspenderBase[T]):
     """
     Suspend when a boolean signal goes low; resume when it goes high.
 
     Parameters
     ----------
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -342,13 +399,13 @@ class SuspendBoolLow(SuspenderBase):
             a generator, list, or similar containing `Msg` objects
     """
 
-    def _should_suspend(self, value):
+    def _should_suspend(self, value: T) -> bool:
         return not bool(value)
 
-    def _should_resume(self, value):
+    def _should_resume(self, value: T) -> bool:
         return bool(value)
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
@@ -356,38 +413,45 @@ class SuspendBoolLow(SuspenderBase):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class _Threshold(SuspenderBase):
+class _Threshold(SuspenderBase[_NumT]):
     """
     Private base class for suspenders that watch when a scalar
     signal fall above or below a threshold.  Allow for a possibly different
     threshold to resume.
     """
 
-    def __init__(self, signal, suspend_thresh, *, resume_thresh=None, **kwargs):
+    def __init__(
+        self,
+        signal: SuspenderSignal[_NumT],
+        suspend_thresh: float,
+        *,
+        resume_thresh: float | None = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(signal, **kwargs)
         self._suspend_thresh = suspend_thresh
         if resume_thresh is None:
             resume_thresh = suspend_thresh
-        self._resume_thresh = resume_thresh
+        self._resume_thresh: float = resume_thresh
         self._validate()
 
-    def _should_suspend(self, value):
+    def _should_suspend(self, value: _NumT) -> bool:
         return self._op(value, self._suspend_thresh)
 
-    def _should_resume(self, value):
+    def _should_resume(self, value: _NumT) -> bool:
         return not self._op(value, self._resume_thresh)
 
     @property
     @abstractmethod
-    def _op(self):
+    def _op(self) -> Callable[[Any, Any], bool]:
         pass
 
     @abstractmethod
-    def _validate(self):
+    def _validate(self) -> None:
         pass
 
 
-class SuspendFloor(_Threshold):
+class SuspendFloor(_Threshold[_NumT]):
     """
     Suspend when a scalar falls below a threshold.
 
@@ -396,7 +460,7 @@ class SuspendFloor(_Threshold):
 
     Parameters
     ----------
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -418,7 +482,7 @@ class SuspendFloor(_Threshold):
             a generator, list, or similar containing `Msg` objects
     """
 
-    def _validate(self):
+    def _validate(self) -> None:
         if self._resume_thresh < self._suspend_thresh:
             raise ValueError(
                 "Resume threshold must be equal or greater "
@@ -427,10 +491,10 @@ class SuspendFloor(_Threshold):
             )
 
     @property
-    def _op(self):
+    def _op(self) -> Callable[[Any, Any], bool]:
         return operator.lt
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
@@ -442,7 +506,7 @@ class SuspendFloor(_Threshold):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class SuspendCeil(_Threshold):
+class SuspendCeil(_Threshold[_NumT]):
     """
     Suspend when a scalar rises above a threshold.
 
@@ -451,7 +515,7 @@ class SuspendCeil(_Threshold):
 
     Parameters
     ----------
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -473,7 +537,7 @@ class SuspendCeil(_Threshold):
             a generator, list, or similar containing `Msg` objects
     """
 
-    def _validate(self):
+    def _validate(self) -> None:
         if self._resume_thresh > self._suspend_thresh:
             raise ValueError(
                 "Resume threshold must be equal or less "
@@ -482,10 +546,10 @@ class SuspendCeil(_Threshold):
             )
 
     @property
-    def _op(self):
+    def _op(self) -> Callable[[Any, Any], bool]:
         return operator.gt
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
@@ -497,13 +561,13 @@ class SuspendCeil(_Threshold):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class _SuspendBandBase(SuspenderBase):
+class _SuspendBandBase(SuspenderBase[_NumT]):
     """
     Private base-class for suspenders based on keeping a scalar inside
     or outside of a band
     """
 
-    def __init__(self, signal, band_bottom, band_top, **kwargs):
+    def __init__(self, signal: SuspenderSignal[_NumT], band_bottom: float, band_top: float, **kwargs: Any) -> None:
         super().__init__(signal, **kwargs)
         if not band_bottom < band_top:
             raise ValueError(
@@ -515,13 +579,13 @@ class _SuspendBandBase(SuspenderBase):
         self._top = band_top
 
 
-class SuspendWhenOutsideBand(_SuspendBandBase):
+class SuspendWhenOutsideBand(_SuspendBandBase[_NumT]):
     """
     Suspend when a scalar signal leaves a given band of values.
 
     Parameters
     ----------
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -540,13 +604,13 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
             a generator, list, or similar containing `Msg` objects
     """
 
-    def _should_resume(self, value):
+    def _should_resume(self, value: _NumT) -> bool:
         return self._bot < value < self._top
 
-    def _should_suspend(self, value):
+    def _should_suspend(self, value: _NumT) -> bool:
         return not (self._bot < value < self._top)
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
@@ -556,16 +620,16 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class SuspendInBand(SuspendWhenOutsideBand):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class SuspendInBand(SuspendWhenOutsideBand[_NumT]):
+    def __init__(self, signal: SuspenderSignal[_NumT], band_bottom: float, band_top: float, **kwargs: Any) -> None:
+        super().__init__(signal, band_bottom, band_top, **kwargs)
         warn(  # noqa: B028
             "SuspendInBand has been renamed SuspendWhenOutsideBand to make "
             "its meaning more clear. Its behavior has not changed."
         )
 
 
-class SuspendOutBand(_SuspendBandBase):
+class SuspendOutBand(_SuspendBandBase[_NumT]):
     """
     Suspend when a scalar signal enters a given band of values.
 
@@ -574,7 +638,7 @@ class SuspendOutBand(_SuspendBandBase):
     Parameters
     ----------
 
-    signal : `ophyd.Signal`
+    signal : `ophyd.Signal` or `bluesky.protocols.Subscribable`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -593,17 +657,17 @@ class SuspendOutBand(_SuspendBandBase):
             a generator, list, or similar containing `Msg` objects
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, signal: SuspenderSignal[_NumT], band_bottom: float, band_top: float, **kwargs: Any) -> None:
         warn("bluesky.suspenders.SuspendOutBand is deprecated.")  # noqa: B028
-        super().__init__(*args, **kwargs)
+        super().__init__(signal, band_bottom, band_top, **kwargs)
 
-    def _should_resume(self, value):
+    def _should_resume(self, value: _NumT) -> bool:
         return not (self._bot < value < self._top)
 
-    def _should_suspend(self, value):
+    def _should_suspend(self, value: _NumT) -> bool:
         return self._bot < value < self._top
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
@@ -613,7 +677,7 @@ class SuspendOutBand(_SuspendBandBase):
         return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
-class SuspendWhenChanged(SuspenderBase):
+class SuspendWhenChanged(SuspenderBase[T]):
     """
     Suspend when the monitored value deviates from the expected.
 
@@ -719,23 +783,23 @@ class SuspendWhenChanged(SuspenderBase):
 
     def __init__(
         self,
-        signal,
+        signal: SuspenderSignal[T],
         *,
-        expected_value=None,
-        allow_resume=False,
-        sleep=0,
-        pre_plan=None,
-        post_plan=None,
-        tripped_message="",
-        **kwargs,
-    ):
+        expected_value: T | None = None,
+        allow_resume: bool = False,
+        sleep: float = 0,
+        pre_plan: SuspenderPlan = None,
+        post_plan: SuspenderPlan = None,
+        tripped_message: str = "",
+        **kwargs: Any,
+    ) -> None:
         self.expected_value = expected_value
         self.allow_resume = allow_resume
         super().__init__(
             signal, sleep=sleep, pre_plan=pre_plan, post_plan=post_plan, tripped_message=tripped_message, **kwargs
         )
 
-    def _should_suspend(self, value):
+    def _should_suspend(self, value: T) -> bool:
         if self.expected_value is None:
             # Latched on install, from the reading both subscription styles call
             # back with before `install` returns. Reading an ophyd signal in
@@ -744,10 +808,10 @@ class SuspendWhenChanged(SuspenderBase):
             self.expected_value = value
         return value != self.expected_value
 
-    def _should_resume(self, value):
+    def _should_resume(self, value: T) -> bool:
         return self.allow_resume and value == self.expected_value
 
-    def _get_justification(self):
+    def _get_justification(self) -> str:
         if not self.tripped:
             return ""
 
