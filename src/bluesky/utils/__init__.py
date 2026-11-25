@@ -610,9 +610,12 @@ class _BoundMethodProxy:
         self._destroy_callbacks = []
         cb_self = getattr(cb, "__self__", None)
 
-        if cb_self is None:
-            # 'cb' is a function, callable object or static method.
-            # No weak reference is created, strong reference is stored instead.
+        if not isinstance(cb, types.MethodType):
+            # 'cb' is a function, callable object, partial, lambda, static method
+            # or builtin. Builtins such as print have a __self__ (their module)
+            # but are not bound methods and have no __func__, so test the type
+            # rather than for __self__. No weak reference is created, strong
+            # reference is stored instead.
             self.inst = None
             self.func = cb
             self.klass = None

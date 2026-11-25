@@ -1,6 +1,10 @@
 import asyncio
+import contextlib
+import functools
 import gc
+import io
 import operator
+import sys
 import time
 import warnings
 from enum import Enum
@@ -14,7 +18,7 @@ from cycler import cycler
 from bluesky import RunEngineInterrupted
 from bluesky.plan_stubs import complete_all, mv
 from bluesky.preprocessors import pchain
-from bluesky.run_engine import WaitForTimeoutError
+from bluesky.run_engine import DocumentNames, WaitForTimeoutError
 from bluesky.utils import (
     AsyncInput,
     CallbackRegistry,
@@ -521,6 +525,247 @@ def test_CallbackRegistry_bound_method_still_unsubscribes_on_death():
     gc.collect()
 
     assert "sig" not in reg.callbacks
+
+
+@pytest.mark.parametrize(
+    "make_callback",
+    [
+        pytest.param(lambda sink: print, id="builtin_function"),
+        pytest.param(lambda sink: sink.write, id="bound_builtin_method"),
+        pytest.param(lambda sink: functools.partial(print, file=sink), id="partial"),
+    ],
+)
+def test_CallbackRegistry_connects_builtins_and_partials(make_callback):
+    """Callables that are not bound methods can be connected and called (#2117)."""
+    sink = io.StringIO()
+    callback = make_callback(sink)
+    reg = CallbackRegistry()
+
+    cid = reg.connect("sig", callback)
+    # redirect_stdout is how the builtin print reaches the sink
+    with contextlib.redirect_stdout(sink):
+        reg.process("sig", "called")
+    assert sink.getvalue().count("called") == 1
+
+    reg.disconnect(cid)
+    with contextlib.redirect_stdout(sink):
+        reg.process("sig", "again")
+    assert "again" not in sink.getvalue()
+
+
+def test_CallbackRegistry_connect_while_other_subscribers_die():
+    """Connect a callback while other subscribers' instances die during the duplicate check."""
+
+    class Subscriber:
+        def cb(self, *args):
+            pass
+
+    class ReleasingCallback:
+        def __init__(self, held):
+            self.held = held
+            self.calls = []
+
+        def __call__(self, *args):
+            self.calls.append(args)
+
+        # The comparison stands in for anything that runs during the duplicate
+        # check and frees an instance, such as a garbage collection or another thread.
+        def __eq__(self, other):
+            self.held.clear()
+            return NotImplemented
+
+        __hash__ = object.__hash__
+
+    held = [Subscriber() for _ in range(3)]
+    reg = CallbackRegistry()
+    for subscriber in held:
+        reg.connect("sig", subscriber.cb)
+
+    callback = ReleasingCallback(held)
+    reg.connect("sig", callback)
+    reg.process("sig", "doc")
+
+    assert callback.calls == [("doc",)]
+
+
+def test_CallbackRegistry_disconnect_frees_owner_of_other_subscriber():
+    """Disconnect a callback whose release unsubscribes a bound method on another signal."""
+
+    class Plot:
+        def event(self, *args):
+            pass
+
+    class Owner:
+        def __init__(self):
+            self.plot = Plot()
+
+        def __call__(self, *args):
+            pass
+
+    reg = CallbackRegistry()
+    owner = Owner()
+    cid = reg.connect("start", owner)
+    reg.connect("event", owner.plot.event)
+    owner = None
+
+    reg.disconnect(cid)
+
+    assert not any(reg.callbacks.values())
+
+
+def test_CallbackRegistry_connect_while_sole_subscriber_dies_is_not_lost():
+    """Connect a callback while the only other subscriber to its signal dies during connect."""
+
+    class Subscriber:
+        def cb(self, *args):
+            pass
+
+    class ReleasingCallback:
+        def __init__(self, held):
+            self.held = held
+            self.calls = []
+
+        def __call__(self, *args):
+            self.calls.append(args)
+
+        # The comparison stands in for anything that runs during connect and
+        # frees an instance, such as a garbage collection or another thread.
+        def __eq__(self, other):
+            self.held.clear()
+            return False
+
+        __hash__ = object.__hash__
+
+    held = [Subscriber()]
+    reg = CallbackRegistry()
+    reg.connect("sig", held[0].cb)
+
+    callback = ReleasingCallback(held)
+    reg.connect("sig", callback)
+    gc.collect()
+    reg.process("sig", "doc")
+
+    assert callback.calls == [("doc",)]
+
+
+class CyclicSubscriber:
+    """Once dropped, only reachable through its own reference cycle."""
+
+    def __init__(self):
+        self.me = self
+
+    def cb(self, *args):
+        pass
+
+
+@pytest.fixture
+def gc_threshold():
+    """The garbage collector's thresholds, restored with the collector enabled after the test."""
+    threshold = gc.get_threshold()
+    yield threshold
+    gc.set_threshold(*threshold)
+    gc.enable()
+
+
+def test_CallbackRegistry_connect_while_collection_frees_sole_subscriber(gc_threshold):
+    """Connect a callback while an automatic collection frees the only other subscriber."""
+    reg = CallbackRegistry()
+    calls = []
+
+    def callback(doc):
+        calls.append(doc)
+
+    gc.collect()
+    gc.disable()
+    reg.connect("sig", CyclicSubscriber().cb)
+    # Collect at the first allocations inside the next connect
+    gc.set_threshold(1)
+    gc.enable()
+    reg.connect("sig", callback)
+    gc.set_threshold(*gc_threshold)
+    assert len(reg.callbacks["sig"]) == 1, "the collection did not free the cyclic subscriber"
+
+    reg.process("sig", "doc")
+    assert calls == ["doc"]
+
+
+def test_RunEngine_subscribe_while_collection_frees_sole_subscriber(RE):
+    """Subscribe while a collection inside the registry's connect frees the only other subscriber."""
+    calls = []
+    RE.subscribe(CyclicSubscriber().cb, "start")
+
+    # Stands in for an automatic collection: collect once, at the first line of
+    # connect that runs after it has made its reference to the new callback.
+    collected = []
+
+    def collect_inside_connect(frame, event, arg):
+        if frame.f_code.co_name != "connect":
+            return None
+
+        def on_line(frame, event, arg):
+            if event == "line" and not collected and ("proxy" in frame.f_locals or "refs" in frame.f_locals):
+                collected.append(True)
+                gc.collect()
+            return on_line
+
+        return on_line
+
+    previous_trace = sys.gettrace()
+    sys.settrace(collect_inside_connect)
+    try:
+        RE.subscribe(lambda name, doc: calls.append(name), "start")
+    finally:
+        sys.settrace(previous_trace)
+
+    RE.dispatcher.process(DocumentNames.start, {})
+    assert collected
+    assert calls == ["start"]
+
+
+class NarrowEqCallback:
+    """Assumes it is only compared with its own type."""
+
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, *args):
+        pass
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    __hash__ = object.__hash__
+
+
+class ElementwiseEqCallback:
+    """Compares like a numpy array."""
+
+    def __call__(self, *args):
+        pass
+
+    def __eq__(self, other):
+        return np.array([True, False])
+
+    __hash__ = object.__hash__
+
+
+@pytest.mark.parametrize(
+    "existing",
+    [
+        pytest.param(NarrowEqCallback("a"), id="narrow_eq"),
+        pytest.param(ElementwiseEqCallback(), id="elementwise_eq"),
+    ],
+)
+def test_CallbackRegistry_connect_after_callback_with_unusual_eq(existing):
+    """Connect a callback after one whose __eq__ only accepts its own type or returns an array."""
+    calls = []
+    reg = CallbackRegistry()
+    reg.connect("sig", existing)
+
+    reg.connect("sig", calls.append)
+    reg.process("sig", "doc")
+
+    assert calls == ["doc"]
 
 
 def test_CallbackRegistry_2():
