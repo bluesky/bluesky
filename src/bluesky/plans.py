@@ -1559,7 +1559,7 @@ def relative_inner_product_scan(  # type: ignore
 def rel_scan(
     detectors: Sequence[Readable],
     *args: Movable | Any,
-    num: int = None,
+    num: int | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
