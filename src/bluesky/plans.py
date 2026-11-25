@@ -554,8 +554,8 @@ def log_scan(
     stop: float,
     num: int,
     *,
-    per_step=None,
-    md=None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
@@ -1308,7 +1308,7 @@ def scan(
 
 def grid_scan(
     detectors: Sequence[Readable],
-    *args,
+    *args: Movable | float | int,
     snake_axes: Iterable | bool | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
@@ -1559,7 +1559,7 @@ def relative_inner_product_scan(  # type: ignore
 def rel_scan(
     detectors: Sequence[Readable],
     *args: Movable | Any,
-    num=None,
+    num: int | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
