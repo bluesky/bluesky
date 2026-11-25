@@ -19,34 +19,44 @@ from bluesky.utils import RequestStop
 
 
 def _validate_start(start, expected_values):
-    """Basic metadata validtion"""
+    """Validate the start document metadata."""
 
-    plan_md_key = [
-        "plan_pattern_module",
-        "plan_pattern_args",
-        "plan_type",
-        "plan_pattern",
-        "plan_name",
-        "num_points",
-        "plan_args",
-        "detectors",
-    ]
+    required_keys = {"plan_type", "plan_name", "num_points", "plan_args", "detectors", "shape", "hints"}
+    for key in required_keys:
+        assert key in start, f"Missing required metadata key: {key!r}"
 
-    for k in plan_md_key:
-        assert k in start
-    for k, v in expected_values.items():
-        assert start[k] == v
+    for key, expected in expected_values.items():
+        actual = start[key]
+        assert actual == expected, (
+            f"Unexpected value for metadata key {key!r}: expected {expected!r}, got {actual!r}"
+        )
 
 
-def test_plan_header(RE, hw):
-    args = []
-
-    ##
-    args.append(
-        (
-            bp.grid_scan([hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9, snake_axes=True),
-            {
-                "motors": ("motor", "motor1", "motor2"),
+@pytest.mark.parametrize(
+    "plan, expected",
+    [
+        pytest.param(
+            lambda hw: bp.count([hw.det], num=10),
+            lambda hw: {
+                "plan_name": "count",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 10,
+                    "delay": 0.0,
+                },
+                "detectors": ["det"],
+                "num_points": 10,
+                "num_intervals": 9,
+                "shape": (10,),
+            },
+            id="count",
+        ),
+        pytest.param(
+            lambda hw: bp.grid_scan(
+                [hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9, snake_axes=True
+            ),
+            lambda hw: {
+                "motors": ["motor", "motor1", "motor2"],
                 "extents": ([1, 2], [4, 5], [7, 8]),
                 "shape": (3, 6, 9),
                 "snaking": (False, True, True),
@@ -54,22 +64,60 @@ def test_plan_header(RE, hw):
                 "plan_pattern": "outer_product",
                 "plan_name": "grid_scan",
             },
-        )
-    )
+            id="grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.inner_product_scan([hw.det], 9, hw.motor, 1, 2, hw.motor1, 4, 5, hw.motor2, 7, 8),
+            lambda hw: {
+                "motors": ["motor", "motor1", "motor2"],
+                "shape": (9,),
+                "plan_name": "inner_product_scan",
+            },
+            id="inner_product_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.list_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6]),
+            lambda hw: {
+                "plan_name": "list_scan",
+                "motors": ["motor", "motor1"],
+                "detectors": ["det"],
+                "num_points": 3,
+                "num_intervals": 2,
+                "shape": (3,),
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6]],
+                    "per_step": "None",
+                },
+            },
+            id="list_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.list_grid_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6, 7]),
+            lambda hw: {
+                "motors": ["motor", "motor1"],
+                "plan_name": "list_grid_scan",
+                "shape": (3, 4),
+            },
+            id="list_grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.log_scan([hw.det], hw.motor, 1, 100, 10),
+            lambda hw: {
+                "plan_name": "log_scan",
+                "motors": ["motor"],
+                "shape": (10,),
+            },
+            id="log_scan",
+        ),
+    ],
+)
+def test_plan_expected_metadata(RE, hw, plan, expected):
+    c = DocCollector()
+    RE(plan(hw), c.insert)
 
-    ##
-    args.append(
-        (
-            bp.inner_product_scan([hw.det], 9, hw.motor, 1, 2, hw.motor1, 4, 5, hw.motor2, 7, 8),
-            {"motors": ("motor", "motor1", "motor2")},
-        )
-    )
-
-    for plan, target in args:
-        c = DocCollector()
-        RE(plan, c.insert)
-        for s in c.start:
-            _validate_start(s, target)
+    for start in c.start:
+        _validate_start(start, expected(hw))
 
 
 def test_ops_dimension_hints(RE, hw):
