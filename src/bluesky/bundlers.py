@@ -641,9 +641,13 @@ class RunBundler:
                 "in a `read()` `save()`."
             )
 
-        # Merge list of readings into single dict.
+        # Merge list of readings into single dict. Sort to match the
+        # descriptor so subscribers can rely on the ordering.
         readings = {k: v for d in self._current_stream_cache.read_cache for k, v in d.items()}
         data, timestamps = _rearrange_into_parallel_dicts(readings)
+        data_key_keys = list(self._descriptors[desc_key].descriptor_doc["data_keys"].keys())
+        data = dict(sorted(data.items(), key=lambda kv: data_key_keys.index(kv[0])))
+        timestamps = dict(sorted(timestamps.items(), key=lambda kv: data_key_keys.index(kv[0])))
         # Mark all externally-stored data as not filled so that consumers
         # know that the corresponding data are identifiers, not dereferenced
         # data.
