@@ -1,3 +1,4 @@
+import threading
 import time
 from contextlib import contextmanager
 
@@ -224,3 +225,92 @@ def test_callback_logging_exceptions(monkeypatch, make_wrapper):
     buff_cb("test", {"data": 123})
     with wait_for_condition(lambda: logger.exception.call_count == 1):
         assert True
+
+
+class BlockingCallback(CallbackBase):
+    """A callback that blocks until released, for exercising flush timeouts."""
+
+    def __init__(self):
+        self.release = threading.Event()
+        self.called = []
+
+    def __call__(self, name, doc):
+        self.release.wait()
+        self.called.append((name, doc))
+
+
+def test_flush_waits_for_processing(make_wrapper):
+    """flush() returns only after all enqueued documents are processed."""
+    cb = SlowDummyCallback(delay=0.02)
+    buff_cb = make_wrapper(cb)
+
+    for i in range(10):
+        buff_cb("event", {"seq_num": i})
+
+    assert buff_cb.flush() is True
+    assert len(cb.called) == 10  # all documents delivered, in order
+    assert [doc["seq_num"] for _, doc in cb.called] == list(range(10))
+
+
+def test_flush_empty_buffer_returns_immediately(make_wrapper):
+    """flush() on an empty buffer is an idempotent no-op, however many times
+    it is called, with or without a timeout."""
+    buff_cb = make_wrapper(SlowDummyCallback(delay=0))
+    for _ in range(3):
+        assert buff_cb.flush(timeout=1) is True
+        assert buff_cb.flush() is True
+    assert buff_cb._thread.is_alive()
+
+
+def test_flush_timeout(make_wrapper):
+    """flush() returns False when the buffer can not drain within the timeout."""
+    cb = BlockingCallback()
+    buff_cb = make_wrapper(cb)
+
+    buff_cb("event", {"seq_num": 0})
+    assert buff_cb.flush(timeout=0.2) is False  # worker is blocked
+
+    cb.release.set()
+    assert buff_cb.flush(timeout=5) is True
+    assert len(cb.called) == 1
+
+
+def test_flush_with_raising_callback(make_wrapper):
+    """Documents whose processing raises still count as processed: flush
+    must not hang on them."""
+    cb = CallbackWithException()
+    buff_cb = make_wrapper(cb)
+
+    for _ in range(5):
+        buff_cb("event", {})
+    assert buff_cb.flush(timeout=5) is True
+    assert buff_cb._thread.is_alive()
+
+
+def test_flush_after_shutdown(make_wrapper):
+    """After a clean shutdown everything has been processed; flush returns True."""
+    cb = SlowDummyCallback(delay=0.01)
+    buff_cb = make_wrapper(cb)
+    for i in range(5):
+        buff_cb("event", {"seq_num": i})
+    buff_cb.shutdown(wait=True)
+
+    assert buff_cb.flush(timeout=1) is True
+    assert buff_cb.flush(timeout=1) is True  # repeated calls remain safe
+    assert len(cb.called) == 5
+
+
+def test_read_after_write_pattern(make_wrapper):
+    """The canonical use: write documents, flush, then read back."""
+    store = {}
+
+    def writer(name, doc):
+        if name == "stop":
+            store[doc["run_start"]] = "complete"
+
+    buff_cb = make_wrapper(writer)
+    buff_cb("start", {"uid": "abc"})
+    buff_cb("stop", {"run_start": "abc"})
+
+    assert buff_cb.flush(timeout=5) is True
+    assert store.get("abc") == "complete"  # guaranteed visible after flush
