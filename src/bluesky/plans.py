@@ -468,6 +468,7 @@ def _scan_1d(
         "motors": [motor.name],
         "num_points": num,
         "num_intervals": num - 1,
+        "shape": (num,),
         "plan_args": {
             "detectors": list(map(repr, detectors)),
             "num": num,
@@ -1082,7 +1083,7 @@ def scan_nd(
         "motors": [motor.name for motor in cycler.keys],
         "num_points": len(cycler),
         "num_intervals": len(cycler) - 1,
-        "shape": tuple(len(positions) for positions in cycler.by_key().values()),
+        "shape": (len(cycler),),
         "plan_args": {
             "detectors": list(map(repr, detectors)),
             "cycler": repr(cycler),
@@ -1277,6 +1278,7 @@ def scan(
             "args": md_args,
             "per_step": repr(per_step),
         },
+        "shape": (num,),
         "plan_name": "scan",
         "plan_pattern": "inner_product",
         "plan_pattern_module": plan_patterns.__name__,

@@ -9,10 +9,12 @@ import numpy.testing as npt
 import packaging
 import pandas as pd
 import pytest
+from cycler import cycler
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
+from bluesky import plan_patterns
 from bluesky.plan_patterns import chunk_outer_product_args, outer_product
 from bluesky.tests.utils import DocCollector, MsgCollector
 from bluesky.utils import RequestStop
@@ -24,6 +26,11 @@ def _validate_start(start, expected_values):
     required_keys = {"plan_type", "plan_name", "num_points", "plan_args", "detectors", "shape", "hints"}
     for key in required_keys:
         assert key in start, f"Missing required metadata key: {key!r}"
+
+    # The shape must describe the same number of points as num_points
+    assert int(np.prod(start["shape"])) == start["num_points"], (
+        f"shape {start['shape']!r} is inconsistent with num_points {start['num_points']!r}"
+    )
 
     for key, expected in expected_values.items():
         actual = start[key]
@@ -110,14 +117,187 @@ def _validate_start(start, expected_values):
             },
             id="log_scan",
         ),
+        pytest.param(
+            lambda hw: bp.rel_log_scan([hw.det], hw.motor, 1, 100, 10),
+            lambda hw: {
+                "plan_name": "rel_log_scan",
+                "motors": ["motor"],
+                "num_points": 10,
+                "shape": (10,),
+            },
+            id="rel_log_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.scan([hw.det], hw.motor, 1, 2, 5),
+            lambda hw: {
+                "plan_name": "scan",
+                "motors": ["motor"],
+                "detectors": ["det"],
+                "num_points": 5,
+                "num_intervals": 4,
+                "shape": (5,),
+            },
+            id="scan_1d",
+        ),
+        pytest.param(
+            lambda hw: bp.scan([hw.det], hw.motor, 1, 2, hw.motor1, 3, 4, num=5),
+            lambda hw: {
+                "plan_name": "scan",
+                "motors": ["motor", "motor1"],
+                "num_points": 5,
+                "shape": (5,),
+            },
+            id="scan_2_motors",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_scan([hw.det], hw.motor, -1, 1, 5),
+            lambda hw: {
+                "plan_name": "rel_scan",
+                "motors": ["motor"],
+                "num_points": 5,
+                "shape": (5,),
+            },
+            id="rel_scan_1d",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_scan([hw.det], hw.motor, -1, 1, hw.motor1, -2, 2, 5),
+            lambda hw: {
+                "plan_name": "rel_scan",
+                "motors": ["motor", "motor1"],
+                "num_points": 5,
+                "shape": (5,),
+            },
+            id="rel_scan_2_motors",
+        ),
+        pytest.param(
+            lambda hw: bp.relative_inner_product_scan([hw.det], 7, hw.motor, -1, 1, hw.motor1, -2, 2),
+            lambda hw: {
+                "motors": ["motor", "motor1"],
+                "num_points": 7,
+                "shape": (7,),
+            },
+            id="relative_inner_product_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.grid_scan([hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 4),
+            lambda hw: {
+                "plan_name": "grid_scan",
+                "motors": ["motor", "motor1"],
+                "num_points": 12,
+                "shape": (3, 4),
+                "extents": ([1, 2], [4, 5]),
+                "snaking": (False, False),
+            },
+            id="grid_scan_no_snake",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_grid_scan([hw.det], hw.motor, -1, 1, 3, hw.motor1, -2, 2, 4),
+            lambda hw: {
+                "plan_name": "rel_grid_scan",
+                "motors": ["motor", "motor1"],
+                "num_points": 12,
+                "shape": (3, 4),
+            },
+            id="rel_grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_list_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6]),
+            lambda hw: {
+                "plan_name": "rel_list_scan",
+                "motors": ["motor", "motor1"],
+                "num_points": 3,
+                "shape": (3,),
+            },
+            id="rel_list_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_list_grid_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6, 7]),
+            lambda hw: {
+                "plan_name": "rel_list_grid_scan",
+                "motors": ["motor", "motor1"],
+                "num_points": 12,
+                "shape": (3, 4),
+            },
+            id="rel_list_grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.scan_nd([hw.det], cycler(hw.motor, [1, 2, 3]) * cycler(hw.motor1, [4, 5])),
+            lambda hw: {
+                "plan_name": "scan_nd",
+                "motors": ["motor", "motor1"],
+                "num_points": 6,
+                "num_intervals": 5,
+                "shape": (6,),
+            },
+            id="scan_nd_outer_product",
+        ),
+        pytest.param(
+            lambda hw: bp.scan_nd([hw.det], cycler(hw.motor, [1, 2, 3]) + cycler(hw.motor1, [4, 5, 6])),
+            lambda hw: {
+                "plan_name": "scan_nd",
+                "motors": ["motor", "motor1"],
+                "num_points": 3,
+                "shape": (3,),
+            },
+            id="scan_nd_inner_product",
+        ),
+        pytest.param(
+            lambda hw: bp.spiral([hw.det], hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 10),
+            lambda hw: {
+                "plan_name": "spiral",
+                "shape": (len(plan_patterns.spiral(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 10)),),
+            },
+            id="spiral",
+        ),
+        pytest.param(
+            lambda hw: bp.spiral_fermat([hw.det], hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 2),
+            lambda hw: {
+                "plan_name": "spiral_fermat",
+                "shape": (len(plan_patterns.spiral_fermat(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 2)),),
+            },
+            id="spiral_fermat",
+        ),
+        pytest.param(
+            lambda hw: bp.spiral_square([hw.det], hw.motor1, hw.motor2, 0, 0, 1, 2, 5, 7),
+            lambda hw: {
+                "plan_name": "spiral_square",
+                "num_points": 35,
+                "shape": (7, 5),
+            },
+            id="spiral_square",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_spiral_square([hw.det], hw.motor1, hw.motor2, 1, 2, 5, 7),
+            lambda hw: {
+                "plan_name": "rel_spiral_square",
+                "num_points": 35,
+                "shape": (7, 5),
+            },
+            id="rel_spiral_square",
+        ),
+        pytest.param(
+            lambda hw: bp.x2x_scan([hw.det], hw.motor1, hw.motor2, -1, 1, 5),
+            lambda hw: {
+                "plan_name": "x2x_scan",
+                "motors": ["motor1", "motor2"],
+                "num_points": 5,
+                "shape": (5,),
+            },
+            id="x2x_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.grid_scan([hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 4, md={"shape": (12,)}),
+            lambda hw: {"shape": (12,)},
+            id="user_md_overrides_shape",
+        ),
     ],
 )
 def test_plan_expected_metadata(RE, hw, plan, expected):
     c = DocCollector()
     RE(plan(hw), c.insert)
 
-    for start in c.start:
-        _validate_start(start, expected(hw))
+    assert len(c.start) == 1
+    _validate_start(c.start[0], expected(hw))
 
 
 def test_ops_dimension_hints(RE, hw):
