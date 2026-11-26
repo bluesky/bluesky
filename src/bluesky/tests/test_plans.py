@@ -9,67 +9,753 @@ import numpy.testing as npt
 import packaging
 import pandas as pd
 import pytest
+from cycler import cycler
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
+from bluesky import plan_patterns
 from bluesky.plan_patterns import chunk_outer_product_args, outer_product
 from bluesky.tests.utils import DocCollector, MsgCollector
 from bluesky.utils import RequestStop
 
 
 def _validate_start(start, expected_values):
-    """Basic metadata validtion"""
+    """Validate the start document metadata.
 
-    plan_md_key = [
-        "plan_pattern_module",
-        "plan_pattern_args",
-        "plan_type",
-        "plan_pattern",
-        "plan_name",
-        "num_points",
-        "plan_args",
-        "detectors",
-    ]
+    Expected values given as a ``set`` are compared ignoring order. This is for
+    metadata such as ``motors`` from ``scan_nd``, which is built from
+    ``cycler.keys`` (a set) and so has no guaranteed order.
+    """
 
-    for k in plan_md_key:
-        assert k in start
-    for k, v in expected_values.items():
-        assert start[k] == v
+    required_keys = {"plan_type", "plan_name", "num_points", "plan_args", "detectors", "shape", "hints"}
+    for key in required_keys:
+        assert key in start, f"Missing required metadata key: {key!r}"
+
+    assert start["plan_type"] == "generator"
+
+    # The shape must describe the same number of points as num_points
+    assert int(np.prod(start["shape"])) == start["num_points"], (
+        f"shape {start['shape']!r} is inconsistent with num_points {start['num_points']!r}"
+    )
+    if "num_intervals" in start:
+        assert start["num_intervals"] == start["num_points"] - 1
+
+    for key, expected in expected_values.items():
+        assert key in start, f"Missing expected metadata key: {key!r}"
+        actual = start[key]
+        if isinstance(expected, set):
+            actual = set(actual)
+        assert actual == expected, (
+            f"Unexpected value for metadata key {key!r}: expected {expected!r}, got {actual!r}"
+        )
 
 
-def test_plan_header(RE, hw):
-    args = []
-
-    ##
-    args.append(
-        (
-            bp.grid_scan([hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9, snake_axes=True),
-            {
-                "motors": ("motor", "motor1", "motor2"),
+@pytest.mark.parametrize(
+    "plan, expected",
+    [
+        pytest.param(
+            lambda hw: bp.count([hw.det], num=10),
+            lambda hw: {
+                "plan_name": "count",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 10,
+                    "delay": 0.0,
+                },
+                "detectors": ["det"],
+                "num_points": 10,
+                "num_intervals": 9,
+                "shape": (10,),
+                "hints": {"dimensions": [(("time",), "primary")]},
+            },
+            id="count",
+        ),
+        pytest.param(
+            lambda hw: bp.scan([hw.det], hw.motor, 1, 2, 5),
+            lambda hw: {
+                "plan_name": "scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 5,
+                    "args": [repr(hw.motor), 1, 2],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"num": 5, "args": [repr(hw.motor), 1, 2]},
+                "detectors": ["det"],
+                "motors": ["motor"],
+                "num_points": 5,
+                "num_intervals": 4,
+                "shape": (5,),
+                "hints": {"dimensions": [(["motor"], "primary")]},
+            },
+            id="scan_1d",
+        ),
+        pytest.param(
+            lambda hw: bp.scan([hw.det], hw.motor, 1, 2, hw.motor1, 3, 4, num=5),
+            lambda hw: {
+                "plan_name": "scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 5,
+                    "args": [repr(hw.motor), 1, 2, repr(hw.motor1), 3, 4],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"num": 5, "args": [repr(hw.motor), 1, 2, repr(hw.motor1), 3, 4]},
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 5,
+                "num_intervals": 4,
+                "shape": (5,),
+                # All motors move together, so they share a single dimension
+                "hints": {"dimensions": [(["motor", "motor1"], "primary")]},
+            },
+            id="scan_2_motors",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_scan([hw.det], hw.motor, -1, 1, 5),
+            lambda hw: {
+                "plan_name": "rel_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 5,
+                    "args": [repr(hw.motor), -1, 1],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"num": 5, "args": [repr(hw.motor), -1, 1]},
+                "detectors": ["det"],
+                "motors": ["motor"],
+                "num_points": 5,
+                "num_intervals": 4,
+                "shape": (5,),
+                "hints": {"dimensions": [(["motor"], "primary")]},
+            },
+            id="rel_scan_1d",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_scan([hw.det], hw.motor, -1, 1, hw.motor1, -2, 2, 5),
+            lambda hw: {
+                "plan_name": "rel_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 5,
+                    "args": [repr(hw.motor), -1, 1, repr(hw.motor1), -2, 2],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"num": 5, "args": [repr(hw.motor), -1, 1, repr(hw.motor1), -2, 2]},
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 5,
+                "num_intervals": 4,
+                "shape": (5,),
+                "hints": {"dimensions": [(["motor", "motor1"], "primary")]},
+            },
+            id="rel_scan_2_motors",
+        ),
+        pytest.param(
+            lambda hw: bp.inner_product_scan([hw.det], 9, hw.motor, 1, 2, hw.motor1, 4, 5, hw.motor2, 7, 8),
+            lambda hw: {
+                "plan_name": "inner_product_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 9,
+                    "args": [repr(hw.motor), 1, 2, repr(hw.motor1), 4, 5, repr(hw.motor2), 7, 8],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {
+                    "num": 9,
+                    "args": [repr(hw.motor), 1, 2, repr(hw.motor1), 4, 5, repr(hw.motor2), 7, 8],
+                },
+                "detectors": ["det"],
+                "motors": ["motor", "motor1", "motor2"],
+                "num_points": 9,
+                "num_intervals": 8,
+                "shape": (9,),
+                "hints": {"dimensions": [(["motor", "motor1", "motor2"], "primary")]},
+            },
+            id="inner_product_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.relative_inner_product_scan([hw.det], 7, hw.motor, -1, 1, hw.motor1, -2, 2),
+            lambda hw: {
+                "plan_name": "relative_inner_product_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 7,
+                    "args": [repr(hw.motor), -1, 1, repr(hw.motor1), -2, 2],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"num": 7, "args": [repr(hw.motor), -1, 1, repr(hw.motor1), -2, 2]},
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 7,
+                "num_intervals": 6,
+                "shape": (7,),
+                "hints": {"dimensions": [(["motor", "motor1"], "primary")]},
+            },
+            id="relative_inner_product_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.grid_scan(
+                [hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9, snake_axes=True
+            ),
+            lambda hw: {
+                "plan_name": "grid_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    # snake flags only appear after the first (slowest) motor
+                    "args": [
+                        repr(hw.motor),
+                        1,
+                        2,
+                        3,
+                        repr(hw.motor1),
+                        4,
+                        5,
+                        6,
+                        True,
+                        repr(hw.motor2),
+                        7,
+                        8,
+                        9,
+                        True,
+                    ],
+                    "per_step": "None",
+                },
+                "plan_pattern": "outer_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {
+                    "args": [
+                        repr(hw.motor),
+                        1,
+                        2,
+                        3,
+                        repr(hw.motor1),
+                        4,
+                        5,
+                        6,
+                        True,
+                        repr(hw.motor2),
+                        7,
+                        8,
+                        9,
+                        True,
+                    ]
+                },
+                "detectors": ["det"],
+                "motors": ["motor", "motor1", "motor2"],
+                "num_points": 162,
+                "num_intervals": 161,
                 "extents": ([1, 2], [4, 5], [7, 8]),
                 "shape": (3, 6, 9),
                 "snaking": (False, True, True),
-                "plan_pattern_module": "bluesky.plan_patterns",
-                "plan_pattern": "outer_product",
-                "plan_name": "grid_scan",
+                "hints": {
+                    "dimensions": [(["motor"], "primary"), (["motor1"], "primary"), (["motor2"], "primary")],
+                    "gridding": "rectilinear",
+                },
             },
-        )
-    )
+            id="grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.grid_scan([hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 4),
+            lambda hw: {
+                "plan_name": "grid_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "args": [repr(hw.motor), 1, 2, 3, repr(hw.motor1), 4, 5, 4, False],
+                    "per_step": "None",
+                },
+                "plan_pattern": "outer_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"args": [repr(hw.motor), 1, 2, 3, repr(hw.motor1), 4, 5, 4, False]},
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 12,
+                "num_intervals": 11,
+                "extents": ([1, 2], [4, 5]),
+                "shape": (3, 4),
+                "snaking": (False, False),
+                "hints": {
+                    "dimensions": [(["motor"], "primary"), (["motor1"], "primary")],
+                    "gridding": "rectilinear",
+                },
+            },
+            id="grid_scan_no_snake",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_grid_scan([hw.det], hw.motor, -1, 1, 3, hw.motor1, -2, 2, 4),
+            lambda hw: {
+                "plan_name": "rel_grid_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "args": [repr(hw.motor), -1, 1, 3, repr(hw.motor1), -2, 2, 4, False],
+                    "per_step": "None",
+                },
+                "plan_pattern": "outer_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"args": [repr(hw.motor), -1, 1, 3, repr(hw.motor1), -2, 2, 4, False]},
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 12,
+                "num_intervals": 11,
+                # Extents are relative to the starting position
+                "extents": ([-1, 1], [-2, 2]),
+                "shape": (3, 4),
+                "snaking": (False, False),
+                "hints": {
+                    "dimensions": [(["motor"], "primary"), (["motor1"], "primary")],
+                    "gridding": "rectilinear",
+                },
+            },
+            id="rel_grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.list_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6]),
+            lambda hw: {
+                "plan_name": "list_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6]],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_list_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6]]},
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 3,
+                "num_intervals": 2,
+                "shape": (3,),
+                "hints": {"dimensions": [(["motor", "motor1"], "primary")]},
+            },
+            id="list_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_list_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6]),
+            lambda hw: {
+                "plan_name": "rel_list_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6]],
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_list_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {"args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6]]},
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 3,
+                "num_intervals": 2,
+                "shape": (3,),
+                "hints": {"dimensions": [(["motor", "motor1"], "primary")]},
+            },
+            id="rel_list_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.list_grid_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6, 7]),
+            lambda hw: {
+                "plan_name": "list_grid_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6, 7]],
+                    "per_step": "None",
+                },
+                "plan_pattern": "outer_list_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {
+                    "args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6, 7]],
+                    "snake_axes": "False",
+                },
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 12,
+                "num_intervals": 11,
+                "extents": ([1, 3], [4, 7]),
+                "shape": (3, 4),
+                "snake_axes": "False",
+                "hints": {"dimensions": [(["motor"], "primary"), (["motor1"], "primary")]},
+            },
+            id="list_grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_list_grid_scan([hw.det], hw.motor, [1, 2, 3], hw.motor1, [4, 5, 6, 7]),
+            lambda hw: {
+                "plan_name": "rel_list_grid_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6, 7]],
+                    "per_step": "None",
+                },
+                "plan_pattern": "outer_list_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {
+                    "args": [repr(hw.motor), [1, 2, 3], repr(hw.motor1), [4, 5, 6, 7]],
+                    "snake_axes": "False",
+                },
+                "detectors": ["det"],
+                "motors": ["motor", "motor1"],
+                "num_points": 12,
+                "num_intervals": 11,
+                "extents": ([1, 3], [4, 7]),
+                "shape": (3, 4),
+                "snake_axes": "False",
+                "hints": {"dimensions": [(["motor"], "primary"), (["motor1"], "primary")]},
+            },
+            id="rel_list_grid_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.log_scan([hw.det], hw.motor, 1, 100, 10),
+            lambda hw: {
+                "plan_name": "log_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 10,
+                    "start": 1,
+                    "stop": 100,
+                    "motor": repr(hw.motor),
+                    "per_step": "None",
+                },
+                "plan_pattern": "logspace",
+                "plan_pattern_module": "numpy",
+                "plan_pattern_args": {"start": 1, "stop": 100, "num": 10},
+                "detectors": ["det"],
+                "motors": ["motor"],
+                "num_points": 10,
+                "num_intervals": 9,
+                "shape": (10,),
+                "hints": {"dimensions": [(["motor"], "primary")]},
+            },
+            id="log_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_log_scan([hw.det], hw.motor, 1, 100, 10),
+            lambda hw: {
+                "plan_name": "rel_log_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "num": 10,
+                    "start": 1,
+                    "stop": 100,
+                    "motor": repr(hw.motor),
+                    "per_step": "None",
+                },
+                "plan_pattern": "logspace",
+                "plan_pattern_module": "numpy",
+                "plan_pattern_args": {"start": 1, "stop": 100, "num": 10},
+                "detectors": ["det"],
+                "motors": ["motor"],
+                "num_points": 10,
+                "num_intervals": 9,
+                "shape": (10,),
+                "hints": {"dimensions": [(["motor"], "primary")]},
+            },
+            id="rel_log_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.scan_nd([hw.det], cycler(hw.motor, [1, 2, 3]) * cycler(hw.motor1, [4, 5])),
+            lambda hw: {
+                "plan_name": "scan_nd",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "cycler": repr(cycler(hw.motor, [1, 2, 3]) * cycler(hw.motor1, [4, 5])),
+                    "per_step": "None",
+                },
+                "detectors": ["det"],
+                "motors": {"motor", "motor1"},
+                "num_points": 6,
+                "num_intervals": 5,
+                # A bare cycler does not say whether it is a grid, so it is 1D
+                "shape": (6,),
+            },
+            id="scan_nd_outer_product",
+        ),
+        pytest.param(
+            lambda hw: bp.scan_nd([hw.det], cycler(hw.motor, [1, 2, 3]) + cycler(hw.motor1, [4, 5, 6])),
+            lambda hw: {
+                "plan_name": "scan_nd",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "cycler": repr(cycler(hw.motor, [1, 2, 3]) + cycler(hw.motor1, [4, 5, 6])),
+                    "per_step": "None",
+                },
+                "detectors": ["det"],
+                "motors": {"motor", "motor1"},
+                "num_points": 3,
+                "num_intervals": 2,
+                "shape": (3,),
+            },
+            id="scan_nd_inner_product",
+        ),
+        pytest.param(
+            lambda hw: bp.spiral([hw.det], hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 10),
+            lambda hw: {
+                "plan_name": "spiral",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_start": 0,
+                    "y_start": 0,
+                    "x_range": 1,
+                    "y_range": 1,
+                    "dr": 0.1,
+                    "dr_y": None,
+                    "nth": 10,
+                    "tilt": 0.0,
+                    "per_step": "None",
+                },
+                "plan_pattern": "spiral",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_start": 0,
+                    "y_start": 0,
+                    "x_range": 1,
+                    "y_range": 1,
+                    "dr": 0.1,
+                    "dr_y": None,
+                    "nth": 10,
+                    "tilt": 0.0,
+                },
+                "detectors": ["det"],
+                "motors": {"motor1", "motor2"},
+                "num_points": len(plan_patterns.spiral(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 10)),
+                "shape": (len(plan_patterns.spiral(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 10)),),
+                "extents": ([-1, 1], [-1, 1]),
+                "hints": {"dimensions": [(["motor1"], "primary"), (["motor2"], "primary")]},
+            },
+            id="spiral",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_spiral([hw.det], hw.motor1, hw.motor2, 1, 1, 0.1, 10),
+            lambda hw: {
+                "plan_name": "rel_spiral",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_start": 0,
+                    "y_start": 0,
+                    "x_range": 1,
+                    "y_range": 1,
+                    "dr": 0.1,
+                    "dr_y": None,
+                    "nth": 10,
+                    "tilt": 0.0,
+                    "per_step": "None",
+                },
+                "plan_pattern": "spiral",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "detectors": ["det"],
+                "motors": {"motor1", "motor2"},
+                "shape": (len(plan_patterns.spiral(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 10)),),
+                "extents": ([-1, 1], [-1, 1]),
+                "hints": {"dimensions": [(["motor1"], "primary"), (["motor2"], "primary")]},
+            },
+            id="rel_spiral",
+        ),
+        pytest.param(
+            lambda hw: bp.spiral_fermat([hw.det], hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 2),
+            lambda hw: {
+                "plan_name": "spiral_fermat",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_start": 0,
+                    "y_start": 0,
+                    "x_range": 1,
+                    "y_range": 1,
+                    "dr": 0.1,
+                    "factor": 2,
+                    "dr_y": None,
+                    "tilt": 0.0,
+                    "per_step": "None",
+                },
+                "plan_pattern": "spiral_fermat",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern_args": {
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_start": 0,
+                    "y_start": 0,
+                    "x_range": 1,
+                    "y_range": 1,
+                    "dr": 0.1,
+                    "factor": 2,
+                    "dr_y": None,
+                    "tilt": 0.0,
+                },
+                "detectors": ["det"],
+                "motors": {"motor1", "motor2"},
+                "num_points": len(plan_patterns.spiral_fermat(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 2)),
+                "shape": (len(plan_patterns.spiral_fermat(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 2)),),
+                "extents": ([-1, 1], [-1, 1]),
+                "hints": {"dimensions": [(["motor1"], "primary"), (["motor2"], "primary")]},
+            },
+            id="spiral_fermat",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_spiral_fermat([hw.det], hw.motor1, hw.motor2, 1, 1, 0.1, 2),
+            lambda hw: {
+                "plan_name": "rel_spiral_fermat",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_start": 0,
+                    "y_start": 0,
+                    "x_range": 1,
+                    "y_range": 1,
+                    "dr": 0.1,
+                    "factor": 2,
+                    "dr_y": None,
+                    "tilt": 0.0,
+                    "per_step": "None",
+                },
+                "plan_pattern": "spiral_fermat",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "detectors": ["det"],
+                "motors": {"motor1", "motor2"},
+                "shape": (len(plan_patterns.spiral_fermat(hw.motor1, hw.motor2, 0, 0, 1, 1, 0.1, 2)),),
+                "extents": ([-1, 1], [-1, 1]),
+                "hints": {"dimensions": [(["motor1"], "primary"), (["motor2"], "primary")]},
+            },
+            id="rel_spiral_fermat",
+        ),
+        pytest.param(
+            lambda hw: bp.spiral_square([hw.det], hw.motor1, hw.motor2, 0, 0, 1, 2, 5, 7),
+            lambda hw: {
+                "plan_name": "spiral_square",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_center": 0,
+                    "y_center": 0,
+                    "x_range": 1,
+                    "y_range": 2,
+                    "x_num": 5,
+                    "y_num": 7,
+                    "per_step": "None",
+                },
+                "plan_pattern": "spiral_square",
+                "detectors": ["det"],
+                "motors": {"motor1", "motor2"},
+                "num_points": 35,
+                "num_intervals": 34,
+                # shape and extents are (slow/y, fast/x)
+                "shape": (7, 5),
+                "extents": ((-1.0, 1.0), (-0.5, 0.5)),
+                "hints": {
+                    "dimensions": [(["motor2"], "primary"), (["motor1"], "primary")],
+                    "gridding": "rectilinear_nonsequential",
+                },
+            },
+            id="spiral_square",
+        ),
+        pytest.param(
+            lambda hw: bp.rel_spiral_square([hw.det], hw.motor1, hw.motor2, 1, 2, 5, 7),
+            lambda hw: {
+                "plan_name": "rel_spiral_square",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "x_motor": repr(hw.motor1),
+                    "y_motor": repr(hw.motor2),
+                    "x_center": 0,
+                    "y_center": 0,
+                    "x_range": 1,
+                    "y_range": 2,
+                    "x_num": 5,
+                    "y_num": 7,
+                    "per_step": "None",
+                },
+                "plan_pattern": "spiral_square",
+                "detectors": ["det"],
+                "motors": {"motor1", "motor2"},
+                "num_points": 35,
+                "num_intervals": 34,
+                "shape": (7, 5),
+                "extents": ((-1.0, 1.0), (-0.5, 0.5)),
+                "hints": {
+                    "dimensions": [(["motor2"], "primary"), (["motor1"], "primary")],
+                    "gridding": "rectilinear_nonsequential",
+                },
+            },
+            id="rel_spiral_square",
+        ),
+        pytest.param(
+            lambda hw: bp.x2x_scan([hw.det], hw.motor1, hw.motor2, -1, 1, 5),
+            lambda hw: {
+                "plan_name": "x2x_scan",
+                "plan_args": {
+                    "detectors": [repr(hw.det)],
+                    "motor1": "motor1",
+                    "motor2": "motor2",
+                    "start": -1,
+                    "stop": 1,
+                    "num": 5,
+                    "per_step": "None",
+                },
+                "plan_pattern": "inner_product",
+                "plan_pattern_module": "bluesky.plan_patterns",
+                # The second motor moves half as far as the first
+                "plan_pattern_args": {"num": 5, "args": [repr(hw.motor1), -1, 1, repr(hw.motor2), -0.5, 0.5]},
+                "detectors": ["det"],
+                "motors": ["motor1", "motor2"],
+                "num_points": 5,
+                "num_intervals": 4,
+                "shape": (5,),
+                "hints": {"dimensions": [(["motor1", "motor2"], "primary")]},
+            },
+            id="x2x_scan",
+        ),
+        pytest.param(
+            lambda hw: bp.grid_scan(
+                [hw.det],
+                hw.motor,
+                1,
+                2,
+                3,
+                hw.motor1,
+                4,
+                5,
+                4,
+                md={"shape": (12,), "sample": "silicon", "hints": {"gridding": "custom"}},
+            ),
+            lambda hw: {
+                "plan_name": "grid_scan",
+                "shape": (12,),
+                "sample": "silicon",
+                # User hints override the plan's, but generated dimensions are kept
+                "hints": {
+                    "dimensions": [(["motor"], "primary"), (["motor1"], "primary")],
+                    "gridding": "custom",
+                },
+            },
+            id="user_md_overrides_defaults",
+        ),
+    ],
+)
+def test_plan_expected_metadata(RE, hw, plan, expected):
+    c = DocCollector()
+    RE(plan(hw), c.insert)
 
-    ##
-    args.append(
-        (
-            bp.inner_product_scan([hw.det], 9, hw.motor, 1, 2, hw.motor1, 4, 5, hw.motor2, 7, 8),
-            {"motors": ("motor", "motor1", "motor2")},
-        )
-    )
-
-    for plan, target in args:
-        c = DocCollector()
-        RE(plan, c.insert)
-        for s in c.start:
-            _validate_start(s, target)
+    assert len(c.start) == 1
+    _validate_start(c.start[0], expected(hw))
 
 
 def test_ops_dimension_hints(RE, hw):

@@ -114,6 +114,7 @@ def count(
         "detectors": [det.name for det in detectors],
         "num_points": num,
         "num_intervals": num_intervals,
+        "shape": (num,),
         "plan_args": {"detectors": list(map(repr, detectors)), "num": num, "delay": delay},
         "plan_name": "count",
         "hints": {},
@@ -223,6 +224,7 @@ def list_scan(
         "motors": motor_names,
         "num_points": length,
         "num_intervals": num_intervals,
+        "shape": (length,),
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
         "plan_name": "list_scan",
         "plan_pattern": "inner_list_product",
@@ -350,12 +352,14 @@ def list_grid_scan(
     md_args = []
     motor_names = []
     motors = []
+    shape = []
     for i, (motor, pos_list) in enumerate(partition(2, args)):  # noqa: B007
         md_args.extend([repr(motor), pos_list])
         motor_names.append(motor.name)
         motors.append(motor)
+        shape.append(len(pos_list))
     _md = {
-        "shape": tuple(len(pos_list) for motor, pos_list in partition(2, args)),
+        "shape": tuple(shape),
         "extents": tuple([min(pos_list), max(pos_list)] for motor, pos_list in partition(2, args)),
         "snake_axes": repr(snake_axes),
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
@@ -363,7 +367,7 @@ def list_grid_scan(
         "plan_pattern": "outer_list_product",
         "plan_pattern_args": dict(args=md_args, snake_axes=repr(snake_axes)),  # noqa: C408
         "plan_pattern_module": plan_patterns.__name__,
-        "motors": tuple(motor_names),
+        "motors": motor_names,
         "hints": {},
     }
     _md.update(md or {})  # type: ignore
@@ -480,6 +484,7 @@ def _scan_1d(
         "motors": [motor.name],
         "num_points": num,
         "num_intervals": num - 1,
+        "shape": (num,),
         "plan_args": {
             "detectors": list(map(repr, detectors)),
             "num": num,
@@ -604,6 +609,7 @@ def log_scan(
         "motors": [motor.name],
         "num_points": num,
         "num_intervals": num - 1,
+        "shape": (num,),
         "plan_args": {
             "detectors": list(map(repr, detectors)),
             "num": num,
@@ -1093,6 +1099,7 @@ def scan_nd(
         "motors": [motor.name for motor in cycler.keys],
         "num_points": len(cycler),
         "num_intervals": len(cycler) - 1,
+        "shape": (len(cycler),),
         "plan_args": {
             "detectors": list(map(repr, detectors)),
             "cycler": repr(cycler),
@@ -1278,7 +1285,7 @@ def scan(
         )
 
     md_args = list(chain(*((repr(motor), start, stop) for motor, start, stop in partition(3, args))))
-    motor_names = tuple(motor.name for motor, start, stop in partition(3, args))
+    motor_names = [motor.name for motor, start, stop in partition(3, args)]
     md = md or {}
     _md = {
         "plan_args": {
@@ -1287,6 +1294,7 @@ def scan(
             "args": md_args,
             "per_step": repr(per_step),
         },
+        "shape": (num,),
         "plan_name": "scan",
         "plan_pattern": "inner_product",
         "plan_pattern_module": plan_patterns.__name__,
@@ -1486,7 +1494,7 @@ def grid_scan(
         "plan_pattern": "outer_product",
         "plan_pattern_args": dict(args=md_args),  # noqa: C408
         "plan_pattern_module": plan_patterns.__name__,
-        "motors": tuple(motor_names),
+        "motors": motor_names,
         "hints": {},
     }
     _md.update(md or {})
