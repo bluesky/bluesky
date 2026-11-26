@@ -2083,7 +2083,7 @@ class Plan(MsgGenerator[P]):
     __slots__ = ("_iter", "_stack")
 
     def __init__(
-        self, f: Callable[PlanArgs, MsgGenerator[P]], *args: PlanArgs.args, **kwargs: PlanArgs.kwargs
+        self, f: Callable[PlanArgs, MsgGenerator[P]], /, *args: PlanArgs.args, **kwargs: PlanArgs.kwargs
     ) -> None:
         self._iter = f(*args, **kwargs)
         self._stack: list[str] | None = traceback.format_stack()[:-2]

@@ -525,6 +525,7 @@ Plans that control the RunEngine:
     remove_suspender
     wait
     wait_for
+    call_in_thread
     null
 
 Combinations of the above that are often convenient:

@@ -71,6 +71,7 @@ def count(
     *,
     per_shot: PerShot | None = None,
     md: CustomPlanMetadata | None = None,
+    delay_after_completion: bool = False,
 ) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
@@ -94,6 +95,10 @@ def count(
 
     md : dict, optional
         metadata
+    delay_after_completion : bool, optional
+        If False (default), ``delay`` is the time from the start of one reading
+        to the start of the next, so the time each reading takes is subtracted
+        from it. If True, the full ``delay`` is slept after each reading.
 
     Notes
     -----
@@ -113,6 +118,10 @@ def count(
         "plan_name": "count",
         "hints": {},
     }
+    # Only meaningful when there is a delay between more than one reading.
+    has_delay = isinstance(delay, Iterable) or delay != 0
+    if (num is None or num > 1) and has_delay:
+        _md["plan_args"]["delay_after_completion"] = delay_after_completion  # type: ignore
     _md.update(md or {})
     _md["hints"].setdefault("dimensions", [(("time",), "primary")])  # type: ignore
 
@@ -125,7 +134,14 @@ def count(
     def inner_count() -> MsgGenerator[str]:
         if predeclare:
             yield from bps.declare_stream(*detectors, name="primary")
-        return (yield from bps.repeat(partial(msg_per_step, detectors), num=num, delay=delay))
+        return (
+            yield from bps.repeat(
+                partial(msg_per_step, detectors),
+                num=num,
+                delay=delay,
+                delay_after_completion=delay_after_completion,
+            )
+        )
 
     return (yield from inner_count())
 
@@ -554,8 +570,8 @@ def log_scan(
     stop: float,
     num: int,
     *,
-    per_step=None,
-    md=None,
+    per_step: PerStep | None = None,
+    md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
@@ -1308,7 +1324,7 @@ def scan(
 
 def grid_scan(
     detectors: Sequence[Readable],
-    *args,
+    *args: Movable | float | int,
     snake_axes: Iterable | bool | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
@@ -1559,7 +1575,7 @@ def relative_inner_product_scan(  # type: ignore
 def rel_scan(
     detectors: Sequence[Readable],
     *args: Movable | Any,
-    num=None,
+    num: int | None = None,
     per_step: PerStep | None = None,
     md: CustomPlanMetadata | None = None,
 ) -> MsgGenerator[str]:
