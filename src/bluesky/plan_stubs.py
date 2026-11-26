@@ -2007,6 +2007,8 @@ def repeat(
     plan: Callable[[], MsgGenerator],
     num: int | None = 1,
     delay: ScalarOrIterableFloat = 0.0,
+    *,
+    delay_after_completion: bool = False,
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.
@@ -2026,6 +2028,11 @@ def repeat(
         If None, capture data until canceled
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
+    delay_after_completion : bool, optional
+        If False (default), ``delay`` is the time from the start of one
+        repetition to the start of the next, so the time each repetition takes
+        is subtracted from it. If True, the full ``delay`` is slept after each
+        repetition, regardless of how long it took.
 
     Yields
     ------
@@ -2077,7 +2084,8 @@ def repeat(
                     # num specifies a number of iterations less than delay
                     raise ValueError("num=%r but delays only provides %r entries" % (num, i)) from stop  # noqa: UP031
             if d is not None:
-                d = d - (time.time() - now)
+                if not delay_after_completion:
+                    d = d - (time.time() - now)
                 if d > 0:  # Sleep if and only if time is left to do it.
                     yield Msg("sleep", None, d)
 
