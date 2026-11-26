@@ -7,14 +7,10 @@ For instructions on how to test in a simulated environment please see:
 import itertools
 import logging
 import re
-import sys
 import threading
-import time
 import weakref
 from collections.abc import Mapping
-from datetime import datetime
 from functools import partial
-from io import StringIO
 from pprint import pformat
 from typing import Any, Literal
 from warnings import warn
@@ -26,7 +22,8 @@ from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
 
-from .core import LiveTable, make_class_safe
+from .core import BestEffortTable, make_class_safe
+from .core import hinted_fields as hinted_fields
 from .fitting import PeakStats
 from .mpl_plotting import LiveGrid, LivePlot, LiveScatter, QtAwareCallback
 
@@ -34,16 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 @make_class_safe(logger=logger)
-class BestEffortCallback(QtAwareCallback):
+class BestEffortCallback(BestEffortTable, QtAwareCallback):
     def __init__(self, *, fig_factory=None, table_enabled=True, calc_derivative_and_stats=False, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(table_enabled=table_enabled, **kwargs)
         # internal state
-        self._start_doc = None
-        self._descriptors = {}
-        self._table = None
-        self._heading_enabled = True
-        self._table_enabled = table_enabled
-        self._baseline_enabled = True
         self._plots_enabled = True
         # axes supplied from outside
         self._fig_factory = fig_factory if fig_factory is not None else partial(plt.figure, layout="constrained")
@@ -53,8 +44,6 @@ class BestEffortCallback(QtAwareCallback):
         self._live_scatters = {}
         self._peak_stats = {}  # same structure as live_plots
         self._calc_derivative_and_stats = calc_derivative_and_stats
-        self._cleanup_motor_heuristic = False
-        self._stream_names_seen = set()
 
         # public options
         self.overplot = True
@@ -63,34 +52,6 @@ class BestEffortCallback(QtAwareCallback):
 
         # public data
         self.peaks = PeakResults()
-
-        # hack to handle the bottom border of the table
-        self._buffer = StringIO()
-        self._baseline_toggle = True
-
-    def enable_heading(self):
-        "Print timestamp and IDs at the top of a run."
-        self._heading_enabled = True
-
-    def disable_heading(self):
-        "Opposite of enable_heading()"
-        self._heading_enabled = False
-
-    def enable_table(self):
-        "Print hinted readings from the 'primary' stream in a LiveTable."
-        self._table_enabled = True
-
-    def disable_table(self):
-        "Opposite of enable_table()"
-        self._table_enabled = False
-
-    def enable_baseline(self):
-        "Print hinted fields from the 'baseline' stream."
-        self._baseline_enabled = True
-
-    def disable_baseline(self):
-        "Opposite of enable_baseline()"
-        self._baseline_enabled = False
 
     def enable_plots(self):
         "Plot hinted fields from all streams not in ``noplot_streams``."
@@ -104,56 +65,6 @@ class BestEffortCallback(QtAwareCallback):
         if not (self._table_enabled or self._baseline_enabled or self._plots_enabled):
             return
         super().__call__(name, doc, *args, **kwargs)
-
-    def start(self, doc):
-        self.clear()
-        self._start_doc = doc
-        self.plan_hints = doc.get("hints", {})
-
-        # Prepare a guess about the dimensions (independent variables) in case
-        # we need it.
-        motors = self._start_doc.get("motors")
-        if motors is not None and len(motors) > 0:
-            GUESS = [([motor], "primary") for motor in motors]
-        else:
-            GUESS = [(["time"], "primary")]
-
-        # Ues the guess if there is not hint about dimensions.
-        dimensions = self.plan_hints.get("dimensions")
-        if dimensions is None:
-            self._cleanup_motor_heuristic = True
-            dimensions = GUESS
-
-        # We can only cope with all the dimensions belonging to the same
-        # stream unless we resample. We are not doing to handle that yet.
-        if len(set(d[1] for d in dimensions)) != 1:  # noqa: C401
-            self._cleanup_motor_heuristic = True
-            dimensions = GUESS  # Fall back on our GUESS.
-            warn(
-                "We are ignoring the dimensions hinted because we cannot combine streams.",
-                stacklevel=1,
-            )
-
-        # for each dimension, choose one field only
-        # the plan can supply a list of fields. It's assumed the first
-        # of the list is always the one plotted against
-        default_field_name = "time"
-        self.dim_fields = [fields[0] if len(fields) else default_field_name for fields, stream_name in dimensions]
-
-        # make distinction between flattened fields and plotted fields
-        # motivation for this is that when plotting, we find dependent variable
-        # by finding elements that are not independent variables
-        self.all_dim_fields = [field for fields, stream_name in dimensions for field in fields]
-
-        _, self.dim_stream = dimensions[0]
-
-        # Print heading.
-        tt = datetime.fromtimestamp(self._start_doc["time"]).utctimetuple()
-        if self._heading_enabled:
-            scan_id = self._start_doc.get("scan_id", "")
-            scan_time = time.strftime("%Y-%m-%d %H:%M:%S", tt)
-            print(f"\n\nTransient Scan ID: {scan_id}     Time: {scan_time}")
-            print(f"Persistent Unique Scan ID: '{self._start_doc['uid']}'")
 
     def _set_up_plots(self, doc, stream_name, columns: list[Any]):
         """Using the descriptor doc"""
@@ -355,76 +266,12 @@ class BestEffortCallback(QtAwareCallback):
         return plot_data
 
     def descriptor(self, doc):
-        self._descriptors[doc["uid"]] = doc
-        stream_name = doc.get("name", "primary")  # fall back for old docs
-
-        if stream_name not in self._stream_names_seen:
-            self._stream_names_seen.add(stream_name)
-            if self._table_enabled:
-                print(f"New stream: {stream_name!r}")
-
-        columns = hinted_fields(doc)
-
-        # ## This deals with old documents. ## #
-        if stream_name == "primary" and self._cleanup_motor_heuristic:
-            # We stashed object names in self.dim_fields, which we now need to
-            # look up the actual fields for.
-            self._cleanup_motor_heuristic = False
-            fixed_dim_fields = []
-            for obj_name in self.dim_fields:
-                # Special case: 'time' can be a dim_field, but it's not an
-                # object name. Just add it directly to the list of fields.
-                if obj_name == "time":
-                    fixed_dim_fields.append("time")
-                    continue
-                try:
-                    fields = doc.get("hints", {}).get(obj_name, {})["fields"]
-                except KeyError:
-                    fields = doc["object_keys"][obj_name]
-                fixed_dim_fields.extend(fields)
-            self.dim_fields = fixed_dim_fields
-
-        # Ensure that no independent variables ('dimensions') are
-        # duplicated here.
-        columns = [c for c in columns if c not in self.all_dim_fields]
-
+        super().descriptor(doc)
         # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
-        self._set_up_plots(doc, stream_name, columns)
-
-        # ## TABLE ## #
-        if stream_name == self.dim_stream:
-            if self._table_enabled:
-                # plot everything, independent or dependent variables
-                self._table = LiveTable(list(self.all_dim_fields) + columns, separator_lines=False)
-                self._table("start", self._start_doc)
-                self._table("descriptor", doc)
+        self._set_up_plots(doc, doc.get("name", "primary"), self._columns(doc))
 
     def event(self, doc):
-        descriptor = self._descriptors[doc["descriptor"]]
-        if descriptor.get("name") == "primary":
-            if self._table is not None:
-                self._table("event", doc)
-
-        # Show the baseline readings.
-        if descriptor.get("name") == "baseline":
-            columns = hinted_fields(descriptor)
-            self._baseline_toggle = not self._baseline_toggle
-            if self._baseline_toggle:
-                file = self._buffer
-                subject = "End-of-run"
-            else:
-                file = sys.stdout
-                subject = "Start-of-run"
-            if self._baseline_enabled:
-                print(f"{subject} baseline readings:", file=file)
-                border = "+" + "-" * 32 + "+" + "-" * 32 + "+"
-                print(border, file=file)
-                for k, v in doc["data"].items():
-                    if k not in columns:
-                        continue
-                    print(f"| {k:>30} | {v:<30} |", file=file)
-                print(border, file=file)
-
+        super().event(doc)
         for y_key in doc["data"]:
             live_plot = self._live_plots.get(doc["descriptor"], {}).get(y_key)
             if live_plot is not None:
@@ -440,8 +287,7 @@ class BestEffortCallback(QtAwareCallback):
                 peak_stats("event", doc)
 
     def stop(self, doc):
-        if self._table is not None:
-            self._table("stop", doc)
+        self._stop_table(doc)
 
         # Compute peak stats and build results container.
         ps_by_key = {}  # map y_key to PeakStats instance
@@ -463,24 +309,15 @@ class BestEffortCallback(QtAwareCallback):
             for live_scatter in live_scatters.values():
                 live_scatter("stop", doc)
 
-        if self._baseline_enabled:
-            # Print baseline below bottom border of table.
-            self._buffer.seek(0)
-            print(self._buffer.read())
-            print("\n")
+        self._print_end_baseline()
 
     def clear(self):
-        self._start_doc = None
-        self._descriptors.clear()
-        self._stream_names_seen.clear()
-        self._table = None
+        super().clear()
         self._live_plots.clear()
         self._peak_stats.clear()
         self._live_grids.clear()
         self._live_scatters.clear()
         self.peaks.clear()
-        self._buffer = StringIO()
-        self._baseline_toggle = True
 
     def plot_prune_fifo(self, num_lines, x_signal, y_signal):
         """
@@ -636,21 +473,3 @@ class LivePlotPlusPeaks(LivePlot):
     def stop(self, doc):
         self.check_visibility()
         super().stop(doc)
-
-
-def hinted_fields(descriptor):
-    # Figure out which columns to put in the table.
-    obj_names = list(descriptor["object_keys"])
-    # We will see if these objects hint at whether
-    # a subset of their data keys ('fields') are interesting. If they
-    # did, we'll use those. If these didn't, we know that the RunEngine
-    # *always* records their complete list of fields, so we can use
-    # them all unselectively.
-    columns = []
-    for obj_name in obj_names:
-        try:
-            fields = descriptor.get("hints", {}).get(obj_name, {})["fields"]
-        except KeyError:
-            fields = descriptor["object_keys"][obj_name]
-        columns.extend(fields)
-    return columns
