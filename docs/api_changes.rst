@@ -27,6 +27,10 @@ Added
       yield from bps.mv(motor, 5)
 
 - ``bluesky.plan_stubs.loc`` locates one object and returns its ``Location``.
+- ``bluesky.plan_stubs.call_in_thread`` calls a blocking function in a worker
+  thread, keeping the RunEngine's event loop free, and returns the function's
+  result to the plan.  The function is called once: a plan paused while it runs
+  waits for it on resume.
 
 Removed
 -------
@@ -46,6 +50,11 @@ Fixed
 - An Event Descriptor's ``hints`` only list fields that are among its
   ``data_keys``.  A device hinting a field it did not describe produced a
   descriptor whose hints named data that was never recorded.
+
+- A plan decorated with ``bluesky.utils.plan`` passes keyword arguments named
+  ``f`` or ``self`` through to the plan function instead of raising
+  ``TypeError``.
+
 - A plan aborted while parked in a ``wait_for`` cancels the tasks that wait was
   running.  Nothing else held a reference to them, and ``asyncio.wait`` does not
   cancel what it was waiting on when it is itself cancelled, so they outlived
